@@ -1,42 +1,18 @@
 <template>
-  <div class="pos-wrapper">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="p-5 border-b border-white/20 flex items-center gap-3">
-        <i class="fas fa-spa"></i>
-        <span class="font-serif text-lg">Reservision</span>
-      </div>
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <AdminSidebar 
+      :is-open="sidebarOpen"
+      :is-collapsed="sidebarCollapsed"
+      @close="sidebarOpen = false"
+    />
 
-      <div class="p-4 border-b border-white/20 flex items-center gap-3">
-        <i class="fas fa-user"></i>
-        <div>
-          <div class="font-medium">Admin User</div>
-          <div class="text-xs opacity-70">Super Administrator</div>
-        </div>
-      </div>
-
-      <ul class="p-3 space-y-1">
-        <li><a href="index.html" class="nav-link"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
-        <li><a href="reservation.html" class="nav-link"><i class="fas fa-calendar-check"></i>Reservations</a></li>
-        <li><a href="pos.html" class="nav-link active"><i class="fas fa-cash-register"></i>Point of Sale</a></li>
-        <li><a href="room_and_cottage.html" class="nav-link"><i class="fas fa-bed"></i>Rooms & Cottages</a></li>
-        <li><a href="amenities.html" class="nav-link"><i class="fas fa-concierge-bell"></i>Amenities</a></li>
-        <li><a href="usermanagement.html" class="nav-link"><i class="fas fa-users"></i>User Management</a></li>
-        <li><a href="reports_analysis.html" class="nav-link"><i class="fas fa-chart-bar"></i>Reports & Analytics</a></li>
-        <li><a href="contentmanagement.html" class="nav-link"><i class="fas fa-cog"></i>Site Configuration</a></li>
-        <li><a href="vr360_setup.html" class="nav-link"><i class="fas fa-vr-cardboard"></i>VR 360° Setup</a></li>
-        <li><a href="feedback.html" class="nav-link"><i class="fas fa-headset"></i>Feedback & Support</a></li>
-      </ul>
-
-      <div class="absolute bottom-0 w-full p-3 border-t border-white/20">
-        <a href="login2.html" class="nav-link">
-          <i class="fas fa-sign-out-alt"></i>Logout
-        </a>
-      </div>
-    </aside>
-
-    <!-- MAIN CONTENT -->
-    <main class="main-content">
+    <!-- Main Content -->
+    <main 
+      class="main-content"
+      :class="{ shifted: sidebarCollapsed }"
+    >
+      <div class="pos-container">
       <!-- HEADER -->
       <div class="card p-6 mb-6">
         <h1 class="text-2xl font-bold text-gray-800">Point of Sale</h1>
@@ -217,15 +193,23 @@
           </table>
         </div>
       </div>
+    </div>
     </main>
   </div>
 </template>
 
 <script>
+import AdminSidebar from '../../components/Admin/AdminSidebar.vue';
+
 export default {
   name: 'POSSystem',
+  components: {
+    AdminSidebar
+  },
   data() {
     return {
+      sidebarOpen: false,
+      sidebarCollapsed: false,
       cart: [],
       total: 0,
       receiptNo: 1,
@@ -549,51 +533,10 @@ export default {
 </script>
 
 <style scoped>
-:root {
-  --primary: #2B6CB0;
-  --bg-light: #F8F7F4;
-}
-
-.pos-wrapper {
-  font-family: 'Inter', sans-serif;
-  background: var(--bg-light);
-  margin: 0;
-}
-
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 260px;
-  height: 100vh;
-  background: var(--primary);
-  color: white;
-  z-index: 50;
-  box-shadow: 4px 0 12px rgba(0,0,0,0.1);
-}
-
-.main-content {
-  margin-left: 260px;
+.pos-container {
   padding: 2rem;
+  background: #F8F7F4;
   min-height: 100vh;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.5rem;
-  color: rgba(255,255,255,0.9);
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.nav-link:hover,
-.nav-link.active {
-  background: rgba(255,255,255,0.15);
-  color: white;
-  transform: translateX(4px);
 }
 
 .card {
@@ -674,5 +617,28 @@ table tr {
 
 .cart-item:hover {
   background: #f9fafb;
+}
+
+/* Admin Layout Styles */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #F8F7F4;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 260px;
+  transition: margin-left 0.3s ease;
+}
+
+.main-content.shifted {
+  margin-left: 70px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+  }
 }
 </style>

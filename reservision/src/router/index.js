@@ -50,7 +50,7 @@ import Reservation from '../views/website/Reservation.vue'
 // Pages accessible to admin and/or staff roles only
 // 🧑‍💼 Shared Dashboard (Admin + Staff)
 import Dashboard from '../views/admin/AdminDashboard.vue'
-import POs from '../views/admin/POs.vue'
+import POS from '../views/admin/POS.vue'
 
 // 🛠 Admin-only pages
 import UserManagement from '../views/admin/UserManagement.vue'
@@ -128,10 +128,10 @@ const routes = [
   },
   {
     path: '/pos',
-    name: 'POs',
-    component: POs,
+    name: 'POS',
+    component: POS,
     meta: { requiresAuth: true, roles: ['admin', 'staff'] }
-  }
+  },
 
   // ────────────────────────────────────────────────────────
   // ADMIN-ONLY ROUTES - Requires 'admin' role
