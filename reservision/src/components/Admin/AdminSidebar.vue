@@ -156,6 +156,7 @@ const navItems = [
       { path: '/admin/restaurants/inventory', label: 'Inventory', icon: 'fas fa-boxes' }
     ]
   },
+  { path: '/pos', label: 'Point of Sale', icon: 'fas fa-cash-register' },
   { path: '/admin/swimming', label: 'Swimming Pools', icon: 'fas fa-swimming-pool' },
   { path: '/admin/users', label: 'User Management', icon: 'fas fa-users' }
   // { path: '/admin/reports', label: 'Reports & Analytics', icon: 'fas fa-chart-bar' },
