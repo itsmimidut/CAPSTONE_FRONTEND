@@ -108,13 +108,14 @@
         <!-- Booking Summary -->
         <aside class="lg:w-1/3 mt-8 lg:mt-0">
           <BookingSummary
-            :booking="booking"
-            :nights="nights"
-            :total="total"
+            :items="booking"
             :check-in="checkIn"
             :check-out="checkOut"
+            :subtotal="total"
+            :total="total"
             @remove="removeFromBooking"
             @clear="booking = []"
+            @checkout="proceedToCheckout"
           />
         </aside>
       </div>
@@ -126,6 +127,7 @@
       :check-in="checkIn"
       :check-out="checkOut"
       :current-month="currentMonth"
+      :occupied-dates="occupiedDates"
       @close="showCalendar = false"
       @select-date="selectDate"
       @prev-month="prevMonth"
@@ -149,6 +151,63 @@
       :item="selectedItem"
       @close="showViewMore = false"
     />
+
+    <!-- Contact & Billing Form Modal -->
+    <div v-if="showContactForm" class="fixed inset-0  flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <!-- Header -->
+        <div class="sticky top-0 z-99 bg-gradient-to-r from-blue-700 to-blue-500 text-white p-6 rounded-t-2xl">
+          <h2 class="text-2xl font-bold flex items-center gap-3">
+            <i class="fas fa-file-invoice"></i>
+            Contact & Billing Informationsx
+          </h2>
+          <p class="text-blue-100 text-sm mt-1">Please fill in your details to complete the booking</p>
+        </div>
+
+        <!-- Form Content -->
+        <div class="p-6">
+          <ContactBillingForm
+            v-model:firstName="contactFirstName"
+            v-model:lastName="contactLastName"
+            v-model:phone="contactPhone"
+            v-model:email="contactEmail"
+            v-model:address="contactAddress"
+            v-model:city="contactCity"
+            v-model:country="contactCountry"
+            v-model:postal="contactPostal"
+            v-model:specialRequests="contactSpecialRequests"
+            :items="booking"
+            :check-in="checkIn"
+            :check-out="checkOut"
+            :subtotal="subtotal"
+            :total="total"
+          />
+
+          <!-- Action Buttons -->
+          <div class="mt-6 flex gap-3">
+            <button
+              @click="showContactForm = false"
+              class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition"
+            >
+              <i class="fas fa-arrow-left mr-2"></i>Back
+            </button>
+            <button
+              @click="submitContactForm"
+              class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-xl font-semibold hover:shadow-lg transition"
+            >
+              <i class="fas fa-check mr-2"></i>Confirm Booking
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <ConfirmationModal
+      v-if="showConfirmation"
+      :email="confirmationEmail"
+      :booking-id="confirmationBookingId"
+    />
   </div>
       <!-- Footer -->
     <div class="mt-16">
@@ -163,6 +222,8 @@ import BookingSummary from '../../components/BookingSummary.vue'
 import CalendarModal from '../../components/CalendarModal.vue'
 import GuestsModal from '../../components/GuestsModal.vue'
 import ViewMoreModal from '../../components/ViewMoreModal.vue'
+import ConfirmationModal from '../../components/ConfirmationModal.vue'
+import ContactBillingForm from '../../components/ContactBillingForm.vue'
 import Footer from '../../components/AppFooter.vue'
 import AppHeader from '../../components/AppHeader.vue'
 import AppSidebar from '../../components/AppSidebar.vue'
@@ -178,6 +239,8 @@ export default {
     CalendarModal,
     GuestsModal,
     ViewMoreModal,
+    ConfirmationModal,
+    ContactBillingForm,
     Footer,
     AppHeader,
     AppSidebar
@@ -189,6 +252,19 @@ export default {
       showCalendar: false,
       showGuests: false,
       showViewMore: false,
+      showContactForm: false,
+      showConfirmation: false,
+      confirmationEmail: '',
+      confirmationBookingId: '',
+      contactFirstName: '',
+      contactLastName: '',
+      contactPhone: '',
+      contactEmail: '',
+      contactAddress: '',
+      contactCity: '',
+      contactCountry: 'Philippines',
+      contactPostal: '',
+      contactSpecialRequests: '',
       selectedItem: null,
       headerVisible: true,
       lastScrollY: 0,
@@ -200,6 +276,7 @@ export default {
       adults: 2,
       children: 0,
       booking: [],
+      occupiedDates: [],
       navItems: ['Home', 'Amenities', 'Rates', 'Reservation', 'Gallery', 'Contact', 'About'],
       itemData: {
         rooms: [
@@ -252,7 +329,33 @@ export default {
       return str
     }
   },
+  mounted() {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > this.lastScrollY && window.scrollY > 100) {
+        this.headerVisible = false
+      } else {
+        this.headerVisible = true
+      }
+      this.lastScrollY = window.scrollY
+    })
+    
+    // Fetch occupied dates
+    this.fetchOccupiedDates()
+  },
   methods: {
+    async fetchOccupiedDates() {
+      try {
+        // TODO: Replace with actual API call when backend is ready
+        // const response = await fetch('http://localhost:8000/api/bookings/occupied-dates')
+        // const data = await response.json()
+        // this.occupiedDates = data.dates
+        
+        // Sample occupied dates for testing
+        this.occupiedDates = []
+      } catch (error) {
+        console.error('Error fetching occupied dates:', error)
+      }
+    },
     selectDate(date) {
       if (!this.checkIn || (this.checkIn && this.checkOut)) {
         this.checkIn = date
@@ -285,16 +388,149 @@ export default {
       if (existing) {
         existing.qty += qty
         existing.guests = guests
+        this.showNotification(`Updated: ${item.name} (Qty: ${existing.qty})`, 'success')
       } else {
         this.booking.push({ item, qty, guests })
+        this.showNotification(`Added: ${item.name} to booking`, 'success')
       }
+      // Scroll to booking summary
+      setTimeout(() => {
+        const summary = document.querySelector('.lg\\:w-1\\/3')
+        if (summary && window.innerWidth >= 1024) {
+          summary.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }, 100)
     },
     removeFromBooking(itemId) {
+      const item = this.booking.find(b => b.item.id === itemId)
       this.booking = this.booking.filter(b => b.item.id !== itemId)
+      if (item) {
+        this.showNotification(`Removed: ${item.item.name}`, 'info')
+      }
     },
     openViewMore(item) {
       this.selectedItem = item
       this.showViewMore = true
+    },
+    proceedToCheckout() {
+      // Validate booking
+      if (this.booking.length === 0) {
+        this.showNotification('Please add items to your booking first', 'error')
+        return
+      }
+
+      // Validate dates for items that require them
+      const hasPerNightItems = this.booking.some(b => b.item.perNight)
+      if (hasPerNightItems && (!this.checkIn || !this.checkOut)) {
+        this.showNotification('Please select check-in and check-out dates', 'error')
+        return
+      }
+
+      // Show contact form instead of directly showing confirmation
+      this.showContactForm = true
+    },
+    submitContactForm() {
+      // Validate contact form
+      if (!this.contactFirstName || !this.contactLastName || !this.contactPhone || 
+          !this.contactEmail || !this.contactAddress || !this.contactCity || !this.contactPostal) {
+        this.showNotification('Please fill in all required fields', 'error')
+        return
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(this.contactEmail)) {
+        this.showNotification('Please enter a valid email address', 'error')
+        return
+      }
+
+      // Validate phone (should be 10 digits)
+      if (this.contactPhone.length !== 10 || !/^\d+$/.test(this.contactPhone)) {
+        this.showNotification('Phone number should be 10 digits', 'error')
+        return
+      }
+
+      // Prepare complete booking data
+      const bookingData = {
+        items: this.booking,
+        checkIn: this.checkIn,
+        checkOut: this.checkOut,
+        nights: this.nights,
+        adults: this.adults,
+        children: this.children,
+        total: this.total,
+        customer: {
+          firstName: this.contactFirstName,
+          lastName: this.contactLastName,
+          fullName: `${this.contactFirstName} ${this.contactLastName}`
+        },
+        contact: {
+          phone: '+63' + this.contactPhone,
+          email: this.contactEmail,
+          address: this.contactAddress,
+          city: this.contactCity,
+          country: this.contactCountry,
+          postal: this.contactPostal
+        },
+        specialRequests: this.contactSpecialRequests
+      }
+
+      // Save to localStorage
+      localStorage.setItem('completedBooking', JSON.stringify(bookingData))
+
+      // Generate booking ID
+      const bookingId = 'BK' + Date.now().toString().slice(-8)
+      
+      // Set confirmation data
+      this.confirmationEmail = this.contactEmail
+      this.confirmationBookingId = bookingId
+
+      // Hide contact form
+      this.showContactForm = false
+
+      // Show success notification
+      this.showNotification('Booking confirmed!', 'success')
+
+      // Show confirmation modal
+      setTimeout(() => {
+        this.showConfirmation = true
+      }, 500)
+
+      // Clear booking and contact form after confirmation
+      setTimeout(() => {
+        this.booking = []
+        this.checkIn = null
+        this.checkOut = null
+        this.contactFirstName = ''
+        this.contactLastName = ''
+        this.contactPhone = ''
+        this.contactEmail = ''
+        this.contactAddress = ''
+        this.contactCity = ''
+        this.contactCountry = 'Philippines'
+        this.contactPostal = ''
+        this.contactSpecialRequests = ''
+      }, 1000)
+    },
+    showNotification(message, type = 'success') {
+      // Create notification element
+      const notification = document.createElement('div')
+      notification.className = `fixed top-20 right-4 z-50 px-6 py-4 rounded-lg shadow-lg text-white font-semibold animate-slide-in ${
+        type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+      }`
+      notification.innerHTML = `
+        <div class="flex items-center gap-2">
+          <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+          <span>${message}</span>
+        </div>
+      `
+      document.body.appendChild(notification)
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        notification.style.animation = 'slide-out 0.3s ease-out'
+        setTimeout(() => notification.remove(), 300)
+      }, 3000)
     }
   },
   mounted() {
@@ -309,3 +545,31 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+@keyframes slide-in {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+</style>

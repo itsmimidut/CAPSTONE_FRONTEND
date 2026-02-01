@@ -200,6 +200,9 @@
 
 <script>
 import AdminSidebar from '../../components/Admin/AdminSidebar.vue';
+import axios from 'axios';
+
+const API_BASE = 'http://localhost:8000/api/pos';
 
 export default {
   name: 'POSSystem',
@@ -222,58 +225,76 @@ export default {
           id: 'restaurant',
           name: 'Restaurant',
           icon: 'utensils',
-          items: [
-            { name: 'Breakfast Set', price: 350 },
-            { name: 'Lunch Buffet', price: 450 },
-            { name: 'Dinner Set', price: 500 },
-            { name: 'Coffee', price: 80 },
-            { name: 'Soft Drinks', price: 50 },
-            { name: 'Dessert', price: 120 }
-          ]
+          items: []
         },
         {
           id: 'rooms',
           name: 'Rooms',
           icon: 'bed',
-          items: [
-            { name: 'Standard Room', price: 2500 },
-            { name: 'Deluxe Room', price: 3500 },
-            { name: 'Suite Room', price: 5000 },
-            { name: 'Extra Bed', price: 800 },
-            { name: 'Room Upgrade', price: 1500 },
-            { name: 'Room Service', price: 200 }
-          ]
+          items: []
         },
         {
           id: 'cottage',
           name: 'Cottage',
           icon: 'home',
-          items: [
-            { name: 'Small Cottage', price: 1500 },
-            { name: 'Medium Cottage', price: 2500 },
-            { name: 'Large Cottage', price: 3500 },
-            { name: 'Pool Access', price: 200 },
-            { name: 'BBQ Grill', price: 300 },
-            { name: 'Karaoke', price: 500 }
-          ]
+          items: []
         },
         {
           id: 'event',
           name: 'Event',
           icon: 'calendar-alt',
-          items: [
-            { name: 'Wedding Package', price: 50000 },
-            { name: 'Birthday Package', price: 15000 },
-            { name: 'Conference Package', price: 25000 },
-            { name: 'Event Venue', price: 10000 },
-            { name: 'Catering Service', price: 8000 },
-            { name: 'Sound System', price: 3000 }
-          ]
+          items: []
         }
       ]
     };
   },
+  async mounted() {
+    await this.fetchItems();
+    await this.fetchTransactions();
+    this.updateReceiptNumber();
+  },
   methods: {
+    async fetchItems() {
+      try {
+        const response = await axios.get(`${API_BASE}/items`);
+        const items = response.data;
+        
+        // Group items by category
+        this.categories.forEach(category => {
+          category.items = items
+            .filter(item => item.category === category.id)
+            .map(item => ({
+              name: item.name,
+              price: parseFloat(item.price)
+            }));
+        });
+      } catch (error) {
+        console.error('Error fetching POS items:', error);
+        alert('Failed to load items from server');
+      }
+    },
+    async fetchTransactions() {
+      try {
+        const response = await axios.get(`${API_BASE}/transactions`);
+        this.transactionHistory = response.data.map(trans => ({
+          receiptNo: trans.receipt_no,
+          items: trans.items,
+          type: trans.type,
+          payment: trans.payment_method,
+          total: parseFloat(trans.total_amount),
+          date: trans.transaction_date,
+          time: trans.transaction_time
+        }));
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+      }
+    },
+    updateReceiptNumber() {
+      if (this.transactionHistory.length > 0) {
+        const lastReceipt = Math.max(...this.transactionHistory.map(t => parseInt(t.receiptNo)));
+        this.receiptNo = lastReceipt + 1;
+      }
+    },
     showCategory(categoryId) {
       this.currentCategory = categoryId;
       this.searchQuery = '';
@@ -303,7 +324,7 @@ export default {
         }
       }
     },
-    checkout() {
+    async checkout() {
       if (this.cart.length === 0) {
         alert("No items added");
         return;
@@ -311,7 +332,7 @@ export default {
 
       const now = new Date();
       const date = now.toISOString().split("T")[0];
-      const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
       
       const transaction = {
         receiptNo: String(this.receiptNo).padStart(3, '0'),
@@ -323,17 +344,26 @@ export default {
         time: time
       };
       
-      this.transactionHistory.unshift(transaction);
-      
-      // Auto-save receipt to CSV
-      this.saveReceiptToCSV(transaction);
+      try {
+        // Save to backend
+        await axios.post(`${API_BASE}/transactions`, transaction);
+        
+        // Add to local history
+        this.transactionHistory.unshift(transaction);
+        
+        // Auto-save receipt to CSV
+        this.saveReceiptToCSV(transaction);
 
-      this.receiptNo++;
-      alert(`Transaction completed! Receipt: POS-${transaction.receiptNo}\nTotal: ₱${this.total.toLocaleString()}\n\nReceipt saved to Downloads folder.`);
-      
-      // Clear cart after successful checkout
-      this.cart = [];
-      this.total = 0;
+        this.receiptNo++;
+        alert(`Transaction completed! Receipt: POS-${transaction.receiptNo}\nTotal: ₱${this.total.toLocaleString()}\n\nReceipt saved successfully.`);
+        
+        // Clear cart after successful checkout
+        this.cart = [];
+        this.total = 0;
+      } catch (error) {
+        console.error('Error saving transaction:', error);
+        alert('Failed to save transaction. Please try again.');
+      }
     },
     getItemsPreview(items) {
       const itemsList = items.map(item => item.name).join(", ");
@@ -469,14 +499,35 @@ export default {
         printWindow.close();
       }, 250);
     },
-    deleteTransaction(index) {
+    async deleteTransaction(index) {
       if (confirm('Are you sure you want to delete this transaction?')) {
-        this.transactionHistory.splice(index, 1);
+        const transaction = this.transactionHistory[index];
+        
+        try {
+          // Find transaction ID from backend
+          const response = await axios.get(`${API_BASE}/transactions`);
+          const backendTrans = response.data.find(t => t.receipt_no === transaction.receiptNo);
+          
+          if (backendTrans) {
+            await axios.delete(`${API_BASE}/transactions/${backendTrans.transaction_id}`);
+          }
+          
+          this.transactionHistory.splice(index, 1);
+        } catch (error) {
+          console.error('Error deleting transaction:', error);
+          alert('Failed to delete transaction');
+        }
       }
     },
-    clearHistory() {
+    async clearHistory() {
       if (confirm('Are you sure you want to clear all transaction history?')) {
-        this.transactionHistory = [];
+        try {
+          await axios.delete(`${API_BASE}/transactions`);
+          this.transactionHistory = [];
+        } catch (error) {
+          console.error('Error clearing history:', error);
+          alert('Failed to clear transaction history');
+        }
       }
     },
     saveReceiptToCSV(transaction) {

@@ -48,10 +48,13 @@
         <div v-for="(day, idx) in calendarDays" :key="`day-${idx}`">
           <button
             v-if="day"
-            @click="$emit('select-date', day)"
+            @click="!isDisabled(day) && $emit('select-date', day)"
+            :disabled="isDisabled(day)"
             :class="[
               'w-9 h-9 rounded-lg text-sm font-bold transition',
-              isCheckInDate(day) || isCheckOutDate(day)
+              isDisabled(day)
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed line-through'
+                : isCheckInDate(day) || isCheckOutDate(day)
                 ? 'bg-blue-700 text-white shadow-md'
                 : isBetweenDates(day)
                 ? 'bg-blue-100 text-blue-700'
@@ -101,6 +104,10 @@ export default {
     currentMonth: {
       type: Date,
       required: true
+    },
+    occupiedDates: {
+      type: Array,
+      default: () => []
     }
   },
   emits: ['close', 'select-date', 'prev-month', 'next-month', 'clear'],
@@ -130,6 +137,19 @@ export default {
     },
     isBetweenDates(date) {
       return this.checkIn && this.checkOut && date > this.checkIn && date < this.checkOut
+    },
+    isDisabled(date) {
+      // Disable past dates
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      if (date < today) return true
+
+      // Disable occupied dates
+      const dateStr = date.toDateString()
+      return this.occupiedDates.some(occupiedDate => {
+        const occupied = new Date(occupiedDate)
+        return occupied.toDateString() === dateStr
+      })
     }
   }
 }
