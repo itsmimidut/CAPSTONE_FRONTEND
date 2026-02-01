@@ -123,9 +123,9 @@
         <div class="section-card reveal">
           <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-bold text-text-dark">Booking Summary</h2>
-            <a href="reservation.html" class="text-primary-blue text-xs font-medium flex items-center gap-1 hover:underline">
+            <router-link to="/reservation" class="text-primary-blue text-xs font-medium flex items-center gap-1 hover:underline">
               <i class="fas fa-edit"></i> Edit
-            </a>
+            </router-link>
           </div>
           <div class="space-y-2 text-sm">
             <div v-for="(item, index) in items" :key="index" class="flex justify-between items-start p-2 bg-blue-50 rounded-lg text-xs">
@@ -226,7 +226,7 @@
 export default {
   name: 'BookingPage',
   data() {
-    const bookingData = JSON.parse(localStorage.getItem('eduardosBooking') || '{}');
+    const bookingData = JSON.parse(localStorage.getItem('pendingBooking') || '{}');
     const items = bookingData.items?.map(b => {
       const nights = b.item.perNight && bookingData.checkIn && bookingData.checkOut
         ? Math.ceil((new Date(bookingData.checkOut) - new Date(bookingData.checkIn)) / 86400000)
@@ -243,8 +243,8 @@ export default {
       guest: {
         firstName: '',
         lastName: '',
-        adults: 2,
-        children: 0,
+        adults: bookingData.adults || 2,
+        children: bookingData.children || 0,
         arrivalTime: '3 PM',
         specialRequests: '',
         phone: '',
@@ -255,6 +255,9 @@ export default {
         postal: ''
       },
       items,
+      checkIn: bookingData.checkIn,
+      checkOut: bookingData.checkOut,
+      nights: bookingData.nights,
       subtotal,
       paymentMethods: [
         { id: 'paymaya', name: 'PayMaya', description: 'E-wallet', iconClass: 'fas fa-mobile-alt', iconColor: 'text-green-600', bgClass: 'bg-green-50' },
@@ -283,35 +286,52 @@ export default {
 
       this.loading = true;
 
+      const bookingId = 'EDU' + Date.now().toString().slice(-8);
+      const customerName = this.guest.firstName + ' ' + this.guest.lastName;
+
       const finalBooking = {
-        ...JSON.parse(localStorage.getItem('eduardosBooking') || '{}'),
+        ...JSON.parse(localStorage.getItem('pendingBooking') || '{}'),
         guest: {
           ...this.guest,
-          fullName: this.guest.firstName + ' ' + this.guest.lastName,
+          fullName: customerName,
           phone: '+63' + this.guest.phone
         },
         selectedPayment: this.selectedPayment,
         total: this.subtotal,
-        bookingId: 'EDU' + Date.now().toString().slice(-8)
+        bookingId: bookingId
       };
 
       try {
-        const res = await fetch('http://localhost:3000/api/bookings/create', {
+        // Create PayMongo payment link with selected payment method
+        const paymentResponse = await fetch('http://localhost:8000/api/paymongo/create-payment-link', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalBooking)
+          body: JSON.stringify({
+            amount: this.subtotal,
+            description: `Eduardo's Resort Booking - ${bookingId}`,
+            bookingId: bookingId,
+            email: this.guest.email,
+            paymentMethod: this.selectedPayment  // Send selected payment method
+          })
         });
-        const result = await res.json();
-        if (res.ok) {
-          localStorage.removeItem('eduardosBooking');
-          this.showModal = true;
+
+        const paymentData = await paymentResponse.json();
+
+        if (paymentResponse.ok && paymentData.success) {
+          // Save booking data before redirecting to payment
+          localStorage.setItem('completedBooking', JSON.stringify(finalBooking));
+          localStorage.removeItem('pendingBooking');
+
+          // Redirect to PayMongo checkout page with pre-selected method
+          window.location.href = paymentData.checkout_url;
         } else {
-          alert(result.error || 'Booking failed');
+          alert(paymentData.error || 'Failed to create payment. Please try again.');
+          this.loading = false;
         }
+
       } catch (err) {
-        console.error('Connection error:', err);
-        alert('Cannot connect to server. Is backend running?');
-      } finally {
+        console.error('Payment error:', err);
+        alert('Cannot connect to payment server. Please check your connection.');
         this.loading = false;
       }
     }

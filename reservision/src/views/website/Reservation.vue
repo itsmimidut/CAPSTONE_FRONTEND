@@ -227,6 +227,7 @@ import ContactBillingForm from '../../components/ContactBillingForm.vue'
 import Footer from '../../components/AppFooter.vue'
 import AppHeader from '../../components/AppHeader.vue'
 import AppSidebar from '../../components/AppSidebar.vue'
+import BookingConfirmation from '../../components/BookingConfirmation.vue'
 
 const sidebarOpen = ref(false)
 const menuOpen = ref(false)
@@ -317,6 +318,36 @@ export default {
       }
       return str
     }
+  },
+  mounted() {
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > this.lastScrollY && window.scrollY > 100) {
+        this.headerVisible = false
+      } else {
+        this.headerVisible = true
+      }
+      this.lastScrollY = window.scrollY
+    })
+    
+    // Load pending booking data if exists (from edit)
+    const pendingBooking = localStorage.getItem('pendingBooking')
+    if (pendingBooking) {
+      try {
+        const data = JSON.parse(pendingBooking)
+        if (data.items && data.items.length > 0) {
+          this.booking = data.items
+          this.checkIn = data.checkIn ? new Date(data.checkIn) : null
+          this.checkOut = data.checkOut ? new Date(data.checkOut) : null
+          this.adults = data.adults || 2
+          this.children = data.children || 0
+        }
+      } catch (error) {
+        console.error('Error loading pending booking:', error)
+      }
+    }
+    
+    // Fetch occupied dates
+    this.fetchOccupiedDates()
   },
   methods: {
     async fetchOccupiedDates() {
@@ -549,8 +580,23 @@ export default {
         return
       }
 
-      // Show contact form instead of directly showing confirmation
-      this.showContactForm = true
+      // Prepare booking data for the confirmation page
+      const bookingData = {
+        items: this.booking,
+        checkIn: this.checkIn,
+        checkOut: this.checkOut,
+        nights: this.nights,
+        adults: this.adults,
+        children: this.children,
+        total: this.total,
+        subtotal: this.subtotal
+      }
+
+      // Save to localStorage for the booking confirmation page
+      localStorage.setItem('pendingBooking', JSON.stringify(bookingData))
+
+      // Navigate directly to booking confirmation page
+      this.$router.push('/booking-confirmation')
     },
     submitContactForm() {
       // Validate contact form
@@ -614,9 +660,15 @@ export default {
       // Show success notification
       this.showNotification('Booking confirmed!', 'success')
 
-      // Show confirmation modal
+      // Redirect to booking confirmation page
       setTimeout(() => {
-        this.showConfirmation = true
+        this.$router.push({
+          name: 'BookingConfirmation',
+          query: {
+            email: this.contactEmail,
+            bookingId: bookingId
+          }
+        })
       }, 500)
 
       // Clear booking and contact form after confirmation
