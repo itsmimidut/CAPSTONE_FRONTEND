@@ -247,6 +247,8 @@ export default {
   },
   data() {
     return {
+      apiBaseUrl: 'http://localhost:8000/api',
+      loading: false,
       sidebarOpen: false,
       mobileSearchOpen: false,
       showCalendar: false,
@@ -279,23 +281,10 @@ export default {
       occupiedDates: [],
       navItems: ['Home', 'Amenities', 'Rates', 'Reservation', 'Gallery', 'Contact', 'About'],
       itemData: {
-        rooms: [
-          { id: 'r1', name: 'Garden Glass Villa', price: 18500, originalPrice: 25000, desc: 'Experience a perfect blend of elegance and nature...', amenities: ['Free WiFi', 'Private Hot Tub', 'Beach Access', 'Breakfast Included'], imgs: ['https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80','https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80'], perNight: true, maxGuests: 2 },
-          { id: 'r2', name: 'Deluxe Room', price: 9500, desc: 'A comfortable, modern room with garden views...', amenities: ['Free WiFi', 'Smart TV', 'Garden View'], imgs: ['https://images.unsplash.com/photo-1584132915807-fd1f5fbc078f?auto=format&fit=crop&w=1200&q=80'], perNight: true, maxGuests: 2 },
-          { id: 'r3', name: 'Family Suite', price: 22000, desc: 'Spacious two-bedroom suite...', amenities: ['Two Bedrooms', 'Kitchenette'], imgs: ['https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80'], perNight: true, maxGuests: 6 }
-        ],
-        cottages: [
-          { id: 'c1', name: 'Beachfront Cottage', price: 8200, desc: 'Wake up to the sound of the ocean...', amenities: ['Ocean View', 'Outdoor Seating'], imgs: ['https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80'], perNight: true, maxGuests: 4 },
-          { id: 'c2', name: 'Garden Cottage', price: 7500, desc: 'A tranquil hideaway...', amenities: ['Private Cottage', 'Garden View'], imgs: ['https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80'], perNight: true, maxGuests: 3 }
-        ],
-        food: [
-          { id: 'f1', name: 'Beachfront Dinner Set', price: 1800, desc: 'Enjoy a romantic three-course dinner...', amenities: ['3-Course Dinner for Two'], imgs: ['https://images.unsplash.com/photo-1541542684-3b05a8f9c4c8?auto=format&fit=crop&w=1200&q=80'], perNight: false, maxGuests: 2 },
-          { id: 'f2', name: 'Group Buffet Package', price: 3500, desc: 'Ideal for families or large groups...', amenities: ['All-You-Can-Eat Buffet'], imgs: ['https://images.unsplash.com/photo-1541542684-3b05a8f9c4c8?auto=format&fit=crop&w=1200&q=80'], perNight: false, maxGuests: 10 }
-        ],
-        events: [
-          { id: 'e1', name: 'Small Wedding Package', price: 45000, desc: 'Celebrate your dream wedding...', amenities: ['Venue Setup', 'Full Catering'], imgs: ['https://images.unsplash.com/photo-1496417263034-38ec4f0b665a?auto=format&fit=crop&w=1200&q=80'], perNight: false, maxGuests: 50 },
-          { id: 'e2', name: 'Corporate Event', price: 30000, desc: 'Host your next company retreat...', amenities: ['Function Hall', 'AV Equipment'], imgs: ['https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80'], perNight: false, maxGuests: 100 }
-        ]
+        rooms: [],
+        cottages: [],
+        food: [],
+        events: []
       }
     }
   },
@@ -329,31 +318,151 @@ export default {
       return str
     }
   },
-  mounted() {
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > this.lastScrollY && window.scrollY > 100) {
-        this.headerVisible = false
-      } else {
-        this.headerVisible = true
-      }
-      this.lastScrollY = window.scrollY
-    })
-    
-    // Fetch occupied dates
-    this.fetchOccupiedDates()
-  },
   methods: {
     async fetchOccupiedDates() {
       try {
-        // TODO: Replace with actual API call when backend is ready
-        // const response = await fetch('http://localhost:8000/api/bookings/occupied-dates')
-        // const data = await response.json()
-        // this.occupiedDates = data.dates
-        
-        // Sample occupied dates for testing
-        this.occupiedDates = []
+        const response = await fetch(`${this.apiBaseUrl}/bookings/occupied-dates`)
+        const data = await response.json()
+        if (data.success) {
+          this.occupiedDates = data.data.map(item => new Date(item.occupied_date))
+        }
       } catch (error) {
         console.error('Error fetching occupied dates:', error)
+        this.occupiedDates = []
+      }
+    },
+    async fetchInventoryItems() {
+      console.log('🔄 Fetching inventory items...')
+      try {
+        this.loading = true
+        const response = await fetch(`${this.apiBaseUrl}/rooms`)
+        const data = await response.json()
+        
+        console.log('📦 API Response:', data)
+        
+        // Check if data is array directly or wrapped in object
+        let items = []
+        if (Array.isArray(data)) {
+          items = data
+          console.log('✅ Data is direct array with', items.length, 'items')
+        } else if (data.success && data.data) {
+          items = data.data
+          console.log('✅ Data is wrapped object with', items.length, 'items')
+        } else {
+          console.log('❌ Invalid data format')
+          return
+        }
+        
+        console.log('📊 Total items to process:', items.length)
+        
+        // Reset all categories
+        this.itemData.rooms = []
+        this.itemData.cottages = []
+        this.itemData.events = []
+        this.itemData.food = []
+        
+        console.log('🗑️ Cleared all arrays')
+        
+        items.forEach((item, index) => {
+          console.log(`\n--- Processing item ${index + 1}/${items.length} ---`)
+          // Parse images
+          let images = []
+          try {
+            images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images || []
+            if (!Array.isArray(images) || images.length === 0) {
+              images = ['https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500']
+            }
+          } catch (e) {
+            images = ['https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500']
+          }
+          
+          const formattedItem = {
+            id: item.item_id,
+            item_id: item.item_id,
+            name: item.name || 'Unnamed',
+            price: parseFloat(item.price) || 0,
+            desc: item.description || '',
+            description: item.description || '',
+            amenities: [],
+            imgs: images,
+            perNight: true,
+            maxGuests: item.max_guests || 2,
+            category: item.category,
+            status: item.status
+          }
+          
+          // Categorize using category_type field
+          const categoryType = (item.category_type || '').toLowerCase()
+          console.log(`📌 Item: ${item.name}, category_type: "${item.category_type}"`)
+          
+          if (categoryType === 'room') {
+            this.itemData.rooms.push(formattedItem)
+            console.log('  ➡️ Added to rooms')
+          } else if (categoryType === 'cottage') {
+            this.itemData.cottages.push(formattedItem)
+            console.log('  ➡️ Added to cottages')
+          } else if (categoryType === 'event') {
+            this.itemData.events.push(formattedItem)
+            console.log('  ➡️ Added to events')
+          } else {
+            console.log(`  ⚠️ No match for category_type: "${categoryType}"`)
+          }
+        })
+        
+        console.log('\n✅ FINAL COUNTS:')
+        console.log('Rooms:', this.itemData.rooms.length, this.itemData.rooms)
+        console.log('Cottages:', this.itemData.cottages.length, this.itemData.cottages)
+        console.log('Events:', this.itemData.events.length, this.itemData.events)
+        
+        console.log('\n🔍 Vue Reactive Check:')
+        console.log('this.itemData:', this.itemData)
+        console.log('Current category:', this.currentCategory)
+        console.log('Items for current category:', this.itemData[this.currentCategory])
+        
+        // Fetch food items
+        await this.fetchMenuItems()
+      } catch (error) {
+        console.error('❌ Error:', error)
+        this.showNotification('Failed to load items', 'error')
+      } finally {
+        this.loading = false
+      }
+    },
+    async fetchMenuItems() {
+      try {
+        const response = await fetch(`${this.apiBaseUrl}/restaurant/menu`)
+        const data = await response.json()
+        
+        if (data.success && data.data) {
+          data.data.slice(0, 5).forEach(item => {
+            let images = []
+            try {
+              images = typeof item.image === 'string' ? JSON.parse(item.image) : item.image || []
+              if (!Array.isArray(images) || images.length === 0) {
+                images = ['https://images.unsplash.com/photo-1541542684-3b05a8f9c4c8?w=500']
+              }
+            } catch (e) {
+              images = ['https://images.unsplash.com/photo-1541542684-3b05a8f9c4c8?w=500']
+            }
+            
+            this.itemData.food.push({
+              id: 'm' + item.item_id,
+              item_id: item.item_id,
+              name: item.name,
+              price: parseFloat(item.price),
+              desc: item.description,
+              description: item.description,
+              amenities: [],
+              imgs: images,
+              perNight: false,
+              maxGuests: 1,
+              category: 'Food'
+            })
+          })
+          console.log('✅ Food:', this.itemData.food.length)
+        }
+      } catch (error) {
+        console.error('Error fetching menu:', error)
       }
     },
     selectDate(date) {
@@ -393,6 +502,11 @@ export default {
         this.booking.push({ item, qty, guests })
         this.showNotification(`Added: ${item.name} to booking`, 'success')
       }
+      
+      // Save to localStorage
+      localStorage.setItem('bookingSummary', JSON.stringify(this.booking))
+      console.log('💾 Saved booking to localStorage')
+      
       // Scroll to booking summary
       setTimeout(() => {
         const summary = document.querySelector('.lg\\:w-1\\/3')
@@ -406,6 +520,15 @@ export default {
       this.booking = this.booking.filter(b => b.item.id !== itemId)
       if (item) {
         this.showNotification(`Removed: ${item.item.name}`, 'info')
+      }
+      
+      // Update localStorage - remove if empty, otherwise update
+      if (this.booking.length === 0) {
+        localStorage.removeItem('bookingSummary')
+        console.log('🗑️ Removed bookingSummary from localStorage (empty)')
+      } else {
+        localStorage.setItem('bookingSummary', JSON.stringify(this.booking))
+        console.log('💾 Updated booking in localStorage:', this.booking.length, 'items')
       }
     },
     openViewMore(item) {
@@ -510,6 +633,10 @@ export default {
         this.contactCountry = 'Philippines'
         this.contactPostal = ''
         this.contactSpecialRequests = ''
+        
+        // Clear localStorage
+        localStorage.removeItem('bookingSummary')
+        console.log('🗑️ Cleared booking from localStorage')
       }, 1000)
     },
     showNotification(message, type = 'success') {
@@ -534,6 +661,22 @@ export default {
     }
   },
   mounted() {
+    // Load booking from localStorage
+    const savedBooking = localStorage.getItem('bookingSummary')
+    if (savedBooking) {
+      try {
+        this.booking = JSON.parse(savedBooking)
+        console.log('📋 Loaded booking from localStorage:', this.booking.length, 'items')
+      } catch (e) {
+        console.error('Error loading booking from localStorage:', e)
+      }
+    }
+    
+    // Fetch data from API
+    this.fetchInventoryItems()
+    this.fetchOccupiedDates()
+    
+    // Setup scroll listener
     window.addEventListener('scroll', () => {
       if (window.scrollY > this.lastScrollY && window.scrollY > 100) {
         this.headerVisible = false
