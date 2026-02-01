@@ -29,7 +29,7 @@
     <template v-if="booking.length === 0">
       <div class="bg-gray-50 rounded-lg p-4 mb-4 text-center text-gray-500">
         <i class="fas fa-bed text-2xl mb-2 block"></i>
-        <div class="text-sm">No items selected</div>
+        <div class="text-sm">No items selecteds</div>
       </div>
     </template>
 

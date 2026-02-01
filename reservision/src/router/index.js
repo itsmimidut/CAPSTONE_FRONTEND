@@ -38,6 +38,7 @@ import SignupPage from '../views/website/SignupPage.vue'
 import ConfirmationModal from '../components/ConfirmationModal.vue'
 import ContactBillingForm from '../components/ContactBillingForm.vue'
 import ConfirmationBooking from '../views/website/ConfirmationBooking.vue'
+import BookingConfirmationModal from '../components/BookingConfirmation.vue'
 
 // ============================================================
 // CUSTOMER PAGES IMPORTS
@@ -95,7 +96,8 @@ const routes = [
   { path: '/swimming', name: 'Swimming', component: Swimming },
   { path: '/reservation', name: 'Reservation', component: Reservation },
   { path: '/booking', name: 'ConfirmationBooking', component: ConfirmationBooking },
-  { path: '/confirmation', name: 'Confirmation', component: ConfirmationModal }, 
+  { path: '/confirmation', name: 'Confirmation', component: ConfirmationModal },
+  { path: '/booking-confirmation', name: 'BookingConfirmationModal', component: BookingConfirmationModal },
 
   // ────────────────────────────────────────────────────────
   // AUTHENTICATION ROUTES

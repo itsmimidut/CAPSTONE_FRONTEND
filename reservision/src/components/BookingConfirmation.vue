@@ -123,9 +123,9 @@
         <div class="section-card reveal">
           <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-bold text-text-dark">Booking Summary</h2>
-            <a href="reservation.html" class="text-primary-blue text-xs font-medium flex items-center gap-1 hover:underline">
+            <router-link to="/reservation" class="text-primary-blue text-xs font-medium flex items-center gap-1 hover:underline">
               <i class="fas fa-edit"></i> Edit
-            </a>
+            </router-link>
           </div>
           <div class="space-y-2 text-sm">
             <div v-for="(item, index) in items" :key="index" class="flex justify-between items-start p-2 bg-blue-50 rounded-lg text-xs">
@@ -226,7 +226,7 @@
 export default {
   name: 'BookingPage',
   data() {
-    const bookingData = JSON.parse(localStorage.getItem('eduardosBooking') || '{}');
+    const bookingData = JSON.parse(localStorage.getItem('pendingBooking') || '{}');
     const items = bookingData.items?.map(b => {
       const nights = b.item.perNight && bookingData.checkIn && bookingData.checkOut
         ? Math.ceil((new Date(bookingData.checkOut) - new Date(bookingData.checkIn)) / 86400000)
@@ -243,8 +243,8 @@ export default {
       guest: {
         firstName: '',
         lastName: '',
-        adults: 2,
-        children: 0,
+        adults: bookingData.adults || 2,
+        children: bookingData.children || 0,
         arrivalTime: '3 PM',
         specialRequests: '',
         phone: '',
@@ -255,6 +255,9 @@ export default {
         postal: ''
       },
       items,
+      checkIn: bookingData.checkIn,
+      checkOut: bookingData.checkOut,
+      nights: bookingData.nights,
       subtotal,
       paymentMethods: [
         { id: 'paymaya', name: 'PayMaya', description: 'E-wallet', iconClass: 'fas fa-mobile-alt', iconColor: 'text-green-600', bgClass: 'bg-green-50' },
@@ -304,7 +307,15 @@ export default {
         const result = await res.json();
         if (res.ok) {
           localStorage.removeItem('eduardosBooking');
-          this.showModal = true;
+          
+          // Redirect to confirmation page after successful payment
+          this.$router.push({
+            name: 'ConfirmationBooking',
+            query: {
+              email: this.guest.email,
+              bookingId: finalBooking.bookingId
+            }
+          });
         } else {
           alert(result.error || 'Booking failed');
         }
