@@ -281,7 +281,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useSwimmingEnrollmentStore } from '../stores/swimmingEnrollment'
+import { useSwimmingEnrollmentStore } from '../../stores/swimmingEnrollment'
 
 const props = defineProps({ preselectedType: String })
 const emit = defineEmits(['close', 'submit'])

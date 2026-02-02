@@ -131,7 +131,7 @@ const routes = [
     name: 'POs',
     component: POs,
     meta: { requiresAuth: true, roles: ['admin', 'staff'] }
-  }
+  },
 
   // ────────────────────────────────────────────────────────
   // ADMIN-ONLY ROUTES - Requires 'admin' role
@@ -144,7 +144,6 @@ const routes = [
     component: UserManagement,
     meta: { requiresAuth: true, roles: ['admin'] }
   },
-
   // Rooms & Cottages Management
   {
     path: '/admin/rooms',

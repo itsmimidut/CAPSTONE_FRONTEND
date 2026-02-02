@@ -150,6 +150,12 @@
             </tbody>
           </table>
         </div>
+        <div class="mt-6 text-center">
+          <button @click="openClassBookingModal()" class="btn-primary">
+            <i class="fas fa-calendar-plus mr-2"></i>
+            Book a Class Session
+          </button>
+        </div>
       </div>
     </section>
 
@@ -188,6 +194,16 @@
       />
     </Teleport>
 
+    <!-- Class Booking Modal -->
+    <Teleport to="body">
+      <SwimmingClassBookingModal
+        v-if="showClassBookingModal"
+        :preselected-type="selectedBookingLessonType"
+        @close="closeClassBookingModal"
+        @submit="handleClassBooking"
+      />
+    </Teleport>
+
     <!-- Lightbox -->
     <Teleport to="body">
       <ImageLightbox
@@ -208,10 +224,13 @@ import AppHeader from '../../components/AppHeader.vue'
 import AppSidebar from '../../components/AppSidebar.vue'
 import AppFooter from '../../components/AppFooter.vue'
 import EnrollmentModal from '../../components/EnrollmentModal.vue'
+import SwimmingClassBookingModal from '../../components/SwimmingClassBookingModal.vue'
 import ImageLightbox from '../../components/ImageLightBox.vue'
 const sidebarOpen = ref(false)
 const showEnrollmentModal = ref(false)
 const selectedLessonType = ref(null)
+const showClassBookingModal = ref(false)
+const selectedBookingLessonType = ref(null)
 const showLightbox = ref(false)
 const currentImageIndex = ref(0)
 
@@ -256,6 +275,27 @@ const closeEnrollmentModal = () => {
   showEnrollmentModal.value = false
   selectedLessonType.value = null
   document.body.style.overflow = ''
+}
+
+const openClassBookingModal = (lessonType = null) => {
+  const actualLessonType = (typeof lessonType === 'object' && lessonType !== null) ? null : lessonType
+  selectedBookingLessonType.value = actualLessonType
+  showClassBookingModal.value = true
+  document.body.style.overflow = 'hidden'
+}
+
+const closeClassBookingModal = () => {
+  showClassBookingModal.value = false
+  selectedBookingLessonType.value = null
+  document.body.style.overflow = ''
+}
+
+const handleClassBooking = (payload) => {
+  console.log('Class booking submitted:', payload)
+  closeClassBookingModal()
+  setTimeout(() => {
+    alert(`✅ Booking Request Submitted!\n\nName: ${payload.fullName}\nLesson: ${payload.lessonType}\nDate: ${payload.preferredDate}\nTime: ${payload.preferredTime}\n\nWe will contact you to confirm your class schedule.`)
+  }, 200)
 }
 
 const handleEnrollment = (response) => {
