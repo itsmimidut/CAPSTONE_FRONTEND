@@ -35,6 +35,10 @@ import ContactPage from '../views/website/ContactPage.vue'
 import Swimming from '../views/website/Swimming.vue'
 import LoginPage from '../views/website/LoginPage.vue'
 import SignupPage from '../views/website/SignupPage.vue'
+import ConfirmationModal from '../components/ConfirmationModal.vue'
+import ContactBillingForm from '../components/ContactBillingForm.vue'
+import ConfirmationBooking from '../views/website/ConfirmationBooking.vue'
+import BookingConfirmationModal from '../components/BookingConfirmation.vue'
 
 // ============================================================
 // CUSTOMER PAGES IMPORTS
@@ -50,7 +54,7 @@ import Reservation from '../views/website/Reservation.vue'
 // Pages accessible to admin and/or staff roles only
 // 🧑‍💼 Shared Dashboard (Admin + Staff)
 import Dashboard from '../views/admin/AdminDashboard.vue'
-import POs from '../views/admin/POs.vue'
+import POS from '../views/admin/POS.vue'
 
 // 🛠 Admin-only pages
 import UserManagement from '../views/admin/UserManagement.vue'
@@ -90,6 +94,10 @@ const routes = [
   { path: '/contact', name: 'Contact', component: ContactPage },
   { path: '/about', name: 'About', component: AboutPage },
   { path: '/swimming', name: 'Swimming', component: Swimming },
+  { path: '/reservation', name: 'Reservation', component: Reservation },
+  { path: '/booking', name: 'ConfirmationBooking', component: ConfirmationBooking },
+  { path: '/confirmation', name: 'Confirmation', component: ConfirmationModal },
+  { path: '/booking-confirmation', name: 'BookingConfirmationModal', component: BookingConfirmationModal },
 
   // ────────────────────────────────────────────────────────
   // AUTHENTICATION ROUTES
@@ -108,12 +116,12 @@ const routes = [
     component: CustomerDashboard,
     meta: { requiresAuth: true, role: 'customer' }
   },
-  {
-    path: '/reservation',
-    name: 'Reservation',
-    component: Reservation,
-    meta: { requiresAuth: true, role: 'customer' }
-  },
+  // {
+  //   path: '/reservation',
+  //   name: 'Reservation',
+  //   component: Reservation,
+  //   meta: { requiresAuth: true, role: 'customer' }
+  // },
 
   // ────────────────────────────────────────────────────────
   // ADMIN/STAFF SHARED ROUTES
@@ -128,8 +136,8 @@ const routes = [
   },
   {
     path: '/pos',
-    name: 'POs',
-    component: POs,
+    name: 'POS',
+    component: POS,
     meta: { requiresAuth: true, roles: ['admin', 'staff'] }
   },
 

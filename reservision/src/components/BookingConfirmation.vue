@@ -123,10 +123,40 @@
         <div class="section-card reveal">
           <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-bold text-text-dark">Booking Summary</h2>
-            <a href="reservation.html" class="text-primary-blue text-xs font-medium flex items-center gap-1 hover:underline">
+            <a @click="editBooking" class="text-primary-blue text-xs font-medium flex items-center gap-1 hover:underline cursor-pointer">
               <i class="fas fa-edit"></i> Edit
             </a>
           </div>
+          
+          <!-- Dates Section -->
+          <div v-if="checkIn && checkOut" class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-3 mb-3 border border-blue-200">
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex-1">
+                <div class="text-xs text-text-muted mb-1">Check-in</div>
+                <div class="font-semibold text-text-dark flex items-center gap-1">
+                  <i class="fas fa-calendar-check text-primary-blue text-xs"></i>
+                  {{ formatDate(checkIn) }}
+                </div>
+              </div>
+              <div class="px-2">
+                <i class="fas fa-arrow-right text-text-muted text-xs"></i>
+              </div>
+              <div class="flex-1 text-right">
+                <div class="text-xs text-text-muted mb-1">Check-out</div>
+                <div class="font-semibold text-text-dark flex items-center justify-end gap-1">
+                  <i class="fas fa-calendar-times text-primary-blue text-xs"></i>
+                  {{ formatDate(checkOut) }}
+                </div>
+              </div>
+            </div>
+            <div v-if="nights" class="text-center mt-2 pt-2 border-t border-blue-200">
+              <span class="text-xs font-medium text-primary-blue">
+                <i class="fas fa-moon"></i> {{ nights }} Night{{ nights > 1 ? 's' : '' }}
+              </span>
+            </div>
+          </div>
+          
+          <!-- Items List -->
           <div class="space-y-2 text-sm">
             <div v-for="(item, index) in items" :key="index" class="flex justify-between items-start p-2 bg-blue-50 rounded-lg text-xs">
               <div class="flex-1">
@@ -187,8 +217,13 @@
             </label>
           </div>
 
-          <button class="btn-primary mt-4 text-sm" :class="{ 'btn-loading': loading }" @click="payNow">
-            <span class="btn-text"><i class="fas fa-lock"></i> Pay Now & Confirm</span>
+          <button 
+            class="btn-primary mt-4 text-sm" 
+            :class="{ 'btn-loading': loading }" 
+            @click="initiatePayment">
+            <span class="btn-text">
+              <i class="fas fa-lock"></i> Pay Now & Confirm
+            </span>
           </button>
 
           <div class="text-center mt-3 text-xs text-text-muted">
@@ -219,14 +254,28 @@
       </div>
     </div>
 
+    <!-- Email Verification Modal -->
+    <EmailVerificationModal
+      :show="showVerificationModal"
+      :initialEmail="guest.email"
+      @verified="onEmailVerified"
+      @proceed-payment="proceedWithPayment"
+      @close="showVerificationModal = false"
+    />
+
   </div>
 </template>
 
 <script>
+import EmailVerificationModal from './EmailVerificationModal.vue';
+
 export default {
   name: 'BookingPage',
+  components: {
+    EmailVerificationModal
+  },
   data() {
-    const bookingData = JSON.parse(localStorage.getItem('eduardosBooking') || '{}');
+    const bookingData = JSON.parse(localStorage.getItem('pendingBooking') || '{}');
     const items = bookingData.items?.map(b => {
       const nights = b.item.perNight && bookingData.checkIn && bookingData.checkOut
         ? Math.ceil((new Date(bookingData.checkOut) - new Date(bookingData.checkIn)) / 86400000)
@@ -243,8 +292,8 @@ export default {
       guest: {
         firstName: '',
         lastName: '',
-        adults: 2,
-        children: 0,
+        adults: bookingData.adults || 2,
+        children: bookingData.children || 0,
         arrivalTime: '3 PM',
         specialRequests: '',
         phone: '',
@@ -255,6 +304,9 @@ export default {
         postal: ''
       },
       items,
+      checkIn: bookingData.checkIn,
+      checkOut: bookingData.checkOut,
+      nights: bookingData.nights,
       subtotal,
       paymentMethods: [
         { id: 'paymaya', name: 'PayMaya', description: 'E-wallet', iconClass: 'fas fa-mobile-alt', iconColor: 'text-green-600', bgClass: 'bg-green-50' },
@@ -264,7 +316,11 @@ export default {
       selectedPayment: bookingData.selectedPayment || 'gcash',
       termsAgreed: false,
       loading: false,
-      showModal: false
+      showModal: false,
+      // Email verification
+      showVerificationModal: false,
+      emailVerified: false,
+      verifiedEmail: ''
     };
   },
   methods: {
@@ -274,44 +330,214 @@ export default {
       if (type === 'children' && this.guest.children > 0) this.guest.children--;
     },
     selectPayment(id) { this.selectedPayment = id; },
-    async payNow() {
+    
+    // Format date for display
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const options = { month: 'short', day: 'numeric', year: 'numeric' };
+      return date.toLocaleDateString('en-US', options);
+    },
+    
+    // Edit booking - save current state and navigate back
+    editBooking() {
+      // Reconstruct complete booking data with all necessary fields
+      const bookingData = {
+        items: this.items.map(item => ({
+          item: {
+            item_id: item.item.item_id || item.item.id,
+            id: item.item.id,
+            name: item.item.name,
+            category: item.item.category,
+            category_type: item.item.category_type,
+            price: item.item.price,
+            perNight: item.item.perNight,
+            image: item.item.image,
+            imgs: item.item.imgs || (item.item.image ? [item.item.image] : []),
+            description: item.item.description
+          },
+          qty: item.qty,
+          guests: item.guests,
+          nights: item.nights,
+          lineTotal: item.lineTotal
+        })),
+        checkIn: this.checkIn,
+        checkOut: this.checkOut,
+        nights: this.nights,
+        adults: this.guest.adults,
+        children: this.guest.children,
+        selectedPayment: this.selectedPayment
+      };
+      
+      localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+      this.$router.push('/reservation');
+    },
+    
+    // Email Verification Modal Handlers
+    async initiatePayment() {
+      // Validate required fields first
       const required = ['firstName','lastName','phone','email','address','city','postal'];
       for (const key of required) {
-        if (!this.guest[key].trim()) return alert('Please fill all required fields!');
+        if (!this.guest[key].trim()) {
+          alert('Please fill all required fields!');
+          return;
+        }
       }
-      if (!this.termsAgreed) return alert('Please agree to the Terms & Conditions');
+      if (!this.termsAgreed) {
+        alert('Please agree to the Terms & Conditions');
+        return;
+      }
+      
+      // Check if email exists in database
+      try {
+        const response = await fetch(`http://localhost:8000/api/customers/check-email/${encodeURIComponent(this.guest.email)}`);
+        const data = await response.json();
+        
+        if (data.success && data.exists) {
+          // Email already exists - skip verification, proceed directly to payment
+          const customerName = data.customer.firstName + ' ' + data.customer.lastName;
+          const confirmed = confirm(
+            `Welcome back, ${customerName}!\n\n` +
+            `This email is already registered. Click OK to proceed with payment.`
+          );
+          
+          if (confirmed) {
+            this.emailVerified = true;
+            this.verifiedEmail = this.guest.email;
+            await this.payNow();
+          }
+        } else {
+          // Email is new - show verification modal
+          this.showVerificationModal = true;
+        }
+      } catch (error) {
+        console.error('Error checking email:', error);
+        // On error, show verification modal to be safe
+        this.showVerificationModal = true;
+      }
+    },
+    
+    onEmailVerified(email) {
+      this.emailVerified = true;
+      this.verifiedEmail = email;
+      this.guest.email = email;
+    },
+    
+    async proceedWithPayment(email) {
+      // Close modal
+      this.showVerificationModal = false;
+      
+      // Proceed with payment
+      await this.payNow();
+    },
+    async payNow() {
+      // Email verification already done in modal
 
       this.loading = true;
 
-      const finalBooking = {
-        ...JSON.parse(localStorage.getItem('eduardosBooking') || '{}'),
-        guest: {
-          ...this.guest,
-          fullName: this.guest.firstName + ' ' + this.guest.lastName,
-          phone: '+63' + this.guest.phone
-        },
-        selectedPayment: this.selectedPayment,
-        total: this.subtotal,
-        bookingId: 'EDU' + Date.now().toString().slice(-8)
-      };
-
+      const bookingData = JSON.parse(localStorage.getItem('pendingBooking') || '{}');
+      const customerName = this.guest.firstName + ' ' + this.guest.lastName;
+      
       try {
-        const res = await fetch('http://localhost:3000/api/bookings/create', {
+        // Step 1: Create booking with customer info in database
+        const bookingResponse = await fetch('http://localhost:8000/api/bookings/confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(finalBooking)
+          body: JSON.stringify({
+            guest: {
+              ...this.guest,
+              phone: '+63' + this.guest.phone
+            },
+            checkIn: bookingData.checkIn,
+            checkOut: bookingData.checkOut,
+            items: this.items.map(item => ({
+              item_id: item.item.item_id || item.item.id,
+              name: item.item.name,
+              category: item.item.category || 'Room',
+              qty: item.qty,
+              guests: item.guests,
+              price: item.item.price,
+              perNight: item.item.perNight
+            })),
+            paymentMethod: this.selectedPayment,
+            total: this.subtotal
+          })
         });
-        const result = await res.json();
-        if (res.ok) {
-          localStorage.removeItem('eduardosBooking');
-          this.showModal = true;
-        } else {
-          alert(result.error || 'Booking failed');
+
+        const bookingResult = await bookingResponse.json();
+
+        if (!bookingResponse.ok || !bookingResult.success) {
+          throw new Error(bookingResult.error || 'Failed to create booking');
         }
+
+        const { bookingId, bookingReference, paymentReference } = bookingResult.data;
+
+        // Step 2: Create PayMongo payment link
+        const paymentResponse = await fetch('http://localhost:8000/api/paymongo/create-payment-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: this.subtotal,
+            description: `Eduardo's Resort Booking - ${bookingReference}`,
+            bookingId: bookingId,
+            email: this.guest.email,
+            paymentMethod: this.selectedPayment
+          })
+        });
+
+        const paymentData = await paymentResponse.json();
+
+        if (!paymentResponse.ok || !paymentData.success) {
+          throw new Error(paymentData.error || 'Failed to create payment link');
+        }
+
+        // Step 3: Update payment record with PayMongo details
+        await fetch('http://localhost:8000/api/bookings/update-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingId: bookingId,
+            paymentReference: paymentReference,
+            status: 'pending',
+            paymentIntentId: paymentData.payment_intent_id,
+            checkoutUrl: paymentData.checkout_url
+          })
+        });
+
+        // Step 4: Save booking details to localStorage
+        const finalBooking = {
+          ...bookingData,
+          bookingId,
+          bookingReference,
+          paymentReference,
+          guest: {
+            ...this.guest,
+            fullName: customerName,
+            phone: '+63' + this.guest.phone
+          },
+          selectedPayment: this.selectedPayment,
+          total: this.subtotal
+        };
+
+        // Step 4: Clear all booking-related localStorage
+        // This prevents the booking from being resubmitted if user goes back
+        localStorage.removeItem('pendingBooking');
+        
+        // Save minimal info to sessionStorage (cleared when browser closes)
+        // This helps track payment in progress
+        const completionInfo = {
+          bookingReference,
+          email: this.guest.email,
+          timestamp: new Date().toISOString()
+        };
+        sessionStorage.setItem('paymentInProgress', JSON.stringify(completionInfo));
+
+        // Step 5: Redirect to PayMongo checkout
+        window.location.href = paymentData.checkout_url;
+
       } catch (err) {
-        console.error('Connection error:', err);
-        alert('Cannot connect to server. Is backend running?');
-      } finally {
+        console.error('Booking error:', err);
+        alert(err.message || 'Failed to process booking. Please try again.');
         this.loading = false;
       }
     }

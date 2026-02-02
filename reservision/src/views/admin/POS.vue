@@ -1,42 +1,18 @@
 <template>
-  <div class="pos-wrapper">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="p-5 border-b border-white/20 flex items-center gap-3">
-        <i class="fas fa-spa"></i>
-        <span class="font-serif text-lg">Reservision</span>
-      </div>
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <AdminSidebar 
+      :is-open="sidebarOpen"
+      :is-collapsed="sidebarCollapsed"
+      @close="sidebarOpen = false"
+    />
 
-      <div class="p-4 border-b border-white/20 flex items-center gap-3">
-        <i class="fas fa-user"></i>
-        <div>
-          <div class="font-medium">Admin User</div>
-          <div class="text-xs opacity-70">Super Administrator</div>
-        </div>
-      </div>
-
-      <ul class="p-3 space-y-1">
-        <li><a href="index.html" class="nav-link"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
-        <li><a href="reservation.html" class="nav-link"><i class="fas fa-calendar-check"></i>Reservations</a></li>
-        <li><a href="pos.html" class="nav-link active"><i class="fas fa-cash-register"></i>Point of Sale</a></li>
-        <li><a href="room_and_cottage.html" class="nav-link"><i class="fas fa-bed"></i>Rooms & Cottages</a></li>
-        <li><a href="amenities.html" class="nav-link"><i class="fas fa-concierge-bell"></i>Amenities</a></li>
-        <li><a href="usermanagement.html" class="nav-link"><i class="fas fa-users"></i>User Management</a></li>
-        <li><a href="reports_analysis.html" class="nav-link"><i class="fas fa-chart-bar"></i>Reports & Analytics</a></li>
-        <li><a href="contentmanagement.html" class="nav-link"><i class="fas fa-cog"></i>Site Configuration</a></li>
-        <li><a href="vr360_setup.html" class="nav-link"><i class="fas fa-vr-cardboard"></i>VR 360° Setup</a></li>
-        <li><a href="feedback.html" class="nav-link"><i class="fas fa-headset"></i>Feedback & Support</a></li>
-      </ul>
-
-      <div class="absolute bottom-0 w-full p-3 border-t border-white/20">
-        <a href="login2.html" class="nav-link">
-          <i class="fas fa-sign-out-alt"></i>Logout
-        </a>
-      </div>
-    </aside>
-
-    <!-- MAIN CONTENT -->
-    <main class="main-content">
+    <!-- Main Content -->
+    <main 
+      class="main-content"
+      :class="{ shifted: sidebarCollapsed }"
+    >
+      <div class="pos-container">
       <!-- HEADER -->
       <div class="card p-6 mb-6">
         <h1 class="text-2xl font-bold text-gray-800">Point of Sale</h1>
@@ -217,15 +193,26 @@
           </table>
         </div>
       </div>
+    </div>
     </main>
   </div>
 </template>
 
 <script>
+import AdminSidebar from '../../components/Admin/AdminSidebar.vue';
+import axios from 'axios';
+
+const API_BASE = 'http://localhost:8000/api/pos';
+
 export default {
   name: 'POSSystem',
+  components: {
+    AdminSidebar
+  },
   data() {
     return {
+      sidebarOpen: false,
+      sidebarCollapsed: false,
       cart: [],
       total: 0,
       receiptNo: 1,
@@ -238,58 +225,76 @@ export default {
           id: 'restaurant',
           name: 'Restaurant',
           icon: 'utensils',
-          items: [
-            { name: 'Breakfast Set', price: 350 },
-            { name: 'Lunch Buffet', price: 450 },
-            { name: 'Dinner Set', price: 500 },
-            { name: 'Coffee', price: 80 },
-            { name: 'Soft Drinks', price: 50 },
-            { name: 'Dessert', price: 120 }
-          ]
+          items: []
         },
         {
           id: 'rooms',
           name: 'Rooms',
           icon: 'bed',
-          items: [
-            { name: 'Standard Room', price: 2500 },
-            { name: 'Deluxe Room', price: 3500 },
-            { name: 'Suite Room', price: 5000 },
-            { name: 'Extra Bed', price: 800 },
-            { name: 'Room Upgrade', price: 1500 },
-            { name: 'Room Service', price: 200 }
-          ]
+          items: []
         },
         {
           id: 'cottage',
           name: 'Cottage',
           icon: 'home',
-          items: [
-            { name: 'Small Cottage', price: 1500 },
-            { name: 'Medium Cottage', price: 2500 },
-            { name: 'Large Cottage', price: 3500 },
-            { name: 'Pool Access', price: 200 },
-            { name: 'BBQ Grill', price: 300 },
-            { name: 'Karaoke', price: 500 }
-          ]
+          items: []
         },
         {
           id: 'event',
           name: 'Event',
           icon: 'calendar-alt',
-          items: [
-            { name: 'Wedding Package', price: 50000 },
-            { name: 'Birthday Package', price: 15000 },
-            { name: 'Conference Package', price: 25000 },
-            { name: 'Event Venue', price: 10000 },
-            { name: 'Catering Service', price: 8000 },
-            { name: 'Sound System', price: 3000 }
-          ]
+          items: []
         }
       ]
     };
   },
+  async mounted() {
+    await this.fetchItems();
+    await this.fetchTransactions();
+    this.updateReceiptNumber();
+  },
   methods: {
+    async fetchItems() {
+      try {
+        const response = await axios.get(`${API_BASE}/items`);
+        const items = response.data;
+        
+        // Group items by category
+        this.categories.forEach(category => {
+          category.items = items
+            .filter(item => item.category === category.id)
+            .map(item => ({
+              name: item.name,
+              price: parseFloat(item.price)
+            }));
+        });
+      } catch (error) {
+        console.error('Error fetching POS items:', error);
+        alert('Failed to load items from server');
+      }
+    },
+    async fetchTransactions() {
+      try {
+        const response = await axios.get(`${API_BASE}/transactions`);
+        this.transactionHistory = response.data.map(trans => ({
+          receiptNo: trans.receipt_no,
+          items: trans.items,
+          type: trans.type,
+          payment: trans.payment_method,
+          total: parseFloat(trans.total_amount),
+          date: trans.transaction_date,
+          time: trans.transaction_time
+        }));
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+      }
+    },
+    updateReceiptNumber() {
+      if (this.transactionHistory.length > 0) {
+        const lastReceipt = Math.max(...this.transactionHistory.map(t => parseInt(t.receiptNo)));
+        this.receiptNo = lastReceipt + 1;
+      }
+    },
     showCategory(categoryId) {
       this.currentCategory = categoryId;
       this.searchQuery = '';
@@ -319,7 +324,7 @@ export default {
         }
       }
     },
-    checkout() {
+    async checkout() {
       if (this.cart.length === 0) {
         alert("No items added");
         return;
@@ -327,7 +332,7 @@ export default {
 
       const now = new Date();
       const date = now.toISOString().split("T")[0];
-      const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
       
       const transaction = {
         receiptNo: String(this.receiptNo).padStart(3, '0'),
@@ -339,17 +344,26 @@ export default {
         time: time
       };
       
-      this.transactionHistory.unshift(transaction);
-      
-      // Auto-save receipt to CSV
-      this.saveReceiptToCSV(transaction);
+      try {
+        // Save to backend
+        await axios.post(`${API_BASE}/transactions`, transaction);
+        
+        // Add to local history
+        this.transactionHistory.unshift(transaction);
+        
+        // Auto-save receipt to CSV
+        this.saveReceiptToCSV(transaction);
 
-      this.receiptNo++;
-      alert(`Transaction completed! Receipt: POS-${transaction.receiptNo}\nTotal: ₱${this.total.toLocaleString()}\n\nReceipt saved to Downloads folder.`);
-      
-      // Clear cart after successful checkout
-      this.cart = [];
-      this.total = 0;
+        this.receiptNo++;
+        alert(`Transaction completed! Receipt: POS-${transaction.receiptNo}\nTotal: ₱${this.total.toLocaleString()}\n\nReceipt saved successfully.`);
+        
+        // Clear cart after successful checkout
+        this.cart = [];
+        this.total = 0;
+      } catch (error) {
+        console.error('Error saving transaction:', error);
+        alert('Failed to save transaction. Please try again.');
+      }
     },
     getItemsPreview(items) {
       const itemsList = items.map(item => item.name).join(", ");
@@ -485,14 +499,35 @@ export default {
         printWindow.close();
       }, 250);
     },
-    deleteTransaction(index) {
+    async deleteTransaction(index) {
       if (confirm('Are you sure you want to delete this transaction?')) {
-        this.transactionHistory.splice(index, 1);
+        const transaction = this.transactionHistory[index];
+        
+        try {
+          // Find transaction ID from backend
+          const response = await axios.get(`${API_BASE}/transactions`);
+          const backendTrans = response.data.find(t => t.receipt_no === transaction.receiptNo);
+          
+          if (backendTrans) {
+            await axios.delete(`${API_BASE}/transactions/${backendTrans.transaction_id}`);
+          }
+          
+          this.transactionHistory.splice(index, 1);
+        } catch (error) {
+          console.error('Error deleting transaction:', error);
+          alert('Failed to delete transaction');
+        }
       }
     },
-    clearHistory() {
+    async clearHistory() {
       if (confirm('Are you sure you want to clear all transaction history?')) {
-        this.transactionHistory = [];
+        try {
+          await axios.delete(`${API_BASE}/transactions`);
+          this.transactionHistory = [];
+        } catch (error) {
+          console.error('Error clearing history:', error);
+          alert('Failed to clear transaction history');
+        }
       }
     },
     saveReceiptToCSV(transaction) {
@@ -549,51 +584,10 @@ export default {
 </script>
 
 <style scoped>
-:root {
-  --primary: #2B6CB0;
-  --bg-light: #F8F7F4;
-}
-
-.pos-wrapper {
-  font-family: 'Inter', sans-serif;
-  background: var(--bg-light);
-  margin: 0;
-}
-
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 260px;
-  height: 100vh;
-  background: var(--primary);
-  color: white;
-  z-index: 50;
-  box-shadow: 4px 0 12px rgba(0,0,0,0.1);
-}
-
-.main-content {
-  margin-left: 260px;
+.pos-container {
   padding: 2rem;
+  background: #F8F7F4;
   min-height: 100vh;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.5rem;
-  color: rgba(255,255,255,0.9);
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.nav-link:hover,
-.nav-link.active {
-  background: rgba(255,255,255,0.15);
-  color: white;
-  transform: translateX(4px);
 }
 
 .card {
@@ -674,5 +668,28 @@ table tr {
 
 .cart-item:hover {
   background: #f9fafb;
+}
+
+/* Admin Layout Styles */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #F8F7F4;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 260px;
+  transition: margin-left 0.3s ease;
+}
+
+.main-content.shifted {
+  margin-left: 70px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+  }
 }
 </style>
