@@ -64,8 +64,8 @@
           <!-- Item Image -->
           <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200 shadow-sm">
             <img 
-              v-if="item.item.imgs && item.item.imgs[0]" 
-              :src="item.item.imgs[0]" 
+              v-if="(item.item.imgs && item.item.imgs[0]) || item.item.image" 
+              :src="item.item.imgs ? item.item.imgs[0] : item.item.image" 
               :alt="item.item.name"
               class="w-full h-full object-cover"
             />

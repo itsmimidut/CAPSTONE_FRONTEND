@@ -319,36 +319,7 @@ export default {
       return str
     }
   },
-  mounted() {
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > this.lastScrollY && window.scrollY > 100) {
-        this.headerVisible = false
-      } else {
-        this.headerVisible = true
-      }
-      this.lastScrollY = window.scrollY
-    })
-    
-    // Load pending booking data if exists (from edit)
-    const pendingBooking = localStorage.getItem('pendingBooking')
-    if (pendingBooking) {
-      try {
-        const data = JSON.parse(pendingBooking)
-        if (data.items && data.items.length > 0) {
-          this.booking = data.items
-          this.checkIn = data.checkIn ? new Date(data.checkIn) : null
-          this.checkOut = data.checkOut ? new Date(data.checkOut) : null
-          this.adults = data.adults || 2
-          this.children = data.children || 0
-        }
-      } catch (error) {
-        console.error('Error loading pending booking:', error)
-      }
-    }
-    
-    // Fetch occupied dates
-    this.fetchOccupiedDates()
-  },
+  // REMOVED: Duplicate mounted() hook - merged into the one below
   methods: {
     async fetchOccupiedDates() {
       try {
@@ -534,8 +505,16 @@ export default {
         this.showNotification(`Added: ${item.name} to booking`, 'success')
       }
       
-      // Save to localStorage
-      localStorage.setItem('bookingSummary', JSON.stringify(this.booking))
+      // Save to localStorage with complete booking data
+      const bookingData = {
+        items: this.booking,
+        checkIn: this.checkIn,
+        checkOut: this.checkOut,
+        nights: this.nights,
+        adults: this.adults,
+        children: this.children
+      }
+      localStorage.setItem('pendingBooking', JSON.stringify(bookingData))
       console.log('💾 Saved booking to localStorage')
       
       // Scroll to booking summary
@@ -555,10 +534,18 @@ export default {
       
       // Update localStorage - remove if empty, otherwise update
       if (this.booking.length === 0) {
-        localStorage.removeItem('bookingSummary')
-        console.log('🗑️ Removed bookingSummary from localStorage (empty)')
+        localStorage.removeItem('pendingBooking')
+        console.log('🗑️ Removed pendingBooking from localStorage (empty)')
       } else {
-        localStorage.setItem('bookingSummary', JSON.stringify(this.booking))
+        const bookingData = {
+          items: this.booking,
+          checkIn: this.checkIn,
+          checkOut: this.checkOut,
+          nights: this.nights,
+          adults: this.adults,
+          children: this.children
+        }
+        localStorage.setItem('pendingBooking', JSON.stringify(bookingData))
         console.log('💾 Updated booking in localStorage:', this.booking.length, 'items')
       }
     },
@@ -687,7 +674,7 @@ export default {
         this.contactSpecialRequests = ''
         
         // Clear localStorage
-        localStorage.removeItem('bookingSummary')
+        localStorage.removeItem('pendingBooking')
         console.log('🗑️ Cleared booking from localStorage')
       }, 1000)
     },
@@ -714,11 +701,22 @@ export default {
   },
   mounted() {
     // Load booking from localStorage
-    const savedBooking = localStorage.getItem('bookingSummary')
+    const savedBooking = localStorage.getItem('pendingBooking')
     if (savedBooking) {
       try {
-        this.booking = JSON.parse(savedBooking)
-        console.log('📋 Loaded booking from localStorage:', this.booking.length, 'items')
+        const data = JSON.parse(savedBooking)
+        
+        // Load dates first (IMPORTANT: this was missing!)
+        if (data.checkIn) this.checkIn = new Date(data.checkIn)
+        if (data.checkOut) this.checkOut = new Date(data.checkOut)
+        if (data.adults) this.adults = data.adults
+        if (data.children) this.children = data.children
+        
+        // Load items if they exist
+        if (data.items && data.items.length > 0) {
+          this.booking = data.items
+          console.log('📋 Loaded booking from localStorage:', this.booking.length, 'items')
+        }
       } catch (e) {
         console.error('Error loading booking from localStorage:', e)
       }
