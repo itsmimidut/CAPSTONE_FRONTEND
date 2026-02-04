@@ -26,18 +26,6 @@
       <!-- Stats Grid -->
       <ReservationStats :stats="stats" />
 
-      <!-- Content Nav -->
-      <div class="content-nav">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          @click="activeTab = tab.id"
-          :class="{ active: activeTab === tab.id }"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
-
       <!-- Filters -->
       <ReservationFilters
         v-model:search="filters.search"
@@ -66,27 +54,24 @@
           <table v-if="!loading && bookings.length > 0">
             <thead>
               <tr>
-                <th>Guest</th>
-                <th>Code</th>
+                <th>Guest Name</th>
                 <th>Check-in</th>
                 <th>Check-out</th>
-                <th>Guests</th>
+                <th>Room/Item</th>
+                <th>Payment Method</th>
+                <th>Code</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="booking in bookings" :key="booking.id">
-                <td>
-                  <div>
-                    <div class="font-semibold">{{ booking.guest_name }}</div>
-                    <div class="text-xs text-gray-500">{{ booking.email }}</div>
-                  </div>
-                </td>
-                <td>{{ booking.reservation_code || 'N/A' }}</td>
+                <td>{{ booking.guest_name }}</td>
                 <td>{{ formatDate(booking.check_in) }}</td>
                 <td>{{ formatDate(booking.check_out) }}</td>
-                <td>{{ booking.adults }}A {{ booking.children || 0 }}C</td>
+                <td>{{ booking.items_list || 'N/A' }}</td>
+                <td>{{ booking.payment_method || 'N/A' }}</td>
+                <td>{{ booking.reservation_code || 'N/A' }}</td>
                 <td>
                   <span :class="getStatusClass(booking.status)">
                     {{ formatStatus(booking.status) }}
@@ -94,13 +79,6 @@
                 </td>
                 <td>
                   <div class="flex gap-1">
-                    <button
-                      @click="viewBooking(booking.id)"
-                      class="action-btn edit-btn"
-                      title="View"
-                    >
-                      <i class="fas fa-eye"></i>
-                    </button>
                     <button
                       v-if="booking.status === 'pending'"
                       @click="confirmBooking(booking.id)"
@@ -219,10 +197,6 @@
 
             <div class="card-body">
               <div>
-                <div class="card-label">Code</div>
-                <div class="card-value">{{ booking.reservation_code || 'N/A' }}</div>
-              </div>
-              <div>
                 <div class="card-label">Check-in</div>
                 <div class="card-value">{{ formatDate(booking.check_in) }}</div>
               </div>
@@ -231,15 +205,20 @@
                 <div class="card-value">{{ formatDate(booking.check_out) }}</div>
               </div>
               <div>
-                <div class="card-label">Guests</div>
-                <div class="card-value">{{ booking.adults }}A {{ booking.children || 0 }}C</div>
+                <div class="card-label">Room/Item</div>
+                <div class="card-value">{{ booking.items_list || 'N/A' }}</div>
+              </div>
+              <div>
+                <div class="card-label">Payment Ref</div>
+                <div class="card-value">{{ booking.payment_reference || 'N/A' }}</div>
+              </div>
+              <div>
+                <div class="card-label">Code</div>
+                <div class="card-value">{{ booking.reservation_code || 'N/A' }}</div>
               </div>
             </div>
 
             <div class="card-actions">
-              <button @click="viewBooking(booking.id)" class="action-btn edit-btn">
-                <i class="fas fa-eye"></i>
-              </button>
               <button
                 v-if="booking.status === 'pending'"
                 @click="confirmBooking(booking.id)"
@@ -286,14 +265,6 @@ const filters = ref({
   to: ''
 })
 
-const tabs = [
-  { id: 'all', label: 'All' },
-  { id: 'create', label: 'Create' },
-  { id: 'pending', label: 'Pending' },
-  { id: 'checked_in', label: 'Checked In' },
-  { id: 'checked_out', label: 'Checked Out' }
-]
-
 const stats = computed(() => {
   const statusCounts = bookings.value.reduce((acc, b) => {
     acc[b.status] = (acc[b.status] || 0) + 1
@@ -329,22 +300,61 @@ const fetchBookings = async () => {
   loading.value = true
   
   try {
-    const params = new URLSearchParams({
-      page: currentPage.value,
-      limit: limit,
-      search: filters.value.search,
-      status: filters.value.status,
-      from: filters.value.from,
-      to: filters.value.to
-    })
-
-    const response = await axios.get(`http://localhost:3000/api/reservations?${params}`)
+    const params = new URLSearchParams()
     
-    bookings.value = response.data.bookings || []
-    totalCount.value = response.data.total || 0
-    totalPages.value = response.data.pages || 1
+    // Add pagination
+    params.append('page', currentPage.value)
+    params.append('limit', limit)
+    
+    // Map filters to backend params
+    if (filters.value.search) params.append('search', filters.value.search)
+    if (filters.value.status && filters.value.status !== 'all') params.append('status', filters.value.status)
+    if (filters.value.from) params.append('startDate', filters.value.from)
+    if (filters.value.to) params.append('endDate', filters.value.to)
+
+    const response = await fetch(`http://localhost:8000/api/bookings/admin/reservations?${params}`)
+    const result = await response.json()
+    
+    if (result.success) {
+      console.log('📦 Admin reservations data:', result.data)
+      
+      // Map backend data to frontend format
+      bookings.value = result.data.map(booking => {
+        const guestName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim()
+        
+        return {
+          id: booking.booking_id,
+          guest_name: guestName || booking.email || 'Guest',
+          email: booking.email || 'N/A',
+          reservation_code: booking.booking_reference,
+          check_in: booking.check_in_date,
+          check_out: booking.check_out_date,
+          adults: booking.adults || 0,
+          children: booking.children || 0,
+          status: booking.booking_status?.toLowerCase() || 'pending',
+          payment_status: booking.payment_status,
+          payment_method: booking.payment_method || 'N/A',
+          payment_reference: booking.payment_reference || 'N/A',
+          total: booking.total,
+          item_count: booking.item_count || 0,
+          items_list: booking.items_summary || 'N/A'
+        }
+      })
+      
+      // Update pagination info
+      if (result.pagination) {
+        totalCount.value = result.pagination.totalCount
+        totalPages.value = result.pagination.totalPages
+      } else {
+        totalCount.value = bookings.value.length
+        totalPages.value = 1
+      }
+    } else {
+      throw new Error(result.message || 'Failed to fetch bookings')
+    }
   } catch (error) {
     console.error('Failed to fetch bookings:', error)
+    bookings.value = []
     alert('Failed to load bookings. Please try again.')
   } finally {
     loading.value = false
@@ -372,20 +382,28 @@ const getStatusClass = (status) => {
   return classes[status] || 'status'
 }
 
-const viewBooking = (id) => {
-  // Navigate to booking details
-  alert(`View booking ${id}`)
-}
-
 const confirmBooking = async (id) => {
   if (!confirm('Confirm this booking?')) return
   
   try {
-    await axios.put(`http://localhost:3000/api/reservations/${id}`, {
-      status: 'confirmed'
+    const response = await fetch(`http://localhost:8000/api/bookings/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        booking_status: 'Confirmed'
+      })
     })
-    fetchBookings()
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      alert('Booking confirmed successfully')
+      fetchBookings()
+    } else {
+      throw new Error(result.message)
+    }
   } catch (error) {
+    console.error('Error confirming booking:', error)
     alert('Failed to confirm booking')
   }
 }
@@ -394,22 +412,46 @@ const cancelBooking = async (id) => {
   if (!confirm('Cancel this booking?')) return
   
   try {
-    await axios.put(`http://localhost:3000/api/reservations/${id}`, {
-      status: 'cancelled'
+    const response = await fetch(`http://localhost:8000/api/bookings/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        booking_status: 'Cancelled'
+      })
     })
-    fetchBookings()
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      alert('Booking cancelled successfully')
+      fetchBookings()
+    } else {
+      throw new Error(result.message)
+    }
   } catch (error) {
+    console.error('Error cancelling booking:', error)
     alert('Failed to cancel booking')
   }
 }
 
 const deleteBooking = async (id) => {
-  if (!confirm('Delete this booking permanently?')) return
+  if (!confirm('Delete this booking permanently? This action cannot be undone.')) return
   
   try {
-    await axios.delete(`http://localhost:3000/api/reservations/${id}`)
-    fetchBookings()
+    const response = await fetch(`http://localhost:8000/api/bookings/${id}`, {
+      method: 'DELETE'
+    })
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      alert('Booking deleted successfully')
+      fetchBookings()
+    } else {
+      throw new Error(result.message)
+    }
   } catch (error) {
+    console.error('Error deleting booking:', error)
     alert('Failed to delete booking')
   }
 }

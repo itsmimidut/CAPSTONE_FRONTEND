@@ -491,6 +491,9 @@ export default {
           throw new Error(paymentData.error || 'Failed to create payment link');
         }
 
+        // Extract payment link ID from PayMongo response
+        const paymentLinkId = paymentData.payment_id;
+
         // Step 3: Update payment record with PayMongo details
         await fetch('http://localhost:8000/api/bookings/update-payment', {
           method: 'POST',
@@ -532,8 +535,13 @@ export default {
         };
         sessionStorage.setItem('paymentInProgress', JSON.stringify(completionInfo));
 
-        // Step 5: Redirect to PayMongo checkout
-        window.location.href = paymentData.checkout_url;
+        // Step 5: Open PayMongo checkout in new tab
+        window.open(paymentData.checkout_url, '_blank');
+        
+        // Redirect current tab to payment-return page to poll for payment status
+        setTimeout(() => {
+          window.location.href = `/payment-return?bookingId=${bookingId}&paymentLinkId=${paymentLinkId}`;
+        }, 500);
 
       } catch (err) {
         console.error('Booking error:', err);

@@ -108,6 +108,10 @@ export default {
     occupiedDates: {
       type: Array,
       default: () => []
+    },
+    roomItemIds: {
+      type: Array,
+      default: () => []
     }
   },
   emits: ['close', 'select-date', 'prev-month', 'next-month', 'clear'],
@@ -138,18 +142,33 @@ export default {
     isBetweenDates(date) {
       return this.checkIn && this.checkOut && date > this.checkIn && date < this.checkOut
     },
+    isAllRoomsBooked(date) {
+      if (!this.roomItemIds || this.roomItemIds.length === 0) return false
+
+      const roomIds = new Set(this.roomItemIds.map(id => Number(id)))
+      const dateStr = date.toDateString()
+      const occupiedRoomIds = new Set()
+
+      this.occupiedDates.forEach(entry => {
+        const inventoryId = Number(entry.inventoryItemId ?? entry.inventory_item_id)
+        if (!roomIds.has(inventoryId)) return
+
+        const occupiedDate = new Date(entry.occupiedDate ?? entry.occupied_date)
+        if (occupiedDate.toDateString() === dateStr) {
+          occupiedRoomIds.add(inventoryId)
+        }
+      })
+
+      return occupiedRoomIds.size >= roomIds.size
+    },
     isDisabled(date) {
       // Disable past dates
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       if (date < today) return true
 
-      // Disable occupied dates
-      const dateStr = date.toDateString()
-      return this.occupiedDates.some(occupiedDate => {
-        const occupied = new Date(occupiedDate)
-        return occupied.toDateString() === dateStr
-      })
+      // Disable dates only if all rooms are fully booked
+      return this.isAllRoomsBooked(date)
     }
   }
 }

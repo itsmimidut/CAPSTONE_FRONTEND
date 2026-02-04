@@ -128,6 +128,7 @@
       :check-out="checkOut"
       :current-month="currentMonth"
       :occupied-dates="occupiedDates"
+      :room-item-ids="roomItemIds"
       @close="showCalendar = false"
       @select-date="selectDate"
       @prev-month="prevMonth"
@@ -317,6 +318,9 @@ export default {
         str += `, ${this.children} Child${this.children > 1 ? 'ren' : ''}`
       }
       return str
+    },
+    roomItemIds() {
+      return this.itemData.rooms.map(room => room.item_id).filter(Boolean)
     }
   },
   // REMOVED: Duplicate mounted() hook - merged into the one below
@@ -326,7 +330,10 @@ export default {
         const response = await fetch(`${this.apiBaseUrl}/bookings/occupied-dates`)
         const data = await response.json()
         if (data.success) {
-          this.occupiedDates = data.data.map(item => new Date(item.occupied_date))
+          this.occupiedDates = data.data.map(item => ({
+            inventoryItemId: item.inventory_item_id,
+            occupiedDate: item.occupied_date
+          }))
         }
       } catch (error) {
         console.error('Error fetching occupied dates:', error)
@@ -378,6 +385,8 @@ export default {
             images = ['https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500']
           }
           
+          const categoryType = (item.category_type || '').toLowerCase()
+
           const formattedItem = {
             id: item.item_id,
             item_id: item.item_id,
@@ -390,11 +399,11 @@ export default {
             perNight: true,
             maxGuests: item.max_guests || 2,
             category: item.category,
-            status: item.status
+            status: item.status,
+            categoryType
           }
           
           // Categorize using category_type field
-          const categoryType = (item.category_type || '').toLowerCase()
           console.log(`📌 Item: ${item.name}, category_type: "${item.category_type}"`)
           
           if (categoryType === 'room') {
@@ -468,6 +477,11 @@ export default {
       }
     },
     selectDate(date) {
+      if (this.isAnySelectedRoomBookedOnDate(date)) {
+        this.showNotification('Room fully booked for the selected date', 'error')
+        return
+      }
+
       if (!this.checkIn || (this.checkIn && this.checkOut)) {
         this.checkIn = date
         this.checkOut = null
@@ -477,6 +491,28 @@ export default {
         this.checkIn = date
         this.checkOut = null
       }
+    },
+    isRoomBookedOnDate(roomItemId, date) {
+      const dateStr = new Date(date).toDateString()
+      const roomId = Number(roomItemId)
+
+      return this.occupiedDates.some(entry => {
+        const inventoryId = Number(entry.inventoryItemId ?? entry.inventory_item_id)
+        if (inventoryId !== roomId) return false
+
+        const occupiedDate = new Date(entry.occupiedDate ?? entry.occupied_date)
+        return occupiedDate.toDateString() === dateStr
+      })
+    },
+    isAnySelectedRoomBookedOnDate(date) {
+      const selectedRooms = this.booking.filter(b => {
+        const categoryType = (b.item.categoryType || b.item.category || '').toLowerCase()
+        return categoryType === 'room' || categoryType === 'rooms'
+      })
+
+      if (selectedRooms.length === 0) return false
+
+      return selectedRooms.some(b => this.isRoomBookedOnDate(b.item.item_id, date))
     },
     prevMonth() {
       this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() - 1)

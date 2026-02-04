@@ -19,12 +19,6 @@
 
       <div class="space-y-2">
         <a
-          href="/confirmation"
-          class="block w-full py-2.5 bg-primary-blue text-white rounded-lg font-medium text-sm hover:bg-accent-blue transition"
-        >
-          View Booking Details
-        </a>
-        <a
           href="/"
           class="block w-full py-2.5 border border-primary-blue text-primary-blue rounded-lg font-medium text-sm hover:bg-blue-50 transition"
         >
