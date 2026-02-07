@@ -6,9 +6,14 @@
         <h2 class="section-title">Menu Management</h2>
         <p class="section-subtitle">Manage restaurant menu items and pricing</p>
       </div>
-      <button class="btn-add-item" @click="showAddItemModal = true">
-        <i class="fas fa-plus"></i> Add New Item
-      </button>
+      <div class="header-actions">
+        <button class="btn-category" @click="showCategoryModal = true">
+          <i class="fas fa-layer-group"></i> Manage Categories
+        </button>
+        <button class="btn-add-item" @click="showAddItemModal = true">
+          <i class="fas fa-plus"></i> Add New Item
+        </button>
+      </div>
     </div>
 
     <!-- Stats Container -->
@@ -49,10 +54,7 @@
       </div>
       <select v-model="filterCategory" class="filter-select">
         <option value="">All Categories</option>
-        <option value="Appetizers">Appetizers</option>
-        <option value="Mains">Mains</option>
-        <option value="Desserts">Desserts</option>
-        <option value="Beverages">Beverages</option>
+        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
       </select>
       <select v-model="filterAvailability" class="filter-select">
         <option value="">All Status</option>
@@ -61,71 +63,66 @@
       </select>
     </div>
 
-    <!-- Menu Grid/Table -->
-    <div class="menu-container">
-      <!-- Grid View (Default) -->
-      <div v-if="filteredMenu.length > 0" class="menu-grid">
-        <div v-for="item in filteredMenu" :key="item.menu_id" class="menu-card" :class="{ unavailable: !item.available }">
-          <div v-if="item.image_url" class="card-image">
-            <img :src="item.image_url" :alt="item.name" />
-          </div>
-          <div v-else class="card-image card-image-placeholder">
-            <i class="fas fa-image"></i>
-          </div>
-
-          <div class="card-header">
-            <div class="card-title">
-              <h3>{{ item.name }}</h3>
-              <span class="category-badge">{{ item.category }}</span>
-            </div>
-            <button 
-              class="btn-availability"
-              :class="item.available ? 'available' : 'unavailable'"
-              @click="handleToggle(item)"
-              :title="item.available ? 'Mark unavailable' : 'Mark available'"
-            >
-              <i :class="item.available ? 'fas fa-check-circle' : 'fas fa-ban'"></i>
-            </button>
-          </div>
-
-          <div class="card-price">
-            <span class="price-label">Price</span>
-            <span class="price-value">₱{{ item.price.toLocaleString() }}</span>
-          </div>
-
-          <div class="card-info">
-            <div class="info-item">
-              <i class="fas fa-clock"></i>
-              <span>{{ item.prepTime }}</span>
-            </div>
-          </div>
-
-          <div class="card-actions">
-            <button 
-              class="btn-action btn-edit"
-              @click="handleEdit(item)"
-              title="Edit item"
-            >
-              <i class="fas fa-edit"></i> Edit
-            </button>
-            <button 
-              class="btn-action btn-delete"
-              @click="handleDelete(item)"
-              title="Delete item"
-            >
-              <i class="fas fa-trash"></i> Delete
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Empty State -->
-      <div v-else class="empty-state">
+    <!-- Category-Based List Menu -->
+    <div class="menu-list">
+      <div v-if="filteredMenu.length === 0" class="empty-state">
         <i class="fas fa-inbox"></i>
         <p>No menu items found</p>
         <button class="btn-add-empty" @click="showAddItemModal = true">
           <i class="fas fa-plus"></i> Add Your First Item
         </button>
+      </div>
+
+      <!-- Category Sections -->
+      <div v-for="category in categories" :key="category" class="category-section-list">
+        <template v-if="getItemsByCategory(category).length > 0">
+          <div class="category-header-list">
+            <h3 class="category-title-list">{{ category.toUpperCase() }}</h3>
+            <span class="category-count-badge">{{ getItemsByCategory(category).length }} items</span>
+          </div>
+
+          <div class="items-list">
+            <div 
+              v-for="item in getItemsByCategory(category)" 
+              :key="item.menu_id" 
+              class="list-item" 
+              :class="{ 'item-unavailable': !item.available }"
+            >
+              <div class="item-info">
+                <div class="item-details">
+                  <h4 class="item-name-list">{{ item.name }}</h4>
+                  <span v-if="!item.available" class="unavailable-badge">Not Available</span>
+                </div>
+                <div class="item-price-list">₱{{ item.price }}</div>
+              </div>
+              
+              <div class="item-actions">
+                <button 
+                  class="action-btn toggle-btn"
+                  :class="item.available ? 'btn-available' : 'btn-unavailable'"
+                  @click="handleToggle(item)"
+                  :title="item.available ? 'Mark unavailable' : 'Mark available'"
+                >
+                  <i :class="item.available ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                </button>
+                <button 
+                  class="action-btn edit-btn"
+                  @click="handleEdit(item)"
+                  title="Edit"
+                >
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button 
+                  class="action-btn delete-btn"
+                  @click="handleDelete(item)"
+                  title="Delete"
+                >
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -141,7 +138,7 @@
 
         <form @submit.prevent="handleAddItem" class="modal-form">
           <div class="form-group">
-            <label for="itemName">Dish Name *</label>
+            <label for="itemName">Name *</label>
             <input 
               id="itemName"
               v-model="newItem.name"
@@ -162,10 +159,7 @@
                 class="form-input"
               >
                 <option value="">Select Category</option>
-                <option value="Appetizers">Appetizers</option>
-                <option value="Mains">Mains</option>
-                <option value="Desserts">Desserts</option>
-                <option value="Beverages">Beverages</option>
+                <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
               </select>
             </div>
 
@@ -181,45 +175,6 @@
                 step="0.01"
                 class="form-input"
               />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="prepTime">Preparation Time *</label>
-            <input 
-              id="prepTime"
-              v-model="newItem.prepTime"
-              type="text" 
-              placeholder="e.g., 20min"
-              required
-              class="form-input"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>Dish Image</label>
-            <div 
-              class="image-upload-area"
-              @dragover="handleDragOver"
-              @drop="(e) => handleDragDrop(e, false)"
-            >
-              <input 
-                type="file" 
-                accept="image/*" 
-                @change="(e) => handleImageUpload(e, false)"
-                style="display: none"
-                ref="addImageInput"
-              />
-              <div v-if="!imagePreview" class="upload-placeholder" @click="$refs.addImageInput?.click()">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Drag and drop image here or click to select</p>
-              </div>
-              <div v-else class="image-preview">
-                <img :src="imagePreview" alt="preview" />
-                <button type="button" class="btn-remove-image" @click="imagePreview = ''; newItem.image_url = ''">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
             </div>
           </div>
 
@@ -257,7 +212,7 @@
 
         <form @submit.prevent="handleEditSubmit" class="modal-form">
           <div class="form-group">
-            <label for="editItemName">Dish Name *</label>
+            <label for="editItemName">Name *</label>
             <input 
               id="editItemName"
               v-model="editingItem.name"
@@ -278,10 +233,7 @@
                 class="form-input"
               >
                 <option value="">Select Category</option>
-                <option value="Appetizers">Appetizers</option>
-                <option value="Mains">Mains</option>
-                <option value="Desserts">Desserts</option>
-                <option value="Beverages">Beverages</option>
+                <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
               </select>
             </div>
 
@@ -297,45 +249,6 @@
                 step="0.01"
                 class="form-input"
               />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="editPrepTime">Preparation Time *</label>
-            <input 
-              id="editPrepTime"
-              v-model="editingItem.prepTime"
-              type="text" 
-              placeholder="e.g., 20min"
-              required
-              class="form-input"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>Dish Image</label>
-            <div 
-              class="image-upload-area"
-              @dragover="handleDragOver"
-              @drop="(e) => handleDragDrop(e, true)"
-            >
-              <input 
-                type="file" 
-                accept="image/*" 
-                @change="(e) => handleImageUpload(e, true)"
-                style="display: none"
-                ref="editImageInput"
-              />
-              <div v-if="!editImagePreview" class="upload-placeholder" @click="$refs.editImageInput?.click()">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Drag and drop image here or click to select</p>
-              </div>
-              <div v-else class="image-preview">
-                <img :src="editImagePreview" alt="preview" />
-                <button type="button" class="btn-remove-image" @click="editImagePreview = ''; editingItem.image_url = ''">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
             </div>
           </div>
 
@@ -360,6 +273,80 @@
         </form>
       </div>
     </div>
+
+    <!-- Category Management Modal -->
+    <div v-if="showCategoryModal" class="modal-overlay" @click.self="closeCategoryModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Manage Categories</h3>
+          <button class="btn-close" @click="closeCategoryModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="category-modal-body">
+          <!-- Current Categories List -->
+          <div class="category-section">
+            <h4 class="category-section-title">Current Categories</h4>
+            <div class="category-list">
+              <div v-for="(cat, index) in categories" :key="index" class="category-item">
+                <div v-if="editingCategoryIndex === index" class="category-edit-mode">
+                  <input 
+                    v-model="editingCategoryValue"
+                    type="text"
+                    class="form-input"
+                    placeholder="Category name"
+                    @keyup.enter="saveEditCategory(index)"
+                    @keyup.esc="cancelEditCategory"
+                  />
+                  <div class="category-actions">
+                    <button type="button" class="btn-icon btn-save" @click="saveEditCategory(index)" title="Save">
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button type="button" class="btn-icon btn-cancel-edit" @click="cancelEditCategory" title="Cancel">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+                <div v-else class="category-display">
+                  <span class="category-name">{{ cat }}</span>
+                  <div class="category-actions">
+                    <button type="button" class="btn-icon btn-edit-cat" @click="startEditCategory(index, cat)" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn-icon btn-delete-cat" @click="deleteCategory(index)" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add New Category -->
+          <div class="category-section">
+            <h4 class="category-section-title">Add New Category</h4>
+            <form @submit.prevent="addCategory" class="add-category-form">
+              <input 
+                v-model="newCategory"
+                type="text"
+                class="form-input"
+                placeholder="Enter new category name"
+              />
+              <button type="submit" class="btn-submit">
+                <i class="fas fa-plus"></i> Add Category
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" @click="closeCategoryModal">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -379,93 +366,30 @@ const filterCategory = ref('')
 const filterAvailability = ref('')
 const showAddItemModal = ref(false)
 const showEditModal = ref(false)
+const showCategoryModal = ref(false)
 const editingItem = ref(null)
-const imagePreview = ref('')
-const editImagePreview = ref('')
 
-const convertImageToBase64 = (file, maxWidth = 800) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        let width = img.width
-        let height = img.height
-        
-        // Resize if image is larger than maxWidth
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width
-          width = maxWidth
-        }
-        
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, width, height)
-        
-        // Convert to base64 with compression
-        resolve(canvas.toDataURL('image/jpeg', 0.7))
-      }
-      img.onerror = reject
-      img.src = e.target.result
-    }
-    reader.onerror = error => reject(error)
-    reader.readAsDataURL(file)
-  })
-}
-
-const handleImageUpload = async (event, isEdit = false) => {
-  const file = event.target.files?.[0]
-  if (!file) return
-  
-  try {
-    const base64 = await convertImageToBase64(file)
-    if (isEdit) {
-      editingItem.value.image_url = base64
-      editImagePreview.value = base64
-    } else {
-      newItem.value.image_url = base64
-      imagePreview.value = base64
-    }
-  } catch (error) {
-    console.error('Error converting image:', error)
-    alert('Error uploading image')
-  }
-}
-
-const handleDragOver = (e) => {
-  e.preventDefault()
-  e.dataTransfer.dropEffect = 'copy'
-}
-
-const handleDragDrop = async (e, isEdit = false) => {
-  e.preventDefault()
-  const file = e.dataTransfer.files?.[0]
-  if (!file) return
-  
-  try {
-    const base64 = await convertImageToBase64(file)
-    if (isEdit) {
-      editingItem.value.image_url = base64
-      editImagePreview.value = base64
-    } else {
-      newItem.value.image_url = base64
-      imagePreview.value = base64
-    }
-  } catch (error) {
-    console.error('Error converting image:', error)
-    alert('Error uploading image')
-  }
-}
+// Category management
+const categories = ref([
+  'Coffee',
+  'Hot & Cold Latte',
+  'Smoothies Frappe',
+  'Fruity Smoothies & Shakes',
+  'Sandwiches & Pastries',
+  'Soup',
+  'Rice',
+  'Noodles',
+  'Pasta'
+])
+const newCategory = ref('')
+const editingCategoryIndex = ref(null)
+const editingCategoryValue = ref('')
 
 const newItem = ref({
   name: '',
   category: '',
   price: 0,
-  prepTime: '',
   available: true,
-  image_url: '',
 })
 
 const filteredMenu = computed(() => {
@@ -477,6 +401,11 @@ const filteredMenu = computed(() => {
     return matchesSearch && matchesCategory && matchesAvailability
   })
 })
+
+// Get items by category for gallery display
+const getItemsByCategory = (category) => {
+  return filteredMenu.value.filter(item => item.category === category)
+}
 
 const calculatePotentialRevenue = () => {
   return props.menu.reduce((total, item) => {
@@ -490,7 +419,6 @@ const handleToggle = (item) => {
 
 const handleEdit = (item) => {
   editingItem.value = { ...item }
-  editImagePreview.value = item.image_url || ''
   showEditModal.value = true
 }
 
@@ -501,9 +429,7 @@ const handleEditSubmit = () => {
       name: editingItem.value.name,
       category: editingItem.value.category,
       price: editingItem.value.price,
-      prep_time: editingItem.value.prepTime,
       available: editingItem.value.available,
-      image_url: editingItem.value.image_url || '',
     }
     emit('update-item', itemToUpdate)
     closeEditModal()
@@ -513,7 +439,6 @@ const handleEditSubmit = () => {
 const closeEditModal = () => {
   showEditModal.value = false
   editingItem.value = null
-  editImagePreview.value = ''
 }
 
 const handleDelete = (item) => {
@@ -523,14 +448,12 @@ const handleDelete = (item) => {
 }
 
 const handleAddItem = () => {
-  if (newItem.value.name && newItem.value.category && newItem.value.price >= 0 && newItem.value.prepTime) {
+  if (newItem.value.name && newItem.value.category && newItem.value.price >= 0) {
     const itemToAdd = {
       name: newItem.value.name,
       category: newItem.value.category,
       price: newItem.value.price,
-      prep_time: newItem.value.prepTime,
       available: newItem.value.available,
-      image_url: newItem.value.image_url || '',
     }
     emit('add-item', itemToAdd)
     closeModal()
@@ -539,16 +462,67 @@ const handleAddItem = () => {
 
 const closeModal = () => {
   showAddItemModal.value = false
-  imagePreview.value = ''
   newItem.value = {
     name: '',
     category: '',
     price: 0,
-    prepTime: '',
     available: true,
-    image_url: '',
   }
 }
+
+// Category Management Functions
+const closeCategoryModal = () => {
+  showCategoryModal.value = false
+  editingCategoryIndex.value = null
+  editingCategoryValue.value = ''
+  newCategory.value = ''
+}
+
+const addCategory = () => {
+  const trimmed = newCategory.value.trim()
+  if (trimmed && !categories.value.includes(trimmed)) {
+    categories.value.push(trimmed)
+    newCategory.value = ''
+  } else if (categories.value.includes(trimmed)) {
+    alert('This category already exists')
+  }
+}
+
+const startEditCategory = (index, value) => {
+  editingCategoryIndex.value = index
+  editingCategoryValue.value = value
+}
+
+const saveEditCategory = (index) => {
+  const trimmed = editingCategoryValue.value.trim()
+  if (trimmed && !categories.value.includes(trimmed)) {
+    categories.value[index] = trimmed
+    cancelEditCategory()
+  } else if (categories.value.includes(trimmed) && categories.value[index] !== trimmed) {
+    alert('This category already exists')
+  } else {
+    cancelEditCategory()
+  }
+}
+
+const cancelEditCategory = () => {
+  editingCategoryIndex.value = null
+  editingCategoryValue.value = ''
+}
+
+const deleteCategory = (index) => {
+  const categoryName = categories.value[index]
+  const itemsInCategory = props.menu.filter(item => item.category === categoryName).length
+  
+  if (itemsInCategory > 0) {
+    if (!confirm(`There are ${itemsInCategory} item(s) in "${categoryName}". Delete this category anyway?`)) {
+      return
+    }
+  }
+  
+  categories.value.splice(index, 1)
+}
+
 </script>
 
 <style scoped>
@@ -1321,4 +1295,404 @@ flex-direction: column;
     width: 100%;
   }
 }
+
+/* Header Actions */
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-category {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.925rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-category:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+/* Category Modal Styles */
+.category-modal-body {
+  padding: 1.5rem 0;
+}
+
+.category-section {
+  margin-bottom: 2rem;
+}
+
+.category-section:last-child {
+  margin-bottom: 0;
+}
+
+.category-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.category-item:hover {
+  background: #f3f4f6;
+}
+
+.category-display,
+.category-edit-mode {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.category-name {
+  flex: 1;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.category-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-edit-cat {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-edit-cat:hover {
+  background: #bfdbfe;
+}
+
+.btn-delete-cat {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-delete-cat:hover {
+  background: #fecaca;
+}
+
+.btn-save {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.btn-save:hover {
+  background: #a7f3d0;
+}
+
+.btn-cancel-edit {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-cancel-edit:hover {
+  background: #fecaca;
+}
+
+.add-category-form {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.add-category-form .form-input {
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .header-actions {
+    width: 100%;
+  }
+
+  .btn-category,
+  .btn-add-item {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .add-category-form {
+    flex-direction: column;
+  }
+
+  .add-category-form .btn-submit {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   Category-Based List Layout Styles
+   ======================================== */
+
+.menu-list {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  column-gap: 2.5rem;
+}
+
+.category-section-list {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  break-inside: avoid;
+  page-break-inside: avoid;
+  height: fit-content;
+}
+
+.category-section-list:last-child {
+  margin-bottom: 0;
+}
+
+.category-header-list {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #E5E7EB;
+}
+
+.category-title-list {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0;
+  font-family: 'Playfair Display', serif;
+  letter-spacing: 0.5px;
+}
+
+.category-count-badge {
+  background: #EEF2FF;
+  color: #2B6CB0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  gap: 0.75rem;
+}
+
+.list-item:hover {
+  background: #F3F4F6;
+  border-color: #2B6CB0;
+  transform: translateX(4px);
+}
+
+.list-item.item-unavailable {
+  opacity: 0.6;
+  background: #FEF2F2;
+}
+
+.item-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 1rem;
+}
+
+.item-details {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.item-name-list {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0;
+}
+
+.unavailable-badge {
+  background: #FEE2E2;
+  color: #991B1B;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.item-price-list {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #2B6CB0;
+  white-space: nowrap;
+}
+
+.item-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+}
+
+.toggle-btn.btn-available {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.toggle-btn.btn-available:hover {
+  background: #A7F3D0;
+}
+
+.toggle-btn.btn-unavailable {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.toggle-btn.btn-unavailable:hover {
+  background: #FECACA;
+}
+
+.edit-btn {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.edit-btn:hover {
+  background: #BFDBFE;
+}
+
+.delete-btn {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+.delete-btn:hover {
+  background: #FECACA;
+}
+
+@media (max-width: 1024px) {
+  .menu-list {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .category-section-list {
+    padding: 1.25rem;
+  }
+
+  .category-title-list {
+    font-size: 1.125rem;
+  }
+
+  .list-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .item-info {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .item-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .item-actions {
+    justify-content: flex-end;
+  }
+
+  .item-price-list {
+    font-size: 1rem;
+  }
+}
 </style>
+

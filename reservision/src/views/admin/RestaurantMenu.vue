@@ -48,9 +48,6 @@ const menu = computed(() =>
     price: m.price,
     category: m.category,
     available: m.available,
-    prepTime: m.prep_time || '15min',
-    prep_time: m.prep_time,
-    image_url: m.image_url || ''
   }))
 )
 
