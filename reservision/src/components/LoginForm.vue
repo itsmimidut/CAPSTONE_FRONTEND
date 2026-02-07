@@ -108,18 +108,18 @@ const redirectByRole = (role) => {
     return router.push('/customer')
   }
 
-  if (role === 'admin' || role === 'staff') {
+  if (role === 'admin' || role === 'restaurantstaff' || role === 'receptionist') {
     return router.push('/dashboard')
   }
 
   return router.push('/')
 }
 
+
 const handleSubmit = async () => {
   const result = await authStore.login(formData.email, formData.password)
 
   if (result.success) {
-    alert('Login successful! Redirecting to dashboard...')
     await redirectByRole(result.role)
   }
 }
@@ -128,7 +128,6 @@ const handleGoogleLogin = async () => {
   const result = await authStore.loginWithGoogle()
 
   if (result.success) {
-    alert('Google login successful! Redirecting to dashboard...')
     await redirectByRole(result.role)
   }
 }

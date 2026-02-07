@@ -31,11 +31,11 @@
     <!-- User Info -->
     <div class="user-info">
       <div class="user-avatar">
-        <i class="fas fa-user"></i>
+        <span>{{ userInitial }}</span>
       </div>
       <div>
-        <div class="font-medium">Admin User</div>
-        <div class="text-xs opacity-70">Super Administrator</div>
+        <div class="font-medium">{{ userDisplayName }}</div>
+        <div class="text-xs opacity-70">{{ userRoleLabel }}</div>
       </div>
     </div>
 
@@ -43,7 +43,7 @@
     <div class="nav-container">
       <ul class="nav-list">
         <li 
-          v-for="item in navItems" 
+          v-for="item in filteredNavItems" 
           :key="item.path || item.label"
           class="nav-item"
         >
@@ -112,6 +112,7 @@
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
 
 const props = defineProps({
   isOpen: Boolean,
@@ -125,6 +126,20 @@ const props = defineProps({
 defineEmits(['close'])
 
 const route = useRoute()
+const auth = useAuthStore()
+
+const userDisplayName = computed(() => auth.user?.name || 'User')
+const userRoleLabel = computed(() => {
+  const role = auth.user?.role
+  const roleLabels = {
+    admin: 'Admin',
+    restaurantstaff: 'Restaurant Staff',
+    receptionist: 'Receptionist'
+  }
+
+  return roleLabels[role] || 'User'
+})
+const userInitial = computed(() => userDisplayName.value.charAt(0).toUpperCase())
 
 // Use actual route path or fallback to prop
 const activePath = computed(() => props.currentPath || route.path)
@@ -136,37 +151,90 @@ const toggleDropdown = (label) => {
 }
 
 const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: 'fas fa-tachometer-alt' },
-  { path: '/admin/reservations', label: 'Reservations', icon: 'fas fa-calendar-check' },
-  { 
-    label: 'Rooms & Cottages', 
+  {
+    path: '/dashboard',
+    label: 'Dashboard',
+    icon: 'fas fa-tachometer-alt',
+    roles: ['admin', 'restaurantstaff', 'receptionist']
+  },
+  {
+    path: '/admin/reservations',
+    label: 'Reservations',
+    icon: 'fas fa-calendar-check',
+    roles: ['admin', 'receptionist']
+  },
+  {
+    label: 'Rooms & Cottages',
     icon: 'fas fa-bed',
+    roles: ['admin'],
     children: [
-      { path: '/admin/rooms/rooms', label: 'Rooms', icon: 'fas fa-door-open' },
-      { path: '/admin/rooms/cottages', label: 'Cottages', icon: 'fas fa-home' },
-      { path: '/admin/rooms/events', label: 'Events', icon: 'fas fa-calendar' }
+      { path: '/admin/rooms/rooms', label: 'Rooms', icon: 'fas fa-door-open', roles: ['admin'] },
+      { path: '/admin/rooms/cottages', label: 'Cottages', icon: 'fas fa-home', roles: ['admin'] },
+      { path: '/admin/rooms/events', label: 'Events', icon: 'fas fa-calendar', roles: ['admin'] }
     ]
   },
-  { 
-    label: 'Restaurants', 
+  {
+    label: 'Restaurants',
     icon: 'fas fa-utensils',
+    roles: ['admin', 'restaurantstaff'],
     children: [
-      { path: '/admin/restaurants/tables', label: 'Tables', icon: 'fas fa-table' },
-      { path: '/admin/restaurants/menu', label: 'Menu', icon: 'fas fa-book-open' },
-      { path: '/admin/restaurants/inventory', label: 'Inventory', icon: 'fas fa-boxes' }
+      { path: '/admin/restaurants/tables', label: 'Tables', icon: 'fas fa-table', roles: ['admin', 'restaurantstaff'] },
+      { path: '/admin/restaurants/menu', label: 'Menu', icon: 'fas fa-book-open', roles: ['admin', 'restaurantstaff'] },
+      { path: '/admin/restaurants/inventory', label: 'Inventory', icon: 'fas fa-boxes', roles: ['admin', 'restaurantstaff'] }
     ]
   },
-  { path: '/pos', label: 'Point of Sale', icon: 'fas fa-cash-register' },
-  { path: '/admin/swimming', label: 'Swimming Pools', icon: 'fas fa-swimming-pool' },
-  { path: '/admin/users', label: 'User Management', icon: 'fas fa-users' }
-  // { path: '/admin/reports', label: 'Reports & Analytics', icon: 'fas fa-chart-bar' },
-  // { path: '/admin/settings', label: 'Site Configuration', icon: 'fas fa-cog' },
-  // { path: '/admin/feedback', label: 'Feedback & Support', icon: 'fas fa-headset' }
+  {
+    path: '/pos',
+    label: 'Point of Sale',
+    icon: 'fas fa-cash-register',
+    roles: ['admin', 'restaurantstaff', 'receptionist']
+  },
+  {
+    path: '/admin/swimming',
+    label: 'Swimming Pools',
+    icon: 'fas fa-swimming-pool',
+    roles: ['admin', 'receptionist']
+  },
+  {
+    path: '/admin/users',
+    label: 'User Management',
+    icon: 'fas fa-users',
+    roles: ['admin']
+  }
+  // { path: '/admin/reports', label: 'Reports & Analytics', icon: 'fas fa-chart-bar', roles: ['admin'] },
+  // { path: '/admin/settings', label: 'Site Configuration', icon: 'fas fa-cog', roles: ['admin'] },
+  // { path: '/admin/feedback', label: 'Feedback & Support', icon: 'fas fa-headset', roles: ['admin'] }
 ]
+
+const isRoleAllowed = (item, role) => {
+  if (!item.roles || item.roles.length === 0) {
+    return true
+  }
+  return item.roles.includes(role)
+}
+
+const filteredNavItems = computed(() => {
+  const role = auth.role || ''
+
+  return navItems
+    .filter(item => isRoleAllowed(item, role))
+    .map(item => {
+      if (!item.children) {
+        return item
+      }
+
+      const filteredChildren = item.children.filter(child => isRoleAllowed(child, role))
+      return {
+        ...item,
+        children: filteredChildren
+      }
+    })
+    .filter(item => !item.children || item.children.length > 0)
+})
 
 // Auto-open dropdown if current path matches a child
 const autoOpenDropdown = () => {
-  for (const item of navItems) {
+  for (const item of filteredNavItems.value) {
     if (item.children) {
       const isChildActive = item.children.some(child => activePath.value === child.path)
       if (isChildActive) {

@@ -439,7 +439,7 @@ body {
   top: 0;
   z-index: 50;
   margin-bottom: 10px;
-  margin-left: 260px;
+  margin-top:  30px;
 }
 
 /* Status Badges */

@@ -183,6 +183,7 @@ const handleQuickAction = (actionKey) => {
   top: 0;
   z-index: 50;
   margin-bottom: 10px;
+  margin-top:  30px;
 }
 
 @media (min-width: 768px) {

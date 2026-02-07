@@ -11,7 +11,7 @@
  * 
  * Key Features:
  * - Authentication-required routes (requiresAuth: true)
- * - Role-based access control (roles: ['admin', 'staff'])
+ * - Role-based access control (roles: ['admin', 'restaurantstaff', 'receptionist'])
  * - Automatic redirection for unauthorized access
  * - Scroll-to-top on route change
  * 
@@ -19,6 +19,7 @@
  */
 
 import { createRouter, createWebHistory } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { useAuthStore } from '../stores/auth'
 
 // ============================================================
@@ -53,7 +54,7 @@ import Reservation from '../views/website/Reservation.vue'
 // ============================================================
 // ADMIN PAGES IMPORTS
 // ============================================================
-// Pages accessible to admin and/or staff roles only
+// Pages accessible to admin/restaurantstaff/receptionist roles only
 // 🧑‍💼 Shared Dashboard (Admin + Staff)
 import Dashboard from '../views/admin/AdminDashboard.vue'
 import POS from '../views/admin/POS.vue'
@@ -82,7 +83,7 @@ import RoomandCottageManagement from '../views/admin/RoomAndCottage.vue'
 //   component: ComponentName,    // Vue component to render
 //   meta: {                      // Route metadata for guards
 //     requiresAuth: boolean,     // Requires user to be logged in
-//     roles: ['admin', 'staff']  // Allowed user roles (if requiresAuth true)
+//     roles: ['admin', 'restaurantstaff', 'receptionist']  // Allowed user roles (if requiresAuth true)
 //   }
 // }
 const routes = [
@@ -131,18 +132,18 @@ const routes = [
   // ADMIN/STAFF SHARED ROUTES
   // ────────────────────────────────────────────────────────
   // 🧑‍💼 Admin + Staff (SAME dashboard)
-  // Accessible to both admin and staff roles
+  // Accessible to admin, restaurant staff, and reception roles
   {
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
-    meta: { requiresAuth: true, roles: ['admin', 'staff'] }
+    meta: { requiresAuth: true, roles: ['admin', 'receptionist', 'restaurantstaff'] }
   },
   {
     path: '/pos',
     name: 'POS',
     component: POS,
-    meta: { requiresAuth: true, roles: ['admin', 'staff'] }
+    meta: { requiresAuth: true, roles: ['admin', 'receptionist', 'restaurantstaff'] }
   },
 
   // ────────────────────────────────────────────────────────
@@ -187,7 +188,7 @@ const routes = [
     path: '/admin/swimming',
     name: 'SwimmingManagement',
     component: SwimmingManagement,
-    meta: { requiresAuth: true, roles: ['admin'] }
+    meta: { requiresAuth: true, roles: ['admin','receptionist'] }
   },
 
   // Reservation Management (shared with staff)
@@ -195,7 +196,7 @@ const routes = [
     path: '/admin/reservations',
     name: 'ReservationManagement',
     component: ReservationManagement,
-    meta: { requiresAuth: true, roles: ['admin', 'staff'] }
+    meta: { requiresAuth: true, roles: ['admin', 'receptionist'] }
   },
 
   // Restaurant Management
@@ -203,25 +204,25 @@ const routes = [
     path: '/admin/restaurants',
     name: 'RestaurantManagement',
     component: RestaurantManagement,
-    meta: { requiresAuth: true, roles: ['admin'] }
+    meta: { requiresAuth: true, roles: ['admin','restaurantstaff'] }
   },
   {
     path: '/admin/restaurants/tables',
     name: 'RestaurantTables',
     component: RestaurantTables,
-    meta: { requiresAuth: true, roles: ['admin'] }
+    meta: { requiresAuth: true, roles: ['admin','restaurantstaff'] }
   },
   {
     path: '/admin/restaurants/menu',
     name: 'RestaurantMenu',
     component: RestaurantMenu,
-    meta: { requiresAuth: true, roles: ['admin'] }
+    meta: { requiresAuth: true, roles: ['admin', 'restaurantstaff'] }
   },
   {
     path: '/admin/restaurants/inventory',
     name: 'RestaurantInventory',
     component: RestaurantInventory,
-    meta: { requiresAuth: true, roles: ['admin'] }
+    meta: { requiresAuth: true, roles: ['admin', 'restaurantstaff'] }
   }
 ]
 
@@ -264,13 +265,15 @@ const router = createRouter({
 /* 🔐 GLOBAL ROUTE GUARD */
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
+  const { isAuthenticated, role } = storeToRefs(auth)
+  const currentRole = String(role.value || '').toLowerCase()
 
   /**
    * Check 1: Authentication requirement
    * If route requires auth (requiresAuth: true) but user is not logged in,
    * redirect to login page
    */
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+  if (to.meta.requiresAuth && !isAuthenticated.value) {
     return next('/login')
   }
 
@@ -279,8 +282,18 @@ router.beforeEach((to, from, next) => {
    * If route specifies allowed roles and user's role is not in the list,
    * redirect to home page (or could use '/403' for forbidden page)
    */
-  if (to.meta.roles && !to.meta.roles.includes(auth.role)) {
-    return next('/') // Could redirect to '/403' instead
+  if (to.meta.roles) {
+    const allowedRoles = to.meta.roles.map((item) => String(item).toLowerCase())
+    if (!allowedRoles.includes(currentRole)) {
+      return next('/')
+    }
+  }
+
+  if (to.meta.role) {
+    const requiredRole = String(to.meta.role).toLowerCase()
+    if (requiredRole !== currentRole) {
+      return next('/')
+    }
   }
 
   /**
