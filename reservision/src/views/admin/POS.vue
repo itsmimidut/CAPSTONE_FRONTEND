@@ -376,10 +376,20 @@ export default {
         date: date,
         time: time
       };
+
+      const payload = {
+        receipt_no: transaction.receiptNo,
+        items: transaction.items,
+        type: transaction.type,
+        payment_method: transaction.payment,
+        total_amount: transaction.total,
+        transaction_date: transaction.date,
+        transaction_time: transaction.time
+      };
       
       try {
         // Save to backend
-        await axios.post(`${API_BASE}/transactions`, transaction);
+        await axios.post(`${API_BASE}/transactions`, payload);
         
         // Add to local history
         this.transactionHistory.unshift(transaction);
@@ -394,7 +404,8 @@ export default {
         this.cart = [];
         this.total = 0;
       } catch (error) {
-        console.error('Error saving transaction:', error);
+        const details = error?.response?.data || error?.message || error;
+        console.error('Error saving transaction:', details);
         alert('Failed to save transaction. Please try again.');
       }
     },
