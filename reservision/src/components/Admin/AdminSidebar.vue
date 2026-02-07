@@ -15,15 +15,15 @@
     <!-- Header -->
     <div class="sidebar-header">
       <div class="logo-container">
-        <div class="logo-icon">
-          <i class="fas fa-spa"></i>
-        </div>
-        <span class="logo-text">Reservision</span>
+        <span class="logo-text w-full">
+          <img
+            src="/Eduardos Resort Logo.jpg"
+            alt="Reservision"
+            class="logo-image"
+          />
+        </span>
       </div>
-      <button 
-        @click="$emit('close')"
-        class="md:hidden"
-      >
+      <button class="md:hidden" @click="emit('close')">
         <i class="fas fa-bars"></i>
       </button>
     </div>
@@ -248,6 +248,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  width: 100%;
 }
 
 .logo-icon {
@@ -264,6 +265,13 @@ onMounted(() => {
   font-family: 'Playfair Display', serif;
   font-size: 1.25rem;
   font-weight: 600;
+  width: 100%;
+}
+
+.logo-image {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
 .user-info {
