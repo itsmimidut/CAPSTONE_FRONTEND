@@ -7,10 +7,11 @@
       <div class="flex items-center justify-between">
         <!-- Logo -->
         <a href="#" class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-blue to-accent-blue flex items-center justify-center text-white font-bold text-lg">
-            Ed
-          </div>
-          <div class="text-xl font-bold text-primary-blue">Eduardo's</div>
+          <img
+            src="/Eduardos Resort Logo.jpg"
+            alt="Reservision"
+            class="h-10 w-auto max-w-[180px]"
+          />
         </a>
 
         <!-- Desktop Navigation -->
@@ -34,7 +35,7 @@
               @click="dropdownOpen = !dropdownOpen"
               class="font-medium hover:text-primary-blue transition-colors duration-300 flex items-center gap-1"
             >
-              More
+              About Us
               <i :class="['fas fa-chevron-down text-xs transition-transform', dropdownOpen ? 'rotate-180' : '']"></i>
             </button>
             

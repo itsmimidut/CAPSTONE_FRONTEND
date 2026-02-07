@@ -103,21 +103,33 @@ const formData = reactive({
   password: ''
 })
 
+const redirectByRole = (role) => {
+  if (role === 'customer') {
+    return router.push('/customer')
+  }
+
+  if (role === 'admin' || role === 'staff') {
+    return router.push('/dashboard')
+  }
+
+  return router.push('/')
+}
+
 const handleSubmit = async () => {
   const result = await authStore.login(formData.email, formData.password)
-  
+
   if (result.success) {
     alert('Login successful! Redirecting to dashboard...')
-    router.push('/dashboard')
-    // Router navigation will go here later
+    await redirectByRole(result.role)
   }
 }
 
 const handleGoogleLogin = async () => {
   const result = await authStore.loginWithGoogle()
-  
+
   if (result.success) {
     alert('Google login successful! Redirecting to dashboard...')
+    await redirectByRole(result.role)
   }
 }
 

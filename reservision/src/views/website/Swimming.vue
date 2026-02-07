@@ -15,7 +15,7 @@
           Learn to swim with certified instructors in a safe, fun environment
         </p>
         <div class="hero-actions animate-slide-up">
-          <button @click="openEnrollmentModal()" class="btn-primary">
+          <button @click="revealEnrollmentForm" class="btn-primary">
             <i class="fas fa-swimming-pool mr-2"></i>
             Enroll Now
           </button>
@@ -88,7 +88,7 @@
                 </li>
               </ul>
               <button 
-                @click="openEnrollmentModal(lesson.type)"
+                @click="revealEnrollmentForm"
                 class="lesson-enroll-btn"
               >
                 Enroll in {{ lesson.type }}
@@ -159,6 +159,7 @@
       </div>
     </section>
 
+
     <!-- CTA Section -->
     <section class="cta-section">
       <div class="max-w-4xl mx-auto px-4 text-center">
@@ -169,7 +170,7 @@
           Join hundreds of students who've learned to swim with us
         </p>
         <div class="flex flex-wrap justify-center gap-4">
-          <button @click="openEnrollmentModal()" class="btn-white">
+          <button @click="revealEnrollmentForm" class="btn-white">
             <i class="fas fa-user-plus mr-2"></i>
             Enroll Now
           </button>
@@ -215,6 +216,207 @@
         @prev="prevImage"
       />
     </Teleport>
+
+    <!-- Enrollment Form Modal -->
+    <Teleport to="body">
+      <div v-if="showEnrollmentForm" class="modal-overlay" @click.self="closeEnrollmentForm">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div>
+              <h2 class="section-title">Registration Form</h2>
+              <p class="section-subtitle">Please complete all required fields</p>
+            </div>
+            <button class="modal-close" @click="closeEnrollmentForm" aria-label="Close">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="text-center text-sm text-gray-600 mb-6">
+            Nautical Highway, Bayanan II, Calapan City, Oriental Mindoro 5200
+          </div>
+
+          <nav class="form-nav">
+            <a class="form-nav-link" href="#section-basic">Basic Info</a>
+            <a class="form-nav-link" href="#section-personal">Personal Details</a>
+            <a class="form-nav-link" href="#section-contact">Contact</a>
+            <a class="form-nav-link" href="#section-guardian">Guardian</a>
+            <a class="form-nav-link" href="#section-signature">Signatures</a>
+          </nav>
+
+          <form class="space-y-8" @submit.prevent>
+            <div id="section-basic" class="form-section">
+              <h3 class="form-section-title">Basic Info</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="form-label">Date</label>
+                  <input type="date" class="form-input" />
+                </div>
+                <div>
+                  <label class="form-label">Batch</label>
+                  <input type="text" class="form-input" placeholder="e.g. Batch 1" />
+                </div>
+                <div>
+                  <label class="form-label">Name</label>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <input type="text" class="form-input" placeholder="Family" />
+                      <p class="form-hint">Family</p>
+                    </div>
+                    <div>
+                      <input type="text" class="form-input" placeholder="First" />
+                      <p class="form-hint">First</p>
+                    </div>
+                    <div>
+                      <input type="text" class="form-input" placeholder="Middle" />
+                      <p class="form-hint">Middle</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="form-label">Date of Birth</label>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <input type="text" class="form-input" placeholder="Month" />
+                      <p class="form-hint">Month</p>
+                    </div>
+                    <div>
+                      <input type="text" class="form-input" placeholder="Day" />
+                      <p class="form-hint">Day</p>
+                    </div>
+                    <div>
+                      <input type="text" class="form-input" placeholder="Year" />
+                      <p class="form-hint">Year</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="section-personal" class="form-section">
+              <h3 class="form-section-title">Personal Details</h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="form-label">Sex</label>
+                  <input type="text" class="form-input" placeholder="Sex" />
+                </div>
+                <div>
+                  <label class="form-label">Height</label>
+                  <input type="text" class="form-input" placeholder="Height" />
+                </div>
+                <div>
+                  <label class="form-label">Weight</label>
+                  <input type="text" class="form-input" placeholder="Weight" />
+                </div>
+              </div>
+
+              <div class="mt-6">
+                <label class="form-label">Name of Coach</label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <input type="text" class="form-input" placeholder="Family" />
+                    <p class="form-hint">Family</p>
+                  </div>
+                  <div>
+                    <input type="text" class="form-input" placeholder="First" />
+                    <p class="form-hint">First</p>
+                  </div>
+                  <div>
+                    <input type="text" class="form-input" placeholder="Middle" />
+                    <p class="form-hint">Middle</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="section-contact" class="form-section">
+              <h3 class="form-section-title">Contact Information</h3>
+              <div>
+                <label class="form-label">Student’s Address</label>
+                <input type="text" class="form-input" />
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                  <label class="form-label">Home Phone</label>
+                  <input type="text" class="form-input" />
+                </div>
+                <div>
+                  <label class="form-label">Mobile Phone</label>
+                  <input type="text" class="form-input" />
+                </div>
+              </div>
+
+              <div class="mt-6">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" />
+              </div>
+            </div>
+
+            <div id="section-guardian" class="form-section">
+              <h3 class="form-section-title">Guardian Details</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="form-label">Father’s Name</label>
+                  <input type="text" class="form-input" />
+                </div>
+                <div>
+                  <label class="form-label">Mother’s Name</label>
+                  <input type="text" class="form-input" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                  <label class="form-label">School or Employer Name</label>
+                  <input type="text" class="form-input" />
+                </div>
+                <div>
+                  <label class="form-label">School or Employer Address</label>
+                  <input type="text" class="form-input" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                  <label class="form-label">Contact Person</label>
+                  <input type="text" class="form-input" />
+                </div>
+                <div>
+                  <label class="form-label">Contact Number</label>
+                  <input type="text" class="form-input" />
+                </div>
+              </div>
+            </div>
+
+            <div id="section-signature" class="form-section">
+              <h3 class="form-section-title">Signatures</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="form-label">Signature of Student</label>
+                  <input type="text" class="form-input" placeholder="Sign over printed name" />
+                  <p class="form-hint">Sign Over Printed Name</p>
+                </div>
+                <div>
+                  <label class="form-label">Parental Consent (student’s under 18)</label>
+                  <input type="text" class="form-input" placeholder="Sign over printed name" />
+                  <p class="form-hint">Sign Over Printed Name</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-2 flex flex-col sm:flex-row gap-3">
+              <button class="btn-primary w-full sm:w-auto" type="submit">
+                Submit Enrollment
+              </button>
+              <button class="btn-outline-white w-full sm:w-auto" type="button" @click="closeEnrollmentForm">
+                Close
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -222,11 +424,12 @@
 import { ref, onMounted } from 'vue'
 import AppHeader from '../../components/AppHeader.vue'
 import AppSidebar from '../../components/AppSidebar.vue'
-import AppFooter from '../../components/AppFooter.vue'
-import EnrollmentModal from '../../components/EnrollmentModal.vue'
-import SwimmingClassBookingModal from '../../components/SwimmingClassBookingModal.vue'
+// import AppFooter from '../../components/AppFooter.vue'
+// import EnrollmentModal from '../../components/EnrollmentModal.vue'
+// import SwimmingClassBookingModal from '../../../public/SwimmingClassBookingModal.vue'
 import ImageLightbox from '../../components/ImageLightBox.vue'
 const sidebarOpen = ref(false)
+const showEnrollmentForm = ref(false)
 const showEnrollmentModal = ref(false)
 const selectedLessonType = ref(null)
 const showClassBookingModal = ref(false)
@@ -261,6 +464,16 @@ const schedule = [
   { time: '2:00 PM - 3:00 PM', weekday: 'Kids Group', weekend: 'Beginner Group' },
   { time: '4:00 PM - 5:00 PM', weekday: 'Private Sessions', weekend: 'Advanced Group' }
 ]
+
+const revealEnrollmentForm = () => {
+  showEnrollmentForm.value = true
+  document.body.style.overflow = 'hidden'
+}
+
+const closeEnrollmentForm = () => {
+  showEnrollmentForm.value = false
+  document.body.style.overflow = ''
+}
 
 const openEnrollmentModal = (lessonType = null) => {
   // Check if lessonType is an event object, if so, set to null
@@ -330,7 +543,7 @@ Thank you for choosing our swimming program!`)
 
 // ✅ Updated function to open PDF
 const downloadBrochure = () => {
-  const pdfUrl = '/brochures/Eduardos_Resort_Swimming_Enrollment_Form.pdf'; // PDF path
+  const pdfUrl = '/brochures/eduardos resort foundation benificiary form.pdf'; // PDF path
   window.open(pdfUrl, '_blank'); // opens in new tab for preview & download
 }
 
@@ -738,6 +951,131 @@ onMounted(() => {
 .reveal.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2D3748;
+  margin-bottom: 0.35rem;
+}
+
+.form-input {
+  width: 100%;
+  border: 1px solid #E2E8F0;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.95rem;
+  background: white;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2B6CB0;
+  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.15);
+}
+
+.form-hint {
+  font-size: 0.75rem;
+  color: #A0AEC0;
+  margin-top: 0.25rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 9999;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: auto;
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.form-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  margin-bottom: 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.form-nav-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2B6CB0;
+  background: white;
+  border: 1px solid #CBD5E0;
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.form-nav-link:hover {
+  background: #EBF8FF;
+  border-color: #90CDF4;
+}
+
+.form-section {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.form-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2D3748;
+  margin-bottom: 1rem;
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: none;
+  background: #EDF2F7;
+  color: #2D3748;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.modal-close:hover {
+  background: #E2E8F0;
 }
 
 @keyframes fade-in {

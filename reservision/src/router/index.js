@@ -70,6 +70,7 @@ import CottagesOnly from '../views/admin/CottagesOnly.vue'
 import EventsOnly from '../views/admin/EventsOnly.vue'
 import SwimmingManagement from '../views/admin/SwimmingManagement.vue'
 import RoomandCottageManagement from '../views/admin/RoomAndCottage.vue'
+// import CustomerDashboard from '../views/customer/CustomerDashboard.vue'
 
 // ============================================================
 // ROUTES DEFINITION

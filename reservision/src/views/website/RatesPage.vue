@@ -9,85 +9,49 @@
     <!-- Hero -->
     <RatesHero />
 
-    <!-- Tabs Section -->
-    <section class="py-16 bg-white">
-      <div class="container mx-auto px-4 max-w-6xl">
-        
-        <!-- Tab Buttons -->
-        <div class="tab-buttons">
+    <!-- Rates Image Carousel -->
+    <section class="bg-white">
+      <div class="w-full h-screen px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+        <div class="relative w-full h-full">
+          <div class="overflow-hidden rounded-xl shadow-lg border border-gray-200 bg-white h-full flex items-center justify-center">
+            <img
+              :src="slides[currentSlide].src"
+              :alt="slides[currentSlide].alt"
+              class="w-full h-full object-contain bg-white"
+              loading="lazy"
+            />
+          </div>
+
+          <!-- Manual Controls -->
           <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            @click="activeTab = tab.id"
-            class="tab-btn"
-            :class="{ active: activeTab === tab.id }"
+            class="carousel-btn left-4"
+            @click="prevSlide"
+            aria-label="Previous image"
           >
-            <i :class="tab.icon"></i>
-            <span>{{ tab.label }}</span>
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button
+            class="carousel-btn right-4"
+            @click="nextSlide"
+            aria-label="Next image"
+          >
+            <i class="fas fa-chevron-right"></i>
           </button>
         </div>
 
-        <!-- Tab Content -->
-        <transition name="fade" mode="out-in">
-          <!-- Entrance Fees -->
-          <div v-if="activeTab === 'entrance'" key="entrance">
-            <RateCard
-              title="Day Pass & Entrance"
-              icon="fas fa-ticket-alt"
-              :tableData="entranceRates"
-              :tableHeaders="['Category', 'Rate']"
-              note="Proper swimwear required. One exit only."
-              ctaText="Book Day Pass"
-              image="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&q=80"
-            />
-          </div>
-
-          <!-- Rooms -->
-          <div v-else-if="activeTab === 'rooms'" key="rooms">
-            <RateCard
-              title="Rooms"
-              icon="fas fa-bed"
-              :tableData="roomRates"
-              :tableHeaders="['Type', 'Rate']"
-              note="Good for multiple pax. Contact for availability."
-              ctaText="Book Room"
-              image="https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&q=80"
-            />
-          </div>
-
-          <!-- Cottages -->
-          <div v-else-if="activeTab === 'cottages'" key="cottages">
-            <RateCard
-              title="Cottages (6 hours)"
-              icon="fas fa-umbrella-beach"
-              :tableData="cottageRates"
-              :tableHeaders="['Type', 'Rate']"
-              note="Max 15 pax. No alcohol. Swimwear required."
-              ctaText="Reserve Cottage"
-              image="https://images.unsplash.com/photo-1602002418082-a4443e081dd1?w=800&q=80"
-            />
-          </div>
-
-          <!-- Function Hall -->
-          <div v-else-if="activeTab === 'function'" key="function">
-            <RateCard
-              :title="functionCard.title"
-              :price="functionCard.price"
-              :capacity="functionCard.capacity"
-              :features="functionFeatures"
-              :icon="functionCard.icon"
-              :ctaText="functionCard.cta_text"
-              :ctaLink="functionCard.cta_link"
-              :ctaIcon="functionCard.cta_icon"
-              :image="functionCard.image"
-            />
-          </div>
-        </transition>
+        <!-- Dots -->
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2">
+          <button
+            v-for="(slide, index) in slides"
+            :key="slide.src"
+            class="dot"
+            :class="{ active: index === currentSlide }"
+            @click="goToSlide(index)"
+            :aria-label="`Go to slide ${index + 1}`"
+          ></button>
+        </div>
       </div>
     </section>
-
-    <!-- Contact Section -->
-    <ContactSection />
 
     <!-- Footer -->
     <AppFooter />
@@ -98,78 +62,59 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import AppHeader from '../../components/AppHeader.vue'
 import AppSidebar from '../../components/AppSidebar.vue'
 import AppFooter from '../../components/AppFooter.vue'
 import ChatbotModal from '../../components/ChatbotModal.vue'
 import RatesHero from '../../components/RatesHero.vue'
-import RateCard from '../../components/RateCard.vue'
-import ContactSection from '../../components/ContactSection.vue'
-import { useRooms } from '../../composables/useRooms'
 
 const sidebarOpen = ref(false)
-const activeTab = ref('entrance')
-
-const tabs = [
-  { id: 'entrance', label: 'Entrance', icon: 'fas fa-ticket-alt' },
-  { id: 'rooms', label: 'Rooms', icon: 'fas fa-bed' },
-  { id: 'cottages', label: 'Cottages', icon: 'fas fa-umbrella-beach' },
-  { id: 'function', label: 'Function Hall', icon: 'fas fa-building' }
+const slides = [
+  {
+    src: '/rates/rates1.jpg',
+    alt: 'Eduardo’s Resort rates poster'
+  },
+  {
+    src: '/rates/rates2.jpg',
+    alt: 'Eduardo’s Resort rates poster'
+  }
 ]
 
-const { items: roomItems, fetchAll: fetchRooms, getRoomImage, formatPrice } = useRooms()
+const currentSlide = ref(0)
+let autoSlideInterval
 
-// Hardcoded entrance fees
-const entranceRates = [
-  { label: 'Adults', value: '₱150' },
-  { label: 'Children (below 4ft)', value: '₱100' },
-  { label: 'Senior Citizen/PWD', value: '₱120' }
-]
-
-// Rooms from inventory - Table format
-const roomRates = computed(() => {
-  return roomItems.value
-    .filter(item => item.category_type?.toLowerCase() === 'room' || item.category?.toLowerCase() === 'room')
-    .map(item => ({
-      label: item.name || 'Room',
-      value: item.price ? `${formatPrice(item.price)} / night` : 'Contact for pricing'
-    }))
-})
-
-// Cottages from inventory
-const cottageRates = computed(() => {
-  return roomItems.value
-    .filter(item => item.category_type?.toLowerCase() === 'cottage')
-    .map(item => ({
-      label: item.name || 'Cottage',
-      value: item.price ? formatPrice(item.price) : 'Contact for pricing'
-    }))
-})
-
-// Hardcoded function hall
-const functionCard = {
-  title: 'Function Hall',
-  price: '₱25,000 / 6 hrs',
-  capacity: 'Up to 70 pax',
-  features: [
-    'Air-conditioned venue',
-    'Tables and chairs included',
-    'Sound system available',
-    'Catering services can be arranged',
-    'Ideal for events, seminars, and celebrations'
-  ],
-  icon: 'fas fa-building',
-  cta_text: 'Inquire Now',
-  cta_link: '/contact',
-  cta_icon: 'fas fa-envelope',
-  image: 'https://images.unsplash.com/photo-1519167758481-83f29da8c686?w=800&q=80'
+const goToSlide = (index) => {
+  currentSlide.value = index
 }
 
-const functionFeatures = computed(() => functionCard.features)
+const nextSlide = () => {
+  currentSlide.value = (currentSlide.value + 1) % slides.length
+}
 
-onMounted(async () => {
-  await fetchRooms()
+const prevSlide = () => {
+  currentSlide.value = (currentSlide.value - 1 + slides.length) % slides.length
+}
+
+const startAutoSlide = () => {
+  if (slides.length <= 1) return
+  autoSlideInterval = setInterval(() => {
+    nextSlide()
+  }, 5000)
+}
+
+const stopAutoSlide = () => {
+  if (autoSlideInterval) {
+    clearInterval(autoSlideInterval)
+  }
+}
+
+onMounted(() => {
+  startAutoSlide()
+})
+
+onBeforeUnmount(() => {
+  stopAutoSlide()
 })
 </script>
 
@@ -178,83 +123,39 @@ onMounted(async () => {
   background: linear-gradient(to bottom, #E0F7FA, white);
 }
 
-.tab-buttons {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.75rem;
-  margin-bottom: 2.5rem;
-  border-bottom: 2px solid #e5e7eb;
-  padding-bottom: 0;
-}
-
-@media (max-width: 1024px) {
-  .tab-buttons {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .tab-buttons {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
-  }
-}
-
-.tab-btn {
-  padding: 1rem;
-  font-weight: 600;
-  color: #718096;
-  border-radius: 12px 12px 0 0;
-  background: #f8fafc;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  text-align: center;
-  font-size: 0.95rem;
-  border: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.tab-btn i {
-  font-size: 1.25rem;
-}
-
-.tab-btn span {
-  display: block;
-}
-
-.tab-btn:hover {
-  background: #e2e8f0;
-  color: #2B6CB0;
-}
-
-.tab-btn.active {
-  background: linear-gradient(135deg, #2B6CB0, #1e40af);
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(15, 23, 42, 0.6);
   color: white;
-  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-@media (max-width: 640px) {
-  .tab-btn {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.8rem;
-  }
-  
-  .tab-btn i {
-    font-size: 1rem;
-  }
+.carousel-btn:hover {
+  background: rgba(15, 23, 42, 0.8);
 }
 
-/* Fade Transition */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: none;
+  background: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.dot.active {
+  width: 20px;
+  background: #2B6CB0;
 }
 </style>
