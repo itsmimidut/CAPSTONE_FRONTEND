@@ -12,12 +12,15 @@
       class="main-content"
       :class="{ shifted: sidebarCollapsed }"
     >
-      <div class="pos-container">
-      <!-- HEADER -->
-      <div class="card p-6 mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Point of Sale</h1>
-        <p class="text-sm text-gray-500 mt-1"><i class="fas fa-store mr-1"></i>Walk-in Payments</p>
+      <div class="header-container">
+        <AdminHeader
+          title="Point of Sale"
+          subtitle="Walk-in Payments"
+          @toggle-sidebar="sidebarOpen = !sidebarOpen"
+        />
       </div>
+
+      <div class="pos-container">
 
       <!-- POS GRID -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -43,7 +46,7 @@
           <!-- Category Buttons -->
           <div class="flex gap-3 mb-6 border-b-2 pb-4">
             <button 
-              v-for="category in categories" 
+              v-for="category in visibleCategories" 
               :key="category.id"
               @click="showCategory(category.id)" 
               :id="`btn-${category.id}`" 
@@ -55,7 +58,7 @@
 
           <!-- Items Grid -->
           <div 
-            v-for="category in categories" 
+            v-for="category in visibleCategories" 
             :key="`items-${category.id}`"
             v-show="currentCategory === category.id"
             class="category-items grid grid-cols-2 md:grid-cols-3 gap-4"
@@ -200,6 +203,8 @@
 
 <script>
 import AdminSidebar from '../../components/Admin/AdminSidebar.vue';
+import AdminHeader from '../../components/admin/AdminHeader.vue';
+import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:8000/api/pos';
@@ -207,12 +212,14 @@ const API_BASE = 'http://localhost:8000/api/pos';
 export default {
   name: 'POSSystem',
   components: {
-    AdminSidebar
+    AdminSidebar,
+    AdminHeader
   },
   data() {
     return {
       sidebarOpen: false,
       sidebarCollapsed: false,
+      auth: useAuthStore(),
       cart: [],
       total: 0,
       receiptNo: 1,
@@ -247,6 +254,29 @@ export default {
         }
       ]
     };
+  },
+  computed: {
+    userRole() {
+      return this.auth.role || 'staff';
+    },
+    visibleCategories() {
+      if (this.userRole === 'admin') {
+        return this.categories;
+      }
+
+      if (this.userRole === 'reception') {
+        return this.categories.filter(category => category.id !== 'restaurant');
+      }
+
+      return this.categories.filter(category => category.id === 'restaurant');
+    }
+  },
+  watch: {
+    visibleCategories(newCategories) {
+      if (!newCategories.some(category => category.id === this.currentCategory)) {
+        this.currentCategory = newCategories[0]?.id || '';
+      }
+    }
   },
   async mounted() {
     await this.fetchItems();
@@ -296,6 +326,9 @@ export default {
       }
     },
     showCategory(categoryId) {
+      if (!this.visibleCategories.some(category => category.id === categoryId)) {
+        return;
+      }
       this.currentCategory = categoryId;
       this.searchQuery = '';
     },
@@ -675,6 +708,16 @@ table tr {
   display: flex;
   min-height: 100vh;
   background: #F8F7F4;
+}
+
+.header-container {
+  padding: 1rem 2rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  top: 0;
+  z-index: 50;
+  margin-bottom: 10px;
+  margin-top:  20px;
 }
 
 .main-content {

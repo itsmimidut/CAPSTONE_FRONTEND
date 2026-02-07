@@ -20,11 +20,12 @@
  * - isAuthenticated: Boolean - whether user logged in
  * - isLoading: Boolean - whether auth request in progress
  * - error: Error message string | null
- * - role: Computed - user's role ('admin', 'staff', 'customer')
+ * - role: Computed - user's role ('admin', 'restaurantstaff', 'receptionist', 'customer')
  * 
  * Mock Credentials (for development/testing):
  * - Admin: admin@resort.com / admin123
- * - Staff: staff@resort.com / staff123
+ * - Restaurant Staff: restaurant@resort.com / restaurant123
+ * - Receptionist: reception@resort.com / reception123
  * - Customer: user@resort.com / user123
  * 
  * ⚠️ IMPORTANT:
@@ -68,7 +69,7 @@ export const useAuthStore = defineStore('auth', () => {
    *   id: number,
    *   name: string,
    *   email: string,
-   *   role: 'admin' | 'staff' | 'customer'
+  *   role: 'admin' | 'restaurantstaff' | 'receptionist' | 'customer'
    * }
    * 
    * Value: null - when logged out
@@ -115,7 +116,7 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * role: Computed property - user's role or null
    * 
-   * Returns: 'admin' | 'staff' | 'customer' | null
+  * Returns: 'admin' | 'restaurantstaff' | 'receptionist' | 'customer' | null
    * 
    * Usage:
    * - Check permissions: if (role.value === 'admin')
@@ -187,9 +188,10 @@ export const useAuthStore = defineStore('auth', () => {
        * 🔐 MOCK USERS
        * 
        * For testing different roles:
-       * - Admin: admin@resort.com / admin123
-       * - Staff: staff@resort.com / staff123
-       * - Customer: user@resort.com / user123
+      * - Admin: admin@resort.com / admin123
+      * - Restaurant Staff: restaurant@resort.com / restaurant123
+      * - Receptionist: reception@resort.com / reception123
+      * - Customer: user@resort.com / user123
        * 
        * Any other email/password combination → Invalid credentials error
        */
@@ -200,16 +202,23 @@ export const useAuthStore = defineStore('auth', () => {
           email,
           role: 'admin'
         }
-      } else if (email === 'staff@resort.com' && password === 'staff123') {
+      } else if (email === 'restaurant@resort.com' && password === 'restaurant123') {
         user.value = {
           id: 2,
-          name: 'Staff User',
+          name: 'Restaurant Staff',
           email,
-          role: 'staff'
+          role: 'restaurantstaff'
+        }
+      } else if (email === 'reception@resort.com' && password === 'reception123') {
+        user.value = {
+          id: 3,
+          name: 'Receptionist',
+          email,
+          role: 'receptionist'
         }
       } else if (email === 'user@resort.com' && password === 'user123') {
         user.value = {
-          id: 3,
+          id: 4,
           name: 'Customer User',
           email,
           role: 'customer'
