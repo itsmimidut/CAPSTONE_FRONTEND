@@ -49,7 +49,7 @@ import PaymentReturn from '../views/PaymentReturn.vue'
 // Pages for authenticated customers only
 // 👤 Customer
 import CustomerDashboard from '../views/customer/CustomerDashboard.vue'
-import Reservation from '../views/website/Reservation.vue'
+import ReservationSection from '../components/Customer/ReservationSection.vue'
 
 // ============================================================
 // ADMIN PAGES IMPORTS
@@ -98,7 +98,7 @@ const routes = [
   { path: '/contact', name: 'Contact', component: ContactPage },
   { path: '/about', name: 'About', component: AboutPage },
   { path: '/swimming', name: 'Swimming', component: Swimming },
-  { path: '/reservation', name: 'Reservation', component: Reservation },
+  { path: '/reservation', name: 'ReservationSection', component: ReservationSection },
   { path: '/booking', name: 'ConfirmationBooking', component: ConfirmationBooking },
   { path: '/confirmation', name: 'Confirmation', component: ConfirmationPage },
   { path: '/booking-confirmation', name: 'BookingConfirmationModal', component: BookingConfirmationModal },

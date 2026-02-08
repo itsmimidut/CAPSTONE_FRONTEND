@@ -370,7 +370,7 @@ export default {
       };
       
       localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-      this.$router.push('/reservation');
+      this.$router.push({ name: 'CustomerDashboard', query: { ActiveSection: 'book' } });
     },
     
     // Email Verification Modal Handlers

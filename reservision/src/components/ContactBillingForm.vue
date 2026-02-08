@@ -9,7 +9,7 @@
             <i class="fas fa-address-book text-white text-xl"></i>
           </div>
           <span class="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-            Contact & Billing Informations
+            Contact & Billing Informationsssssssss
           </span>
         </h2>
         <p class="text-sm text-gray-600 mt-2 ml-15">Please fill in your details for the reservation</p>
