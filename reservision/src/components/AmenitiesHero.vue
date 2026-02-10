@@ -4,8 +4,8 @@
     <div class="relative z-10 max-w-2xl bg-gradient-to-br from-white/95 via-white/90 to-blue-50/80 backdrop-blur-lg rounded-2xl p-4 sm:p-6 shadow-2xl mx-4 flex flex-col justify-center border border-white/30">
 
       <h1 class="text-[25px] sm:text-[30px] md:text-[36px] font-bold mb-5 sm:mb-6 leading-tight">
-        <span class="text-blue-800">ReserVision</span> 
-        <span class="text-blue-600">World-Class Amenities</span>
+          <span style="color:#1e3a8a;">ReserVision</span> 
+          <span style="color:#2563eb;">World-Class Amenities</span>
       </h1>
 
       <p class="text-sm sm:text-base md:text-lg text-black mb-6 leading-relaxed">
@@ -13,21 +13,7 @@
         for your ultimate relaxation, joy, and unforgettable memories.
       </p>
 
-      <div class="flex flex-wrap justify-center gap-3 sm:gap-4 mb-4">
-        <a 
-          href="#amenity-grid" 
-          class="px-8 sm:px-10 md:px-12 
-                 py-3 sm:py-4 
-                 bg-gradient-to-r from-yellow-500 to-yellow-400 
-                 text-blue-900 font-extrabold 
-                 rounded-xl 
-                 shadow-lg 
-                 text-base sm:text-lg md:text-xl 
-                 relative overflow-hidden"
-        >
-          Explore All Amenities
-        </a>
-      </div>
+      
 
       <div class="mt-6 pt-4 border-t border-blue-200/50">
         <div class="flex justify-center gap-6 text-xs sm:text-sm">
