@@ -16,9 +16,10 @@
         class="filter-select"
       >
         <option value="all">All Roles</option>
-        <option value="Admin">Admin</option>
-        <option value="Staff">Staff</option>
-        <option value="Customer">Customer</option>
+        <option value="admin">Admin</option>
+        <option value="restaurantstaff">Staff - Restaurant</option>
+        <option value="receptionist">Staff - Receptionist</option>
+        <option value="customer">Customer</option>
       </select>
     </div>
     <div class="action-buttons">

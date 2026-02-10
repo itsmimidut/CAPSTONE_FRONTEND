@@ -268,6 +268,67 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     isAuthenticated.value = false
     error.value = null
+    // Clear stored auth data
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('user')
+  }
+
+  /**
+   * ============================================================
+   * HELPER METHODS
+   * ============================================================
+   */
+
+  /**
+   * setLoading - Manually set loading state
+   * Used by signup/login forms
+   */
+  const setLoading = (value) => {
+    isLoading.value = value
+  }
+
+  /**
+   * clearError - Clear error message
+   * Used before new login/signup attempts
+   */
+  const clearError = () => {
+    error.value = null
+  }
+
+  /**
+   * setError - Set error message
+   * Used to display validation or server errors
+   */
+  const setError = (message) => {
+    error.value = message
+  }
+
+  /**
+   * setUser - Set user data
+   * Used after successful signup/login from backend
+   */
+  const setUser = (userData) => {
+    user.value = userData
+    isAuthenticated.value = true
+  }
+
+  /**
+   * initFromStorage - Initialize auth state from localStorage
+   * Called on app startup to restore session
+   */
+  const initFromStorage = () => {
+    const token = localStorage.getItem('authToken')
+    const storedUser = localStorage.getItem('user')
+
+    if (token && storedUser) {
+      try {
+        user.value = JSON.parse(storedUser)
+        isAuthenticated.value = true
+      } catch (err) {
+        console.error('Failed to parse stored user data:', err)
+        logout()
+      }
+    }
   }
 
   // ──────────────────────────────────────────────────────
@@ -287,6 +348,11 @@ export const useAuthStore = defineStore('auth', () => {
    * - auth.error - current error message
    * - auth.login(email, password) - perform login
    * - auth.logout() - perform logout
+   * - auth.setLoading(value) - set loading state
+   * - auth.clearError() - clear error message
+   * - auth.setError(message) - set error message
+   * - auth.setUser(userData) - set user data
+   * - auth.initFromStorage() - restore session from localStorage
    */
   return {
     user,
@@ -295,6 +361,11 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     login,
-    logout
+    logout,
+    setLoading,
+    clearError,
+    setError,
+    setUser,
+    initFromStorage
   }
 })

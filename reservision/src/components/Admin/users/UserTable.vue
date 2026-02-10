@@ -30,9 +30,10 @@
               @change="handleRoleChange(user.id, $event.target.value)"
               class="role-select"
             >
-              <option value="Admin">Admin</option>
-              <option value="Staff">Staff</option>
-              <option value="Customer">Customer</option>
+              <option value="admin">Admin</option>
+              <option value="restaurantstaff">Staff - Restaurant</option>
+              <option value="receptionist">Staff - Receptionist</option>
+              <option value="customer">Customer</option>
             </select>
           </td>
           <td>

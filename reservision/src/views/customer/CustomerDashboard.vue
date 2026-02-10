@@ -15,17 +15,16 @@
     <main class="main-content" :class="{ shifted: sidebarCollapsed }">
       <div class="header-container">
         <AdminHeader
-          title="Customer Dashboard"
-          :subtitle="`Welcome back, ${customerName}`"
+          :title="headerTitle"
+          :subtitle="headerSubtitle"
           :user-name="customerName"
           @toggle-sidebar="sidebarOpen = !sidebarOpen"
         />
       </div>
 
       <div style="margin:0; padding:0; position:relative;">
-        <CustomerBookSection
+        <ReservationSection
           v-show="activeSection === 'book'"
-          :rooms="bookRooms"
         />
       </div>
 
@@ -50,6 +49,10 @@
           v-show="activeSection === 'profile'"
           :profile="profile"
         />
+
+        <CustomerSupportSection
+          v-show="activeSection === 'support'"
+        />
       </div>
     </main>
   </div>
@@ -61,9 +64,10 @@ import { useAuthStore } from '../../stores/auth';
 import AdminHeader from '../../components/admin/AdminHeader.vue';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar.vue';
 import CustomerDashboardSection from '../../components/Customer/CustomerDashboardSection.vue';
-import CustomerBookSection from '../../components/Customer/CustomerBookSection.vue';
+import ReservationSection from '../../components/Customer/ReservationSection.vue';
 import CustomerReservationsSection from '../../components/Customer/CustomerReservationsSection.vue';
 import CustomerProfileSection from '../../components/Customer/CustomerProfileSection.vue';
+import CustomerSupportSection from '../../components/Customer/CustomerSupportSection.vue';
 
 const apiBase = 'http://localhost:8000/api';
 const auth = useAuthStore();
@@ -74,7 +78,8 @@ const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'fa-home' },
   { id: 'book', label: 'Book a Room', icon: 'fa-bed' },
   { id: 'reservations', label: 'My Reservations', icon: 'fa-calendar-alt' },
-  { id: 'profile', label: 'Profile', icon: 'fa-user' }
+  { id: 'profile', label: 'Profile', icon: 'fa-user' },
+  // { id: 'support', label: 'Support', icon: 'fa-headset' }
 ];
 
 const summaryCards = ref([]);
@@ -87,6 +92,30 @@ const loadError = ref('');
 
 const customerName = computed(() => auth.user?.name || 'Guest');
 const customerEmail = computed(() => auth.user?.email || '');
+
+const headerTitle = computed(() => {
+  const titles = {
+    dashboard: 'Customer Dashboard',
+    book: 'Book a Room',
+    reservations: 'My Reservations',
+    profile: 'Profile Settings',
+    support: 'Support & Help'
+  };
+  return titles[activeSection.value] || 'Customer Dashboard';
+});
+
+const headerSubtitle = computed(() => {
+  if (activeSection.value === 'dashboard') {
+    return `Welcome back, ${customerName.value}`;
+  }
+  const subtitles = {
+    book: 'Find and book your perfect stay',
+    reservations: 'View and manage your bookings',
+    profile: 'Manage your account information',
+    support: 'Get help and submit requests'
+  };
+  return subtitles[activeSection.value] || '';
+});
 
 const profile = ref({
   fullName: 'Guest',
@@ -104,6 +133,10 @@ const sidebarCollapsed = ref(false);
 
 const setActiveSection = (sectionId) => {
   activeSection.value = sectionId;
+};
+
+const viewReservations = () => {
+  activeSection.value = 'reservations';
 };
 
 const formatDate = (value) => {

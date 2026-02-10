@@ -15,7 +15,7 @@
 
     <div class="flex flex-wrap justify-center gap-3 sm:gap-4 mb-4">
       <a 
-        href="/reservation" 
+        href="/websitereservation" 
         class="px-8 sm:px-10 md:px-12 
                py-3 sm:py-4 
                bg-gradient-to-r from-yellow-500 to-yellow-400 

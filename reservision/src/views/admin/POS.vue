@@ -116,10 +116,26 @@
             <label class="text-sm font-semibold text-gray-700 mb-2 block">
               <i class="fas fa-credit-card mr-2"></i>Payment Method
             </label>
-            <select v-model="paymentMethod" class="border-2 p-3 rounded-lg w-full">
-              <option>Cash</option>
-              <option>GCash</option>
-            </select>
+            <div class="flex gap-4 mb-2">
+              <button
+                type="button"
+                class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
+                :class="paymentMethod === 'GCash' ? 'bg-green-50 border-green-600 text-green-700 ring-2 ring-green-200' : 'bg-white border-gray-300 text-gray-700'"
+                @click="paymentMethod = 'GCash'"
+              >
+                <i class="fas fa-wallet text-green-600 text-lg mr-2"></i> GCash
+                <span v-if="paymentMethod === 'GCash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+              </button>
+              <button
+                type="button"
+                class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
+                :class="paymentMethod === 'Cash' ? 'bg-yellow-50 border-yellow-600 text-yellow-700 ring-2 ring-yellow-200' : 'bg-white border-gray-300 text-gray-700'"
+                @click="paymentMethod = 'Cash'"
+              >
+                <i class="fas fa-money-bill-wave text-yellow-600 text-lg mr-2"></i> Cash
+                <span v-if="paymentMethod === 'Cash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+              </button>
+            </div>
           </div>
 
           <button @click="checkout" class="btn-success w-full bg-green-600 text-white py-4 rounded-lg font-semibold text-lg">
@@ -156,21 +172,21 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="transactionHistory.length === 0">
+              <tr v-if="filteredTransactionHistory.length === 0">
                 <td colspan="7" class="p-8 text-center text-gray-400">
                   <i class="fas fa-inbox text-4xl mb-2 block"></i>No transactions yet
                 </td>
               </tr>
               <tr 
                 v-else
-                v-for="(trans, index) in transactionHistory" 
+                v-for="(trans, index) in filteredTransactionHistory" 
                 :key="trans.receiptNo"
                 class="border-b hover:bg-blue-50 transition-colors"
               >
                 <td class="p-3 font-semibold text-blue-700">POS-{{ trans.receiptNo }}</td>
                 <td class="p-3">
                   <div class="text-gray-700">{{ getItemsPreview(trans.items) }}</div>
-                  <button @click="viewDetails(index)" class="text-blue-600 text-xs hover:underline mt-1 transition-all">
+                  <button @click="viewDetails(trans.receiptNo)" class="text-blue-600 text-xs hover:underline mt-1 transition-all">
                     <i class="fas fa-eye"></i> View Details
                   </button>
                 </td>
@@ -184,10 +200,10 @@
                   <span class="text-xs text-gray-400">{{ trans.time }}</span>
                 </td>
                 <td class="p-3 text-center">
-                  <button @click="printReceipt(index)" class="text-green-600 hover:text-green-800 mr-3 transition-all hover:scale-110 inline-block" title="Print">
+                  <button @click="printReceipt(trans.receiptNo)" class="text-green-600 hover:text-green-800 mr-3 transition-all hover:scale-110 inline-block" title="Print">
                     <i class="fas fa-print text-lg"></i>
                   </button>
-                  <button @click="deleteTransaction(index)" class="text-red-600 hover:text-red-800 transition-all hover:scale-110 inline-block" title="Delete">
+                  <button @click="deleteTransaction(trans.receiptNo)" class="text-red-600 hover:text-red-800 transition-all hover:scale-110 inline-block" title="Delete">
                     <i class="fas fa-trash text-lg"></i>
                   </button>
                 </td>
@@ -264,11 +280,30 @@ export default {
         return this.categories;
       }
 
-      if (this.userRole === 'reception') {
+      if (this.userRole === 'receptionist') {
         return this.categories.filter(category => category.id !== 'restaurant');
       }
 
       return this.categories.filter(category => category.id === 'restaurant');
+    },
+    filteredTransactionHistory() {
+      if (this.userRole === 'admin') {
+        return this.transactionHistory;
+      }
+
+      return this.transactionHistory.filter(trans => {
+        const hasRestaurantItem = this.hasItemFromCategory(trans.items, 'restaurant');
+        
+        if (this.userRole === 'restaurantstaff') {
+          return hasRestaurantItem;
+        }
+        
+        if (this.userRole === 'receptionist') {
+          return !hasRestaurantItem;
+        }
+        
+        return true;
+      });
     }
   },
   watch: {
@@ -336,6 +371,14 @@ export default {
       if (!this.searchQuery) return items;
       return items.filter(item => 
         item.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+      );
+    },
+    hasItemFromCategory(transactionItems, categoryId) {
+      const categoryItems = this.categories.find(cat => cat.id === categoryId)?.items || [];
+      const categoryItemNames = categoryItems.map(item => item.name.toLowerCase());
+      
+      return transactionItems.some(transItem => 
+        categoryItemNames.includes(transItem.name.toLowerCase())
       );
     },
     filterItems() {
@@ -413,8 +456,10 @@ export default {
       const itemsList = items.map(item => item.name).join(", ");
       return itemsList.length > 30 ? itemsList.substring(0, 30) + "..." : itemsList;
     },
-    viewDetails(index) {
-      const trans = this.transactionHistory[index];
+    viewDetails(receiptNo) {
+      const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
+      if (!trans) return;
+      
       let itemsDetail = trans.items.map(item => `${item.name} - ₱${item.price.toLocaleString()}`).join('\n');
       
       alert(`Receipt: POS-${trans.receiptNo}\n` +
@@ -424,8 +469,9 @@ export default {
             `Items:\n${itemsDetail}\n\n` +
             `Total: ₱${trans.total.toLocaleString()}`);
     },
-    printReceipt(index) {
-      const trans = this.transactionHistory[index];
+    printReceipt(receiptNo) {
+      const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
+      if (!trans) return;
       
       const printWindow = window.open('', '', 'width=300,height=600');
       
@@ -543,9 +589,12 @@ export default {
         printWindow.close();
       }, 250);
     },
-    async deleteTransaction(index) {
+    async deleteTransaction(receiptNo) {
       if (confirm('Are you sure you want to delete this transaction?')) {
-        const transaction = this.transactionHistory[index];
+        const transIndex = this.transactionHistory.findIndex(t => t.receiptNo === receiptNo);
+        if (transIndex === -1) return;
+        
+        const transaction = this.transactionHistory[transIndex];
         
         try {
           // Find transaction ID from backend
@@ -556,7 +605,7 @@ export default {
             await axios.delete(`${API_BASE}/transactions/${backendTrans.transaction_id}`);
           }
           
-          this.transactionHistory.splice(index, 1);
+          this.transactionHistory.splice(transIndex, 1);
         } catch (error) {
           console.error('Error deleting transaction:', error);
           alert('Failed to delete transaction');

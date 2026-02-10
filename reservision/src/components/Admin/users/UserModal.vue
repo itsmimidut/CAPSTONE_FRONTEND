@@ -30,12 +30,26 @@
             />
           </div>
 
+          <!-- Password field only for new users -->
+          <div v-if="!isEditing" class="form-group">
+            <label for="userPassword">Password</label>
+            <input
+              id="userPassword"
+              v-model="formData.password"
+              type="password"
+              class="form-control"
+              placeholder="Enter password (min 6 characters)"
+              minlength="6"
+            />
+          </div>
+
           <div class="form-group">
             <label for="userRole">Role</label>
             <select id="userRole" v-model="formData.role" class="form-control">
-              <option value="Admin">Admin</option>
-              <option value="Staff">Staff</option>
-              <option value="Customer">Customer</option>
+              <option value="admin">Admin</option>
+              <option value="receptionist">Staff - Receptionist</option>
+              <option value="restaurantstaff">Staff - Restaurant</option>
+              <option value="customer">Customer</option>
             </select>
           </div>
         </div>
@@ -73,14 +87,15 @@ const formData = ref({
   id: null,
   name: '',
   email: '',
-  role: 'Customer'
+  role: 'customer',
+  password: ''
 });
 
 watch(() => props.user, (newUser) => {
   if (newUser) {
     formData.value = { ...newUser };
   } else {
-    formData.value = { id: null, name: '', email: '', role: 'Customer' };
+    formData.value = { id: null, name: '', email: '', role: 'customer', password: '' };
   }
 }, { immediate: true });
 
@@ -95,6 +110,12 @@ function handleBackdropClick() {
 function handleSave() {
   if (!formData.value.name.trim() || !formData.value.email.trim()) {
     alert('Name and email are required');
+    return;
+  }
+
+  // Validate password for new users
+  if (!props.isEditing && (!formData.value.password || formData.value.password.length < 6)) {
+    alert('Password is required and must be at least 6 characters long');
     return;
   }
 
