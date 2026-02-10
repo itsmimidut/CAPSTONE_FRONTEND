@@ -116,10 +116,26 @@
             <label class="text-sm font-semibold text-gray-700 mb-2 block">
               <i class="fas fa-credit-card mr-2"></i>Payment Method
             </label>
-            <select v-model="paymentMethod" class="border-2 p-3 rounded-lg w-full">
-              <option>Cash</option>
-              <option>GCash</option>
-            </select>
+            <div class="flex gap-4 mb-2">
+              <button
+                type="button"
+                class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
+                :class="paymentMethod === 'GCash' ? 'bg-green-50 border-green-600 text-green-700 ring-2 ring-green-200' : 'bg-white border-gray-300 text-gray-700'"
+                @click="paymentMethod = 'GCash'"
+              >
+                <i class="fas fa-wallet text-green-600 text-lg mr-2"></i> GCash
+                <span v-if="paymentMethod === 'GCash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+              </button>
+              <button
+                type="button"
+                class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
+                :class="paymentMethod === 'Cash' ? 'bg-yellow-50 border-yellow-600 text-yellow-700 ring-2 ring-yellow-200' : 'bg-white border-gray-300 text-gray-700'"
+                @click="paymentMethod = 'Cash'"
+              >
+                <i class="fas fa-money-bill-wave text-yellow-600 text-lg mr-2"></i> Cash
+                <span v-if="paymentMethod === 'Cash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+              </button>
+            </div>
           </div>
 
           <button @click="checkout" class="btn-success w-full bg-green-600 text-white py-4 rounded-lg font-semibold text-lg">

@@ -1,18 +1,43 @@
 <template>
-  <section class="hero-amenities">
-    <div class="hero-content">
-      <h1 class="animate-fade-in mt-5">Our World-Class Amenities</h1>
-      <p class="animate-slide-up px-9">
+  <section class="relative flex items-center justify-center min-h-[300px] sm:min-h-[400px] hero-amenities text-center px-4">
+    <div class="absolute inset-0 bg-gradient-to-br from-blue-900/30 via-blue-700/20 to-yellow-500/20"></div>
+    <div class="relative z-10 max-w-2xl bg-gradient-to-br from-white/95 via-white/90 to-blue-50/80 backdrop-blur-lg rounded-2xl p-4 sm:p-6 shadow-2xl mx-4 flex flex-col justify-center border border-white/30">
+
+      <h1 class="text-[25px] sm:text-[30px] md:text-[36px] font-bold mb-5 sm:mb-6 leading-tight">
+        <span class="text-blue-800">ReserVision</span> 
+        <span class="text-blue-600">World-Class Amenities</span>
+      </h1>
+
+      <p class="text-sm sm:text-base md:text-lg text-black mb-6 leading-relaxed">
         From Olympic-sized pools to elegant dining and air-conditioned cottages — every detail is crafted 
         for your ultimate relaxation, joy, and unforgettable memories.
       </p>
-      <div class="flex justify-center gap-4 mt-6">
+
+      <div class="flex flex-wrap justify-center gap-3 sm:gap-4 mb-4">
         <a 
           href="#amenity-grid" 
-          class="px-6 py-3 bg-warm-brown text-white rounded-full font-semibold hover:bg-deep-brown transition shadow-lg"
+          class="px-8 sm:px-10 md:px-12 
+                 py-3 sm:py-4 
+                 bg-gradient-to-r from-yellow-500 to-yellow-400 
+                 text-blue-900 font-extrabold 
+                 rounded-xl 
+                 shadow-lg 
+                 text-base sm:text-lg md:text-xl 
+                 relative overflow-hidden"
         >
-          Explore All
+          Explore All Amenities
         </a>
+      </div>
+
+      <div class="mt-6 pt-4 border-t border-blue-200/50">
+        <div class="flex justify-center gap-6 text-xs sm:text-sm">
+          <div class="flex flex-col items-center">
+          </div>
+          <div class="flex flex-col items-center">
+          </div>
+          <div class="flex flex-col items-center">
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -20,47 +45,27 @@
 
 <style scoped>
 .hero-amenities {
-  background: linear-gradient(135deg, rgba(43,108,176,.75), rgba(193,154,107,.45)), 
-              url('https://images.unsplash.com/photo-1566073772328-0e76c0b1b5b9?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
-  height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: white;
-}
-
-.hero-content h1 {
-  font-size: 3.5rem;
-  font-family: 'Dancing Script', cursive;
-  margin-bottom: 1rem;
-  text-shadow: 0 3px 8px rgba(0,0,0,.4);
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slide-up {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.animate-fade-in {
-  animation: fade-in 1s ease-out;
-}
-
-.animate-slide-up {
-  animation: slide-up 0.8s ease-out;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, rgba(30, 64, 175, 0.3) 0%, rgba(251, 191, 36, 0.2) 100%),
+    url('https://www.eduardosresort.com/images/IMG_4224.JPG');
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: overlay;
 }
 
 @media (max-width: 640px) {
-  .hero-content h1 {
-    font-size: 1.5rem;
+  .hero-amenities {
+    min-height: 250px;
   }
-  .hero-content p {
-    font-size: 15px;
+  
+  .mt-6 {
+    margin-top: 1rem;
+  }
+  
+  .pt-4 {
+    padding-top: 1rem;
   }
 }
 </style>
