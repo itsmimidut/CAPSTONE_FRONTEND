@@ -1,7 +1,7 @@
 <template>
   <div class=" min-h-screen">
     <!-- Search Section -->
-    <section class="max-w-7xl mx-auto px-4 py-8">
+    <section v-if="!showBookingConfirmation" class="max-w-7xl mx-auto px-4 py-8">
       <div class="bg-white rounded-2xl shadow-md border-2 border-gray-200 p-6 hover:shadow-lg transition">
         <!-- Desktop Search -->
         <div class="hidden md:grid md:grid-cols-4 gap-4">
@@ -62,7 +62,7 @@
     </section>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto">
+    <main v-if="!showBookingConfirmation" class="max-w-7xl mx-auto">
       <div class="lg:flex lg:gap-8">
         <!-- Items Section -->
         <section class="lg:w-2/3 space-y-8">
@@ -203,6 +203,14 @@
       :email="confirmationEmail"
       :booking-id="confirmationBookingId"
     />
+
+    <!-- Customer Booking Confirmation -->
+    <div v-if="showBookingConfirmation" class="max-w-7xl mx-auto px-4 py-8">
+      <CustomerBookingConfirmation 
+        @view-reservations="handleViewReservations"
+        @close="showBookingConfirmation = false"
+      />
+    </div>
   </div>
 </template>
 
@@ -215,7 +223,7 @@ import GuestsModal from '../../components/GuestsModal.vue'
 import ViewMoreModal from '../../components/ViewMoreModal.vue'
 import ConfirmationModal from '../../components/ConfirmationModal.vue'
 import ContactBillingForm from '../../components/ContactBillingForm.vue'
-import BookingConfirmation from '../../components/BookingConfirmation.vue'
+import CustomerBookingConfirmation from './CustomerBookingConfirmation.vue'
 
 export default {
   name: 'ReservationSection',
@@ -226,7 +234,8 @@ export default {
     GuestsModal,
     ViewMoreModal,
     ConfirmationModal,
-    ContactBillingForm
+    ContactBillingForm,
+    CustomerBookingConfirmation
   },
   data() {
     return {
@@ -238,6 +247,7 @@ export default {
       showViewMore: false,
       showContactForm: false,
       showConfirmation: false,
+      showBookingConfirmation: false,
       confirmationEmail: '',
       confirmationBookingId: '',
       contactFirstName: '',
@@ -522,7 +532,18 @@ export default {
         subtotal: this.subtotal
       }
       localStorage.setItem('pendingBooking', JSON.stringify(bookingData))
-      this.$router.push('/booking-confirmation')
+      // Show CustomerBookingConfirmation instead of redirecting
+      this.showBookingConfirmation = true
+    },
+    handleViewReservations() {
+      // Close the booking confirmation and clear data
+      this.showBookingConfirmation = false
+      this.booking = []
+      this.checkIn = null
+      this.checkOut = null
+      localStorage.removeItem('pendingBooking')
+      // Optionally refresh the page or show a success message
+      alert('Booking completed! View your reservations in the Reservations tab.')
     },
     submitContactForm() {
       if (!this.contactFirstName || !this.contactLastName || !this.contactPhone || 

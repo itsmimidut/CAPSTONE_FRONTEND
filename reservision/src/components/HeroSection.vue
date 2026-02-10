@@ -11,7 +11,7 @@
       </p>
       <div class="flex flex-wrap justify-center gap-3 sm:gap-4">
         <a 
-          href="/reservation" 
+          href="/websitereservation" 
           class="px-4 sm:px-6 md:px-8 py-2 sm:py-3 bg-warm-brown text-white font-semibold rounded-lg hover:bg-deep-brown transition-colors duration-300 shadow-md text-sm sm:text-base"
         >
           Book Your Escape

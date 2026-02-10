@@ -4,7 +4,7 @@
     <p class="text-gray-500 mb-5 text-sm">Join us today and start your journey.</p>
     
     <form @submit.prevent="handleSubmit">
-     <!--Full Name-->
+      <!--Full Name-->
       <div class="mb-4">
         <label for="fullName" class="block mb-1.5 font-medium text-gray-800 text-sm">Full Name</label>
         <div class="relative">
@@ -15,6 +15,22 @@
             v-model="formData.fullName"
             class="w-full py-2.5 pl-11 pr-4 border border-gray-200 rounded-lg text-sm bg-white transition-all focus:outline-none focus:border-accent-blue focus:ring-4 focus:ring-accent-blue/20"
             placeholder="Enter your full name" 
+            required
+          >
+        </div>
+      </div>
+
+      <!-- Contact Number -->
+      <div class="mb-4">
+        <label for="contactNumber" class="block mb-1.5 font-medium text-gray-800 text-sm">Contact Number</label>
+        <div class="relative">
+          <i class="fas fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-primary-blue text-lg"></i>
+          <input 
+            type="tel" 
+            id="contactNumber" 
+            v-model="formData.contactNumber"
+            class="w-full py-2.5 pl-11 pr-4 border border-gray-200 rounded-lg text-sm bg-white transition-all focus:outline-none focus:border-accent-blue focus:ring-4 focus:ring-accent-blue/20"
+            placeholder="09XXXXXXXXX" 
             required
           >
         </div>
@@ -113,16 +129,61 @@ import { useAuthStore } from '../stores/auth'
 const authStore = useAuthStore()
 const showPassword = ref(false)
 const formData = reactive({
+  fullName: '',
   email: '',
-  password: ''
+  password: '',
+  contactNumber: ''
 })
 
 const handleSubmit = async () => {
-  const result = await authStore.login(formData.email, formData.password)
-  
-  if (result.success) {
-    alert('Account Created successfully! Redirecting to login...')
-    // Router navigation will go here later
+  // Split fullName into first and last name
+  const [firstName, ...rest] = formData.fullName.trim().split(' ');
+  const lastName = rest.join(' ') || '';
+
+  const payload = {
+    firstName,
+    lastName,
+    email: formData.email,
+    password: formData.password,
+    contactNumber: formData.contactNumber
+  };
+
+  try {
+    authStore.setLoading(true);
+    authStore.clearError();
+
+    const response = await fetch('http://localhost:8000/api/customers/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      // Store the token
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+      
+      // Store user data
+      if (data.customer) {
+        localStorage.setItem('user', JSON.stringify(data.customer));
+      }
+
+      // Show success message
+      alert('Account created successfully! Redirecting to dashboard...');
+      
+      // Redirect to customer dashboard
+      window.location.href = '/customer';
+    } else {
+      authStore.setError(data.error || 'Signup failed. Please try again.');
+    }
+  } catch (err) {
+    console.error('Signup error:', err);
+    authStore.setError('Server error. Please try again later.');
+  } finally {
+    authStore.setLoading(false);
   }
 }
 

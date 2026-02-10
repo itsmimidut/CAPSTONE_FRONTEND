@@ -60,23 +60,9 @@ import UserTable from '../../components/admin/users/UserTable.vue';
 import UserModal from '../../components/admin/users/UserModal.vue';
 import ConfirmModal from '../../components/admin/users/ConfirmModal.vue';
 import AdminSidebar from '../../components/admin/AdminSidebar.vue';
-const STORAGE_KEY = 'reservision_users_v1';
-const PER_PAGE = 6;
 
-const SAMPLE_USERS = [
-  { id: generateId(), name: 'John Doe', email: 'john@example.com', role: 'Admin' },
-  { id: generateId(), name: 'Jane Smith', email: 'jane@example.com', role: 'Staff' },
-  { id: generateId(), name: 'Mark Reyes', email: 'mark@example.com', role: 'Customer' },
-  { id: generateId(), name: 'Liza Cruz', email: 'liza@example.com', role: 'Customer' },
-  { id: generateId(), name: 'Carlos Dela Torre', email: 'carlos@example.com', role: 'Staff' },
-  { id: generateId(), name: 'Anna Santos', email: 'anna@example.com', role: 'Customer' },
-  { id: generateId(), name: 'David Tan', email: 'david@example.com', role: 'Customer' },
-  { id: generateId(), name: 'Maria Lopez', email: 'maria@example.com', role: 'Staff' },
-  { id: generateId(), name: 'Peter Lim', email: 'peter@example.com', role: 'Admin' },
-  { id: generateId(), name: 'Rosa Domingo', email: 'rosa@example.com', role: 'Customer' },
-  { id: generateId(), name: 'Gina Flores', email: 'gina@example.com', role: 'Staff' },
-  { id: generateId(), name: 'Alex Cruz', email: 'alex@example.com', role: 'Customer' }
-];
+const API_URL = 'http://localhost:8000/api';
+const PER_PAGE = 6;
 
 const users = ref([]);
 const searchQuery = ref('');
@@ -86,6 +72,10 @@ const showUserModal = ref(false);
 const showConfirmModal = ref(false);
 const editingUser = ref(null);
 const deletingUserId = ref(null);
+const loading = ref(false);
+const stats = ref({ total: 0, admins: 0, staff: 0, customers: 0 });
+const sidebarOpen = ref(false);
+const sidebarCollapsed = ref(false);
 
 const isEditing = computed(() => editingUser.value?.id != null);
 
@@ -112,35 +102,56 @@ const paginatedUsers = computed(() => {
 });
 
 const userStats = computed(() => ({
-  total: users.value.length,
-  admins: users.value.filter(u => u.role === 'Admin').length,
-  staff: users.value.filter(u => u.role === 'Staff').length,
-  customers: users.value.filter(u => u.role === 'Customer').length
+  total: stats.value.total,
+  admins: stats.value.admins || stats.value.byRole?.admin || 0,
+  staff: (stats.value.byRole?.restaurantstaff || 0) + (stats.value.byRole?.receptionist || 0),
+  customers: stats.value.customers || stats.value.byRole?.customer || 0
 }));
 
-function generateId() {
-  return 'u' + Math.random().toString(36).slice(2, 9);
-}
-
-function loadUsers() {
+// API Functions
+async function fetchUsers() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(SAMPLE_USERS));
-      return SAMPLE_USERS.slice();
+    loading.value = true;
+    const response = await fetch(`${API_URL}/users`);
+    const data = await response.json();
+    
+    if (data.success) {
+      users.value = data.data.users.map(user => ({
+        id: user.id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        role: user.role, // Use DB role directly (admin, customer, restaurantstaff, receptionist)
+        phone: user.phone,
+        address: user.address,
+        city: user.city,
+        country: user.country,
+        postalCode: user.postalCode,
+        profileImage: user.profileImage
+      }));
     }
-    return JSON.parse(raw);
-  } catch (e) {
-    return SAMPLE_USERS.slice();
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+    alert('Failed to load users. Please try again.');
+  } finally {
+    loading.value = false;
   }
 }
 
-function saveUsers() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(users.value));
+async function fetchStats() {
+  try {
+    const response = await fetch(`${API_URL}/users/stats`);
+    const data = await response.json();
+    
+    if (data.success) {
+      stats.value = data.stats;
+    }
+  } catch (error) {
+    console.error('Failed to fetch stats:', error);
+  }
 }
 
 function openAddUserModal() {
-  editingUser.value = { name: '', email: '', role: 'Customer' };
+  editingUser.value = { name: '', email: '', role: 'customer', password: '' };
   showUserModal.value = true;
 }
 
@@ -154,37 +165,133 @@ function openDeleteModal(userId) {
   showConfirmModal.value = true;
 }
 
-function handleSaveUser(userData) {
-  if (userData.id) {
-    // Edit existing user
-    const index = users.value.findIndex(u => u.id === userData.id);
-    if (index !== -1) {
-      users.value[index] = userData;
+async function handleSaveUser(userData) {
+  try {
+    loading.value = true;
+    
+    // Split name into first and last name
+    const nameParts = userData.name.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    if (userData.id) {
+      // Edit existing user
+      const response = await fetch(`${API_URL}/users/${userData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email: userData.email,
+          phone: userData.phone || null,
+          address: userData.address || null,
+          city: userData.city || null,
+          country: userData.country || null,
+          postalCode: userData.postalCode || null
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to update user');
+      }
+    } else {
+      // Add new user
+      if (!userData.password) {
+        alert('Password is required for new users');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email: userData.email,
+          phone: userData.phone || null,
+          password: userData.password,
+          role: userData.role // Use DB role directly
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create user');
+      }
     }
-  } else {
-    // Add new user
-    users.value.unshift({ ...userData, id: generateId() });
-  }
-  saveUsers();
-  showUserModal.value = false;
-}
 
-function handleDeleteUser() {
-  users.value = users.value.filter(u => u.id !== deletingUserId.value);
-  saveUsers();
-  showConfirmModal.value = false;
-  
-  // Adjust page if needed
-  if (paginatedUsers.value.length === 0 && currentPage.value > 1) {
-    currentPage.value--;
+    // Refresh user list and stats
+    await fetchUsers();
+    await fetchStats();
+    showUserModal.value = false;
+  } catch (error) {
+    console.error('Save user error:', error);
+    alert(error.message || 'Failed to save user. Please try again.');
+  } finally {
+    loading.value = false;
   }
 }
 
-function handleRoleChange({ userId, newRole }) {
-  const user = users.value.find(u => u.id === userId);
-  if (user) {
-    user.role = newRole;
-    saveUsers();
+async function handleDeleteUser() {
+  try {
+    loading.value = true;
+    
+    const response = await fetch(`${API_URL}/users/${deletingUserId.value}`, {
+      method: 'DELETE'
+    });
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to delete user');
+    }
+
+    // Refresh user list and stats
+    await fetchUsers();
+    await fetchStats();
+    showConfirmModal.value = false;
+    
+    // Adjust page if needed
+    if (paginatedUsers.value.length === 0 && currentPage.value > 1) {
+      currentPage.value--;
+    }
+  } catch (error) {
+    console.error('Delete user error:', error);
+    alert(error.message || 'Failed to delete user. Please try again.');
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function handleRoleChange({ userId, newRole }) {
+  try {
+    loading.value = true;
+    
+    const response = await fetch(`${API_URL}/users/${userId}/role`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        role: newRole // Use DB role directly
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to change role');
+    }
+
+    // Refresh user list and stats
+    await fetchUsers();
+    await fetchStats();
+  } catch (error) {
+    console.error('Change role error:', error);
+    alert(error.message || 'Failed to change user role. Please try again.');
+  } finally {
+    loading.value = false;
   }
 }
 
@@ -194,9 +301,9 @@ function handlePageChange(page) {
 
 function exportUsers() {
   const csv = [
-    'name,email,role',
+    'name,email,role,phone',
     ...users.value.map(u => 
-      `"${u.name.replace(/"/g, '""')}","${u.email.replace(/"/g, '""')}",${u.role}`
+      `"${u.name.replace(/"/g, '""')}","${u.email.replace(/"/g, '""')}",${u.role},"${u.phone || ''}"`
     )
   ].join('\n');
   
@@ -204,15 +311,16 @@ function exportUsers() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'users.csv';
+  a.download = `users-${new Date().toISOString().split('T')[0]}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-onMounted(() => {
-  users.value = loadUsers();
+onMounted(async () => {
+  await fetchUsers();
+  await fetchStats();
 });
 </script>
 

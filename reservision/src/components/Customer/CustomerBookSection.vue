@@ -1,9 +1,9 @@
 <template>
-  
-  <ReservationSection />
+  <CustomerBookingConfirmation @view-reservations="$emit('view-reservations')" />
 </template>
 
 <script setup>
+import CustomerBookingConfirmation from './CustomerBookingConfirmation.vue';
 
-import ReservationSection from './ReservationSection.vue';
+defineEmits(['view-reservations']);
 </script>

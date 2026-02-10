@@ -50,6 +50,7 @@ import PaymentReturn from '../views/PaymentReturn.vue'
 // 👤 Customer
 import CustomerDashboard from '../views/customer/CustomerDashboard.vue'
 import ReservationSection from '../components/Customer/ReservationSection.vue'
+import CustomerBookingConfirmation from '../components/Customer/CustomerBookingConfirmation.vue'
 
 // ============================================================
 // ADMIN PAGES IMPORTS
@@ -71,6 +72,7 @@ import CottagesOnly from '../views/admin/CottagesOnly.vue'
 import EventsOnly from '../views/admin/EventsOnly.vue'
 import SwimmingManagement from '../views/admin/SwimmingManagement.vue'
 import RoomandCottageManagement from '../views/admin/RoomAndCottage.vue'
+import WebsiteReservation from '../views/website/Reservation.vue'     
 // import CustomerDashboard from '../views/customer/CustomerDashboard.vue'
 
 // ============================================================
@@ -98,7 +100,7 @@ const routes = [
   { path: '/contact', name: 'Contact', component: ContactPage },
   { path: '/about', name: 'About', component: AboutPage },
   { path: '/swimming', name: 'Swimming', component: Swimming },
-  { path: '/reservation', name: 'ReservationSection', component: ReservationSection },
+  { path: '/websitereservation', name: 'WebsiteReservation', component: WebsiteReservation },
   { path: '/booking', name: 'ConfirmationBooking', component: ConfirmationBooking },
   { path: '/confirmation', name: 'Confirmation', component: ConfirmationPage },
   { path: '/booking-confirmation', name: 'BookingConfirmationModal', component: BookingConfirmationModal },
@@ -119,6 +121,18 @@ const routes = [
     path: '/customer',
     name: 'CustomerDashboard',
     component: CustomerDashboard,
+    meta: { requiresAuth: true, role: 'customer' }
+  },
+  {
+    path: '/customer/reservations',
+    name: 'CustomerReservations',
+    component: ReservationSection,
+    meta: { requiresAuth: true, role: 'customer' }
+  },
+  {
+    path: '/customer/booking-confirmation',
+    name: 'CustomerBookingConfirmation',
+    component: CustomerBookingConfirmation,
     meta: { requiresAuth: true, role: 'customer' }
   },
   // {

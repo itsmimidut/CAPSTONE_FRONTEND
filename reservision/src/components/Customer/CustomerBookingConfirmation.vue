@@ -1,21 +1,5 @@
 <template>
-  <div class="min-h-screen">
-
-    <!-- Header -->
-    <header class="bg-white/95 backdrop-blur-md border-b border-blue-50 sticky top-0 z-50">
-      <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-        <a href="#" class="flex items-center space-x-2">
-          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary-blue to-accent-blue flex items-center justify-center text-white font-bold text-base">
-            Ed
-          </div>
-          <div class="text-lg font-bold text-primary-blue">Eduardo's</div>
-        </a>
-        <div class="text-xs text-text-muted font-medium hidden sm:block">
-          Complete Booking
-        </div>
-      </div>
-    </header>
-
+  <div class="customer-booking-page">
     <!-- Main -->
     <main class="container mx-auto px-4 py-5 max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -66,8 +50,7 @@
           </div>
           <div class="mt-4">
             <label class="block text-xs font-medium text-text-muted mb-1.5">Special Requests</label>
-            <textarea class="form-input h-20 text-sm
-            " v-model="guest.specialRequests" placeholder="Late check-in, dietary needs..."></textarea>
+            <textarea class="form-input h-20 text-sm" v-model="guest.specialRequests" placeholder="Late check-in, dietary needs..."></textarea>
           </div>
         </div>
 
@@ -244,12 +227,12 @@
           Your booking is secured. A confirmation email has been sent to <span class="font-medium text-text-dark">{{ guest.email }}</span>.
         </p>
         <div class="space-y-2">
-          <router-link to="/confirmation" class="block w-full py-2.5 bg-primary-blue text-white rounded-lg font-medium text-sm hover:bg-accent-blue transition">
+          <button @click="viewBookingDetails" class="block w-full py-2.5 bg-primary-blue text-white rounded-lg font-medium text-sm hover:bg-accent-blue transition">
             View Booking Details
-          </router-link>
-          <router-link to="/" class="block w-full py-2.5 border border-primary-blue text-primary-blue rounded-lg font-medium text-sm hover:bg-blue-50 transition">
-            Back to Home
-          </router-link>
+          </button>
+          <button @click="showModal = false" class="block w-full py-2.5 border border-primary-blue text-primary-blue rounded-lg font-medium text-sm hover:bg-blue-50 transition">
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -267,12 +250,17 @@
 </template>
 
 <script>
-import EmailVerificationModal from './EmailVerificationModal.vue';
+import EmailVerificationModal from '../EmailVerificationModal.vue';
+import { useAuthStore } from '../../stores/auth';
 
 export default {
-  name: 'BookingPage',
+  name: 'CustomerBookingConfirmation',
   components: {
     EmailVerificationModal
+  },
+  setup() {
+    const auth = useAuthStore();
+    return { auth };
   },
   data() {
     const bookingData = JSON.parse(localStorage.getItem('pendingBooking') || '{}');
@@ -317,7 +305,6 @@ export default {
       termsAgreed: false,
       loading: false,
       showModal: false,
-      // Email verification
       showVerificationModal: false,
       emailVerified: false,
       verifiedEmail: ''
@@ -331,7 +318,6 @@ export default {
     },
     selectPayment(id) { this.selectedPayment = id; },
     
-    // Format date for display
     formatDate(dateString) {
       if (!dateString) return '';
       const date = new Date(dateString);
@@ -339,9 +325,7 @@ export default {
       return date.toLocaleDateString('en-US', options);
     },
     
-    // Edit booking - save current state and navigate back
     editBooking() {
-      // Reconstruct complete booking data with all necessary fields
       const bookingData = {
         items: this.items.map(item => ({
           item: {
@@ -370,12 +354,17 @@ export default {
       };
       
       localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-      this.$router.push({ name: 'CustomerDashboard', query: { ActiveSection: 'book' } });
+      
+      // Emit close event to return to ReservationSection (booking flow)
+      this.$emit('close');
     },
     
-    // Email Verification Modal Handlers
+    viewBookingDetails() {
+      this.showModal = false;
+      this.$emit('view-reservations');
+    },
+    
     async initiatePayment() {
-      // Validate required fields first
       const required = ['firstName','lastName','phone','email','address','city','postal'];
       for (const key of required) {
         if (!this.guest[key].trim()) {
@@ -388,23 +377,20 @@ export default {
         return;
       }
       
-      // Check if email exists in database
       try {
         const response = await fetch(`http://localhost:8000/api/customers/check-email/${encodeURIComponent(this.guest.email)}`);
         const data = await response.json();
         
         if (data.success && data.exists) {
-          // Email already exists - skip verification, proceed directly to payment
+          console.log('✅ Returning customer detected, proceeding directly to payment');
           this.emailVerified = true;
           this.verifiedEmail = this.guest.email;
           await this.payNow();
         } else {
-          // Email is new - show verification modal
           this.showVerificationModal = true;
         }
       } catch (error) {
         console.error('Error checking email:', error);
-        // On error, show verification modal to be safe
         this.showVerificationModal = true;
       }
     },
@@ -416,26 +402,27 @@ export default {
     },
     
     async proceedWithPayment(email) {
-      // Close modal
       this.showVerificationModal = false;
-      
-      // Proceed with payment
       await this.payNow();
     },
+    
     async payNow() {
-      // Email verification already done in modal
-
       this.loading = true;
 
       const bookingData = JSON.parse(localStorage.getItem('pendingBooking') || '{}');
       const customerName = this.guest.firstName + ' ' + this.guest.lastName;
       
+      // Debug logging
+      console.log('🔍 Preparing booking:');
+      console.log('  - auth.user:', this.auth.user);
+      console.log('  - userId to send:', this.auth.user?.id || null);
+      
       try {
-        // Step 1: Create booking with customer info in database
         const bookingResponse = await fetch('http://localhost:8000/api/bookings/confirm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            userId: this.auth.user?.id || null,  // Send logged-in user ID to link booking to customer
             guest: {
               ...this.guest,
               phone: '+63' + this.guest.phone
@@ -464,7 +451,6 @@ export default {
 
         const { bookingId, bookingReference, paymentReference } = bookingResult.data;
 
-        // Step 2: Create PayMongo payment link
         const paymentResponse = await fetch('http://localhost:8000/api/paymongo/create-payment-link', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -483,10 +469,8 @@ export default {
           throw new Error(paymentData.error || 'Failed to create payment link');
         }
 
-        // Extract payment link ID from PayMongo response
         const paymentLinkId = paymentData.payment_id;
 
-        // Step 3: Update payment record with PayMongo details
         await fetch('http://localhost:8000/api/bookings/update-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -499,27 +483,8 @@ export default {
           })
         });
 
-        // Step 4: Save booking details to localStorage
-        const finalBooking = {
-          ...bookingData,
-          bookingId,
-          bookingReference,
-          paymentReference,
-          guest: {
-            ...this.guest,
-            fullName: customerName,
-            phone: '+63' + this.guest.phone
-          },
-          selectedPayment: this.selectedPayment,
-          total: this.subtotal
-        };
-
-        // Step 4: Clear all booking-related localStorage
-        // This prevents the booking from being resubmitted if user goes back
         localStorage.removeItem('pendingBooking');
         
-        // Save payment tracking info to sessionStorage (cleared when browser closes)
-        // This is critical because PayMongo redirect won't preserve URL parameters
         const paymentTrackingInfo = {
           bookingId: bookingId,
           bookingReference: bookingReference,
@@ -530,10 +495,8 @@ export default {
         sessionStorage.setItem('paymentTracking', JSON.stringify(paymentTrackingInfo));
         console.log('💾 Saved payment tracking to sessionStorage:', paymentTrackingInfo);
 
-        // Step 5: Open PayMongo checkout in new tab/window
         window.open(paymentData.checkout_url, '_blank');
         
-        // Redirect current tab to payment-return page to poll for payment status
         setTimeout(() => {
           this.$router.push(`/payment-return`);
         }, 1000);
@@ -543,10 +506,45 @@ export default {
         alert(err.message || 'Failed to process booking. Please try again.');
         this.loading = false;
       }
+    },
+
+    async loadCustomerProfile() {
+      if (!this.auth.user?.email) {
+        console.log('No logged-in user, skipping profile load');
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:8000/api/customers/profile/${encodeURIComponent(this.auth.user.email)}`);
+        
+        if (!response.ok) {
+          console.error('Failed to fetch customer profile');
+          return;
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.customer) {
+          const profile = data.customer;
+          
+          // Pre-fill guest information from customer profile
+          this.guest.firstName = profile.firstName || '';
+          this.guest.lastName = profile.lastName || '';
+          this.guest.email = profile.email || this.auth.user.email;
+          this.guest.phone = profile.phone || '';
+          this.guest.address = profile.address || '';
+          this.guest.city = profile.city || '';
+          this.guest.country = profile.country || 'Philippines';
+          this.guest.postal = profile.postalCode || '';
+          
+          console.log('✅ Customer profile loaded and form pre-filled');
+        }
+      } catch (error) {
+        console.error('Error loading customer profile:', error);
+      }
     }
   },
   mounted() {
-    // Animate reveal elements
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -556,57 +554,34 @@ export default {
       });
     }, { threshold: 0.05 });
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    
+    // Load customer profile to pre-fill form
+    this.loadCustomerProfile();
   }
 };
 </script>
 
 <style scoped>
-/* Enhanced Design with Depth & Sophistication */
+.customer-booking-page {
+  background: linear-gradient(to bottom, #f7fafc, #ffffff);
+  min-height: 100vh;
+}
+
 :root {
   --primary-blue: #2B6CB0; 
   --accent-blue: #63B3ED; 
-  --warm-brown: #C19A6B; 
-  --deep-brown: #8B5E3C;
-  --white: #ffffff; 
   --neutral-gray: #F5F5F5; 
   --text-dark: #2D3748; 
   --text-muted: #718096;
-  --shadow: 0 4px 12px rgba(2, 8, 20, 0.08); 
-  --shadow-lg: 0 10px 30px rgba(2, 8, 20, 0.12);
-  --shadow-xl: 0 20px 40px rgba(2, 8, 20, 0.15);
-  --shadow-2xl: 0 30px 60px rgba(2, 8, 20, 0.2);
-  --radius: 16px; 
-  --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  background: #63B3ED;
 }
 
-    body { 
-      font-family: 'Inter', sans-serif; 
-      background: linear-gradient(to bottom, #5895bd, var(--white)); 
-      overflow-x: hidden; 
-    }
-
-/* Enhanced Card with Gradient Background & Elevated Shadow */
 .section-card { 
   background: linear-gradient(135deg, #ffffff 0%, #F8FBFF 100%);
   border-radius: 16px;
   padding: 1.5rem; 
   box-shadow: 0 8px 32px rgba(43, 108, 176, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(43, 108, 176, 0.15);
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.section-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-  opacity: 0.8;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .section-card:hover {
@@ -614,90 +589,44 @@ export default {
   transform: translateY(-4px);
 }
 
-/* Enhanced Form Input with Gradient Border & Glow (compact) */
 .form-input {
   width: 100%;
-  max-width: auto;
-  box-sizing: border-box;
   padding: 0.65rem 0.85rem;
   border: 1.5px solid #E2E8F0;
   border-radius: 12px;
   font-size: 0.96rem;
   transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   background: linear-gradient(135deg, rgba(248,250,252,0.95) 0%, rgba(240,245,250,0.92) 100%);
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
-  position: relative;
 }
 
 .form-input:focus {
   outline: none;
   border-color: var(--primary-blue);
   background: linear-gradient(135deg, #FFFFFF 0%, rgba(240, 245, 250, 0.95) 100%);
-  box-shadow: 
-    inset 0 2px 4px rgba(0, 0, 0, 0.02),
-    0 0 0 3px rgba(43, 108, 176, 0.1),
-    0 4px 12px rgba(43, 108, 176, 0.15);
+  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1), 0 4px 12px rgba(43, 108, 176, 0.15);
   transform: translateY(-2px);
 }
 
-/* Labels: slightly smaller to reduce visual weight */
-.section-card label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.35rem; display: block; }
-
-.form-input:hover:not(:focus) {
-  border-color: #CBD5E0;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
-}
-
-/* Enhanced Primary Button with Gradient & Shadow (compact) */
-.primarybtn- {
+.btn-primary {
   background: linear-gradient(135deg, #2B6CB0 0%, #1D4A7A 60%);
   color: white;
   padding: 0.85rem 1rem;
   border: none;
   border-radius: 12px;
   font-weight: 700;
-  transition: var(--transition);
   box-shadow: 0 8px 24px rgba(43,108,176,0.28);
   width: 100%;
-  max-width: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  position: relative;
-  overflow: hidden;
   cursor: pointer;
-  margin-left: 0;
-}
-
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.6s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .btn-primary:hover:not(.btn-loading) {
   transform: translateY(-3px);
-  box-shadow: 
-    0 12px 32px rgba(43, 108, 176, 0.45),
-    0 6px 16px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.btn-primary:hover:not(.btn-loading)::before {
-  left: 100%;
-}
-
-.btn-primary:active:not(.btn-loading) {
-  transform: translateY(-1px);
-  box-shadow: 
-    0 6px 16px rgba(43, 108, 176, 0.3),
-    inset 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 32px rgba(43, 108, 176, 0.45);
 }
 
 .btn-loading { 
@@ -722,12 +651,9 @@ export default {
 }
 
 @keyframes spin { 
-  to { 
-    transform: rotate(360deg); 
-  } 
+  to { transform: rotate(360deg); } 
 }
 
-/* Enhanced Payment Options with Gradient & 3D Effect */
 .payment-option { 
   border: 2px solid transparent;
   border-radius: 14px; 
@@ -738,54 +664,36 @@ export default {
   display: flex; 
   align-items: center; 
   justify-content: space-between;
-  position: relative;
-  overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.payment-option::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
 }
 
 .payment-option:hover {
   transform: translateY(-3px);
-  box-shadow: 
-    0 6px 20px rgba(43, 108, 176, 0.15),
-    0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 20px rgba(43, 108, 176, 0.15);
   border-color: rgba(43, 108, 176, 0.2);
 }
 
 .payment-option.selected { 
   border-color: var(--primary-blue);
   background: linear-gradient(135deg, rgba(43, 108, 176, 0.08) 0%, rgba(99, 179, 237, 0.05) 100%);
-  box-shadow: 
-    0 8px 24px rgba(43, 108, 176, 0.2),
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 24px rgba(43, 108, 176, 0.2);
 }
 
 .payment-option .check-icon { 
   display: none;
-  animation: checkPulse 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .payment-option.selected .check-icon { 
   display: block;
+  animation: checkPulse 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes checkPulse {
-  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+  0% { transform: scale(0); opacity: 0; }
   50% { transform: scale(1.2); }
-  100% { transform: scale(1) rotate(0); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-/* Enhanced Counter Button with Gradient */
 .counter-btn { 
   width: 2.25rem; 
   height: 2.25rem; 
@@ -794,23 +702,12 @@ export default {
   color: var(--primary-blue); 
   display: flex; 
   align-items: center; 
-  justify-content: center; 
+  justify-center: center; 
   font-size: 0.875rem; 
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: linear-gradient(135deg, #FFFFFF 0%, #F8FBFF 100%);
   box-shadow: 0 2px 6px rgba(43, 108, 176, 0.12);
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.counter-btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(43, 108, 176, 0.2) 0%, transparent 50%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
 }
 
 .counter-btn:hover {
@@ -820,12 +717,6 @@ export default {
   box-shadow: 0 6px 16px rgba(43, 108, 176, 0.28);
 }
 
-.counter-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(43, 108, 176, 0.15);
-}
-
-/* Reveal Animation with Stagger */
 .reveal { 
   opacity: 0; 
   transform: translateY(20px); 
@@ -838,7 +729,6 @@ export default {
   transform: translateY(0);
 }
 
-/* Enhanced Modal with Backdrop Blur & Animation */
 .modal-overlay { 
   position: fixed; 
   inset: 0; 
@@ -849,18 +739,6 @@ export default {
   align-items: center; 
   justify-content: center; 
   padding: 1rem;
-  animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
 }
 
 .modal-content { 
@@ -869,25 +747,9 @@ export default {
   width: 100%; 
   max-width: 25rem; 
   padding: 2rem; 
-  box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.25),
-    0 10px 30px rgba(43, 108, 176, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
   text-align: center;
   animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  position: relative;
-  overflow: hidden;
-}
-
-.modal-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(43, 108, 176, 0.3), transparent);
 }
 
 @keyframes modalSlideUp {
@@ -901,42 +763,11 @@ export default {
   }
 }
 
-/* Success Icon Enhancement */
-.modal-content .w-16 {
-  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.25), 
-              0 0 0 1px rgba(34, 197, 94, 0.1);
-  animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0) rotate(-45deg);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) rotate(0);
-  }
-}
-
-/* Mobile adjustments: reduce padding, font-size and avoid large controls */
 @media (max-width: 640px) {
-  .section-card { padding: 0.75rem; border-radius: calc(var(--radius) - 8px); }
-  .form-input { padding: 0.6rem 0.75rem; font-size: 0.95rem; border-radius: 12px; }
-  .btn-primary { padding: 0.7rem 0.9rem; font-size: 0.95rem; border-radius: 12px; }
+  .section-card { padding: 0.75rem; }
+  .form-input { padding: 0.6rem 0.75rem; font-size: 0.95rem; }
+  .btn-primary { padding: 0.7rem 0.9rem; font-size: 0.95rem; }
   .payment-option { padding: 0.65rem; }
   .counter-btn { width: 2rem; height: 2rem; font-size: 0.85rem; }
-  .mobile-grid { gap: 0.5rem; }
-  .space-y-5 > * { margin-bottom: 0.9rem; }
-  .modal-content { padding: 1rem; max-width: 20rem; }
-  .section-card::before, .payment-option::before, .modal-content::before { display: none; }
 }
-
-/* Prevent hover lifts on touch devices, only enable on hover-capable devices */
-@media (hover: hover) and (pointer: fine) {
-  .section-card:hover { transform: translateY(-4px); }
-  .payment-option:hover { transform: translateY(-3px); }
-  .btn-primary:hover { transform: translateY(-3px); }
-}
-
 </style>

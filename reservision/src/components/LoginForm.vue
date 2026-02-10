@@ -117,10 +117,46 @@ const redirectByRole = (role) => {
 
 
 const handleSubmit = async () => {
-  const result = await authStore.login(formData.email, formData.password)
+  try {
+    authStore.setLoading(true);
+    authStore.clearError();
 
-  if (result.success) {
-    await redirectByRole(result.role)
+    const response = await fetch('http://localhost:8000/api/customers/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email: formData.email, 
+        password: formData.password 
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      // Store the token
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+      
+      // Store user data
+      if (data.customer) {
+        localStorage.setItem('user', JSON.stringify(data.customer));
+        
+        // Update auth store with user info
+        authStore.setUser(data.customer);
+      }
+
+      // Redirect by role
+      const role = data.customer?.role || 'customer';
+      await redirectByRole(role);
+    } else {
+      authStore.setError(data.error || 'Login failed. Please check your credentials.');
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    authStore.setError('Server error. Please try again later.');
+  } finally {
+    authStore.setLoading(false);
   }
 }
 

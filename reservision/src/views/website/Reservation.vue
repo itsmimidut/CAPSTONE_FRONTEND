@@ -369,6 +369,7 @@ export default {
         this.itemData.cottages = []
         this.itemData.events = []
         this.itemData.food = []
+
         
         console.log('🗑️ Cleared all arrays')
         
@@ -419,7 +420,7 @@ export default {
             console.log(`  ⚠️ No match for category_type: "${categoryType}"`)
           }
         })
-        
+        this.clearDates() // Clear dates after loading items
         console.log('\n✅ FINAL COUNTS:')
         console.log('Rooms:', this.itemData.rooms.length, this.itemData.rooms)
         console.log('Cottages:', this.itemData.cottages.length, this.itemData.cottages)
@@ -523,6 +524,7 @@ export default {
     clearDates() {
       this.checkIn = null
       this.checkOut = null
+      this.selectedItem = [];
     },
     changeAdults(delta) {
       this.adults = Math.max(1, this.adults + delta)
@@ -736,19 +738,20 @@ export default {
     }
   },
   mounted() {
-    // Load booking from localStorage
+    // REMOVED: Auto-loading from localStorage to ensure fresh booking on page reload
+    // Previously, this code loaded the booking from localStorage automatically,
+    // causing the booking summary to have items even on fresh page loads.
+    // If you want to restore the previous booking feature, uncomment the code below:
+    
+    /*
     const savedBooking = localStorage.getItem('pendingBooking')
     if (savedBooking) {
       try {
         const data = JSON.parse(savedBooking)
-        
-        // Load dates first (IMPORTANT: this was missing!)
         if (data.checkIn) this.checkIn = new Date(data.checkIn)
         if (data.checkOut) this.checkOut = new Date(data.checkOut)
         if (data.adults) this.adults = data.adults
         if (data.children) this.children = data.children
-        
-        // Load items if they exist
         if (data.items && data.items.length > 0) {
           this.booking = data.items
           console.log('📋 Loaded booking from localStorage:', this.booking.length, 'items')
@@ -757,6 +760,11 @@ export default {
         console.error('Error loading booking from localStorage:', e)
       }
     }
+    */
+    
+    // Clear any previous booking from localStorage on fresh page load
+    localStorage.removeItem('pendingBooking')
+    console.log('🗑️ Cleared previous booking from localStorage')
     
     // Fetch data from API
     this.fetchInventoryItems()
