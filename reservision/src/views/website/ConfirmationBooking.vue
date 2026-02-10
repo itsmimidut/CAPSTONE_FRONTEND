@@ -159,25 +159,25 @@
           <!-- Payment -->
           <div class="section-card reveal">
             <h2 class="text-lg font-bold text-text-dark mb-3">Payment Method</h2>
-            <div class="space-y-2.5">
-              <div 
-                v-for="method in paymentMethods" 
-                :key="method.id"
-                @click="selectPayment(method.id)"
-                class="payment-option"
-                :class="{ 'selected': selectedPayment === method.id }"
+            <div class="flex gap-4 mb-2">
+              <button
+                type="button"
+                class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
+                :class="selectedPayment === 'gcash' ? 'bg-green-50 border-green-600 text-green-700 ring-2 ring-green-200' : 'bg-white border-gray-300 text-gray-700'"
+                @click="selectPayment('gcash')"
               >
-                <div class="flex items-center">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center mr-3" :class="method.bgClass">
-                    <i :class="method.iconClass"></i>
-                  </div>
-                  <div class="flex-1">
-                    <div class="font-medium text-text-dark text-sm">{{ method.name }}</div>
-                    <div class="text-xs text-text-muted">{{ method.description }}</div>
-                  </div>
-                </div>
-                <i class="fas fa-check-circle text-primary-blue text-lg check-icon"></i>
-              </div>
+                <i class="fas fa-wallet text-green-600 text-lg mr-2"></i> GCash
+                <span v-if="selectedPayment === 'gcash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+              </button>
+              <button
+                type="button"
+                class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
+                :class="selectedPayment === 'cash' ? 'bg-yellow-50 border-yellow-600 text-yellow-700 ring-2 ring-yellow-200' : 'bg-white border-gray-300 text-gray-700'"
+                @click="selectPayment('cash')"
+              >
+                <i class="fas fa-money-bill-wave text-yellow-600 text-lg mr-2"></i> Cash
+                <span v-if="selectedPayment === 'cash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+              </button>
             </div>
 
             <div class="mt-4 flex items-start">
@@ -243,11 +243,11 @@ const guest = ref({
 })
 
 // Payment methods
-const paymentMethods = [
-  { id: 'paymaya', name: 'PayMaya', description: 'E-wallet', iconClass: 'fas fa-mobile-alt text-green-600 text-lg', bgClass: 'bg-green-50' },
-  { id: 'gcash', name: 'GCash', description: 'E-wallet', iconClass: 'fas fa-wallet text-green-600 text-lg', bgClass: 'bg-green-50' },
-  { id: 'bank', name: 'Bank Transfer', description: 'BDO, BPI, etc.', iconClass: 'fas fa-university text-blue-600 text-lg', bgClass: 'bg-blue-50' }
-]
+// Only GCash and Cash as payment methods (for reference, not used in template)
+// const paymentMethods = [
+//   { id: 'gcash', name: 'GCash', description: 'E-wallet', iconClass: 'fas fa-wallet text-green-600 text-lg', bgClass: 'bg-green-50' },
+//   { id: 'cash', name: 'Cash', description: 'Pay at counter', iconClass: 'fas fa-money-bill-wave text-yellow-600 text-lg', bgClass: 'bg-yellow-50' }
+// ]
 
 const selectedPayment = ref('gcash')
 const termsAgreed = ref(false)
