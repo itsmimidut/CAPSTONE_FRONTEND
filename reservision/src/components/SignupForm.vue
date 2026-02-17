@@ -191,12 +191,6 @@ const handleSubmit = async () => {
     authStore.setError('Server error. Please try again later.');
   } finally {
     authStore.setLoading(false);
-  const result = await authStore.register(formData.email, formData.password, formData.fullName)
-  
-  if (result.success) {
-    // You might want to use a toast notification instead of alert
-    // alert('Account created successfully! Redirecting to login...')
-    router.push('/login')
   }
 }
 

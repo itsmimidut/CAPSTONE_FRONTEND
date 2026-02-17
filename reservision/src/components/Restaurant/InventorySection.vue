@@ -43,6 +43,13 @@
       />
     </div>
 
+    <!-- Auto-Deduction Info Banner -->
+    <!-- <div class="auto-deduction-banner">
+      <button class="btn-view-links" @click="showMenuIngredientsModal = true">
+        <i class="fas fa-link"></i> View Menu Links
+      </button>
+    </div> -->
+
     <!-- Search and Filter Controls -->
     <div class="controls-container">
       <!-- Search box for filtering items by name (case-insensitive) -->
@@ -177,6 +184,22 @@
             </div>
           </div>
 
+          <!-- Threshold field for low-stock alert level -->
+          <div class="form-group">
+            <label for="threshold">Low Stock Threshold *</label>
+            <input 
+              id="threshold"
+              v-model.number="newItem.threshold"
+              type="number" 
+              placeholder="Alert when stock falls below this level"
+              required
+              min="0"
+              step="0.01"
+              class="form-input"
+            />
+            <small class="form-hint">You'll be alerted when stock falls below this level</small>
+          </div>
+
           <!-- Form action buttons: Cancel and Submit -->
           <div class="form-actions">
             <button type="button" class="btn-cancel" @click="closeModal">
@@ -246,6 +269,22 @@
             </div>
           </div>
 
+          <!-- Threshold field for low-stock alert level -->
+          <div class="form-group">
+            <label for="editThreshold">Low Stock Threshold *</label>
+            <input 
+              id="editThreshold"
+              v-model.number="editingItem.threshold"
+              type="number" 
+              placeholder="Alert when stock falls below this level"
+              required
+              min="0"
+              step="0.01"
+              class="form-input"
+            />
+            <small class="form-hint">You'll be alerted when stock falls below this level</small>
+          </div>
+
           <!-- Form action buttons: Cancel and Save -->
           <div class="form-actions">
             <button type="button" class="btn-cancel" @click="closeEditModal">
@@ -256,6 +295,62 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Menu Ingredients Modal: Show which menu items use inventory ingredients -->
+    <div v-if="showMenuIngredientsModal" class="modal-overlay modal-large" @click.self="showMenuIngredientsModal = false">
+      <div class="modal-content modal-wide">
+        <div class="modal-header">
+          <h3><i class="fas fa-link"></i> Menu-Inventory Links</h3>
+          <button class="btn-close" @click="showMenuIngredientsModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <p>When customers order these menu items, the linked ingredients are automatically deducted from inventory.</p>
+          </div>
+
+          <div v-if="loadingLinks" class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i> Loading menu links...
+          </div>
+
+          <div v-else-if="menuIngredientLinks.length === 0" class="empty-links">
+            <i class="fas fa-unlink"></i>
+            <p>No menu items are linked to inventory yet.</p>
+            <small>Contact admin to set up menu-ingredient relationships.</small>
+          </div>
+
+          <div v-else class="links-grid">
+            <div v-for="menu in menuIngredientLinks" :key="menu.menu_id" class="menu-card">
+              <div class="menu-header">
+                <h4><i class="fas fa-utensils"></i> {{ menu.menu_name }}</h4>
+                <span class="menu-category">{{ menu.category }}</span>
+              </div>
+              
+              <div class="ingredients-list">
+                <div v-for="ing in menu.ingredients" :key="ing.inventory_id" class="ingredient-item">
+                  <span class="ing-name">
+                    <i class="fas fa-cube"></i> {{ ing.item_name }}
+                  </span>
+                  <span class="ing-quantity">
+                    {{ ing.quantity_needed }} {{ ing.unit }} <small>per serving</small>
+                  </span>
+                  <span :class="`ing-status status-${ing.status}`">
+                    {{ ing.inventory_quantity }} {{ ing.unit }} available
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="showMenuIngredientsModal = false">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -275,7 +370,7 @@
  *   - Show inventory statistics (low stock count, good stock count, total items)
  */
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import StatusBadge from './StatusBadge.vue'
 import StatCard from './StatCard.vue'
 
@@ -296,6 +391,11 @@ const filterStatus = ref('') // Filter dropdown: '' (all), 'low' (low stock), 'g
 // Modal visibility states
 const showAddItemModal = ref(false) // Controls visibility of "Add Item" modal dialog
 const showEditModal = ref(false) // Controls visibility of "Edit Item" modal dialog
+const showMenuIngredientsModal = ref(false) // Controls visibility of "Menu Ingredients" modal
+
+// Menu ingredients state
+const menuIngredientLinks = ref([]) // Array of menu items with their linked ingredients
+const loadingLinks = ref(false) // Loading state for fetching menu links
 
 // Form data for editing
 const editingItem = ref(null) // Currently edited item object with all its fields
@@ -406,15 +506,17 @@ const handleDragDrop = async (e, isEdit = false) => {
 /**
  * Reactive object for new inventory item being added
  * Fields:
- * - item_name: Name/description of the inventory item
+ * - item: Name/description of the inventory item (matches v-model binding)
  * - quantity: Current stock quantity (number)
  * - unit: Unit of measurement (kg, L, pcs, etc)
+ * - threshold: Low stock alert level
  * - image_url: Base64 encoded image data for product preview
  */
 const newItem = ref({
-  item_name: '',
+  item: '',
   quantity: 0,
   unit: '',
+  threshold: 0,
   image_url: '',
 })
 
@@ -453,7 +555,8 @@ const handleEditSubmit = () => {
       id: editingItem.value.id || editingItem.value.inventory_id,
       item_name: editingItem.value.item || editingItem.value.item_name,
       quantity: editingItem.value.quantity,
-      unit: editingItem.value.unit
+      unit: editingItem.value.unit,
+      threshold: editingItem.value.threshold
     }
     emit('update-item', itemToUpdate)
     closeEditModal()
@@ -466,6 +569,7 @@ const handleEditSubmit = () => {
 const closeEditModal = () => {
   showEditModal.value = false
   editingItem.value = null
+  editImagePreview.value = ''
 }
 
 /**
@@ -483,15 +587,16 @@ const handleDelete = (item) => {
 /**
  * Submits new inventory item to parent component
  * Validates required fields before submission
- * Required: item name, unit, and valid quantities >= 0
+ * Required: item name, unit, threshold and valid quantities >= 0
  * Emits add-item event with formatted data
  */
 const handleAddItem = () => {
-  if (newItem.value.item && newItem.value.quantity >= 0 && newItem.value.unit) {
+  if (newItem.value.item && newItem.value.quantity >= 0 && newItem.value.unit && newItem.value.threshold >= 0) {
     const itemToAdd = {
       item_name: newItem.value.item,
       quantity: newItem.value.quantity,
-      unit: newItem.value.unit
+      unit: newItem.value.unit,
+      threshold: newItem.value.threshold
     }
     emit('add-item', itemToAdd)
     closeModal()
@@ -507,8 +612,43 @@ const closeModal = () => {
     item: '',
     quantity: 0,
     unit: '',
+    threshold: 0,
+    image_url: '',
+  }
+  imagePreview.value = ''
+}
+
+/**
+ * Fetches menu items with their linked ingredients
+ * Shows which menu items will auto-deduct from inventory
+ */
+const fetchMenuIngredientLinks = async () => {
+  loadingLinks.value = true
+  try {
+    const response = await fetch('http://localhost:8000/api/restaurant/menu-with-ingredients')
+    const data = await response.json()
+    
+    if (data.success) {
+      // Filter out menu items that have no ingredients
+      menuIngredientLinks.value = data.data.filter(menu => {
+        return menu.ingredients && menu.ingredients.length > 0 && menu.ingredients[0]?.inventory_id
+      })
+    }
+  } catch (error) {
+    console.error('Error fetching menu links:', error)
+  } finally {
+    loadingLinks.value = false
   }
 }
+
+// Watch for modal open to fetch links
+watch(showMenuIngredientsModal, (newVal) => {
+  if (newVal) {
+    fetchMenuIngredientLinks()
+  }
+})
+
+
 </script>
 
 <style scoped>
@@ -597,6 +737,103 @@ const closeModal = () => {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+}
+
+/* Auto-Deduction Banner Styles */
+.auto-deduction-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.banner-icon {
+  font-size: 3rem;
+  opacity: 0.9;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.banner-content {
+  flex: 1;
+}
+
+.banner-content h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.banner-content p {
+  margin: 0 0 1rem 0;
+  opacity: 0.95;
+  line-height: 1.5;
+}
+
+.banner-features {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.feature-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-view-links {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.btn-view-links:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .controls-container {
@@ -1122,6 +1359,193 @@ const closeModal = () => {
 
   .form-actions {
     flex-direction: column;
+  }
+}
+
+/* Menu Ingredients Modal Styles */
+.modal-large {
+  z-index: 1001;
+}
+
+.modal-wide {
+  max-width: 900px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.info-box {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #1E40AF;
+}
+
+.info-box i {
+  font-size: 1.25rem;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: #6B7280;
+  font-size: 1.1rem;
+}
+
+.loading-state i {
+  margin-right: 0.5rem;
+}
+
+.empty-links {
+  text-align: center;
+  padding: 3rem;
+  color: #9CA3AF;
+}
+
+.empty-links i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-links p {
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+}
+
+.empty-links small {
+  color: #6B7280;
+}
+
+.links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.menu-card {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: all 0.3s;
+}
+
+.menu-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #F3F4F6;
+}
+
+.menu-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1F2937;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.menu-category {
+  background: #DBEAFE;
+  color: #1E40AF;
+  padding: 0.3rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.ingredients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ingredient-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  background: #F9FAFB;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.ing-name {
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ing-name i {
+  color: #6B7280;
+}
+
+.ing-quantity {
+  color: #6B7280;
+  white-space: nowrap;
+}
+
+.ing-quantity small {
+  color: #9CA3AF;
+  font-size: 0.75rem;
+}
+
+.ing-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ing-status.status-good {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.ing-status.status-low {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.ing-status.status-critical {
+  background: #FEE2E2;
+  color: #991B1B;
+}
+
+@media (max-width: 768px) {
+  .links-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ingredient-item {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .auto-deduction-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .banner-icon {
+    font-size: 2rem;
   }
 }
 </style>

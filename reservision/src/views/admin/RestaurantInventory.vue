@@ -50,17 +50,16 @@ const sidebarCollapsed = ref(false)
 /**
  * Computed property that transforms raw inventory data from the store
  * Maps backend field names to frontend-friendly field names
- * Adds calculated 'status' field based on quantity vs reorder_level comparison
  * 
  * Fields:
  * - id: Unique inventory item identifier (from inventory_id)
  * - item: Display name of the inventory item
- * - category: Product category for organization
+ * - category: Product category for organization (optional, defaults to '')
  * - quantity: Current stock quantity
  * - unit: Unit of measurement (kg, L, pcs, etc)
- * - threshold: Reorder level alert threshold (renamed from reorder_level)
- * - status: Calculated status - 'low' if quantity < threshold, 'good' otherwise
- * - supplier: Supplier information for the item
+ * - threshold: Reorder level alert threshold (uses backend threshold field)
+ * - status: Backend-calculated status (good/low/critical based on threshold logic)
+ * - supplier: Supplier information for the item (optional, defaults to '')
  * - last_updated: Timestamp of last inventory update
  * - image_url: Optional product image URL
  */
@@ -68,12 +67,12 @@ const inventory = computed(() =>
   restaurant.inventory.map(i => ({
     id: i.inventory_id,
     item: i.item_name,
-    category: i.category,
+    category: i.category || '',
     quantity: i.quantity,
     unit: i.unit,
-    threshold: i.reorder_level, // Maps 'reorder_level' from backend to 'threshold' for UI
-    status: i.quantity < i.reorder_level ? 'low' : 'good', // Calculates stock status dynamically
-    supplier: i.supplier,
+    threshold: i.threshold,
+    status: i.status, // Use backend-calculated status (good/low/critical)
+    supplier: i.supplier || '',
     last_updated: i.last_updated,
     image_url: i.image_url || ''
   }))
@@ -105,7 +104,7 @@ const editInventoryItem = (item) => {
 
 const updateInventoryItem = async (item) => {
   // Updates an existing inventory item with new data
-  // Supports field updates: item_name, quantity, unit, threshold (reorder_level)
+  // Supports field updates: item_name, quantity, unit, threshold
   try {
     const itemId = item.inventory_id || item.id
     await restaurant.updateInventoryItem(itemId, item)

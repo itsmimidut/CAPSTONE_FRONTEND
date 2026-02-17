@@ -163,9 +163,6 @@ const handleSubmit = async () => {
     authStore.setError('Server error. Please try again later.');
   } finally {
     authStore.setLoading(false);
-  const result = await authStore.login(formData.email, formData.password)
-  if (result.success) {
-    await redirectByRole(result.role)
   }
 }
 

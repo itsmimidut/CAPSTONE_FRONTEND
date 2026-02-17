@@ -241,8 +241,8 @@ export const useRestaurantStore = defineStore('restaurant', {
             this.loading = true;
             try {
                 const response = await axios.get(`${API_BASE}/inventory`);
-                this.inventory = response.data;
-                this.error = null;
+                // Extract the data array from the wrapped response
+                this.inventory = response.data.data || response.data;
             } catch (err) {
                 this.error = err.response?.data?.message || err.message;
                 console.error('Error fetching inventory:', err);

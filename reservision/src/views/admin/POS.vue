@@ -324,6 +324,16 @@ export default {
         const response = await axios.get(`${API_BASE}/items`);
         const items = response.data;
         
+        console.log('📦 Fetched items from backend:', items);
+        console.log('📦 Total items:', items.length);
+        
+        // Log items by category
+        const categoryCounts = {};
+        items.forEach(item => {
+          categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
+        });
+        console.log('📦 Items per category:', categoryCounts);
+        
         // Group items by category
         this.categories.forEach(category => {
           category.items = items
@@ -332,6 +342,8 @@ export default {
               name: item.name,
               price: parseFloat(item.price)
             }));
+          
+          console.log(`📦 ${category.name} (${category.id}):`, category.items.length, 'items');
         });
       } catch (error) {
         console.error('Error fetching POS items:', error);
