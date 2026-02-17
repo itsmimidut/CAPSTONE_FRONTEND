@@ -10,7 +10,10 @@
     <section class="hero-section">
       <div class="hero-overlay"></div>
       <div class="hero-content">
-        <h1 class="hero-title animate-fade-in">Swimming Lessons</h1>
+        <h1 class="hero-title animate-fade-in">
+          <span class="text-blue-800">Swimming</span> 
+          <span class="text-blue-600">Lessons</span>
+        </h1>
         <p class="hero-subtitle animate-slide-up">
           Learn to swim with certified instructors in a safe, fun environment
         </p>
@@ -31,7 +34,10 @@
     <section class="section-container bg-white">
       <div class="max-w-6xl mx-auto px-4">
         <div class="text-center mb-10">
-          <h2 class="section-title">Why Choose Our Swimming Lessons?</h2>
+          <h2 class="section-title">
+            <span class="text-blue-800">Why Choose Our</span> 
+            <span class="text-blue-600">Swimming Lessons?</span>
+          </h2>
           <p class="section-subtitle">
             Professional instruction tailored to your skill level
           </p>
@@ -54,10 +60,13 @@
     </section>
 
     <!-- Lesson Types -->
-    <section class="bg-gradient-to-b from-gray-50 to-white py-16">
+    <section class="bg-gradient-to-b from-blue-50 to-white py-16">
       <div class="max-w-6xl mx-auto px-4">
         <div class="text-center mb-10">
-          <h2 class="section-title">Our Programs</h2>
+          <h2 class="section-title">
+            <span class="text-blue-800">Our</span> 
+            <span class="text-blue-600">Programs</span>
+          </h2>
           <p class="section-subtitle">Choose the perfect lesson type for you</p>
         </div>
 
@@ -103,7 +112,10 @@
     <section class="section-container bg-white">
       <div class="max-w-6xl mx-auto px-4">
         <div class="text-center mb-10">
-          <h2 class="section-title">Our Facilities</h2>
+          <h2 class="section-title">
+            <span class="text-blue-800">Our</span> 
+            <span class="text-blue-600">Facilities</span>
+          </h2>
           <p class="section-subtitle">See where the magic happens</p>
         </div>
 
@@ -125,10 +137,13 @@
     </section>
 
     <!-- Schedule Section -->
-    <section class="bg-gradient-to-br from-blue-50 to-cyan-50 py-16">
+    <section class="bg-gradient-to-br from-blue-50 to-blue-100 py-16">
       <div class="max-w-4xl mx-auto px-4">
         <div class="text-center mb-10">
-          <h2 class="section-title">Class Schedule</h2>
+          <h2 class="section-title">
+            <span class="text-blue-800">Class</span> 
+            <span class="text-blue-600">Schedule</span>
+          </h2>
           <p class="section-subtitle">Find a time that works for you</p>
         </div>
 
@@ -151,7 +166,7 @@
           </table>
         </div>
         <div class="mt-6 text-center">
-          <button @click="openClassBookingModal()" class="btn-primary">
+          <button @click="openClassBookingModal()" class="class-session-btn">
             <i class="fas fa-calendar-plus mr-2"></i>
             Book a Class Session
           </button>
@@ -159,18 +174,17 @@
       </div>
     </section>
 
-
     <!-- CTA Section -->
     <section class="cta-section">
       <div class="max-w-4xl mx-auto px-4 text-center">
         <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
-          Ready to Make a Splash?
+          <span class="text-yellow-300">Ready to Make a Splash?</span>
         </h2>
         <p class="text-xl text-blue-100 mb-8">
           Join hundreds of students who've learned to swim with us
         </p>
         <div class="flex flex-wrap justify-center gap-4">
-          <button @click="revealEnrollmentForm" class="btn-white">
+          <button @click="revealEnrollmentForm" class="btn-yellow">
             <i class="fas fa-user-plus mr-2"></i>
             Enroll Now
           </button>
@@ -223,7 +237,10 @@
         <div class="modal-card">
           <div class="modal-header">
             <div>
-              <h2 class="section-title">Registration Form</h2>
+              <h2 class="section-title">
+                <span class="text-blue-800">Registration</span> 
+                <span class="text-blue-600">Form</span>
+              </h2>
               <p class="section-subtitle">Please complete all required fields</p>
             </div>
             <button class="modal-close" @click="closeEnrollmentForm" aria-label="Close">
@@ -231,7 +248,7 @@
             </button>
           </div>
 
-          <div class="text-center text-sm text-gray-600 mb-6">
+          <div class="text-center text-sm text-blue-600 mb-6">
             Nautical Highway, Bayanan II, Calapan City, Oriental Mindoro 5200
           </div>
 
@@ -332,7 +349,7 @@
             <div id="section-contact" class="form-section">
               <h3 class="form-section-title">Contact Information</h3>
               <div>
-                <label class="form-label">Student’s Address</label>
+                <label class="form-label">Student's Address</label>
                 <input type="text" class="form-input" />
               </div>
 
@@ -357,11 +374,11 @@
               <h3 class="form-section-title">Guardian Details</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="form-label">Father’s Name</label>
+                  <label class="form-label">Father's Name</label>
                   <input type="text" class="form-input" />
                 </div>
                 <div>
-                  <label class="form-label">Mother’s Name</label>
+                  <label class="form-label">Mother's Name</label>
                   <input type="text" class="form-input" />
                 </div>
               </div>
@@ -398,7 +415,7 @@
                   <p class="form-hint">Sign Over Printed Name</p>
                 </div>
                 <div>
-                  <label class="form-label">Parental Consent (student’s under 18)</label>
+                  <label class="form-label">Parental Consent (student's under 18)</label>
                   <input type="text" class="form-input" placeholder="Sign over printed name" />
                   <p class="form-hint">Sign Over Printed Name</p>
                 </div>
@@ -406,7 +423,7 @@
             </div>
 
             <div class="pt-2 flex flex-col sm:flex-row gap-3">
-              <button class="btn-primary w-full sm:w-auto" type="submit">
+              <button class="btn-yellow w-full sm:w-auto" type="submit">
                 Submit Enrollment
               </button>
               <button class="btn-outline-white w-full sm:w-auto" type="button" @click="closeEnrollmentForm">
@@ -439,13 +456,13 @@ const currentImageIndex = ref(0)
 
 const features = [
   { icon: 'fas fa-user-tie', title: 'Certified Instructors', description: 'Learn from experienced, certified swimming coaches with years of teaching experience', colorClass: 'bg-blue-100 text-blue-600' },
-  { icon: 'fas fa-shield-alt', title: 'Safety First', description: 'State-of-the-art facilities with lifeguards on duty and safety equipment available', colorClass: 'bg-green-100 text-green-600' },
-  { icon: 'fas fa-users', title: 'All Skill Levels', description: 'From beginners to advanced swimmers, we have programs tailored to your needs', colorClass: 'bg-purple-100 text-purple-600' }
+  { icon: 'fas fa-shield-alt', title: 'Safety First', description: 'State-of-the-art facilities with lifeguards on duty and safety equipment available', colorClass: 'bg-blue-100 text-blue-600' },
+  { icon: 'fas fa-users', title: 'All Skill Levels', description: 'From beginners to advanced swimmers, we have programs tailored to your needs', colorClass: 'bg-blue-100 text-blue-600' }
 ]
 
 const lessonTypes = [
   { type: 'Group Lessons', subtitle: 'Learn with friends', icon: 'fas fa-users', badgeClass: 'bg-blue-100 text-blue-600', price: 1500, duration: 'month', features: ['4-6 students per group','8 sessions per month','1 hour per session','Basic to intermediate levels','Fun group activities'] },
-  { type: 'Private Lessons', subtitle: 'One-on-one coaching', icon: 'fas fa-user', badgeClass: 'bg-purple-100 text-purple-600', price: 3500, duration: 'month', features: ['Personalized attention','8 sessions per month','1 hour per session','All skill levels','Flexible scheduling'] }
+  { type: 'Private Lessons', subtitle: 'One-on-one coaching', icon: 'fas fa-user', badgeClass: 'bg-blue-100 text-blue-600', price: 3500, duration: 'month', features: ['Personalized attention','8 sessions per month','1 hour per session','All skill levels','Flexible scheduling'] }
 ]
 
 const galleryImages = [
@@ -588,10 +605,14 @@ onMounted(() => {
 .hero-section {
   position: relative;
   height: 320px;
-  background: linear-gradient(135deg, rgba(43,108,176,0.9), rgba(99,179,237,0.8)),
-              url('https://images.unsplash.com/photo-1576610616656-d3aa5d1f4534?auto=format&fit=crop&w=1600&q=80');
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(30, 64, 175, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(253, 224, 71, 0.15) 0%, transparent 50%),
+    linear-gradient(135deg, rgba(30, 64, 175, 0.3) 0%, rgba(253, 224, 71, 0.2) 100%),
+    url('https://www.eduardosresort.com/images/IMG_4224.JPG');
   background-size: cover;
   background-position: center;
+  background-blend-mode: overlay;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -600,7 +621,8 @@ onMounted(() => {
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to bottom right, rgba(30, 64, 175, 0.3), rgba(253, 224, 71, 0.2));
+  z-index: 1;
 }
 
 .hero-content {
@@ -609,20 +631,31 @@ onMounted(() => {
   text-align: center;
   color: white;
   max-width: 800px;
-  padding: 0 1rem;
+  padding: 2rem;
+  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9));
+  backdrop-filter: blur(10px);
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  width: 90%;
 }
 
 .hero-title {
   font-size: 2.25rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .hero-subtitle {
   font-size: 1rem;
   margin-bottom: 1.25rem;
+  color: rgb(30, 41, 59);
   opacity: 0.95;
+  font-weight: 500;
 }
 
 .hero-actions {
@@ -632,32 +665,38 @@ onMounted(() => {
   flex-wrap: nowrap;
 }
 
+/* Yellow-300 Primary Button - High Contrast */
 .btn-primary {
-  background: linear-gradient(135deg, #C19A6B, #8B5E3C);
-  color: white;
+  background: #fbbf24;
+  color: #1e40af;
   padding: 0.85rem 1.5rem;
   border-radius: 50px;
-  font-weight: 600;
-  border: none;
+  font-weight: 700;
+  border: 3px solid #f59e0b;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(193, 154, 107, 0.3);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
   white-space: nowrap;
   font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(193, 154, 107, 0.4);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+  background: #f59e0b;
+  border-color: #d97706;
+  color: #1e3a8a;
 }
 
 .btn-outline {
   background: transparent;
-  color: white;
+  color: #1e40af;
   padding: 0.85rem 1.5rem;
   border-radius: 50px;
   font-weight: 600;
-  border: 2px solid white;
+  border: 2px solid #1e40af;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
@@ -665,8 +704,8 @@ onMounted(() => {
 }
 
 .btn-outline:hover {
-  background: white;
-  color: #2B6CB0;
+  background: #1e40af;
+  color: white;
 }
 
 .section-container {
@@ -676,8 +715,11 @@ onMounted(() => {
 .section-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #2D3748;
   margin-bottom: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .section-subtitle {
@@ -696,11 +738,13 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  border: 1px solid #E2E8F0;
 }
 
 .feature-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border-color: #2B6CB0;
 }
 
 .feature-icon {
@@ -733,11 +777,13 @@ onMounted(() => {
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   transition: all 0.3s ease;
+  border: 1px solid #E2E8F0;
 }
 
 .lesson-card:hover {
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   transform: translateY(-4px);
+  border-color: #2B6CB0;
 }
 
 .lesson-header {
@@ -800,21 +846,30 @@ onMounted(() => {
   font-size: 0.95rem;
 }
 
+/* White button with HIGH CONTRAST yellow outline - turns blue on hover */
 .lesson-enroll-btn {
   width: 100%;
-  background: linear-gradient(135deg, #2B6CB0, #63B3ED);
-  color: white;
+  background: white;
+  color: #1e40af;
   padding: 1rem;
   border-radius: 0.75rem;
-  font-weight: 600;
-  border: none;
+  font-weight: 700;
+  border: 3px solid #f59e0b;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 1rem;
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.2);
 }
 
 .lesson-enroll-btn:hover {
+  background: #1e40af;
+  color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
+  box-shadow: 0 6px 15px rgba(30, 64, 175, 0.3);
+  border-color: #1e40af;
+  border-width: 3px;
 }
 
 .gallery-grid {
@@ -847,7 +902,7 @@ onMounted(() => {
 .gallery-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(43, 108, 176, 0.8);
+  background: rgba(30, 64, 175, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -866,7 +921,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   padding: 1rem;
-  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  background: linear-gradient(to top, rgba(30, 64, 175, 0.8), transparent);
   color: white;
   font-weight: 600;
 }
@@ -876,6 +931,7 @@ onMounted(() => {
   border-radius: 1rem;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border: 1px solid #E2E8F0;
 }
 
 .schedule-table {
@@ -884,7 +940,7 @@ onMounted(() => {
 }
 
 .schedule-table thead {
-  background: linear-gradient(135deg, #2B6CB0, #63B3ED);
+  background: #1e40af;
   color: white;
 }
 
@@ -903,25 +959,65 @@ onMounted(() => {
   background: #F7FAFC;
 }
 
+/* White button with HIGH CONTRAST yellow outline - turns blue on hover */
+.class-session-btn {
+  background: white;
+  color: #1e40af;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-weight: 700;
+  border: 3px solid #f59e0b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 1rem;
+}
+
+.class-session-btn:hover {
+  background: #1e40af;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.3);
+  border-color: #1e40af;
+  border-width: 3px;
+}
+
+.class-session-btn i {
+  transition: transform 0.3s ease;
+}
+
+.class-session-btn:hover i {
+  transform: rotate(15deg);
+}
+
 .cta-section {
   background: linear-gradient(135deg, #2B6CB0, #1e40af);
   padding: 2rem 0;
 }
 
-.btn-white {
-  background: white;
-  color: #2B6CB0;
+/* Yellow-300 Button for CTA - High Contrast */
+.btn-yellow {
+  background: #fbbf24;
+  color: #1e40af;
   padding: 1rem 2rem;
   border-radius: 50px;
-  font-weight: 600;
-  border: none;
+  font-weight: 700;
+  border: 3px solid #f59e0b;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.btn-white:hover {
+.btn-yellow:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+  background: #f59e0b;
+  border-color: #d97706;
+  color: #1e3a8a;
 }
 
 .btn-outline-white {
@@ -1101,8 +1197,14 @@ onMounted(() => {
     height: 280px;
   }
   
+  .hero-content {
+    padding: 1.5rem;
+    width: 95%;
+  }
+  
   .hero-title {
     font-size: 1.75rem;
+    flex-direction: column;
   }
   
   .hero-subtitle {
@@ -1116,6 +1218,7 @@ onMounted(() => {
   .section-title {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
+    flex-direction: column;
   }
   
   .section-subtitle {
@@ -1140,6 +1243,16 @@ onMounted(() => {
   
   .cta-section {
     padding: 1.5rem 0;
+  }
+  
+  .hero-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .btn-primary, .btn-outline {
+    width: 100%;
+    max-width: 300px;
   }
 }
 </style>

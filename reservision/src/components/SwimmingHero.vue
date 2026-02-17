@@ -14,7 +14,7 @@ Safe, fun, and professional swimming programs for all ages
 .swimming-hero {
 height: 320px;
 background: linear-gradient(135deg, rgba(43,108,176,.75), rgba(193,154,107,.45)),
-url('https://images.unsplash.com/photo-1576610616656-d3aa5d1f4534') center/cover no-repeat;
+url('https://www.eduardosresort.com/images/IMG_4224.JPG') center/cover no-repeat;
 display: flex;
 align-items: center;
 justify-content: center;
