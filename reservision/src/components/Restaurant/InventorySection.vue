@@ -44,11 +44,14 @@
     </div>
 
     <!-- Auto-Deduction Info Banner -->
-    <!-- <div class="auto-deduction-banner">
+    <div class="auto-deduction-banner">
       <button class="btn-view-links" @click="showMenuIngredientsModal = true">
         <i class="fas fa-link"></i> View Menu Links
       </button>
-    </div> -->
+      <button class="btn-view-links" @click="showAddIngredientsModal = true">
+        <i class="fas fa-plus-circle"></i> Link Ingredients to Menu
+      </button>
+    </div>
 
     <!-- Search and Filter Controls -->
     <div class="controls-container">
@@ -353,6 +356,102 @@
         </div>
       </div>
     </div>
+
+    <!-- Add Ingredients to Menu Modal -->
+    <div v-if="showAddIngredientsModal" class="modal-overlay" @click.self="showAddIngredientsModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3><i class="fas fa-plus-circle"></i> Link Ingredients to Menu Item</h3>
+          <button class="btn-close" @click="showAddIngredientsModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <form @submit.prevent="handleAddMenuIngredient" class="modal-form">
+          <!-- Select Menu Item -->
+          <div class="form-group">
+            <label for="selectMenu">Select Menu Item *</label>
+            <select 
+              id="selectMenu"
+              v-model="selectedMenuId"
+              required
+              class="form-input"
+            >
+              <option value="">Choose a menu item...</option>
+              <option v-for="menu in availableMenus" :key="menu.menu_id" :value="menu.menu_id">
+                {{ menu.name }} - ₱{{ menu.price }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Display Current Ingredients for Selected Menu -->
+          <div v-if="selectedMenuCurrentIngredients.length > 0" class="ingredient-preview">
+            <h4>Current Ingredients:</h4>
+            <div class="ingredient-list-view">
+              <div v-for="ing in selectedMenuCurrentIngredients" :key="ing.id" class="ingredient-preview-item">
+                <span>{{ ing.item_name }}</span>
+                <span class="qty-badge">{{ ing.quantity_needed }} {{ ing.unit }}</span>
+                <button 
+                  type="button"
+                  class="btn-remove-ing"
+                  @click="handleRemoveIngredient(ing.id)"
+                  title="Remove ingredient"
+                >
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add New Ingredient Row -->
+          <div class="form-group">
+            <label for="selectInventory">Add Ingredient *</label>
+            <div class="ingredient-input-row">
+              <select 
+                id="selectInventory"
+                v-model="newIngredient.inventory_id"
+                required
+                class="form-input"
+                style="flex: 1;"
+              >
+                <option value="">Select inventory item...</option>
+                <option v-for="inv in inventory" :key="inv.id" :value="inv.id || inv.inventory_id">
+                  {{ inv.item || inv.item_name }} ({{ inv.quantity }} {{ inv.unit }})
+                </option>
+              </select>
+              <input 
+                v-model.number="newIngredient.quantity_needed"
+                type="number"
+                placeholder="Qty"
+                required
+                min="0.01"
+                step="0.01"
+                class="form-input"
+                style="flex: 0.5; width: 100px;"
+              />
+              <button 
+                type="button"
+                @click="handleAddSingleIngredient"
+                class="btn-action-add"
+              >
+                <i class="fas fa-plus"></i> Add
+              </button>
+            </div>
+            <small class="form-hint">Select an inventory item and specify the quantity needed per serving</small>
+          </div>
+
+          <!-- Form action buttons -->
+          <div class="form-actions">
+            <button type="button" class="btn-cancel" @click="showAddIngredientsModal = false">
+              Cancel
+            </button>
+            <button type="submit" class="btn-submit" :disabled="!selectedMenuId">
+              <i class="fas fa-save"></i> Save Links
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -392,10 +491,17 @@ const filterStatus = ref('') // Filter dropdown: '' (all), 'low' (low stock), 'g
 const showAddItemModal = ref(false) // Controls visibility of "Add Item" modal dialog
 const showEditModal = ref(false) // Controls visibility of "Edit Item" modal dialog
 const showMenuIngredientsModal = ref(false) // Controls visibility of "Menu Ingredients" modal
+const showAddIngredientsModal = ref(false) // Controls visibility of "Add Ingredients to Menu" modal
 
 // Menu ingredients state
 const menuIngredientLinks = ref([]) // Array of menu items with their linked ingredients
 const loadingLinks = ref(false) // Loading state for fetching menu links
+
+// Menu items state for linking ingredients
+const availableMenus = ref([]) // List of all menu items
+const selectedMenuId = ref('') // Currently selected menu item for linking ingredients
+const newIngredient = ref({ inventory_id: '', quantity_needed: 0 }) // New ingredient being added
+const addedIngredientsBuffer = ref([]) // Temporarily store ingredients before saving
 
 // Form data for editing
 const editingItem = ref(null) // Currently edited item object with all its fields
@@ -535,6 +641,16 @@ const filteredInventory = computed(() => {
 })
 
 /**
+ * Computed property to get current ingredients for selected menu item
+ * @returns {Array} - Ingredients linked to the currently selected menu
+ */
+const selectedMenuCurrentIngredients = computed(() => {
+  if (!selectedMenuId.value) return []
+  const menu = menuIngredientLinks.value.find(m => m.menu_id === Number(selectedMenuId.value))
+  return menu?.ingredients || []
+})
+
+/**
  * Opens edit modal with selected item's data
  * Creates a copy of item data to avoid mutating original until save
  * @param {Object} item - Inventory item to edit
@@ -641,7 +757,152 @@ const fetchMenuIngredientLinks = async () => {
   }
 }
 
-// Watch for modal open to fetch links
+/**
+ * Fetches all available menu items from backend
+ */
+const fetchAvailableMenus = async () => {
+  try {
+    const response = await fetch('http://localhost:8000/api/restaurant/menu')
+    const data = await response.json()
+    
+    if (Array.isArray(data)) {
+      availableMenus.value = data
+    } else if (data.success && Array.isArray(data.data)) {
+      availableMenus.value = data.data
+    }
+  } catch (error) {
+    console.error('Error fetching menu items:', error)
+  }
+}
+
+/**
+ * Adds a single ingredient to the buffered ingredients list
+ * Validates input before adding
+ */
+const handleAddSingleIngredient = () => {
+  if (!newIngredient.value.inventory_id || !newIngredient.value.quantity_needed) {
+    alert('Please select an inventory item and specify quantity')
+    return
+  }
+
+  const inventoryItem = props.inventory.find(
+    i => (i.id || i.inventory_id) === Number(newIngredient.value.inventory_id)
+  )
+
+  if (!inventoryItem) {
+    alert('Inventory item not found')
+    return
+  }
+
+  // Check if ingredient is already added
+  const alreadyAdded = selectedMenuCurrentIngredients.value.some(
+    ing => ing.inventory_id === Number(newIngredient.value.inventory_id)
+  )
+
+  if (alreadyAdded) {
+    alert('This ingredient is already linked to this menu item')
+    return
+  }
+
+  // Add to buffer
+  addedIngredientsBuffer.value.push({
+    inventory_id: Number(newIngredient.value.inventory_id),
+    quantity_needed: newIngredient.value.quantity_needed,
+    item_name: inventoryItem.item || inventoryItem.item_name,
+    unit: inventoryItem.unit
+  })
+
+  // Reset input
+  newIngredient.value = { inventory_id: '', quantity_needed: 0 }
+}
+
+/**
+ * Submits all buffered ingredients to backend
+ * Creates associations between menu item and inventory items
+ */
+const handleAddMenuIngredient = async () => {
+  if (!selectedMenuId.value) {
+    alert('Please select a menu item')
+    return
+  }
+
+  if (addedIngredientsBuffer.value.length === 0) {
+    alert('Please add at least one ingredient')
+    return
+  }
+
+  try {
+    for (const ingredient of addedIngredientsBuffer.value) {
+      const response = await fetch(
+        `http://localhost:8000/api/restaurant/menu/${selectedMenuId.value}/ingredients`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            inventory_id: ingredient.inventory_id,
+            quantity_needed: ingredient.quantity_needed
+          })
+        }
+      )
+
+      const data = await response.json()
+      if (!data.success) {
+        console.error(`Error adding ingredient: ${data.message}`)
+      }
+    }
+
+    // Refresh menu links and close modal
+    await fetchMenuIngredientLinks()
+    closeAddIngredientsModal()
+    alert('Ingredients linked successfully!')
+  } catch (error) {
+    console.error('Error saving ingredients:', error)
+    alert('Error saving ingredients')
+  }
+}
+
+/**
+ * Removes an ingredient from a menu item
+ */
+const handleRemoveIngredient = async (ingredientId) => {
+  if (!confirm('Remove this ingredient from the menu?')) return
+
+  try {
+    const response = await fetch(
+      `http://localhost:8000/api/restaurant/menu-ingredients/${ingredientId}`,
+      { method: 'DELETE' }
+    )
+
+    const data = await response.json()
+    if (data.success) {
+      await fetchMenuIngredientLinks()
+      alert('Ingredient removed successfully!')
+    }
+  } catch (error) {
+    console.error('Error removing ingredient:', error)
+    alert('Error removing ingredient')
+  }
+}
+
+/**
+ * Closes add ingredients modal and resets form
+ */
+const closeAddIngredientsModal = () => {
+  showAddIngredientsModal.value = false
+  selectedMenuId.value = ''
+  newIngredient.value = { inventory_id: '', quantity_needed: 0 }
+  addedIngredientsBuffer.value = []
+}
+
+// Watch for modal open to fetch menus and links
+watch(showAddIngredientsModal, (newVal) => {
+  if (newVal) {
+    fetchAvailableMenus()
+    fetchMenuIngredientLinks()
+  }
+})
+
+// Watch for viewing menu links
 watch(showMenuIngredientsModal, (newVal) => {
   if (newVal) {
     fetchMenuIngredientLinks()
@@ -1546,6 +1807,111 @@ watch(showMenuIngredientsModal, (newVal) => {
   
   .banner-icon {
     font-size: 2rem;
+  }
+}
+
+/* Add Ingredients to Menu Modal Styles */
+.ingredient-input-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.btn-action-add {
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.btn-action-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.ingredient-preview {
+  background: #F0FDF4;
+  border: 1px solid #BBEF63;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.ingredient-preview h4 {
+  margin: 0 0 0.75rem 0;
+  color: #16A34A;
+  font-size: 0.95rem;
+}
+
+.ingredient-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ingredient-preview-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border-left: 3px solid #10B981;
+  font-size: 0.9rem;
+}
+
+.qty-badge {
+  background: #DBEAFE;
+  color: #1E40AF;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.btn-remove-ing {
+  background: #FEE2E2;
+  color: #B91C1C;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-remove-ing:hover {
+  background: #FCA5A5;
+}
+
+.form-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .ingredient-input-row {
+    flex-direction: column;
+  }
+
+  .ingredient-input-row input,
+  .ingredient-input-row select {
+    width: 100%;
+  }
+
+  .btn-action-add {
+    width: 100%;
   }
 }
 </style>

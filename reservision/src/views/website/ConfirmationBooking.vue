@@ -11,7 +11,7 @@
             <div class="text-lg font-bold text-primary-blue">Eduardo's</div>
           </router-link>
           <div class="text-xs text-text-muted font-medium hidden sm:block">
-            Complete Booking
+            Complete Bookingssss
           </div>
         </div>
       </div>

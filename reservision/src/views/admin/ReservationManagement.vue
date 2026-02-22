@@ -57,7 +57,7 @@
                 <th>Guest Name</th>
                 <th>Check-in</th>
                 <th>Check-out</th>
-                <th>Room/Item</th>
+                <th>Booking Type</th>
                 <th>Payment Method</th>
                 <th>Code</th>
                 <th>Status</th>
@@ -69,7 +69,11 @@
                 <td>{{ booking.guest_name }}</td>
                 <td>{{ formatDate(booking.check_in) }}</td>
                 <td>{{ formatDate(booking.check_out) }}</td>
-                <td>{{ booking.items_list || 'N/A' }}</td>
+                <td>
+                  <span :class="getItemBadgeClass(booking.items_list)" class="item-badge">
+                    {{ getItemLabel(booking.items_list) }}
+                  </span>
+                </td>
                 <td>{{ booking.payment_method || 'N/A' }}</td>
                 <td>{{ booking.reservation_code || 'N/A' }}</td>
                 <td>
@@ -205,8 +209,10 @@
                 <div class="card-value">{{ formatDate(booking.check_out) }}</div>
               </div>
               <div>
-                <div class="card-label">Room/Item</div>
-                <div class="card-value">{{ booking.items_list || 'N/A' }}</div>
+                <div class="card-label">Booking Type</div>
+                <div class="card-value item-badge" :class="getItemBadgeClass(booking.items_list)">
+                  {{ getItemLabel(booking.items_list) }}
+                </div>
               </div>
               <div>
                 <div class="card-label">Payment Ref</div>
@@ -382,6 +388,58 @@ const getStatusClass = (status) => {
   return classes[status] || 'status'
 }
 
+const getItemLabel = (itemsList) => {
+  if (!itemsList || itemsList === 'N/A') return 'Other'
+  
+  const itemsStr = String(itemsList).toLowerCase()
+  
+  // Check for swimming lesson variations
+  if (itemsStr.includes('swimming lesson')) {
+    // Extract lesson type if possible
+    const match = String(itemsList).match(/Swimming Lesson - (.+?)(?:,|$)/i)
+    if (match) {
+      return `🏊 Swimming: ${match[1].trim()}`
+    }
+    return '🏊 Swimming Lesson'
+  }
+  
+  // Check for room types
+  if (itemsStr.includes('deluxe room') || itemsStr.includes('room')) {
+    return '🏨 Room'
+  }
+  
+  if (itemsStr.includes('cottage')) {
+    return '🏠 Cottage'
+  }
+  
+  if (itemsStr.includes('event')) {
+    return '🎉 Event'
+  }
+  
+  return String(itemsList)
+}
+
+const getItemBadgeClass = (itemsList) => {
+  if (!itemsList || itemsList === 'N/A') return 'badge-other'
+  
+  const itemsStr = String(itemsList).toLowerCase()
+  
+  if (itemsStr.includes('swimming')) {
+    return 'badge-swimming'
+  }
+  if (itemsStr.includes('room')) {
+    return 'badge-room'
+  }
+  if (itemsStr.includes('cottage')) {
+    return 'badge-cottage'
+  }
+  if (itemsStr.includes('event')) {
+    return 'badge-event'
+  }
+  
+  return 'badge-other'
+}
+
 const confirmBooking = async (id) => {
   if (!confirm('Confirm this booking?')) return
   
@@ -501,4 +559,47 @@ onMounted(() => {
 
 <style scoped>
 @import '../../assets/admin-styles.css';
+
+.item-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.item-cell {
+  min-width: 150px;
+}
+
+.badge-swimming {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #0ea5e9;
+}
+
+.badge-room {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fbbf24;
+}
+
+.badge-cottage {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #3b82f6;
+}
+
+.badge-event {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #d946ef;
+}
+
+.badge-other {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
 </style>

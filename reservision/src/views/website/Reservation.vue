@@ -114,7 +114,7 @@
             :subtotal="total"
             :total="total"
             @remove="removeFromBooking"
-            @clear="booking = []"
+            @clear="clearBooking"
             @checkout="proceedToCheckout"
           />
         </aside>
@@ -209,6 +209,167 @@
       :email="confirmationEmail"
       :booking-id="confirmationBookingId"
     />
+
+    <!-- Swimming Booking Form Modal -->
+    <div v-if="showSwimmingForm" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50 overflow-y-auto p-4">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full my-8">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-700 to-blue-500 text-white p-6 rounded-t-2xl">
+          <h2 class="text-2xl font-bold flex items-center gap-2">
+            <i class="fas fa-swimmer"></i>
+            Book Swimming Class
+          </h2>
+          <p class="text-blue-100 text-sm mt-1">{{ selectedSwimmingProgram?.name }}</p>
+        </div>
+
+        <!-- Form -->
+        <div class="p-6 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+          <!-- Program Display -->
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="font-semibold text-gray-700">{{ selectedSwimmingProgram?.name }}</p>
+                <p class="text-sm text-gray-500">10 sessions, 1 hour per session</p>
+              </div>
+              <div class="text-right">
+                <p class="text-xs text-gray-500">Package Price</p>
+                <p class="text-xl font-bold text-blue-700">₱{{ selectedSwimmingProgram?.price.toLocaleString() }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Number of Participants -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-users text-blue-600 mr-1"></i>
+              Number of Participants *
+            </label>
+            <input 
+              v-model.number="swimmingFormData.participants" 
+              type="number" 
+              min="1" 
+              class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+              placeholder="Enter number of participants"
+            />
+          </div>
+
+          <!-- Selected Dates -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-calendar-check text-blue-600 mr-1"></i>
+              Swimming Schedule Dates (Select up to 10 dates) *
+            </label>
+            
+            <!-- Date Input with Add Button -->
+            <div class="flex gap-2 mb-3">
+              <input 
+                v-model="swimmingFormData.newDate" 
+                type="date" 
+                :disabled="swimmingFormData.dates.length >= 10"
+                class="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:bg-gray-100"
+              />
+              <button
+                @click="addSwimmingDate"
+                :disabled="swimmingFormData.dates.length >= 10"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                <i class="fas fa-plus mr-1"></i>Add
+              </button>
+            </div>
+
+            <!-- Progress Indicator -->
+            <div class="mb-3 flex items-center justify-between text-xs text-gray-600">
+              <span>{{ swimmingFormData.dates.length }} of 10 sessions scheduled</span>
+              <span class="px-2 py-1 rounded" :class="swimmingFormData.dates.length === 10 ? 'bg-green-100 text-green-700' : 'bg-gray-100'">
+                {{ swimmingFormData.dates.length === 10 ? '✓ Complete' : `${10 - swimmingFormData.dates.length} more needed` }}
+              </span>
+            </div>
+
+            <!-- Selected Dates List -->
+            <div v-if="swimmingFormData.dates.length > 0" class="space-y-2 max-h-40 overflow-y-auto p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div 
+                v-for="(date, index) in swimmingFormData.dates" 
+                :key="index"
+                class="flex items-center justify-between bg-white p-2 rounded border border-gray-200"
+              >
+                <span class="text-sm font-medium text-gray-700">
+                  <i class="fas fa-calendar-day text-blue-600 mr-2"></i>
+                  Session {{ index + 1 }}: {{ formatDateDisplay(date) }}
+                </span>
+                <button
+                  @click="removeSwimmingDate(index)"
+                  class="text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition"
+                >
+                  <i class="fas fa-trash text-xs"></i>
+                </button>
+              </div>
+            </div>
+            <p v-else class="text-xs text-gray-500 italic">No dates selected yet. Add up to 10 session dates above.</p>
+          </div>
+
+          <!-- Preferred Time -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-clock text-blue-600 mr-1"></i>
+              Preferred Time Slot *
+            </label>
+            <select 
+              v-model="swimmingFormData.time" 
+              class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+            >
+              <option value="">Select time slot</option>
+              <option value="6:00 AM - 7:00 AM">6:00 AM - 7:00 AM</option>
+              <option value="8:00 AM - 9:00 AM">8:00 AM - 9:00 AM</option>
+              <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+              <option value="2:00 PM - 3:00 PM">2:00 PM - 3:00 PM</option>
+              <option value="4:00 PM - 5:00 PM">4:00 PM - 5:00 PM</option>
+            </select>
+          </div>
+
+          <!-- Total Price Breakdown -->
+          <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border-2 border-blue-200">
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between text-gray-600">
+                <span>Package price (per person):</span>
+                <span class="font-medium">₱{{ (selectedSwimmingProgram?.price || 0).toLocaleString() }}</span>
+              </div>
+              <div class="flex justify-between text-gray-600">
+                <span>Sessions included:</span>
+                <span class="font-medium">10 sessions × 1 hour</span>
+              </div>
+              <div class="flex justify-between text-gray-600">
+                <span>Participants:</span>
+                <span class="font-medium">{{ swimmingFormData.participants || 0 }}</span>
+              </div>
+              <div class="border-t-2 border-blue-300 pt-2 flex justify-between items-center">
+                <span class="font-bold text-gray-800">Total Price:</span>
+                <span class="text-2xl font-bold text-blue-700">₱{{ calculateSwimmingTotal().toLocaleString() }}</span>
+              </div>
+            </div>
+            <p class="text-xs text-gray-600 mt-2">
+              <i class="fas fa-info-circle mr-1"></i>
+              {{ (selectedSwimmingProgram?.price || 0).toLocaleString() }} × {{ swimmingFormData.participants || 0 }} participant(s)
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="pt-4 flex gap-3">
+            <button
+              @click="closeSwimmingForm"
+              class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition"
+            >
+              <i class="fas fa-times mr-2"></i>Cancel
+            </button>
+            <button
+              @click="submitSwimmingBooking"
+              class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-lg font-semibold hover:shadow-lg transition"
+            >
+              <i class="fas fa-check mr-2"></i>Book Class
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
       <!-- Footer -->
     <div class="mt-16">
@@ -286,7 +447,16 @@ export default {
         rooms: [],
         cottages: [],
         food: [],
-        events: []
+        events: [],
+        swimming: []
+      },
+      showSwimmingForm: false,
+      selectedSwimmingProgram: null,
+      swimmingFormData: {
+        participants: 1,
+        dates: [],
+        time: '',
+        newDate: ''
       }
     }
   },
@@ -533,6 +703,19 @@ export default {
       this.children = Math.max(0, this.children + delta)
     },
     addToBooking(item, qty, guests) {
+      // Check if it's a swimming item
+      if (item.category === 'Swimming') {
+        this.selectedSwimmingProgram = item
+        this.swimmingFormData = {
+          participants: 1,
+          dates: [],
+          time: '',
+          newDate: ''
+        }
+        this.showSwimmingForm = true
+        return
+      }
+
       const existing = this.booking.find(b => b.item.id === item.id)
       if (existing) {
         existing.qty += qty
@@ -586,6 +769,12 @@ export default {
         localStorage.setItem('pendingBooking', JSON.stringify(bookingData))
         console.log('💾 Updated booking in localStorage:', this.booking.length, 'items')
       }
+    },
+    clearBooking() {
+      this.booking = []
+      localStorage.removeItem('pendingBooking')
+      this.showNotification('Booking cleared', 'info')
+      console.log('🗑️ Cleared all bookings and localStorage')
     },
     openViewMore(item) {
       this.selectedItem = item
@@ -710,6 +899,12 @@ export default {
         this.contactCountry = 'Philippines'
         this.contactPostal = ''
         this.contactSpecialRequests = ''
+        this.swimmingFormData = { 
+          participants: 1, 
+          dates: [], 
+          time: '', 
+          newDate: '' 
+        }
         
         // Clear localStorage
         localStorage.removeItem('pendingBooking')
@@ -735,17 +930,117 @@ export default {
         notification.style.animation = 'slide-out 0.3s ease-out'
         setTimeout(() => notification.remove(), 300)
       }, 3000)
+    },
+    addSwimmingDate() {
+      if (!this.swimmingFormData.newDate) {
+        this.showNotification('Please select a date first', 'error')
+        return
+      }
+      
+      // Check if date already added
+      if (this.swimmingFormData.dates.includes(this.swimmingFormData.newDate)) {
+        this.showNotification('This date is already added', 'error')
+        return
+      }
+      
+      this.swimmingFormData.dates.push(this.swimmingFormData.newDate)
+      this.swimmingFormData.newDate = ''
+    },
+    
+    removeSwimmingDate(index) {
+      this.swimmingFormData.dates.splice(index, 1)
+    },
+    
+    formatDateDisplay(dateStr) {
+      const date = new Date(dateStr + 'T00:00:00')
+      return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+    },
+    
+    calculateSwimmingTotal() {
+      const packagePrice = this.selectedSwimmingProgram?.price || 0
+      const participants = this.swimmingFormData.participants || 0
+      
+      // Price is per participant for the full 10-session package
+      return packagePrice * participants
+    },
+    
+    closeSwimmingForm() {
+      this.showSwimmingForm = false
+      this.selectedSwimmingProgram = null
+      this.swimmingFormData = {
+        participants: 1,
+        dates: [],
+        time: '',
+        newDate: ''
+      }
+    },
+    
+    async submitSwimmingBooking() {
+      // Validate fields
+      if (!this.swimmingFormData.participants || this.swimmingFormData.participants < 1) {
+        this.showNotification('Please enter number of participants', 'error')
+        return
+      }
+      if (this.swimmingFormData.dates.length === 0) {
+        this.showNotification('Please select at least one date for your sessions', 'error')
+        return
+      }
+      if (this.swimmingFormData.dates.length > 10) {
+        this.showNotification('Maximum 10 session dates allowed', 'error')
+        return
+      }
+      if (!this.swimmingFormData.time) {
+        this.showNotification('Please select a time slot', 'error')
+        return
+      }
+
+      // Calculate total price
+      const totalPrice = this.calculateSwimmingTotal()
+
+      // Add to booking
+      this.booking.push({
+        item: {
+          ...this.selectedSwimmingProgram,
+          price: totalPrice // Update price to total calculated price
+        },
+        qty: 1, // Quantity is 1 since we're bundling everything together
+        guests: this.swimmingFormData.participants,
+        swimmingDetails: {
+          dates: [...this.swimmingFormData.dates],
+          time: this.swimmingFormData.time,
+          participants: this.swimmingFormData.participants,
+          packagePrice: this.selectedSwimmingProgram.price,
+          totalSessions: 10,
+          selectedDates: this.swimmingFormData.dates.length
+        }
+      })
+
+      this.showNotification(`Added: ${this.selectedSwimmingProgram.name} - ${this.swimmingFormData.participants} participant(s), 10 sessions package`, 'success')
+      
+      // Save to localStorage
+      const bookingData = {
+        items: this.booking,
+        checkIn: this.checkIn,
+        checkOut: this.checkOut,
+        nights: this.nights,
+        adults: this.adults,
+        children: this.children
+      }
+      localStorage.setItem('pendingBooking', JSON.stringify(bookingData))
+      console.log('💾 Saved swimming booking to localStorage')
+      
+      // Close form and reset
+      this.closeSwimmingForm()
+      this.swimmingFormData = { participants: 1, date: '', time: '' }
     }
   },
   mounted() {
-    // REMOVED: Auto-loading from localStorage to ensure fresh booking on page reload
-    // Previously, this code loaded the booking from localStorage automatically,
-    // causing the booking summary to have items even on fresh page loads.
-    // If you want to restore the previous booking feature, uncomment the code below:
+    // Check if we're coming from Edit mode (activeSection='book' query parameter)
+    const isEditMode = this.$route.query.activeSection === 'book';
     
-    /*
+    // Load booking from localStorage if we're in edit mode
     const savedBooking = localStorage.getItem('pendingBooking')
-    if (savedBooking) {
+    if (savedBooking && isEditMode) {
       try {
         const data = JSON.parse(savedBooking)
         if (data.checkIn) this.checkIn = new Date(data.checkIn)
@@ -754,17 +1049,44 @@ export default {
         if (data.children) this.children = data.children
         if (data.items && data.items.length > 0) {
           this.booking = data.items
-          console.log('📋 Loaded booking from localStorage:', this.booking.length, 'items')
+          console.log('📋 Loaded booking from localStorage (Edit mode):', this.booking.length, 'items')
         }
       } catch (e) {
         console.error('Error loading booking from localStorage:', e)
       }
+    } else if (!isEditMode) {
+      // Only clear localStorage if NOT in edit mode (fresh page load)
+      localStorage.removeItem('pendingBooking')
+      console.log('🗑️ Cleared previous booking from localStorage (Fresh load)')
     }
-    */
     
-    // Clear any previous booking from localStorage on fresh page load
-    localStorage.removeItem('pendingBooking')
-    console.log('🗑️ Cleared previous booking from localStorage')
+    // Initialize swimming programs
+    this.itemData.swimming = [
+      {
+        id: 'swim_7up',
+        name: '7 Years Old & Above',
+        category: 'Swimming',
+        price: 3000,
+        desc: 'Teen & Adult Program - ₱3,000 (10 sessions, 1 hour per session)',
+        description: 'Learn to Swim Program for teens and adults. Package includes 10 sessions, 1 hour per session. Choose your preferred schedule dates.',
+        imgs: ['https://images.unsplash.com/photo-1576610616656-f72b27e84530?w=500'],
+        perNight: false,
+        icon: 'fas fa-star',
+        sessions: 10
+      },
+      {
+        id: 'swim_6below',
+        name: '6 Years Old & Below',
+        category: 'Swimming',
+        price: 4000,
+        desc: 'Kids Swimming Program - ₱4,000 (10 sessions, 1 hour per session)',
+        description: 'Learn to Swim Program for kids 6 years and below. Package includes 10 sessions, 1 hour per session. Choose your preferred schedule dates.',
+        imgs: ['https://images.unsplash.com/photo-1576610616656-f72b27e84530?w=500'],
+        perNight: false,
+        icon: 'fas fa-swimmer',
+        sessions: 10
+      }
+    ]
     
     // Fetch data from API
     this.fetchInventoryItems()

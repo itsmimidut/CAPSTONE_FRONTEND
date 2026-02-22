@@ -75,7 +75,8 @@
 
         <!-- Selectors & Button -->
         <div class="mt-auto pt-4 border-t-2 border-gray-200 space-y-3">
-          <div class="flex items-center gap-3 flex-wrap">
+          <!-- Only show Qty & Guests for non-swimming items -->
+          <div v-if="item.category !== 'Swimming'" class="flex items-center gap-3 flex-wrap">
             <label class="text-sm text-gray-600 font-semibold whitespace-nowrap">Qty:</label>
             <select
               v-model.number="qty"

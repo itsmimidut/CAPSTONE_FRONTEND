@@ -257,174 +257,171 @@
             <a class="form-nav-link" href="#section-personal">Personal Details</a>
             <a class="form-nav-link" href="#section-contact">Contact</a>
             <a class="form-nav-link" href="#section-guardian">Guardian</a>
-            <a class="form-nav-link" href="#section-signature">Signatures</a>
           </nav>
 
-          <form class="space-y-8" @submit.prevent>
+          <form class="space-y-8" @submit.prevent="submitEnrollmentForm">
             <div id="section-basic" class="form-section">
-              <h3 class="form-section-title">Basic Info</h3>
+              <h3 class="form-section-title text-sm md:text-base">Basic Info</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label class="form-label">Date</label>
-                  <input type="date" class="form-input" />
-                </div>
-                <div>
-                  <label class="form-label">Batch</label>
-                  <input type="text" class="form-input" placeholder="e.g. Batch 1" />
-                </div>
-                <div>
-                  <label class="form-label">Name</label>
+                <div class="md:col-span-2">
+                  <label class="form-label text-xs md:text-sm">Name</label>
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <input type="text" class="form-input" placeholder="Family" />
-                      <p class="form-hint">Family</p>
+                      <input type="text" class="form-input text-sm md:text-base" placeholder="Family" v-model="formData.familyName" />
+                      <p class="form-hint text-xs md:text-sm">Family</p>
                     </div>
                     <div>
-                      <input type="text" class="form-input" placeholder="First" />
-                      <p class="form-hint">First</p>
+                      <input type="text" class="form-input text-sm md:text-base" placeholder="First" v-model="formData.firstName" />
+                      <p class="form-hint text-xs md:text-sm">First</p>
                     </div>
                     <div>
-                      <input type="text" class="form-input" placeholder="Middle" />
-                      <p class="form-hint">Middle</p>
+                      <input type="text" class="form-input text-sm md:text-base" placeholder="Middle" v-model="formData.middleName" />
+                      <p class="form-hint text-xs md:text-sm">Middle</p>
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <label class="form-label">Date of Birth</label>
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <input type="text" class="form-input" placeholder="Month" />
-                      <p class="form-hint">Month</p>
-                    </div>
-                    <div>
-                      <input type="text" class="form-input" placeholder="Day" />
-                      <p class="form-hint">Day</p>
-                    </div>
-                    <div>
-                      <input type="text" class="form-input" placeholder="Year" />
-                      <p class="form-hint">Year</p>
-                    </div>
-                  </div>
+                <div class="md:col-span-2">
+                  <label class="form-label text-xs md:text-sm">Date of Birth</label>
+                  <input type="date" class="form-input text-sm md:text-base" v-model="formData.dateOfBirth" />
                 </div>
               </div>
             </div>
 
             <div id="section-personal" class="form-section">
-              <h3 class="form-section-title">Personal Details</h3>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <h3 class="form-section-title text-sm md:text-base">Personal Details</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="form-label">Sex</label>
-                  <input type="text" class="form-input" placeholder="Sex" />
+                  <label class="form-label text-xs md:text-sm">Lesson Type</label>
+                  <select class="form-input text-sm md:text-base" v-model="formData.lessonType">
+                    <option value="" disabled selected>Select Lesson Type</option>
+                    <option value="Group Lessons">Group Lessons</option>
+                    <option value="Private Lessons">Private Lessons</option>
+                  </select>
                 </div>
                 <div>
-                  <label class="form-label">Height</label>
-                  <input type="text" class="form-input" placeholder="Height" />
-                </div>
-                <div>
-                  <label class="form-label">Weight</label>
-                  <input type="text" class="form-input" placeholder="Weight" />
+                  <label class="form-label text-xs md:text-sm">Sex</label>
+                  <select class="form-input text-sm md:text-base" v-model="formData.sex">
+                    <option value="" disabled selected>Sex</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
                 </div>
               </div>
 
-              <div class="mt-6">
-                <label class="form-label">Name of Coach</label>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <input type="text" class="form-input" placeholder="Family" />
-                    <p class="form-hint">Family</p>
-                  </div>
-                  <div>
-                    <input type="text" class="form-input" placeholder="First" />
-                    <p class="form-hint">First</p>
-                  </div>
-                  <div>
-                    <input type="text" class="form-input" placeholder="Middle" />
-                    <p class="form-hint">Middle</p>
-                  </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div>
+                  <label class="form-label text-xs md:text-sm">Height (cm)</label>
+                  <select class="form-input text-sm md:text-base" v-model="formData.height">
+                    <option value="" disabled selected>Select Height</option>
+                    <option value="140">140 cm</option>
+                    <option value="145">145 cm</option>
+                    <option value="150">150 cm</option>
+                    <option value="155">155 cm</option>
+                    <option value="160">160 cm</option>
+                    <option value="165">165 cm</option>
+                    <option value="170">170 cm</option>
+                    <option value="175">175 cm</option>
+                    <option value="180">180 cm</option>
+                    <option value="185">185 cm</option>
+                    <option value="190">190 cm</option>
+                    <option value="195">195 cm</option>
+                    <option value="200">200 cm</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label text-xs md:text-sm">Weight (kg)</label>
+                  <select class="form-input text-sm md:text-base" v-model="formData.weight">
+                    <option value="" disabled selected>Select Weight</option>
+                    <option value="30">30 kg</option>
+                    <option value="35">35 kg</option>
+                    <option value="40">40 kg</option>
+                    <option value="45">45 kg</option>
+                    <option value="50">50 kg</option>
+                    <option value="55">55 kg</option>
+                    <option value="60">60 kg</option>
+                    <option value="65">65 kg</option>
+                    <option value="70">70 kg</option>
+                    <option value="75">75 kg</option>
+                    <option value="80">80 kg</option>
+                    <option value="85">85 kg</option>
+                    <option value="90">90 kg</option>
+                    <option value="95">95 kg</option>
+                    <option value="100">100 kg</option>
+                    <option value="105">105 kg</option>
+                    <option value="110">110 kg</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label text-xs md:text-sm">Name of Coach</label>
+                  <select class="form-input text-sm md:text-base" v-model="formData.preferredCoach">
+                    <option value="" disabled selected>Select a Coach</option>
+                    <option v-for="coach in coaches" :key="coach.coach_id" :value="coach.coach_id">
+                      {{ coach.name }} - {{ coach.specialization }}
+                    </option>
+                  </select>
                 </div>
               </div>
             </div>
 
             <div id="section-contact" class="form-section">
-              <h3 class="form-section-title">Contact Information</h3>
+              <h3 class="form-section-title text-sm md:text-base">Contact Information</h3>
               <div>
-                <label class="form-label">Student's Address</label>
-                <input type="text" class="form-input" />
+                <label class="form-label text-xs md:text-sm">Student's Address</label>
+                <input type="text" class="form-input text-sm md:text-base" v-model="formData.address" />
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                  <label class="form-label">Home Phone</label>
-                  <input type="text" class="form-input" />
+                  <label class="form-label text-xs md:text-sm">Mobile Phone</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.mobilePhone" />
                 </div>
                 <div>
-                  <label class="form-label">Mobile Phone</label>
-                  <input type="text" class="form-input" />
+                  <label class="form-label text-xs md:text-sm">Email Address</label>
+                  <input type="email" class="form-input text-sm md:text-base" v-model="formData.email" />
                 </div>
-              </div>
-
-              <div class="mt-6">
-                <label class="form-label">Email Address</label>
-                <input type="email" class="form-input" />
               </div>
             </div>
 
             <div id="section-guardian" class="form-section">
-              <h3 class="form-section-title">Guardian Details</h3>
+              <h3 class="form-section-title text-sm md:text-base">Guardian Details</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="form-label">Father's Name</label>
-                  <input type="text" class="form-input" />
+                  <label class="form-label text-xs md:text-sm">Father's Name</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.fatherName" />
                 </div>
                 <div>
-                  <label class="form-label">Mother's Name</label>
-                  <input type="text" class="form-input" />
+                  <label class="form-label text-xs md:text-sm">Mother's Name</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.motherName" />
                 </div>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                  <label class="form-label">School or Employer Name</label>
-                  <input type="text" class="form-input" />
+                  <label class="form-label text-xs md:text-sm">School or Employer Name</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.schoolOrEmployerName" />
                 </div>
                 <div>
-                  <label class="form-label">School or Employer Address</label>
-                  <input type="text" class="form-input" />
+                  <label class="form-label text-xs md:text-sm">School or Employer Address</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.schoolOrEmployerAddress" />
                 </div>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                  <label class="form-label">Contact Person</label>
-                  <input type="text" class="form-input" />
+                  <label class="form-label text-xs md:text-sm">Contact Person</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.contactPerson" />
                 </div>
                 <div>
-                  <label class="form-label">Contact Number</label>
-                  <input type="text" class="form-input" />
+                  <label class="form-label text-xs md:text-sm">Contact Number</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.contactNumber" />
                 </div>
               </div>
             </div>
 
-            <div id="section-signature" class="form-section">
-              <h3 class="form-section-title">Signatures</h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label class="form-label">Signature of Student</label>
-                  <input type="text" class="form-input" placeholder="Sign over printed name" />
-                  <p class="form-hint">Sign Over Printed Name</p>
-                </div>
-                <div>
-                  <label class="form-label">Parental Consent (student's under 18)</label>
-                  <input type="text" class="form-input" placeholder="Sign over printed name" />
-                  <p class="form-hint">Sign Over Printed Name</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="pt-2 flex flex-col sm:flex-row gap-3">
-              <button class="btn-yellow w-full sm:w-auto" type="submit">
-                Submit Enrollment
+            <div class="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+              <button class="btn-yellow w-full sm:w-auto" type="submit" :disabled="isSubmittingForm">
+                {{ isSubmittingForm ? 'Submitting...' : 'Submit Enrollment' }}
               </button>
               <button class="btn-outline-white w-full sm:w-auto" type="button" @click="closeEnrollmentForm">
                 Close
@@ -439,13 +436,15 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import AppHeader from '../../components/AppHeader.vue'
 import AppSidebar from '../../components/AppSidebar.vue'
-// import AppFooter from '../../components/AppFooter.vue'
-// import EnrollmentModal from '../../components/EnrollmentModal.vue'
-// import SwimmingClassBookingModal from '../../../public/SwimmingClassBookingModal.vue'
+import AppFooter from '../../components/AppFooter.vue'
+import EnrollmentModal from '../../components/EnrollmentModal.vue'
+import SwimmingClassBookingModal from '../../components/SwimmingClassBookingModal.vue'
 import ImageLightbox from '../../components/ImageLightBox.vue'
 const sidebarOpen = ref(false)
+const router = useRouter()
 const showEnrollmentForm = ref(false)
 const showEnrollmentModal = ref(false)
 const selectedLessonType = ref(null)
@@ -453,6 +452,38 @@ const showClassBookingModal = ref(false)
 const selectedBookingLessonType = ref(null)
 const showLightbox = ref(false)
 const currentImageIndex = ref(0)
+const coaches = ref([])
+const selectedCoach = ref('')
+const isSubmittingForm = ref(false)
+
+// Form data object
+const formData = ref({
+  // Basic Info
+  familyName: '',
+  firstName: '',
+  middleName: '',
+  dateOfBirth: '',
+  lessonType: '',
+  
+  // Personal Details
+  sex: '',
+  height: '',
+  weight: '',
+  preferredCoach: '',
+  
+  // Contact Information
+  address: '',
+  mobilePhone: '',
+  email: '',
+  
+  // Guardian Details
+  fatherName: '',
+  motherName: '',
+  schoolOrEmployerName: '',
+  schoolOrEmployerAddress: '',
+  contactPerson: '',
+  contactNumber: ''
+})
 
 const features = [
   { icon: 'fas fa-user-tie', title: 'Certified Instructors', description: 'Learn from experienced, certified swimming coaches with years of teaching experience', colorClass: 'bg-blue-100 text-blue-600' },
@@ -461,8 +492,36 @@ const features = [
 ]
 
 const lessonTypes = [
-  { type: 'Group Lessons', subtitle: 'Learn with friends', icon: 'fas fa-users', badgeClass: 'bg-blue-100 text-blue-600', price: 1500, duration: 'month', features: ['4-6 students per group','8 sessions per month','1 hour per session','Basic to intermediate levels','Fun group activities'] },
-  { type: 'Private Lessons', subtitle: 'One-on-one coaching', icon: 'fas fa-user', badgeClass: 'bg-blue-100 text-blue-600', price: 3500, duration: 'month', features: ['Personalized attention','8 sessions per month','1 hour per session','All skill levels','Flexible scheduling'] }
+  { 
+    type: '7 Years Old & Above', 
+    subtitle: 'Teen & Adult Program', 
+    icon: 'fas fa-star', 
+    badgeClass: 'bg-blue-100 text-blue-600', 
+    price: 3000, 
+    duration: 'package', 
+    features: [
+      '10 sessions program',
+      '1 hour per session',
+      'Expert instruction',
+      'Progressive skill building',
+      'Flexible scheduling'
+    ] 
+  },
+  { 
+    type: '6 Years Old & Below', 
+    subtitle: 'Kids Swimming Program', 
+    icon: 'fas fa-swimmer', 
+    badgeClass: 'bg-blue-100 text-blue-600', 
+    price: 4000, 
+    duration: 'package', 
+    features: [
+      '10 sessions program',
+      '1 hour per session',
+      'Fun & safe learning',
+      'Age-appropriate methods',
+      'Parental involvement welcome'
+    ] 
+  }
 ]
 
 const galleryImages = [
@@ -520,12 +579,36 @@ const closeClassBookingModal = () => {
   document.body.style.overflow = ''
 }
 
-const handleClassBooking = (payload) => {
-  console.log('Class booking submitted:', payload)
-  closeClassBookingModal()
-  setTimeout(() => {
-    alert(`✅ Booking Request Submitted!\n\nName: ${payload.fullName}\nLesson: ${payload.lessonType}\nDate: ${payload.preferredDate}\nTime: ${payload.preferredTime}\n\nWe will contact you to confirm your class schedule.`)
-  }, 200)
+const handleClassBooking = async (payload) => {
+  try {
+    const response = await fetch('http://localhost:8000/api/swimming/class-bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Failed to submit class booking')
+    }
+
+    closeClassBookingModal()
+
+    await router.push({
+      path: '/confirmation',
+      query: {
+        bookingId: result.data.bookingId,
+        bookingRef: result.data.bookingReference,
+        email: payload.email,
+        service: 'swimming',
+        lessonType: payload.lessonType
+      }
+    })
+  } catch (error) {
+    console.error('Error submitting swimming class booking:', error)
+    alert(error.message || 'Failed to submit class booking. Please try again.')
+  }
 }
 
 const handleEnrollment = (response) => {
@@ -583,8 +666,108 @@ const prevImage = () => {
   currentImageIndex.value = (currentImageIndex.value - 1 + galleryImages.length) % galleryImages.length
 }
 
+// Submit enrollment form
+const submitEnrollmentForm = async () => {
+  try {
+    isSubmittingForm.value = true
+
+    // Validate required fields
+    if (!formData.value.firstName || !formData.value.dateOfBirth || !formData.value.email || !formData.value.preferredCoach || !formData.value.address || !formData.value.lessonType) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    // Prepare data for backend
+    const enrollmentData = {
+      firstName: formData.value.firstName,
+      middleName: formData.value.middleName,
+      lastName: formData.value.familyName,
+      dateOfBirth: formData.value.dateOfBirth,
+      lessonType: formData.value.lessonType,
+      sex: formData.value.sex,
+      height: formData.value.height,
+      weight: formData.value.weight,
+      preferredCoach: formData.value.preferredCoach,
+      address: formData.value.address,
+      mobilePhone: formData.value.mobilePhone,
+      email: formData.value.email,
+      fatherName: formData.value.fatherName,
+      motherName: formData.value.motherName,
+      emergencyContactName: formData.value.contactPerson,
+      emergencyContactPhone: formData.value.contactNumber
+    }
+
+    const response = await fetch('http://localhost:8000/api/swimming/enrollments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(enrollmentData)
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to submit enrollment')
+    }
+
+    // Success!
+    alert(`✅ Enrollment Successful!\n\nEnrollment ID: #${result.enrollment.enrollment_id}\n\nWe will contact you within 24-48 hours to confirm your enrollment.`)
+    
+    // Reset form
+    formData.value = {
+      familyName: '',
+      firstName: '',
+      middleName: '',
+      dateOfBirth: '',
+      lessonType: '',
+      sex: '',
+      height: '',
+      weight: '',
+      preferredCoach: '',
+      address: '',
+      mobilePhone: '',
+      email: '',
+      fatherName: '',
+      motherName: '',
+      schoolOrEmployerName: '',
+      schoolOrEmployerAddress: '',
+      contactPerson: '',
+      contactNumber: ''
+    }
+
+    closeEnrollmentForm()
+  } catch (error) {
+    console.error('Error submitting enrollment:', error)
+    alert(`❌ Error: ${error.message}`)
+  } finally {
+    isSubmittingForm.value = false
+  }
+}
+
+// Fetch coaches from database
+const fetchCoaches = async () => {
+  try {
+    const response = await fetch('http://localhost:8000/api/swimming/coaches')
+    const data = await response.json()
+    // Handle both formats: array or {success, data}
+    if (Array.isArray(data)) {
+      coaches.value = data
+    } else if (data.success && data.data) {
+      coaches.value = data.data
+    } else {
+      console.warn('Unexpected API response format:', data)
+    }
+  } catch (error) {
+    console.error('Error fetching coaches:', error)
+  }
+}
+
 // Intersection Observer for reveal animations
 onMounted(() => {
+  // Fetch coaches on component mount
+  fetchCoaches()
+
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -1018,6 +1201,20 @@ onMounted(() => {
   background: #f59e0b;
   border-color: #d97706;
   color: #1e3a8a;
+}
+
+.btn-yellow:disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  border-color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.btn-yellow:disabled:hover {
+  transform: none;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  background: #d1d5db;
 }
 
 .btn-outline-white {

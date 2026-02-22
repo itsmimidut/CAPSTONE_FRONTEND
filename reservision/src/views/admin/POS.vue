@@ -23,11 +23,24 @@
       <div class="pos-container">
 
       <!-- POS GRID -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 pos-grid">
 
         <!-- ITEMS -->
-        <div class="lg:col-span-2 card p-6">
-          <h2 class="font-bold text-lg mb-4 text-gray-800"><i class="fas fa-shopping-cart mr-2"></i>Services / Items</h2>
+        <div class="lg:col-span-2 card p-5 items-card">
+          <div class="items-topbar mb-3">
+            <h2 class="font-bold text-gray-800 section-title"><i class="fas fa-shopping-cart mr-2"></i>Services / Items</h2>
+            <div class="category-switch">
+              <button 
+                v-for="category in visibleCategories" 
+                :key="category.id"
+                @click="showCategory(category.id)" 
+                :id="`btn-${category.id}`" 
+                :class="['category-btn rounded-lg', currentCategory === category.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700']"
+              >
+                <i :class="`fas fa-${category.icon} mr-2`"></i>{{ category.name }}
+              </button>
+            </div>
+          </div>
           
           <!-- Search Bar -->
           <div class="mb-4">
@@ -42,105 +55,132 @@
               >
             </div>
           </div>
-          
-          <!-- Category Buttons -->
-          <div class="flex gap-3 mb-6 border-b-2 pb-4">
-            <button 
-              v-for="category in visibleCategories" 
-              :key="category.id"
-              @click="showCategory(category.id)" 
-              :id="`btn-${category.id}`" 
-              :class="['category-btn px-5 py-3 rounded-lg', currentCategory === category.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700']"
-            >
-              <i :class="`fas fa-${category.icon} mr-2`"></i>{{ category.name }}
-            </button>
+
+          <!-- Restaurant Type Filters -->
+          <div
+            v-if="currentCategory === 'restaurant' && restaurantTypeFilters.length > 0"
+            class="mb-4 menu-filter-wrap"
+          >
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Filter Menu</div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                @click="restaurantTypeFilter = 'all'"
+                :class="[
+                  'px-3 py-1.5 rounded-full text-sm font-semibold border transition-all chip-btn',
+                  restaurantTypeFilter === 'all'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-700'
+                ]"
+              >
+                All
+              </button>
+              <button
+                v-for="filter in restaurantTypeFilters"
+                :key="filter"
+                type="button"
+                @click="restaurantTypeFilter = filter"
+                :class="[
+                  'px-3 py-1.5 rounded-full text-sm font-semibold border transition-all chip-btn',
+                  restaurantTypeFilter === filter
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-700'
+                ]"
+              >
+                {{ filter }}
+              </button>
+            </div>
           </div>
 
           <!-- Items Grid -->
-          <div 
-            v-for="category in visibleCategories" 
-            :key="`items-${category.id}`"
-            v-show="currentCategory === category.id"
-            class="category-items grid grid-cols-2 md:grid-cols-3 gap-4"
-          >
-            <button 
-              v-for="item in getFilteredItems(category.items)" 
-              :key="item.name"
-              @click="addItem(item.name, item.price)" 
-              class="item-btn p-4 bg-white"
+          <div class="items-scroll">
+            <div 
+              v-for="category in visibleCategories" 
+              :key="`items-${category.id}`"
+              v-show="currentCategory === category.id"
+              class="category-items grid grid-cols-2 md:grid-cols-3 gap-3"
             >
-              <div class="font-medium text-gray-800">{{ item.name }}</div>
-              <div class="text-green-600 font-bold text-lg mt-1">₱{{ item.price.toLocaleString() }}</div>
-            </button>
+              <button 
+                v-for="item in getFilteredItems(category.items, category.id)" 
+                :key="item.name"
+                @click="addItem(item.name, item.price)" 
+                class="item-btn p-3 bg-white"
+              >
+                <div class="font-medium text-gray-800">{{ item.name }}</div>
+                <div class="text-green-600 font-bold text-lg mt-1">₱{{ item.price.toLocaleString() }}</div>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- CART -->
-        <div class="card p-6">
-          <div class="flex justify-between items-center mb-4">
+        <div class="card p-5 cart-card">
+          <div class="cart-header">
             <h2 class="font-bold text-lg text-gray-800"><i class="fas fa-receipt mr-2"></i>Current Transaction</h2>
             <button @click="clearCart" class="text-red-600 hover:text-red-800 text-sm font-medium transition-all">
               <i class="fas fa-trash mr-1"></i>Clear All
             </button>
           </div>
 
-          <div class="space-y-2 text-sm min-h-[200px]">
-            <div v-if="cart.length === 0" class="text-center text-gray-400 py-8">
-              <i class="fas fa-shopping-basket text-4xl mb-2 block"></i>
-              <p>No items added yet</p>
-            </div>
-            <div 
-              v-else
-              v-for="(item, index) in cart" 
-              :key="index"
-              class="cart-item flex justify-between items-center"
-            >
-              <span class="text-gray-700">{{ item.name }}</span>
-              <div class="flex items-center gap-3">
-                <span class="font-semibold text-gray-800">₱{{ item.price.toLocaleString() }}</span>
-                <button @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition-colors">
-                  <i class="fas fa-times-circle"></i>
-                </button>
+          <div class="cart-content">
+            <div class="cart-items-area space-y-2 text-sm">
+              <div v-if="cart.length === 0" class="cart-empty-state">
+                <i class="fas fa-shopping-basket text-5xl mb-3 block"></i>
+                <p>No items added yet</p>
+              </div>
+              <div 
+                v-else
+                v-for="(item, index) in cart" 
+                :key="index"
+                class="cart-item flex justify-between items-center"
+              >
+                <span class="text-gray-700">{{ item.name }}</span>
+                <div class="flex items-center gap-3">
+                  <span class="font-semibold text-gray-800">₱{{ item.price.toLocaleString() }}</span>
+                  <button @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition-colors">
+                    <i class="fas fa-times-circle"></i>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <hr class="my-4 border-t-2">
+            <div class="cart-bottom">
+              <div class="total-panel">
+                <span class="text-lg font-semibold text-gray-700">Total</span>
+                <span class="text-4xl font-bold text-blue-600">₱{{ total.toLocaleString() }}</span>
+              </div>
 
-          <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg mb-4">
-            <span class="text-lg font-semibold text-gray-700">Total</span>
-            <span class="text-2xl font-bold text-blue-600">₱{{ total.toLocaleString() }}</span>
-          </div>
+              <div class="payment-wrap">
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">
+                  <i class="fas fa-credit-card mr-2"></i>Payment Method
+                </label>
+                <div class="flex gap-3 mb-3">
+                  <button
+                    type="button"
+                    class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
+                    :class="paymentMethod === 'GCash' ? 'bg-green-50 border-green-600 text-green-700 ring-2 ring-green-200' : 'bg-white border-gray-300 text-gray-700'"
+                    @click="paymentMethod = 'GCash'"
+                  >
+                    <i class="fas fa-wallet text-green-600 text-lg mr-2"></i> GCash
+                    <span v-if="paymentMethod === 'GCash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+                  </button>
+                  <button
+                    type="button"
+                    class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
+                    :class="paymentMethod === 'Cash' ? 'bg-yellow-50 border-yellow-600 text-yellow-700 ring-2 ring-yellow-200' : 'bg-white border-gray-300 text-gray-700'"
+                    @click="paymentMethod = 'Cash'"
+                  >
+                    <i class="fas fa-money-bill-wave text-yellow-600 text-lg mr-2"></i> Cash
+                    <span v-if="paymentMethod === 'Cash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+                  </button>
+                </div>
+              </div>
 
-          <div class="mb-4">
-            <label class="text-sm font-semibold text-gray-700 mb-2 block">
-              <i class="fas fa-credit-card mr-2"></i>Payment Method
-            </label>
-            <div class="flex gap-4 mb-2">
-              <button
-                type="button"
-                class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
-                :class="paymentMethod === 'GCash' ? 'bg-green-50 border-green-600 text-green-700 ring-2 ring-green-200' : 'bg-white border-gray-300 text-gray-700'"
-                @click="paymentMethod = 'GCash'"
-              >
-                <i class="fas fa-wallet text-green-600 text-lg mr-2"></i> GCash
-                <span v-if="paymentMethod === 'GCash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
-              </button>
-              <button
-                type="button"
-                class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
-                :class="paymentMethod === 'Cash' ? 'bg-yellow-50 border-yellow-600 text-yellow-700 ring-2 ring-yellow-200' : 'bg-white border-gray-300 text-gray-700'"
-                @click="paymentMethod = 'Cash'"
-              >
-                <i class="fas fa-money-bill-wave text-yellow-600 text-lg mr-2"></i> Cash
-                <span v-if="paymentMethod === 'Cash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+              <button @click="checkout" class="btn-success w-full bg-green-600 text-white py-4 rounded-lg font-semibold text-lg pay-btn">
+                <i class="fas fa-check-circle mr-2"></i>Pay & Complete
               </button>
             </div>
           </div>
-
-          <button @click="checkout" class="btn-success w-full bg-green-600 text-white py-4 rounded-lg font-semibold text-lg">
-            <i class="fas fa-check-circle mr-2"></i>Pay & Complete
-          </button>
         </div>
       </div>
 
@@ -203,6 +243,12 @@
                   <button @click="printReceipt(trans.receiptNo)" class="text-green-600 hover:text-green-800 mr-3 transition-all hover:scale-110 inline-block" title="Print">
                     <i class="fas fa-print text-lg"></i>
                   </button>
+                  <button @click="downloadReceipt(trans.receiptNo)" class="text-blue-600 hover:text-blue-800 mr-3 transition-all hover:scale-110 inline-block" title="Download">
+                    <i class="fas fa-download text-lg"></i>
+                  </button>
+                  <button @click="customizeReceipt(trans.receiptNo)" class="text-purple-600 hover:text-purple-800 mr-3 transition-all hover:scale-110 inline-block" title="Customize">
+                    <i class="fas fa-palette text-lg"></i>
+                  </button>
                   <button @click="deleteTransaction(trans.receiptNo)" class="text-red-600 hover:text-red-800 transition-all hover:scale-110 inline-block" title="Delete">
                     <i class="fas fa-trash text-lg"></i>
                   </button>
@@ -210,6 +256,147 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Receipt Customization Modal -->
+    <div v-if="showReceiptCustomizer" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <!-- Modal Header -->
+        <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex justify-between items-center border-b">
+          <div>
+            <h3 class="text-2xl font-bold"><i class="fas fa-palette mr-2"></i>Customize Receipt</h3>
+            <p class="text-blue-100 text-sm mt-1">POS-{{ selectedReceipt?.receiptNo }}</p>
+          </div>
+          <button @click="showReceiptCustomizer = false" class="text-2xl hover:bg-blue-600 p-2 rounded transition-colors">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-6">
+          <!-- Color Settings -->
+          <div class="border rounded-lg p-4 bg-gray-50">
+            <h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-paint-brush mr-2"></i>Colors</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Header Background</label>
+                <div class="flex gap-2">
+                  <input type="color" v-model="receiptStyle.headerBg" class="w-12 h-10 rounded cursor-pointer">
+                  <input type="text" v-model="receiptStyle.headerBg" class="flex-1 border rounded px-2 py-1 text-sm font-mono">
+                </div>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Header Text</label>
+                <div class="flex gap-2">
+                  <input type="color" v-model="receiptStyle.headerText" class="w-12 h-10 rounded cursor-pointer">
+                  <input type="text" v-model="receiptStyle.headerText" class="flex-1 border rounded px-2 py-1 text-sm font-mono">
+                </div>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Total Background</label>
+                <div class="flex gap-2">
+                  <input type="color" v-model="receiptStyle.totalBg" class="w-12 h-10 rounded cursor-pointer">
+                  <input type="text" v-model="receiptStyle.totalBg" class="flex-1 border rounded px-2 py-1 text-sm font-mono">
+                </div>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Total Text</label>
+                <div class="flex gap-2">
+                  <input type="color" v-model="receiptStyle.totalText" class="w-12 h-10 rounded cursor-pointer">
+                  <input type="text" v-model="receiptStyle.totalText" class="flex-1 border rounded px-2 py-1 text-sm font-mono">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Font Settings -->
+          <div class="border rounded-lg p-4 bg-gray-50">
+            <h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-font mr-2"></i>Typography</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Company Name Size</label>
+                <input type="number" v-model.number="receiptStyle.companySize" min="12" max="32" class="w-full border rounded px-3 py-2">
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Item Font Size</label>
+                <input type="number" v-model.number="receiptStyle.itemSize" min="10" max="16" class="w-full border rounded px-3 py-2">
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Total Font Size</label>
+                <input type="number" v-model.number="receiptStyle.totalSize" min="14" max="28" class="w-full border rounded px-3 py-2">
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Font Family</label>
+                <select v-model="receiptStyle.fontFamily" class="w-full border rounded px-3 py-2">
+                  <option value="'Courier New', monospace">Courier New (Default)</option>
+                  <option value="'Arial', sans-serif">Arial</option>
+                  <option value="'Times New Roman', serif">Times New Roman</option>
+                  <option value="'Verdana', sans-serif">Verdana</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Receipt Content Settings -->
+          <div class="border rounded-lg p-4 bg-gray-50">
+            <h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-file-alt mr-2"></i>Content</h4>
+            <div class="space-y-3">
+              <div class="flex items-center">
+                <input type="checkbox" v-model="receiptStyle.showCompanyName" id="showCompany" class="w-4 h-4 rounded">
+                <label for="showCompany" class="ml-3 text-sm font-medium text-gray-700">Show Company Name</label>
+              </div>
+              <div class="flex items-center">
+                <input type="checkbox" v-model="receiptStyle.showDateTime" id="showDateTime" class="w-4 h-4 rounded">
+                <label for="showDateTime" class="ml-3 text-sm font-medium text-gray-700">Show Date & Time</label>
+              </div>
+              <div class="flex items-center">
+                <input type="checkbox" v-model="receiptStyle.showFooter" id="showFooter" class="w-4 h-4 rounded">
+                <label for="showFooter" class="ml-3 text-sm font-medium text-gray-700">Show Footer Message</label>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Company Name</label>
+                <input type="text" v-model="receiptStyle.companyName" placeholder="ReserVision" class="w-full border rounded px-3 py-2">
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-700 mb-2 block">Receipt Title</label>
+                <input type="text" v-model="receiptStyle.receiptTitle" placeholder="Point of Sale" class="w-full border rounded px-3 py-2">
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div class="border rounded-lg p-4 bg-gray-50">
+            <h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-eye mr-2"></i>Preview</h4>
+            <div class="bg-white border-2 border-dashed p-4" :style="{ fontFamily: receiptStyle.fontFamily }">
+              <div v-if="receiptStyle.showCompanyName" class="text-center" :style="{ fontSize: receiptStyle.companySize + 'px', color: receiptStyle.headerText }">
+                <strong>{{ receiptStyle.companyName }}</strong>
+              </div>
+              <div class="text-center text-sm mb-3" :style="{ fontSize: receiptStyle.itemSize + 'px' }">
+                {{ receiptStyle.receiptTitle }}
+              </div>
+              <div class="border-t border-b py-2 mb-2" v-if="selectedReceipt">
+                <div :style="{ fontSize: receiptStyle.itemSize + 'px' }" class="text-sm">Sample Item 1</div>
+              </div>
+              <div class="text-center font-bold p-2" :style="{ fontSize: receiptStyle.totalSize + 'px', backgroundColor: receiptStyle.totalBg, color: receiptStyle.totalText }">
+                TOTAL: ₱1,000.00
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="sticky bottom-0 bg-gray-100 p-6 flex gap-3 justify-end border-t">
+          <button @click="showReceiptCustomizer = false" class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-400 transition-colors">
+            Cancel
+          </button>
+          <button @click="downloadCustomizedReceipt" class="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors">
+            <i class="fas fa-download mr-2"></i>Download Receipt
+          </button>
+          <button @click="saveReceiptStyle" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+            <i class="fas fa-save mr-2"></i>Save Style
+          </button>
         </div>
       </div>
     </div>
@@ -242,7 +429,25 @@ export default {
       currentCategory: 'restaurant',
       paymentMethod: 'Cash',
       searchQuery: '',
+      restaurantTypeFilter: 'all',
       transactionHistory: [],
+      showReceiptCustomizer: false,
+      selectedReceipt: null,
+      receiptStyle: {
+        headerBg: '#1e3a8a',
+        headerText: '#ffffff',
+        totalBg: '#3b82f6',
+        totalText: '#ffffff',
+        companySize: 20,
+        itemSize: 13,
+        totalSize: 16,
+        fontFamily: "'Courier New', monospace",
+        showCompanyName: true,
+        showDateTime: true,
+        showFooter: true,
+        companyName: 'ReserVision',
+        receiptTitle: 'Point of Sale'
+      },
       categories: [
         {
           id: 'restaurant',
@@ -286,6 +491,18 @@ export default {
 
       return this.categories.filter(category => category.id === 'restaurant');
     },
+    restaurantTypeFilters() {
+      const restaurantCategory = this.categories.find(category => category.id === 'restaurant');
+      if (!restaurantCategory) {
+        return [];
+      }
+
+      return [...new Set(
+        restaurantCategory.items
+          .map(item => (item.description || '').trim())
+          .filter(Boolean)
+      )].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    },
     filteredTransactionHistory() {
       if (this.userRole === 'admin') {
         return this.transactionHistory;
@@ -311,12 +528,27 @@ export default {
       if (!newCategories.some(category => category.id === this.currentCategory)) {
         this.currentCategory = newCategories[0]?.id || '';
       }
+    },
+    currentCategory(newCategory) {
+      if (newCategory !== 'restaurant') {
+        this.restaurantTypeFilter = 'all';
+      }
     }
   },
   async mounted() {
     await this.fetchItems();
     await this.fetchTransactions();
     this.updateReceiptNumber();
+    
+    // Load saved receipt style from localStorage
+    const savedStyle = localStorage.getItem('receiptStyle');
+    if (savedStyle) {
+      try {
+        this.receiptStyle = { ...this.receiptStyle, ...JSON.parse(savedStyle) };
+      } catch (error) {
+        console.error('Error loading saved receipt style:', error);
+      }
+    }
   },
   methods: {
     async fetchItems() {
@@ -340,7 +572,8 @@ export default {
             .filter(item => item.category === category.id)
             .map(item => ({
               name: item.name,
-              price: parseFloat(item.price)
+              price: parseFloat(item.price),
+              description: item.description || ''
             }));
           
           console.log(`📦 ${category.name} (${category.id}):`, category.items.length, 'items');
@@ -378,12 +611,25 @@ export default {
       }
       this.currentCategory = categoryId;
       this.searchQuery = '';
+      if (categoryId !== 'restaurant') {
+        this.restaurantTypeFilter = 'all';
+      }
     },
-    getFilteredItems(items) {
-      if (!this.searchQuery) return items;
-      return items.filter(item => 
-        item.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
+    getFilteredItems(items, categoryId) {
+      let filtered = [...items];
+
+      if (this.searchQuery) {
+        const query = this.searchQuery.toLowerCase();
+        filtered = filtered.filter(item => item.name.toLowerCase().includes(query));
+      }
+
+      if (categoryId === 'restaurant' && this.restaurantTypeFilter !== 'all') {
+        filtered = filtered.filter(
+          item => (item.description || '').toLowerCase() === this.restaurantTypeFilter.toLowerCase()
+        );
+      }
+
+      return filtered;
     },
     hasItemFromCategory(transactionItems, categoryId) {
       const categoryItems = this.categories.find(cat => cat.id === categoryId)?.items || [];
@@ -448,12 +694,9 @@ export default {
         
         // Add to local history
         this.transactionHistory.unshift(transaction);
-        
-        // Auto-save receipt to CSV
-        this.saveReceiptToCSV(transaction);
 
         this.receiptNo++;
-        alert(`Transaction completed! Receipt: POS-${transaction.receiptNo}\nTotal: ₱${this.total.toLocaleString()}\n\nReceipt saved successfully.`);
+        alert(`Transaction completed! Receipt: POS-${transaction.receiptNo}\nTotal: ₱${this.total.toLocaleString()}`);
         
         // Clear cart after successful checkout
         this.cart = [];
@@ -614,7 +857,7 @@ export default {
           const backendTrans = response.data.find(t => t.receipt_no === transaction.receiptNo);
           
           if (backendTrans) {
-            await axios.delete(`${API_BASE}/transactions/${backendTrans.transaction_id}`);
+            await axios.delete(`${API_BASE}/transactions/${backendTrans.id}`);
           }
           
           this.transactionHistory.splice(transIndex, 1);
@@ -683,6 +926,177 @@ export default {
         link.click();
         document.body.removeChild(link);
       }
+    },
+    downloadReceipt(receiptNo) {
+      const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
+      if (trans) {
+        this.saveReceiptToCSV(trans);
+      }
+    },
+    customizeReceipt(receiptNo) {
+      this.selectedReceipt = this.transactionHistory.find(t => t.receiptNo === receiptNo);
+      this.showReceiptCustomizer = true;
+    },
+    downloadCustomizedReceipt() {
+      if (!this.selectedReceipt) return;
+      
+      const trans = this.selectedReceipt;
+      let itemsHTML = trans.items.map(item => 
+        `<tr>
+          <td style="padding: 4px 0;">${item.name}</td>
+          <td style="padding: 4px 0; text-align: right;">₱${item.price.toLocaleString()}</td>
+        </tr>`
+      ).join('');
+      
+      const printWindow = window.open('', '', 'width=300,height=600');
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Receipt POS-${trans.receiptNo}</title>
+          <style>
+            body {
+              font-family: ${this.receiptStyle.fontFamily};
+              width: 300px;
+              margin: 20px auto;
+              padding: 20px;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 2px dashed #000;
+              padding-bottom: 10px;
+              margin-bottom: 15px;
+              background-color: ${this.receiptStyle.headerBg};
+              color: ${this.receiptStyle.headerText};
+              padding: 15px;
+              border-radius: 5px;
+            }
+            .title {
+              font-size: ${this.receiptStyle.companySize}px;
+              font-weight: bold;
+              margin-bottom: 5px;
+            }
+            .subtitle {
+              font-size: 12px;
+            }
+            .info {
+              margin: 10px 0;
+              font-size: 12px;
+            }
+            table {
+              width: 100%;
+              margin: 15px 0;
+              font-size: ${this.receiptStyle.itemSize}px;
+            }
+            .total-section {
+              border-top: 2px dashed #000;
+              padding-top: 10px;
+              margin-top: 10px;
+            }
+            .total {
+              font-size: ${this.receiptStyle.totalSize}px;
+              font-weight: bold;
+              display: flex;
+              justify-content: space-between;
+              background-color: ${this.receiptStyle.totalBg};
+              color: ${this.receiptStyle.totalText};
+              padding: 10px;
+              border-radius: 5px;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 20px;
+              border-top: 2px dashed #000;
+              padding-top: 10px;
+              font-size: 11px;
+            }
+            @media print {
+              body {
+                margin: 0;
+                padding: 10px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${this.receiptStyle.showCompanyName ? `
+            <div class="header">
+              <div class="title">${this.receiptStyle.companyName}</div>
+              <div class="subtitle">${this.receiptStyle.receiptTitle}</div>
+            </div>
+          ` : ''}
+          
+          <div class="info">
+            <div><strong>Receipt:</strong> POS-${trans.receiptNo}</div>
+            ${this.receiptStyle.showDateTime ? `
+              <div><strong>Date:</strong> ${trans.date}</div>
+              <div><strong>Time:</strong> ${trans.time}</div>
+            ` : ''}
+            <div><strong>Type:</strong> ${trans.type}</div>
+            <div><strong>Payment:</strong> ${trans.payment}</div>
+          </div>
+          
+          <table>
+            <thead>
+              <tr style="border-bottom: 1px solid #000;">
+                <th style="text-align: left; padding: 5px 0;">Item</th>
+                <th style="text-align: right; padding: 5px 0;">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHTML}
+            </tbody>
+          </table>
+          
+          <div class="total-section">
+            <div class="total">
+              <span>TOTAL:</span>
+              <span>₱${trans.total.toLocaleString()}</span>
+            </div>
+          </div>
+          
+          ${this.receiptStyle.showFooter ? `
+            <div class="footer">
+              <p>Thank you for your business!</p>
+              <p>Please come again</p>
+            </div>
+          ` : ''}
+        </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      printWindow.focus();
+      
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+
+      // Also download as CSV
+      const trans_data = this.selectedReceipt;
+      let csv = `${this.receiptStyle.companyName}\n`;
+      csv += `${this.receiptStyle.receiptTitle}\n\n`;
+      csv += `Receipt Number,${trans_data.receiptNo}\n`;
+      csv += `Date,${trans_data.date}\n`;
+      csv += `Time,${trans_data.time}\n`;
+      csv += `Type,${trans_data.type}\n`;
+      csv += `Payment Method,${trans_data.payment}\n\n`;
+      csv += 'Item,Price\n';
+      
+      trans_data.items.forEach(item => {
+        csv += `"${item.name}",${item.price}\n`;
+      });
+      
+      csv += `\nTotal,${trans_data.total}\n`;
+      
+      this.downloadCSV(csv, `Receipt_POS-${trans_data.receiptNo}_${trans_data.date}_customized.csv`);
+    },
+    saveReceiptStyle() {
+      // Save to localStorage for future use
+      localStorage.setItem('receiptStyle', JSON.stringify(this.receiptStyle));
+      alert('Receipt style saved successfully!');
     }
   }
 };
@@ -690,9 +1104,144 @@ export default {
 
 <style scoped>
 .pos-container {
-  padding: 2rem;
+  padding: 1.5rem;
   background: #F8F7F4;
   min-height: 100vh;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.pos-grid {
+  align-items: stretch;
+}
+
+.items-card,
+.cart-card {
+  min-height: 680px;
+  max-height: 680px;
+}
+
+.items-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+
+.cart-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.cart-items-area {
+  flex: 1;
+  min-height: 280px;
+  overflow-y: auto;
+  padding-right: 2px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 0.9rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cart-items-area::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.cart-empty-state {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+
+.cart-bottom {
+  margin-top: auto;
+}
+
+.total-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.payment-wrap {
+  margin-bottom: 0.2rem;
+}
+
+.pay-btn {
+  min-height: 52px;
+}
+
+.items-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  min-height: 30px;
+}
+
+.section-title {
+  font-size: 1.50rem;
+  line-height: 1;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.category-switch {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.category-switch::-webkit-scrollbar {
+  display: none;
+}
+
+.menu-filter-wrap {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.65rem;
+}
+
+.chip-btn {
+  line-height: 1;
+}
+
+.items-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.items-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .card {
@@ -708,26 +1257,36 @@ export default {
 
 .item-btn {
   transition: all 0.2s ease;
-  border: 2px solid #e5e7eb;
+  border: 1px solid #e5e7eb;
   border-radius: 10px;
   cursor: pointer;
+  min-height: 76px;
 }
 
 .item-btn:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.2);
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(59, 130, 246, 0.16);
 }
 
 .category-btn {
   transition: all 0.2s ease;
   font-weight: 500;
-  border: none;
+  border: 1px solid transparent;
+  line-height: 1;
+  height: 36px;
+  padding: 0 15px;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.category-btn i {
+  font-size: 0.75rem;
 }
 
 .category-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
 }
 
 .btn-primary {
@@ -767,7 +1326,7 @@ table tr {
 
 .cart-item {
   transition: all 0.2s ease;
-  padding: 0.5rem;
+  padding: 0.55rem;
   border-radius: 6px;
 }
 
@@ -803,6 +1362,16 @@ table tr {
 }
 
 @media (max-width: 768px) {
+  .items-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .category-switch {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
   .main-content {
     margin-left: 0;
   }

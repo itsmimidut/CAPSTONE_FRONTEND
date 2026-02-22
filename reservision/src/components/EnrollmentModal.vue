@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal" @click.stop>
       <div class="modal-header">
-        <h2 class="modal-title">Swimming Lesson Enrollment</h2>
+        <h2 class="modal-title">Swimming Lesson Enrollmentttttttt</h2>
         <button @click="$emit('close')" class="close-btn" type="button">✕</button>
       </div>
 
