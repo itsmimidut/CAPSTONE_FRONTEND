@@ -1,8 +1,14 @@
 <template>
   <section class="about-hero">
-    <div class="hero-content">
-      <h1 class="animate-fade-in">Our Story</h1>
-      <p class="animate-slide-up">
+    <div class="overlay"></div>
+
+    <div class="hero-card">
+      <h1>
+        <span class="text-blue">Our</span>
+        <span class="text-gold shimmer"> Story</span>
+      </h1>
+
+      <p>
         A legacy of warmth, nature, and Filipino hospitality since 1998.
       </p>
     </div>
@@ -10,59 +16,105 @@
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&display=swap');
+
 .about-hero {
-  background: linear-gradient(135deg, rgba(43,108,176,.85), rgba(193,154,107,.65)),
-    url('https://images.unsplash.com/photo-1517248135467-3fb27b735e36?auto=format&fit=crop&w=1600&q=80') 
-    center/cover no-repeat;
-  height: 400px;
+  position: relative;
+  min-height: 380px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: white;
+  padding: 40px 20px;
+  overflow: hidden;
+
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(59,130,246,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(212,175,55,0.15) 0%, transparent 50%),
+    linear-gradient(135deg, rgba(30,64,175,0.35), rgba(212,175,55,0.25)),
+    url('https://www.eduardosresort.com/images/IMG_4224.JPG');
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: overlay;
 }
 
-.hero-content h1 {
-  font-family: 'Dancing Script', cursive;
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
-  text-shadow: 0 3px 8px rgba(0,0,0,.4);
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom right,
+    rgba(30,64,175,0.25),
+    rgba(212,175,55,0.2)
+  );
 }
 
-.hero-content p {
-  font-size: 1.2rem;
+.hero-card {
+  position: relative;
+  z-index: 2;
   max-width: 700px;
-  margin: 0 auto;
-  opacity: 0.95;
+  padding: 35px 40px;
+  border-radius: 22px;
+  backdrop-filter: blur(18px);
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.95),
+    rgba(255,255,255,0.85)
+  );
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* Strong bold heading */
+.hero-card h1 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 3rem;
+  font-weight: 900; /* stronger bold */
+  letter-spacing: -0.5px;
+  margin-bottom: 18px;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+/* Blue part */
+.text-blue {
+  color: #1e40af;
+  font-weight: 900;
 }
 
-.animate-fade-in {
-  animation: fadeIn 1s ease-out;
+/* Gold shimmer part */
+.text-gold {
+  font-weight: 900;
 }
 
-.animate-slide-up {
-  animation: slideUp 0.8s ease-out;
+/* Improved shimmer with stronger visibility */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #b8941f,
+    #facc15,
+    #b8941f
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+.hero-card p {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #1e293b;
 }
 
 @media (max-width: 640px) {
-  .about-hero {
-    height: 320px;
-  }
-  .hero-content h1 {
-    font-size: 2.5rem;
-  }
-  .hero-content p {
-    font-size: 1.1rem;
+  .hero-card h1 {
+    font-size: 2.1rem;
   }
 }
 </style>

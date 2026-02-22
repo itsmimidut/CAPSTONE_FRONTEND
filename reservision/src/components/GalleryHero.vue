@@ -1,8 +1,14 @@
 <template>
   <section class="gallery-hero">
-    <div class="hero-content">
-      <h1 class="animate-fade-in">Explore Our Gallery</h1>
-      <p class="animate-slide-up">
+    <div class="overlay"></div>
+
+    <div class="hero-card">
+      <h1>
+        <span class="text-blue">Explore Our</span>
+        <span class="text-gold shimmer"> Gallery</span>
+      </h1>
+
+      <p>
         Discover the beauty, comfort, and unforgettable moments at Eduardo's Resort.
       </p>
     </div>
@@ -11,53 +17,106 @@
 
 <style scoped>
 .gallery-hero {
-  background: linear-gradient(135deg, rgba(43,108,176,.75), rgba(193,154,107,.45)), 
-              url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
-  height: 320px;
+  position: relative;
+  min-height: 380px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: white;
+  padding: 40px 20px;
+  overflow: hidden;
+
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(59,130,246,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(212,175,55,0.15) 0%, transparent 50%),
+    linear-gradient(135deg, rgba(30,64,175,0.35), rgba(212,175,55,0.25)),
+    url('https://www.eduardosresort.com/images/IMG_4224.JPG');
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: overlay;
 }
 
-.hero-content h1 {
-  font-size: 3.5rem;
-  font-family: 'Dancing Script', cursive;
-  margin-bottom: 1rem;
-  text-shadow: 0 3px 8px rgba(0,0,0,.4);
+/* Soft overlay depth */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom right,
+    rgba(30,64,175,0.25),
+    rgba(212,175,55,0.2)
+  );
 }
 
-.hero-content p {
-  font-size: 1.2rem;
-  opacity: 0.95;
-  padding: 0 1rem;
+/* Glass Card */
+.hero-card {
+  position: relative;
+  z-index: 2;
+  max-width: 700px;
+  padding: 35px 40px;
+  border-radius: 22px;
+  backdrop-filter: blur(18px);
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.95),
+    rgba(255,255,255,0.85)
+  );
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
 }
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* Heading */
+.hero-card h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 18px;
 }
 
-@keyframes slide-up {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.text-blue {
+  color: #1e40af;
 }
 
-.animate-fade-in {
-  animation: fade-in 1s ease-out;
+.text-gold {
+  color: #d4af37;
 }
 
-.animate-slide-up {
-  animation: slide-up 0.8s ease-out;
+/* Shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
 }
 
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #d4af37,
+    #facc15,
+    #d4af37
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+/* Paragraph */
+.hero-card p {
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: #1e293b;
+}
+
+/* Responsive */
 @media (max-width: 640px) {
-  .hero-content h1 {
-    font-size: 2rem;
+  .hero-card {
+    padding: 25px 20px;
   }
-  
-  .hero-content p {
+
+  .hero-card h1 {
+    font-size: 2.1rem;
+  }
+
+  .hero-card p {
     font-size: 1rem;
   }
 }

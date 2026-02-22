@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient">
+  <div class="min-h-screen bg-rates-gradient">
     <!-- Header -->
     <AppHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
     
@@ -9,49 +9,38 @@
     <!-- Hero -->
     <RatesHero />
 
-    <!-- Rates Image Carousel -->
-    <section class="bg-white">
-      <div class="w-full h-screen px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-        <div class="relative w-full h-full">
-          <div class="overflow-hidden rounded-xl shadow-lg border border-gray-200 bg-white h-full flex items-center justify-center">
-            <img
-              :src="slides[currentSlide].src"
-              :alt="slides[currentSlide].alt"
-              class="w-full h-full object-contain bg-white"
-              loading="lazy"
-            />
-          </div>
+    <!-- Rates Images Side-by-Side -->
+    <section class="px-4 sm:px-6 lg:px-8 py-12">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 justify-center items-start">
+        <div
+          v-for="(slide, index) in slides"
+          :key="index"
+          class="relative rounded-2xl shadow-2xl overflow-hidden border border-white/30 bg-gradient-to-br from-white/95 to-blue-50/80 backdrop-blur-lg"
+        >
+          <!-- Image -->
+          <img
+            :src="slide.src"
+            :alt="slide.alt"
+            class="w-full h-auto object-contain"
+            loading="lazy"
+          />
 
-          <!-- Manual Controls -->
+          <!-- Preview Icon -->
           <button
-            class="carousel-btn left-4"
-            @click="prevSlide"
-            aria-label="Previous image"
+            class="preview-btn"
+            @click="openPreview(slide.src)"
+            aria-label="Preview image"
           >
-            <i class="fas fa-chevron-left"></i>
+            <i class="fas fa-search-plus"></i>
           </button>
-          <button
-            class="carousel-btn right-4"
-            @click="nextSlide"
-            aria-label="Next image"
-          >
-            <i class="fas fa-chevron-right"></i>
-          </button>
-        </div>
-
-        <!-- Dots -->
-        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center justify-center gap-2">
-          <button
-            v-for="(slide, index) in slides"
-            :key="slide.src"
-            class="dot"
-            :class="{ active: index === currentSlide }"
-            @click="goToSlide(index)"
-            :aria-label="`Go to slide ${index + 1}`"
-          ></button>
         </div>
       </div>
     </section>
+
+    <!-- Lightbox Preview -->
+    <div v-if="previewSrc" class="lightbox" @click="closePreview">
+      <img :src="previewSrc" class="lightbox-img" />
+    </div>
 
     <!-- Footer -->
     <AppFooter />
@@ -62,7 +51,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
 import AppHeader from '../../components/AppHeader.vue'
 import AppSidebar from '../../components/AppSidebar.vue'
 import AppFooter from '../../components/AppFooter.vue'
@@ -71,91 +60,88 @@ import RatesHero from '../../components/RatesHero.vue'
 
 const sidebarOpen = ref(false)
 const slides = [
-  {
-    src: '/rates/rates1.jpg',
-    alt: 'Eduardo’s Resort rates poster'
-  },
-  {
-    src: '/rates/rates2.jpg',
-    alt: 'Eduardo’s Resort rates poster'
-  }
+  { src: '/rates/rates1.jpg', alt: 'Eduardo’s Resort rates poster 1' },
+  { src: '/rates/rates2.jpg', alt: 'Eduardo’s Resort rates poster 2' }
 ]
 
-const currentSlide = ref(0)
-let autoSlideInterval
-
-const goToSlide = (index) => {
-  currentSlide.value = index
-}
-
-const nextSlide = () => {
-  currentSlide.value = (currentSlide.value + 1) % slides.length
-}
-
-const prevSlide = () => {
-  currentSlide.value = (currentSlide.value - 1 + slides.length) % slides.length
-}
-
-const startAutoSlide = () => {
-  if (slides.length <= 1) return
-  autoSlideInterval = setInterval(() => {
-    nextSlide()
-  }, 5000)
-}
-
-const stopAutoSlide = () => {
-  if (autoSlideInterval) {
-    clearInterval(autoSlideInterval)
-  }
-}
-
-onMounted(() => {
-  startAutoSlide()
-})
-
-onBeforeUnmount(() => {
-  stopAutoSlide()
-})
+// Preview state
+const previewSrc = ref(null)
+const openPreview = (src) => previewSrc.value = src
+const closePreview = () => previewSrc.value = null
 </script>
 
 <style scoped>
-.bg-gradient {
-  background: linear-gradient(to bottom, #E0F7FA, white);
+/* Background gradient */
+.bg-rates-gradient {
+  background: linear-gradient(135deg, rgba(30,64,175,0.15), rgba(212,175,55,0.08));
+  min-height: 100vh;
 }
 
-.carousel-btn {
+/* Glass-card styling for images */
+.grid > div {
+  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+  backdrop-filter: blur(15px);
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+  padding: 8px;
+  position: relative;
+}
+
+/* Ensure full content visible */
+img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 16px;
+}
+
+/* Preview button */
+.preview-btn {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(15, 23, 42, 0.6);
-  color: white;
-  border: none;
-  width: 34px;
-  height: 34px;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(30,64,175,0.85);
+  color: #facc15;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.carousel-btn:hover {
-  background: rgba(15, 23, 42, 0.8);
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  border: none;
-  background: #cbd5e1;
-  cursor: pointer;
+  font-size: 16px;
   transition: all 0.2s ease;
 }
 
-.dot.active {
-  width: 20px;
-  background: #2B6CB0;
+.preview-btn:hover {
+  background: rgba(30,64,175,1);
+  transform: scale(1.1);
+}
+
+/* Lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+  cursor: zoom-out;
+}
+
+.lightbox-img {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
