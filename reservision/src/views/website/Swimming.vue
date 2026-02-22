@@ -76,6 +76,11 @@
             :key="lesson.type"
             class="lesson-card reveal"
           >
+            <!-- Lesson Image -->
+            <div class="lesson-image" v-if="lesson.image">
+              <img :src="lesson.image" :alt="lesson.type" />
+            </div>
+            
             <div class="lesson-header">
               <div :class="['lesson-badge', lesson.badgeClass]">
                 <i :class="lesson.icon"></i>
@@ -97,40 +102,12 @@
                 </li>
               </ul>
               <button 
-                @click="revealEnrollmentForm"
+                @click="openClassBookingModal(lesson.type)"
                 class="lesson-enroll-btn"
               >
-                Enroll in {{ lesson.type }}
+                Book {{ lesson.type }} package
               </button>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Image Gallery -->
-    <section class="section-container bg-white">
-      <div class="max-w-6xl mx-auto px-4">
-        <div class="text-center mb-10">
-          <h2 class="section-title">
-            <span class="text-blue-800">Our</span> 
-            <span class="text-blue-600">Facilities</span>
-          </h2>
-          <p class="section-subtitle">See where the magic happens</p>
-        </div>
-
-        <div class="gallery-grid">
-          <div
-            v-for="(image, index) in galleryImages"
-            :key="index"
-            @click="openLightbox(index)"
-            class="gallery-item reveal"
-            :style="{ backgroundImage: `url(${image.url})` }"
-          >
-            <div class="gallery-overlay">
-              <i class="fas fa-search-plus text-3xl"></i>
-            </div>
-            <div class="gallery-caption">{{ image.caption }}</div>
           </div>
         </div>
       </div>
@@ -252,6 +229,17 @@
             Nautical Highway, Bayanan II, Calapan City, Oriental Mindoro 5200
           </div>
 
+          <!-- Info message for regular enrollment -->
+          <div v-if="enrollmentMode === 'regular'" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 class="text-base font-semibold text-blue-800 mb-2">
+              <i class="fas fa-info-circle mr-2"></i>
+              New Enrollment
+            </h3>
+            <p class="text-sm text-blue-700">
+              Fill out the form below to register for swimming lessons. Payment and scheduling will be arranged after enrollment approval.
+            </p>
+          </div>
+
           <nav class="form-nav">
             <a class="form-nav-link" href="#section-basic">Basic Info</a>
             <a class="form-nav-link" href="#section-personal">Personal Details</a>
@@ -264,14 +252,14 @@
               <h3 class="form-section-title text-sm md:text-base">Basic Info</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="md:col-span-2">
-                  <label class="form-label text-xs md:text-sm">Name</label>
+                  <label class="form-label text-xs md:text-sm required">Name</label>
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <input type="text" class="form-input text-sm md:text-base" placeholder="Family" v-model="formData.familyName" />
+                      <input type="text" class="form-input text-sm md:text-base" placeholder="Family" v-model="formData.familyName" required />
                       <p class="form-hint text-xs md:text-sm">Family</p>
                     </div>
                     <div>
-                      <input type="text" class="form-input text-sm md:text-base" placeholder="First" v-model="formData.firstName" />
+                      <input type="text" class="form-input text-sm md:text-base" placeholder="First" v-model="formData.firstName" required />
                       <p class="form-hint text-xs md:text-sm">First</p>
                     </div>
                     <div>
@@ -282,8 +270,8 @@
                 </div>
 
                 <div class="md:col-span-2">
-                  <label class="form-label text-xs md:text-sm">Date of Birth</label>
-                  <input type="date" class="form-input text-sm md:text-base" v-model="formData.dateOfBirth" />
+                  <label class="form-label text-xs md:text-sm required">Date of Birth</label>
+                  <input type="date" class="form-input text-sm md:text-base" v-model="formData.dateOfBirth" required />
                 </div>
               </div>
             </div>
@@ -292,16 +280,16 @@
               <h3 class="form-section-title text-sm md:text-base">Personal Details</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="form-label text-xs md:text-sm">Lesson Type</label>
-                  <select class="form-input text-sm md:text-base" v-model="formData.lessonType">
+                  <label class="form-label text-xs md:text-sm required">Lesson Type</label>
+                  <select class="form-input text-sm md:text-base" v-model="formData.lessonType" required>
                     <option value="" disabled selected>Select Lesson Type</option>
                     <option value="Group Lessons">Group Lessons</option>
                     <option value="Private Lessons">Private Lessons</option>
                   </select>
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm">Sex</label>
-                  <select class="form-input text-sm md:text-base" v-model="formData.sex">
+                  <label class="form-label text-xs md:text-sm required">Sex</label>
+                  <select class="form-input text-sm md:text-base" v-model="formData.sex" required>
                     <option value="" disabled selected>Sex</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -311,8 +299,8 @@
 
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                 <div>
-                  <label class="form-label text-xs md:text-sm">Height (cm)</label>
-                  <select class="form-input text-sm md:text-base" v-model="formData.height">
+                  <label class="form-label text-xs md:text-sm required">Height (cm)</label>
+                  <select class="form-input text-sm md:text-base" v-model="formData.height" required>
                     <option value="" disabled selected>Select Height</option>
                     <option value="140">140 cm</option>
                     <option value="145">145 cm</option>
@@ -330,8 +318,8 @@
                   </select>
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm">Weight (kg)</label>
-                  <select class="form-input text-sm md:text-base" v-model="formData.weight">
+                  <label class="form-label text-xs md:text-sm required">Weight (kg)</label>
+                  <select class="form-input text-sm md:text-base" v-model="formData.weight" required>
                     <option value="" disabled selected>Select Weight</option>
                     <option value="30">30 kg</option>
                     <option value="35">35 kg</option>
@@ -353,8 +341,8 @@
                   </select>
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm">Name of Coach</label>
-                  <select class="form-input text-sm md:text-base" v-model="formData.preferredCoach">
+                  <label class="form-label text-xs md:text-sm required">Name of Coach</label>
+                  <select class="form-input text-sm md:text-base" v-model="formData.preferredCoach" required>
                     <option value="" disabled selected>Select a Coach</option>
                     <option v-for="coach in coaches" :key="coach.coach_id" :value="coach.coach_id">
                       {{ coach.name }} - {{ coach.specialization }}
@@ -367,18 +355,18 @@
             <div id="section-contact" class="form-section">
               <h3 class="form-section-title text-sm md:text-base">Contact Information</h3>
               <div>
-                <label class="form-label text-xs md:text-sm">Student's Address</label>
-                <input type="text" class="form-input text-sm md:text-base" v-model="formData.address" />
+                <label class="form-label text-xs md:text-sm required">Student's Address</label>
+                <input type="text" class="form-input text-sm md:text-base" v-model="formData.address" required />
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                  <label class="form-label text-xs md:text-sm">Mobile Phone</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.mobilePhone" />
+                  <label class="form-label text-xs md:text-sm required">Mobile Phone</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.mobilePhone" required />
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm">Email Address</label>
-                  <input type="email" class="form-input text-sm md:text-base" v-model="formData.email" />
+                  <label class="form-label text-xs md:text-sm required">Email Address</label>
+                  <input type="email" class="form-input text-sm md:text-base" v-model="formData.email" required />
                 </div>
               </div>
             </div>
@@ -387,12 +375,12 @@
               <h3 class="form-section-title text-sm md:text-base">Guardian Details</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="form-label text-xs md:text-sm">Father's Name</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.fatherName" />
+                  <label class="form-label text-xs md:text-sm required">Father's Name</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.fatherName" required />
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm">Mother's Name</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.motherName" />
+                  <label class="form-label text-xs md:text-sm required">Mother's Name</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.motherName" required />
                 </div>
               </div>
 
@@ -409,12 +397,59 @@
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                  <label class="form-label text-xs md:text-sm">Contact Person</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.contactPerson" />
+                  <label class="form-label text-xs md:text-sm required">Contact Person</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.contactPerson" required />
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm">Contact Number</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.contactNumber" />
+                  <label class="form-label text-xs md:text-sm required">Contact Number</label>
+                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.contactNumber" required />
+                </div>
+              </div>
+
+              <!-- Booking Reference (Only for booking mode) -->
+              <div v-if="enrollmentMode === 'booking'" class="mt-6">
+                <div>
+                  <label class="form-label text-xs md:text-sm required">Booking Reference</label>
+                  <div class="flex gap-2">
+                    <input 
+                      type="text" 
+                      v-model="bookingReference" 
+                      placeholder="e.g., SWM12345678"
+                      class="flex-1 form-input text-sm md:text-base"
+                      @input="bookingValidated = false"
+                      required
+                    />
+                    <button
+                      type="button"
+                      @click="validateBookingReference"
+                      :disabled="!bookingReference || validatingBooking"
+                      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-xs md:text-sm whitespace-nowrap"
+                    >
+                      <i v-if="validatingBooking" class="fas fa-spinner fa-spin mr-1"></i>
+                      {{ validatingBooking ? 'Checking...' : 'Validate' }}
+                    </button>
+                  </div>
+                  <p class="form-hint text-xs md:text-sm mt-2">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Get your booking reference from the Reservation page after booking and payment
+                  </p>
+                  
+                  <!-- Validation Result -->
+                  <div v-if="bookingValidationMessage" :class="[
+                    'mt-2 p-2 rounded text-xs',
+                    bookingValidated 
+                      ? 'bg-green-50 border border-green-200 text-green-700' 
+                      : 'bg-red-50 border border-red-200 text-red-700'
+                  ]">
+                    <i :class="bookingValidated ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'" class="mr-1"></i>
+                    {{ bookingValidationMessage }}
+                  </div>
+                  
+                  <!-- Booking Info (compact) -->
+                  <div v-if="bookingValidated && bookingInfo" class="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                    <span class="text-green-800 font-medium">✓ Verified:</span>
+                    <span class="text-gray-700">{{ bookingInfo.package_name }} - {{ bookingInfo.available_slots || 0 }} slot(s) available ({{ bookingInfo.enrolled_count || 0 }}/{{ bookingInfo.paid_slots }} enrolled)</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -422,9 +457,6 @@
             <div class="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
               <button class="btn-yellow w-full sm:w-auto" type="submit" :disabled="isSubmittingForm">
                 {{ isSubmittingForm ? 'Submitting...' : 'Submit Enrollment' }}
-              </button>
-              <button class="btn-outline-white w-full sm:w-auto" type="button" @click="closeEnrollmentForm">
-                Close
               </button>
             </div>
           </form>
@@ -455,6 +487,14 @@ const currentImageIndex = ref(0)
 const coaches = ref([])
 const selectedCoach = ref('')
 const isSubmittingForm = ref(false)
+
+// Enrollment mode and booking reference validation
+const enrollmentMode = ref('booking') // 'booking' or 'regular'
+const bookingReference = ref('')
+const bookingValidated = ref(false)
+const validatingBooking = ref(false)
+const bookingValidationMessage = ref('')
+const bookingInfo = ref(null)
 
 // Form data object
 const formData = ref({
@@ -498,7 +538,8 @@ const lessonTypes = [
     icon: 'fas fa-star', 
     badgeClass: 'bg-blue-100 text-blue-600', 
     price: 3000, 
-    duration: 'package', 
+    duration: 'package',
+    image: '/images/child.jpeg',
     features: [
       '10 sessions program',
       '1 hour per session',
@@ -513,7 +554,8 @@ const lessonTypes = [
     icon: 'fas fa-swimmer', 
     badgeClass: 'bg-blue-100 text-blue-600', 
     price: 4000, 
-    duration: 'package', 
+    duration: 'package',
+    image: '/images/teen.jpg',
     features: [
       '10 sessions program',
       '1 hour per session',
@@ -522,15 +564,6 @@ const lessonTypes = [
       'Parental involvement welcome'
     ] 
   }
-]
-
-const galleryImages = [
-  { url: '/images/swimming1.jpg', caption: 'Olympic-size Pool' },
-  { url: '/images/swimming2.jpg', caption: 'Beginner Class' },
-  { url: '/images/swimming3.jpg', caption: 'Private Coaching' },
-  { url: '/images/swimming4.jpg', caption: 'Kids Learning' },
-  { url: '/images/swimming5.jpg', caption: 'Advanced Training' },
-  { url: '/images/swimming6.jpg', caption: 'Group Session' }
 ]
 
 const schedule = [
@@ -567,10 +600,7 @@ const closeEnrollmentModal = () => {
 }
 
 const openClassBookingModal = (lessonType = null) => {
-  const actualLessonType = (typeof lessonType === 'object' && lessonType !== null) ? null : lessonType
-  selectedBookingLessonType.value = actualLessonType
-  showClassBookingModal.value = true
-  document.body.style.overflow = 'hidden'
+  router.push({ path: '/websitereservation', query: { service: 'swimming' } })
 }
 
 const closeClassBookingModal = () => {
@@ -666,24 +696,80 @@ const prevImage = () => {
   currentImageIndex.value = (currentImageIndex.value - 1 + galleryImages.length) % galleryImages.length
 }
 
+// Validate booking reference
+const validateBookingReference = async () => {
+  if (!bookingReference.value) {
+    bookingValidationMessage.value = 'Please enter a booking reference'
+    bookingValidated.value = false
+    return
+  }
+
+  validatingBooking.value = true
+  bookingValidationMessage.value = ''
+  bookingInfo.value = null
+
+  try {
+    const response = await fetch('http://localhost:8000/api/swimming/validate-booking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingReference: bookingReference.value })
+    })
+
+    const result = await response.json()
+
+    if (result.success && result.canEnroll) {
+      bookingValidated.value = true
+      bookingInfo.value = result.booking
+      
+      const enrolledCount = result.booking.enrolled_count || 0
+      const availableSlots = result.booking.available_slots || 0
+      
+      bookingValidationMessage.value = `✓ Booking verified! ${availableSlots} slot(s) available (${enrolledCount} already enrolled out of ${result.booking.paid_slots} paid slots)`
+    } else {
+      bookingValidated.value = false
+      bookingValidationMessage.value = result.error || 'Invalid booking reference or booking is full'
+    }
+  } catch (error) {
+    console.error('Error validating booking:', error)
+    bookingValidated.value = false
+    bookingValidationMessage.value = 'Failed to validate booking reference. Please try again.'
+  } finally {
+    validatingBooking.value = false
+  }
+}
+
 // Submit enrollment form
 const submitEnrollmentForm = async () => {
   try {
     isSubmittingForm.value = true
 
+    // Validate booking reference if in booking mode
+    if (enrollmentMode.value === 'booking') {
+      if (!bookingReference.value) {
+        alert('Please enter a booking reference')
+        return
+      }
+      if (!bookingValidated.value) {
+        alert('Please validate your booking reference first')
+        return
+      }
+    }
+
     // Validate required fields
-    if (!formData.value.firstName || !formData.value.dateOfBirth || !formData.value.email || !formData.value.preferredCoach || !formData.value.address || !formData.value.lessonType) {
-      alert('Please fill in all required fields')
+    if (!formData.value.firstName || !formData.value.dateOfBirth || !formData.value.email || !formData.value.address) {
+      alert('Please fill in all required fields (Name, Date of Birth, Email, Address)')
       return
     }
 
     // Prepare data for backend
     const enrollmentData = {
+      bookingReference: enrollmentMode.value === 'booking' ? bookingReference.value : null,
+      bookingId: enrollmentMode.value === 'booking' && bookingInfo.value ? bookingInfo.value.booking_id : null,
       firstName: formData.value.firstName,
       middleName: formData.value.middleName,
       lastName: formData.value.familyName,
       dateOfBirth: formData.value.dateOfBirth,
-      lessonType: formData.value.lessonType,
+      lessonType: formData.value.lessonType || (bookingInfo.value ? bookingInfo.value.package_name : null),
       sex: formData.value.sex,
       height: formData.value.height,
       weight: formData.value.weight,
@@ -697,7 +783,12 @@ const submitEnrollmentForm = async () => {
       emergencyContactPhone: formData.value.contactNumber
     }
 
-    const response = await fetch('http://localhost:8000/api/swimming/enrollments', {
+    // Use different endpoint based on mode
+    const endpoint = enrollmentMode.value === 'booking' 
+      ? 'http://localhost:8000/api/swimming/enroll'  // Booking-based enrollment
+      : 'http://localhost:8000/api/swimming/enrollments'  // Regular enrollment
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -712,7 +803,22 @@ const submitEnrollmentForm = async () => {
     }
 
     // Success!
-    alert(`✅ Enrollment Successful!\n\nEnrollment ID: #${result.enrollment.enrollment_id}\n\nWe will contact you within 24-48 hours to confirm your enrollment.`)
+    if (enrollmentMode.value === 'booking') {
+      const successMsg = `✅ Enrollment Successful!
+
+Enrollment ID: #${result.enrollmentId}
+Booking Reference: ${bookingReference.value}
+
+${result.message}
+
+Slots Used: ${result.slotsUsed}/${result.totalSlots}
+${result.allSlotsFilled ? '\n🎉 All slots for this booking are now filled! Swimming schedules will be created soon.' : ''}
+
+We will contact you with schedule details shortly.`
+      alert(successMsg)
+    } else {
+      alert(`✅ Enrollment Successful!\n\nEnrollment ID: #${result.enrollment.enrollment_id}\n\nWe will contact you within 24-48 hours to confirm your enrollment and arrange payment.`)
+    }
     
     // Reset form
     formData.value = {
@@ -735,6 +841,12 @@ const submitEnrollmentForm = async () => {
       contactPerson: '',
       contactNumber: ''
     }
+
+    // Reset booking reference fields
+    bookingReference.value = ''
+    bookingValidated.value = false
+    bookingInfo.value = null
+    bookingValidationMessage.value = ''
 
     closeEnrollmentForm()
   } catch (error) {
@@ -967,6 +1079,24 @@ onMounted(() => {
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   transform: translateY(-4px);
   border-color: #2B6CB0;
+}
+
+.lesson-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.lesson-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.lesson-card:hover .lesson-image img {
+  transform: scale(1.05);
 }
 
 .lesson-header {
@@ -1254,6 +1384,12 @@ onMounted(() => {
   margin-bottom: 0.35rem;
 }
 
+.form-label.required::after {
+  content: ' *';
+  color: #e53e3e;
+  font-weight: 700;
+}
+
 .form-input {
   width: 100%;
   border: 1px solid #E2E8F0;
@@ -1432,6 +1568,10 @@ onMounted(() => {
   
   .lesson-body {
     padding: 1rem;
+  }
+  
+  .lesson-image {
+    height: 180px;
   }
   
   .gallery-item {

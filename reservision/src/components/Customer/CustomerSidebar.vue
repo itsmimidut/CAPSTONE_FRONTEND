@@ -49,20 +49,21 @@
     </div>
 
     <div class="logout-container">
-      <router-link
-        to="/login"
-        class="nav-link"
-        @click="$emit('close')"
+      <button
+        @click="handleLogout"
+        class="nav-link w-full text-left"
       >
         <i class="fas fa-sign-out-alt nav-icon"></i>
         <span class="nav-text">Logout</span>
-      </router-link>
+      </button>
     </div>
   </aside>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
 
 const props = defineProps({
   items: {
@@ -96,6 +97,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['select', 'close']);
+const router = useRouter()
+const auth = useAuthStore()
 
 const userInitial = computed(() => props.userName.charAt(0).toUpperCase());
 
@@ -103,6 +106,18 @@ const handleSelect = (sectionId) => {
   emit('select', sectionId);
   emit('close');
 };
+
+// Logout handler
+const handleLogout = () => {
+  // Call auth store logout (clears authToken and user from localStorage)
+  auth.logout()
+  
+  // Clear ALL localStorage to prevent accessing pages with old credentials
+  localStorage.clear()
+  
+  // Redirect to login page
+  router.push('/login')
+}
 </script>
 
 <style scoped>
@@ -278,5 +293,9 @@ const handleSelect = (sectionId) => {
 .logout-container {
   padding: 0.75rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logout-container button {
+  cursor: pointer;
 }
 </style>

@@ -260,35 +260,78 @@
               Swimming Schedule Dates (Select up to 10 dates) *
             </label>
             
-            <!-- Date Input with Add Button -->
-            <div class="flex gap-2 mb-3">
-              <input 
-                v-model="swimmingFormData.newDate" 
-                type="date" 
-                :disabled="swimmingFormData.dates.length >= 10"
-                class="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:bg-gray-100"
-              />
-              <button
-                @click="addSwimmingDate"
-                :disabled="swimmingFormData.dates.length >= 10"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                <i class="fas fa-plus mr-1"></i>Add
-              </button>
-            </div>
-
             <!-- Progress Indicator -->
             <div class="mb-3 flex items-center justify-between text-xs text-gray-600">
-              <span>{{ swimmingFormData.dates.length }} of 10 sessions scheduled</span>
-              <span class="px-2 py-1 rounded" :class="swimmingFormData.dates.length === 10 ? 'bg-green-100 text-green-700' : 'bg-gray-100'">
-                {{ swimmingFormData.dates.length === 10 ? '✓ Complete' : `${10 - swimmingFormData.dates.length} more needed` }}
+              <span>{{ swimmingFormData.dates.length }} of 10 sessions selected</span>
+              <span class="px-2 py-1 rounded" :class="swimmingFormData.dates.length === 10 ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'">
+                {{ swimmingFormData.dates.length === 10 ? '✓ Complete' : `Select ${10 - swimmingFormData.dates.length} more` }}
               </span>
+            </div>
+
+            <!-- Calendar Multi-Select -->
+            <div class="border-2 border-gray-200 rounded-lg p-3 bg-white mb-3">
+              <!-- Calendar Header -->
+              <div class="flex items-center justify-between mb-3">
+                <button 
+                  @click="prevSwimmingMonth" 
+                  type="button"
+                  class="p-2 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <i class="fas fa-chevron-left text-gray-600"></i>
+                </button>
+                <div class="font-bold text-gray-800">
+                  {{ getSwimmingMonthYear() }}
+                </div>
+                <button 
+                  @click="nextSwimmingMonth" 
+                  type="button"
+                  class="p-2 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <i class="fas fa-chevron-right text-gray-600"></i>
+                </button>
+              </div>
+
+              <!-- Days of Week -->
+              <div class="grid grid-cols-7 gap-1 mb-2">
+                <div v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="day" 
+                     class="text-center text-xs font-semibold text-gray-500 py-1">
+                  {{ day }}
+                </div>
+              </div>
+
+              <!-- Calendar Days -->
+              <div class="grid grid-cols-7 gap-1">
+                <button
+                  v-for="day in getSwimmingCalendarDays()"
+                  :key="day.date"
+                  type="button"
+                  @click="toggleSwimmingDate(day.dateString)"
+                  :disabled="!day.isCurrentMonth || day.isPast || (swimmingFormData.dates.length >= 10 && !day.isSelected)"
+                  :class="[
+                    'aspect-square p-1 rounded-lg text-sm transition relative',
+                    day.isCurrentMonth ? 'hover:bg-blue-50' : 'text-gray-300 cursor-not-allowed',
+                    day.isPast ? 'text-gray-300 cursor-not-allowed' : '',
+                    day.isSelected ? 'bg-blue-600 text-white font-bold hover:bg-blue-700' : 'text-gray-700',
+                    !day.isCurrentMonth || day.isPast || (swimmingFormData.dates.length >= 10 && !day.isSelected) ? 'cursor-not-allowed' : 'cursor-pointer'
+                  ]"
+                >
+                  <span>{{ day.date }}</span>
+                  <span v-if="day.isSelected" class="absolute top-0 right-0 text-xs">
+                    <i class="fas fa-check-circle"></i>
+                  </span>
+                </button>
+              </div>
+
+              <p class="text-xs text-gray-500 mt-3 text-center">
+                <i class="fas fa-info-circle mr-1"></i>
+                Click on dates to select/deselect. You can select up to 10 dates.
+              </p>
             </div>
 
             <!-- Selected Dates List -->
             <div v-if="swimmingFormData.dates.length > 0" class="space-y-2 max-h-40 overflow-y-auto p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div 
-                v-for="(date, index) in swimmingFormData.dates" 
+                v-for="(date, index) in sortedSwimmingDates" 
                 :key="index"
                 class="flex items-center justify-between bg-white p-2 rounded border border-gray-200"
               >
@@ -297,14 +340,18 @@
                   Session {{ index + 1 }}: {{ formatDateDisplay(date) }}
                 </span>
                 <button
-                  @click="removeSwimmingDate(index)"
+                  type="button"
+                  @click="toggleSwimmingDate(date)"
                   class="text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition"
                 >
-                  <i class="fas fa-trash text-xs"></i>
+                  <i class="fas fa-times text-sm"></i>
                 </button>
               </div>
             </div>
-            <p v-else class="text-xs text-gray-500 italic">No dates selected yet. Add up to 10 session dates above.</p>
+            <p v-else class="text-xs text-gray-500 italic bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <i class="fas fa-hand-pointer mr-1"></i>
+              Click on dates in the calendar above to select your swimming session dates.
+            </p>
           </div>
 
           <!-- Preferred Time -->
@@ -457,7 +504,8 @@ export default {
         dates: [],
         time: '',
         newDate: ''
-      }
+      },
+      swimmingCalendarMonth: new Date() // Current month for swimming calendar navigation
     }
   },
   computed: {
@@ -491,6 +539,10 @@ export default {
     },
     roomItemIds() {
       return this.itemData.rooms.map(room => room.item_id).filter(Boolean)
+    },
+    sortedSwimmingDates() {
+      // Sort swimming dates chronologically
+      return [...this.swimmingFormData.dates].sort((a, b) => new Date(a) - new Date(b))
     }
   },
   // REMOVED: Duplicate mounted() hook - merged into the one below
@@ -931,6 +983,106 @@ export default {
         setTimeout(() => notification.remove(), 300)
       }, 3000)
     },
+    // Swimming Calendar Methods
+    toggleSwimmingDate(dateString) {
+      const index = this.swimmingFormData.dates.indexOf(dateString)
+      if (index > -1) {
+        // Date already selected, remove it
+        this.swimmingFormData.dates.splice(index, 1)
+        this.showNotification('Date removed', 'info')
+      } else {
+        // Date not selected, add it if under limit
+        if (this.swimmingFormData.dates.length >= 10) {
+          this.showNotification('Maximum 10 dates allowed', 'error')
+          return
+        }
+        this.swimmingFormData.dates.push(dateString)
+        this.showNotification('Date added', 'success')
+      }
+    },
+    
+    getSwimmingCalendarDays() {
+      const year = this.swimmingCalendarMonth.getFullYear()
+      const month = this.swimmingCalendarMonth.getMonth()
+      
+      // First day of the month
+      const firstDay = new Date(year, month, 1)
+      const startingDayOfWeek = firstDay.getDay()
+      
+      // Last day of the month
+      const lastDay = new Date(year, month + 1, 0)
+      const daysInMonth = lastDay.getDate()
+      
+      // Days from previous month
+      const prevMonthLastDay = new Date(year, month, 0).getDate()
+      
+      const days = []
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      // Previous month days
+      for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+        const date = prevMonthLastDay - i
+        days.push({
+          date,
+          isCurrentMonth: false,
+          dateString: '',
+          isSelected: false,
+          isPast: true
+        })
+      }
+      
+      // Current month days
+      for (let date = 1; date <= daysInMonth; date++) {
+        const dateObj = new Date(year, month, date)
+        const dateString = dateObj.toISOString().split('T')[0]
+        const isPast = dateObj < today
+        
+        days.push({
+          date,
+          isCurrentMonth: true,
+          dateString,
+          isSelected: this.swimmingFormData.dates.includes(dateString),
+          isPast
+        })
+      }
+      
+      // Next month days to fill the grid
+      const remainingDays = 42 - days.length // 6 weeks * 7 days
+      for (let date = 1; date <= remainingDays; date++) {
+        days.push({
+          date,
+          isCurrentMonth: false,
+          dateString: '',
+          isSelected: false,
+          isPast: false
+        })
+      }
+      
+      return days
+    },
+    
+    getSwimmingMonthYear() {
+      return this.swimmingCalendarMonth.toLocaleDateString('en-US', { 
+        month: 'long', 
+        year: 'numeric' 
+      })
+    },
+    
+    prevSwimmingMonth() {
+      this.swimmingCalendarMonth = new Date(
+        this.swimmingCalendarMonth.getFullYear(),
+        this.swimmingCalendarMonth.getMonth() - 1
+      )
+    },
+    
+    nextSwimmingMonth() {
+      this.swimmingCalendarMonth = new Date(
+        this.swimmingCalendarMonth.getFullYear(),
+        this.swimmingCalendarMonth.getMonth() + 1
+      )
+    },
+    
     addSwimmingDate() {
       if (!this.swimmingFormData.newDate) {
         this.showNotification('Please select a date first', 'error')
@@ -973,6 +1125,7 @@ export default {
         time: '',
         newDate: ''
       }
+      this.swimmingCalendarMonth = new Date() // Reset calendar to current month
     },
     
     async submitSwimmingBooking() {
@@ -1035,6 +1188,13 @@ export default {
     }
   },
   mounted() {
+    // Check if we're coming from Swimming page
+    if (this.$route.query.service === 'swimming') {
+      this.currentCategory = 'swimming'
+      this.currentCategoryLabel = 'Swimming'
+      console.log('🏊 Switched to Swimming tab from query parameter')
+    }
+    
     // Check if we're coming from Edit mode (activeSection='book' query parameter)
     const isEditMode = this.$route.query.activeSection === 'book';
     
@@ -1069,7 +1229,7 @@ export default {
         price: 3000,
         desc: 'Teen & Adult Program - ₱3,000 (10 sessions, 1 hour per session)',
         description: 'Learn to Swim Program for teens and adults. Package includes 10 sessions, 1 hour per session. Choose your preferred schedule dates.',
-        imgs: ['https://images.unsplash.com/photo-1576610616656-f72b27e84530?w=500'],
+        imgs: ['/images/teen.jpg'],
         perNight: false,
         icon: 'fas fa-star',
         sessions: 10
@@ -1081,7 +1241,7 @@ export default {
         price: 4000,
         desc: 'Kids Swimming Program - ₱4,000 (10 sessions, 1 hour per session)',
         description: 'Learn to Swim Program for kids 6 years and below. Package includes 10 sessions, 1 hour per session. Choose your preferred schedule dates.',
-        imgs: ['https://images.unsplash.com/photo-1576610616656-f72b27e84530?w=500'],
+        imgs: ['/images/child.jpeg'],
         perNight: false,
         icon: 'fas fa-swimmer',
         sessions: 10
