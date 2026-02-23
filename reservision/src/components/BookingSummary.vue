@@ -45,12 +45,80 @@
         </div>
       </div>
 
+      <!-- Swimming Dates Summary -->
+      <div v-if="hasSwimmingBookings" class="mb-4 p-3 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200">
+        <div v-for="(booking, index) in swimmingBookings" :key="index" class="space-y-2">
+          <!-- Header -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <i class="fas fa-swimmer text-white text-xs"></i>
+              </div>
+              <div>
+                <div class="font-bold text-gray-800 text-sm">{{ booking.item.name }}</div>
+                <div class="text-xs text-gray-500">Swimming Program</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Compact Info Badges -->
+          <div class="flex flex-wrap gap-1.5">
+            <div class="bg-white px-2 py-1 rounded-md shadow-sm border border-blue-100 text-xs">
+              <i class="fas fa-clipboard-list text-blue-600 mr-1"></i>
+              <span class="font-semibold text-gray-700">{{ booking.swimmingDetails.selectedDates }}/{{ booking.swimmingDetails.totalSessions }}</span>
+              <span class="text-gray-500 ml-0.5">sessions</span>
+            </div>
+            <div class="bg-white px-2 py-1 rounded-md shadow-sm border border-blue-100 text-xs">
+              <i class="fas fa-clock text-blue-600 mr-1"></i>
+              <span class="font-semibold text-gray-700">{{ booking.swimmingDetails.time }}</span>
+            </div>
+            <div class="bg-white px-2 py-1 rounded-md shadow-sm border border-blue-100 text-xs">
+              <i class="fas fa-users text-blue-600 mr-1"></i>
+              <span class="font-semibold text-gray-700">{{ booking.swimmingDetails.participants }}</span>
+              <span class="text-gray-500 ml-0.5">{{ booking.swimmingDetails.participants > 1 ? 'people' : 'person' }}</span>
+            </div>
+          </div>
+
+          <!-- Compact Dates Display -->
+          <div v-if="booking.swimmingDetails.dates.length > 0">
+            <button 
+              @click="toggleSwimmingDates(index)"
+              type="button"
+              class="w-full flex items-center justify-between text-xs font-medium text-blue-700 hover:text-blue-800 transition bg-white/50 px-2 py-1.5 rounded-md"
+            >
+              <span>
+                <i class="fas fa-calendar-alt mr-1"></i>
+                {{ booking.swimmingDetails.dates.length }} date{{ booking.swimmingDetails.dates.length > 1 ? 's' : '' }} selected
+              </span>
+              <i :class="expandedSwimmingBookings.includes(index) ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+            </button>
+
+            <!-- Expandable Dates List -->
+            <div v-if="expandedSwimmingBookings.includes(index)" class="mt-2 grid grid-cols-2 gap-1 max-h-32 overflow-y-auto p-2 bg-white/70 rounded-lg">
+              <div 
+                v-for="(date, dateIndex) in booking.swimmingDetails.dates.slice().sort()" 
+                :key="dateIndex"
+                class="flex items-center gap-1 bg-white px-2 py-1 rounded border border-blue-100 text-xs"
+              >
+                <i class="fas fa-check-circle text-green-500" style="font-size: 8px;"></i>
+                <span class="text-gray-700 font-medium">{{ formatCompactDate(date) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     <!-- Items -->
     <div v-if="items.length > 0" class="space-y-3 mb-4 max-h-96 overflow-y-auto pr-2">
       <div
         v-for="(item, index) in items"
         :key="index"
-        class="relative p-4 bg-gradient-to-br from-blue-50 to-white rounded-xl border-2 border-blue-100 hover:border-blue-300 hover:shadow-lg transition group"
+        :class="[
+          'relative rounded-xl border-2 transition group',
+          item.swimmingDetails 
+            ? 'p-3 bg-gradient-to-br from-cyan-50 to-blue-50 border-blue-200 hover:border-blue-400' 
+            : 'p-4 bg-gradient-to-br from-blue-50 to-white border-blue-100 hover:border-blue-300 hover:shadow-lg'
+        ]"
       >
         <!-- Remove Button -->
         <button
@@ -60,7 +128,35 @@
           <i class="fas fa-times text-xs"></i>
         </button>
 
-        <div class="flex gap-3">
+        <!-- Swimming Item (Compact Version) -->
+        <div v-if="item.swimmingDetails" class="flex gap-2">
+          <!-- Swimming Icon -->
+          <div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-blue-600 flex items-center justify-center">
+            <i class="fas fa-swimmer text-white text-lg"></i>
+          </div>
+
+          <!-- Compact Swimming Details -->
+          <div class="flex-1 min-w-0">
+            <h4 class="font-bold text-gray-800 text-sm mb-1 truncate">{{ item.item.name }}</h4>
+            <div class="flex flex-wrap gap-1 mb-2">
+              <span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs font-medium">
+                {{ item.swimmingDetails.participants }} {{ item.swimmingDetails.participants > 1 ? 'people' : 'person' }}
+              </span>
+              <span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-xs font-medium">
+                {{ item.swimmingDetails.selectedDates }} sessions
+              </span>
+            </div>
+            
+            <!-- Price -->
+            <div class="flex items-center justify-between pt-1.5 border-t border-blue-200">
+              <span class="text-xs text-gray-500">Package</span>
+              <span class="font-bold text-blue-700 text-sm">₱{{ getLineTotal(item).toLocaleString() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regular Item (Original Design) -->
+        <div v-else class="flex gap-3">
           <!-- Item Image -->
           <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200 shadow-sm">
             <img 
@@ -163,7 +259,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+
+// Track which swimming bookings are expanded
+const expandedSwimmingBookings = ref([])
 
 const props = defineProps({
   items: {
@@ -188,7 +287,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['remove', 'clear'])
+const emit = defineEmits(['remove', 'clear', 'checkout'])
 
 // Calculate number of nights
 const nights = computed(() => {
@@ -196,6 +295,46 @@ const nights = computed(() => {
   const diff = props.checkOut - props.checkIn
   return Math.ceil(diff / 86400000)
 })
+
+// Get all swimming bookings
+const swimmingBookings = computed(() => {
+  return props.items.filter(item => item.swimmingDetails)
+})
+
+// Check if there are any swimming bookings
+const hasSwimmingBookings = computed(() => {
+  return swimmingBookings.value.length > 0
+})
+
+// Toggle swimming dates expansion
+const toggleSwimmingDates = (index) => {
+  const expandedIndex = expandedSwimmingBookings.value.indexOf(index)
+  if (expandedIndex > -1) {
+    expandedSwimmingBookings.value.splice(expandedIndex, 1)
+  } else {
+    expandedSwimmingBookings.value.push(index)
+  }
+}
+
+// Format swimming date for display (full format)
+const formatSwimmingDate = (dateStr) => {
+  const date = new Date(dateStr + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { 
+    weekday: 'short', 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  })
+}
+
+// Format compact date (shorter format)
+const formatCompactDate = (dateStr) => {
+  const date = new Date(dateStr + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric'
+  })
+}
 
 // Calculate line total for each item
 const getLineTotal = (item) => {

@@ -81,7 +81,12 @@
                       </button>
                     </td>
                   </tr>
-                  <tr v-if="students.length === 0">
+                  <tr v-if="loading && students.length === 0">
+                    <td colspan="6" class="text-center">
+                      <i class="fas fa-spinner fa-spin"></i> Loading students...
+                    </td>
+                  </tr>
+                  <tr v-if="!loading && students.length === 0">
                     <td colspan="6" class="text-center">No students enrolled yet.</td>
                   </tr>
                 </tbody>
@@ -116,7 +121,12 @@
                       </button>
                     </td>
                   </tr>
-                  <tr v-if="schedules.length === 0">
+                  <tr v-if="loading && schedules.length === 0">
+                    <td colspan="4" class="text-center">
+                      <i class="fas fa-spinner fa-spin"></i> Loading schedules...
+                    </td>
+                  </tr>
+                  <tr v-if="!loading && schedules.length === 0">
                     <td colspan="4" class="text-center">No schedules available.</td>
                   </tr>
                 </tbody>
@@ -162,7 +172,12 @@
                       </button>
                     </td>
                   </tr>
-                  <tr v-if="payments.length === 0">
+                  <tr v-if="loading && payments.length === 0">
+                    <td colspan="5" class="text-center">
+                      <i class="fas fa-spinner fa-spin"></i> Loading payments...
+                    </td>
+                  </tr>
+                  <tr v-if="!loading && payments.length === 0">
                     <td colspan="5" class="text-center">No payment records.</td>
                   </tr>
                 </tbody>
@@ -176,71 +191,188 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AdminHeader from '../../components/Admin/AdminHeader.vue'
 import AdminSidebar from '../../components/Admin/AdminSidebar.vue'
 
 const sidebarOpen = ref(false)
+const sidebarCollapsed = ref(false)
 const activeTab = ref('Students')
 const tabs = ['Students', 'Schedule & Coaches', 'Payments']
 
-// Sample data
-const students = ref([
-  { id: 1, name: 'Juan Dela Cruz', lessonType: 'Group Lessons', coach: 'Coach Maria', schedule: 'Mon-Fri 8-9AM', paymentStatus: 'Pending' },
-  { id: 2, name: 'Ana Santos', lessonType: 'Private Lessons', coach: 'Coach John', schedule: 'Tue & Thu 2-3PM', paymentStatus: 'Paid' },
-])
+const students = ref([])
+const schedules = ref([])
+const payments = ref([])
+const loading = ref(false)
 
-const schedules = ref([
-  { lessonType: 'Group Lessons', coach: 'Coach Maria', time: 'Mon-Fri 8-9AM' },
-  { lessonType: 'Private Lessons', coach: 'Coach John', time: 'Tue & Thu 2-3PM' },
-])
+// API base URL
+const API_URL = 'http://localhost:8000/api/swimming'
 
-const payments = ref([
-  { id: 1, student: 'Juan Dela Cruz', lessonType: 'Group Lessons', amount: 1500, status: 'Pending' },
-  { id: 2, student: 'Ana Santos', lessonType: 'Private Lessons', amount: 3500, status: 'Paid' },
-])
+// Fetch all data
+const fetchStudents = async () => {
+  try {
+    loading.value = true
+    console.log('Fetching students from:', `${API_URL}/admin/students`)
+    
+    const response = await fetch(`${API_URL}/admin/students`)
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    console.log('API Response:', data)
+    console.log('Students count:', data.count)
+    
+    if (data.success && data.students) {
+      console.log(`Processing ${data.students.length} students`)
+      
+      // Transform data to match component structure
+      students.value = data.students.map(student => {
+        console.log('Student data:', student)
+        return {
+          id: student.enrollment_id,
+          name: student.name,
+          lessonType: student.lesson_type,
+          coach: student.coach,
+          schedule: student.available_time || 'To be scheduled',
+          paymentStatus: student.payment_status || 'Pending',
+          email: student.email,
+          phone: student.mobile_phone,
+          enrollmentStatus: student.enrollment_status,
+          bookingReference: student.booking_reference
+        }
+      })
+      
+      console.log('Transformed students:', students.value)
+    } else {
+      console.error('API response missing success or students:', data)
+    }
+  } catch (error) {
+    console.error('Error fetching students:', error)
+    console.error('Error details:', error.message)
+    alert(`Failed to load students data: ${error.message}`)
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchSchedules = async () => {
+  try {
+    const response = await fetch(`${API_URL}/admin/schedules`)
+    const data = await response.json()
+    
+    if (data.success) {
+      schedules.value = data.schedules.map(schedule => ({
+        lessonType: schedule.specialization || 'All Levels',
+        coach: schedule.coach_name,
+        time: `${schedule.available_days || 'Flexible'} ${schedule.available_time || ''}`.trim(),
+        email: schedule.email,
+        phone: schedule.phone
+      }))
+    }
+  } catch (error) {
+    console.error('Error fetching schedules:', error)
+    alert('Failed to load schedules data')
+  }
+}
+
+const fetchPayments = async () => {
+  try {
+    const response = await fetch(`${API_URL}/admin/payments`)
+    const data = await response.json()
+    
+    if (data.success) {
+      payments.value = data.payments.map(payment => ({
+        id: payment.booking_id,
+        student: payment.student_name || 'N/A',
+        lessonType: payment.lesson_type || 'N/A',
+        amount: parseFloat(payment.amount) || 0,
+        status: payment.status || 'Pending',
+        bookingReference: payment.booking_reference,
+        paymentMethod: payment.payment_method,
+        date: payment.booking_date
+      }))
+    }
+  } catch (error) {
+    console.error('Error fetching payments:', error)
+    alert('Failed to load payments data')
+  }
+}
 
 // Students actions
-const approveStudent = (id) => {
-  const student = students.value.find(s => s.id === id)
-  if(student) student.approved = true
-  alert(`${student.name} approved.`)
+const approveStudent = async (id) => {
+  try {
+    const response = await fetch(`${API_URL}/admin/students/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'approved' })
+    })
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      alert('Student approved successfully!')
+      await fetchStudents()
+    } else {
+      alert(result.error || 'Failed to approve student')
+    }
+  } catch (error) {
+    console.error('Error approving student:', error)
+    alert('Failed to approve student')
+  }
 }
 
 const markAsPaid = (id) => {
-  const student = students.value.find(s => s.id === id)
-  if(student) student.paymentStatus = 'Paid'
-  alert(`${student.name} marked as Paid.`)
+  alert('Payment status is managed through the booking system. Please update payment status in the Bookings section.')
 }
 
 const editStudent = (id) => {
   const student = students.value.find(s => s.id === id)
-  const newName = prompt('Edit student name:', student.name)
-  if(newName) student.name = newName
+  if (student) {
+    alert(`Edit functionality coming soon.\n\nStudent: ${student.name}\nEmail: ${student.email}\nPhone: ${student.phone}`)
+  }
 }
 
-const deleteStudent = (id) => {
-  if(confirm('Delete this student?')) students.value = students.value.filter(s => s.id !== id)
+const deleteStudent = async (id) => {
+  if (!confirm('Are you sure you want to delete this student enrollment?')) return
+  
+  try {
+    const response = await fetch(`${API_URL}/admin/students/${id}`, {
+      method: 'DELETE'
+    })
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      alert('Student enrollment deleted successfully')
+      await fetchStudents()
+    } else {
+      alert(result.error || 'Failed to delete student')
+    }
+  } catch (error) {
+    console.error('Error deleting student:', error)
+    alert('Failed to delete student enrollment')
+  }
 }
 
 // Schedule actions
 const editSchedule = (index) => {
-  const newTime = prompt('Edit schedule time:', schedules.value[index].time)
-  if(newTime) schedules.value[index].time = newTime
+  const schedule = schedules.value[index]
+  alert(`Edit functionality coming soon.\n\nCoach: ${schedule.coach}\nTime: ${schedule.time}`)
 }
 
 const deleteSchedule = (index) => {
-  if(confirm('Delete this schedule?')) schedules.value.splice(index,1)
+  alert('Schedule deletion should be managed through the coach management system.')
 }
 
 // Payments actions
 const markPaymentAsPaid = (id) => {
-  const payment = payments.value.find(p => p.id === id)
-  if(payment) payment.status = 'Paid'
+  alert('Payment status updates are managed through the main booking system.')
 }
 
 const deletePayment = (id) => {
-  if(confirm('Delete this payment?')) payments.value = payments.value.filter(p => p.id !== id)
+  alert('Payment deletion should be managed through the booking system.')
 }
 
 const getTabIcon = (tab) => {
@@ -251,6 +383,13 @@ const getTabIcon = (tab) => {
   }
   return icons[tab] || 'fas fa-info-circle'
 }
+
+// Load data on mount
+onMounted(() => {
+  fetchStudents()
+  fetchSchedules()
+  fetchPayments()
+})
 </script>
 
 <style scoped>

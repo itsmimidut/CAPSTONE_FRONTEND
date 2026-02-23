@@ -104,7 +104,7 @@ const getNextBookingLink = () => {
   if (service.value === 'swimming') {
     return '/swimming'
   }
-  return '/reservation'
+  return '/websitereservation'
 }
 
 onMounted(async () => {
