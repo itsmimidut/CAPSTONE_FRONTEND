@@ -51,6 +51,7 @@ import PaymentReturn from '../views/PaymentReturn.vue'
 import CustomerDashboard from '../views/customer/CustomerDashboard.vue'
 import ReservationSection from '../components/Customer/ReservationSection.vue'
 import CustomerBookingConfirmation from '../components/Customer/CustomerBookingConfirmation.vue'
+import MyOrders from '../views/website/MyOrders.vue'
 
 // ============================================================
 // ADMIN PAGES IMPORTS
@@ -134,6 +135,12 @@ const routes = [
     path: '/customer/booking-confirmation',
     name: 'CustomerBookingConfirmation',
     component: CustomerBookingConfirmation,
+    meta: { requiresAuth: true, role: 'customer' }
+  },
+  {
+    path: '/customer/orders',
+    name: 'MyOrders',
+    component: MyOrders,
     meta: { requiresAuth: true, role: 'customer' }
   },
   // {

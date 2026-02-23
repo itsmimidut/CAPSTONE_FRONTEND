@@ -49,6 +49,12 @@
           v-show="activeSection === 'esop'"
         />
 
+        <OrderHistory
+          v-show="activeSection === 'orders'"
+          :show-header="false"
+          @close="() => {}"
+        />
+
         <CustomerProfileSection
           v-show="activeSection === 'profile'"
           :profile="profile"
@@ -73,6 +79,7 @@ import CustomerReservationsSection from '../../components/Customer/CustomerReser
 import CustomerProfileSection from '../../components/Customer/CustomerProfileSection.vue';
 import CustomerSupportSection from '../../components/Customer/CustomerSupportSection.vue';
 import CustomerEsop from '../../components/Customer/ResortEShop.vue';
+import OrderHistory from '../../components/Customer/OrderHistory.vue';
 
 const apiBase = 'http://localhost:8000/api';
 const auth = useAuthStore();
@@ -84,6 +91,7 @@ const menuItems = [
   { id: 'book', label: 'Book a Room', icon: 'fa-bed' },
   { id: 'reservations', label: 'My Reservations', icon: 'fa-calendar-alt' },
   { id: 'esop', label: 'Resort E-Shop', icon: 'fa-shopping-cart' },
+  { id: 'orders', label: 'My Orders', icon: 'fa-receipt' },
   { id: 'profile', label: 'Profile', icon: 'fa-user' },
   // { id: 'support', label: 'Support', icon: 'fa-headset' }
 ];
@@ -105,6 +113,7 @@ const headerTitle = computed(() => {
     book: 'Book a Room',
     reservations: 'My Reservations',
     esop: 'Resort E-Shop',
+    orders: 'My Orders',
     profile: 'Profile Settings',
     support: 'Support & Help'
   };
@@ -119,6 +128,7 @@ const headerSubtitle = computed(() => {
     book: 'Find and book your perfect stay',
     reservations: 'View and manage your bookings',
     esop: 'Shop resort merchandise and amenities',
+    orders: 'View your order history and track deliveries',
     profile: 'Manage your account information',
     support: 'Get help and submit requests'
   };
