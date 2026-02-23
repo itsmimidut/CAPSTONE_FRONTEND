@@ -197,6 +197,12 @@ const toggleOrder = (orderId) => {
 }
 
 const parseItems = (itemsJson) => {
+  // If already an array, return it
+  if (Array.isArray(itemsJson)) {
+    return itemsJson
+  }
+  
+  // Otherwise, try to parse JSON string
   try {
     return JSON.parse(itemsJson)
   } catch (e) {
