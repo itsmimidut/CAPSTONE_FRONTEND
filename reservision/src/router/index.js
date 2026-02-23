@@ -74,6 +74,7 @@ import EventsOnly from '../views/admin/EventsOnly.vue'
 import SwimmingManagement from '../views/admin/SwimmingManagement.vue'
 import RoomandCottageManagement from '../views/admin/RoomAndCottage.vue'
 import WebsiteReservation from '../views/website/Reservation.vue'     
+import SalesReport from '../views/admin/SalesReport.vue'
 // import CustomerDashboard from '../views/customer/CustomerDashboard.vue'
 
 // ============================================================
@@ -164,6 +165,14 @@ const routes = [
     path: '/pos',
     name: 'POS',
     component: POS,
+    meta: { requiresAuth: true, roles: ['admin', 'receptionist', 'restaurantstaff'] }
+  },
+
+  // Sales Report (Admin + Staff)
+  {
+    path: '/admin/sales-report',
+    name: 'SalesReport',
+    component: SalesReport,
     meta: { requiresAuth: true, roles: ['admin', 'receptionist', 'restaurantstaff'] }
   },
 
