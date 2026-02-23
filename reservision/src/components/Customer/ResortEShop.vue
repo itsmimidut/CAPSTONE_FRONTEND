@@ -1,437 +1,416 @@
 <template>
   <div class="eshop-container">
-    <!-- NAVBAR -->
-    <nav class="navbar">
-      <div class="logo">
-        <span class="logo-icon">🏝️</span>
-        Eduardo's <span class="shop-tag">MARKET</span>
+    <!-- ══════════════════════════════════════════ -->
+    <!-- HEADER -->
+    <!-- ══════════════════════════════════════════ -->
+    <header class="eshop-header">
+      <div class="header-left">
+        <span class="header-icon">🏝️</span>
+        <h1 class="header-title">Eduardo's <span class="market-tag">MARKET</span></h1>
       </div>
-      <div class="nav-right">
-        <div class="location-pill" @click="scrollToLocation">
-          <span class="location-icon">📍</span>
-          <span class="location-text">{{ locationSaved ? currentLocation : 'Set delivery location' }}</span>
-          <span class="dropdown-arrow">▼</span>
-        </div>
-        <button class="cart-btn" @click="scrollToCart">
-          <span class="cart-icon">🛒</span>
-          <span class="cart-text">Cart</span>
-          <span class="cart-count">{{ totalItems }}</span>
+      <div class="header-right">
+        <button class="location-btn" @click="goToStage(3)">
+          <span class="location-pin">📍</span>
+          <span>Set delivery location</span>
+          <span class="dropdown-icon">▼</span>
+        </button>
+        <button class="cart-header-btn" @click="currentStage === 1 && cart.length > 0 ? proceedToCart() : null">
+          <span class="cart-icon-header">🛒</span>
+          <span>Cart</span>
+          <span v-if="totalItems > 0" class="cart-badge-header">{{ totalItems }}</span>
         </button>
       </div>
-    </nav>
+    </header>
 
-    <!-- HERO BANNER -->
-    <div class="hero-banner">
-      <div class="hero-content">
-        <h1 class="hero-title">Island Flavors<br><span>Delivered to Your Doorstep</span></h1>
-        <p class="hero-subtitle">Fresh from our kitchen to your room • 24/7 delivery</p>
-        <div class="hero-badges">
-          <span class="hero-badge">⚡ 30-min delivery</span>
-          <span class="hero-badge">🌟 4.8 rating</span>
-          <span class="hero-badge">🎁 Free welcome snack</span>
-        </div>
+    <!-- ══════════════════════════════════════════ -->
+    <!-- BLUE GRADIENT SECTION WITH STAGE TABS -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="blue-gradient-section">
+      <div class="stage-tabs-container">
+        <button class="stage-tab-btn" :class="{ active: currentStage === 1,completed: currentStage > 1 }" @click="goToStage(1)">
+          <span class="stage-icon">{{ currentStage > 1 ? '✓' : '1' }}</span>
+          <span class="stage-label">Browse Menu</span>
+        </button>
+        <button class="stage-tab-btn" :class="{ active: currentStage === 2, completed: currentStage > 2 }" @click="cart.length > 0 ? goToStage(2) : null">
+          <span class="stage-icon">{{ currentStage > 2 ? '✓' : '2' }}</span>
+          <span class="stage-label">Review Cart</span>
+        </button>
+        <button class="stage-tab-btn" :class="{ active: currentStage === 3 }" @click="cart.length > 0 ? goToStage(3) : null">
+          <span class="stage-icon">3</span>
+          <span class="stage-label">Checkout</span>
+        </button>
       </div>
     </div>
 
-    <!-- PAGE -->
-    <div class="page">
-      <!-- LEFT: PRODUCTS + CART -->
-      <div class="left-col">
-        <!-- SECTION 1: PRODUCTS -->
-        <div class="section-card">
-          <div class="section-header">
-            <div class="section-title-wrapper">
-              <span class="section-icon">🍽️</span>
-              <h2 class="section-title">Our Menu</h2>
+    <!-- ══════════════════════════════════════════ -->
+    <!-- MAIN CONTENT -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="main-wrapper">
+      <!-- ========================================== -->
+      <!-- STAGE 1: BROWSE PRODUCTS -->
+      <!-- ========================================== -->
+      <div v-if="currentStage === 1" class="stage-content">
+        <div class="menu-container">
+          <!-- Menu Header with Search -->
+          <div class="menu-header">
+            <div class="menu-title-section">
+              <span class="menu-icon">🍽️</span>
+              <h2 class="menu-title">Our Menu</h2>
             </div>
             <div class="search-box">
               <span class="search-icon">🔍</span>
               <input 
                 type="text" 
-                placeholder="Search dishes..." 
+                placeholder="Search dishes..."
                 class="search-input"
                 v-model="searchQuery"
+                @input="currentPage = 1"
               />
             </div>
           </div>
 
+          <!-- Product Category Tabs -->
           <div class="product-tabs">
-            <div
-              v-for="tab in ['restaurant', 'store']"
-              :key="tab"
-              class="tab"
-              :class="{ active: activeTab === tab }"
-              @click="switchTab(tab)"
+            <button
+              class="product-tab"
+              :class="{ active: activeTab === 'restaurant' }"
+              @click="switchTab('restaurant')"
             >
-              <span class="tab-emoji">{{ tab === 'restaurant' ? '🍔' : '🛍️' }}</span>
-              <span class="tab-text">{{ tabLabels[tab] }}</span>
-              <span class="tab-count">{{ getTabCount(tab) }}</span>
-            </div>
+              <span class="tab-emoji">🍔</span>
+              <span class="tab-text">Restaurant</span>
+              <span class="tab-count">{{ getTabCount('restaurant') }}</span>
+            </button>
+            <!-- Mini Mart tab temporarily hidden -->
+            <!-- <button
+              class="product-tab"
+              :class="{ active: activeTab === 'store' }"
+              @click="switchTab('store')"
+            >
+              <span class="tab-emoji">🛍️</span>
+              <span class="tab-text">Mini Mart</span>
+              <span class="tab-count">{{ getTabCount('store') }}</span>
+            </button> -->
           </div>
 
-          <!-- Products Grid -->
-          <div class="products-container">
-            <div v-if="isLoading" class="loading-state">
-              <div class="loading-spinner"></div>
-              <p>Loading delicious items...</p>
+          <!-- Products Grid Area -->
+          <div class="products-section">
+            <div v-if="isLoading" class="loading-container">
+              <div class="spinner"></div>
+              <p>Loading items...</p>
             </div>
-            <div v-else-if="loadError" class="error-state">
-              <span class="error-icon">😢</span>
+            <div v-else-if="loadError" class="error-container">
+              <span class="error-emoji">😢</span>
               <p>{{ loadError }}</p>
-              <button class="retry-btn" @click="fetchProducts">Try Again</button>
+              <button class="retry-button" @click="fetchProducts">Try Again</button>
             </div>
-            <div v-else class="products-grid">
-              <div
-                v-for="(product, idx) in filteredProducts"
-                :key="idx"
-                class="product-card"
-                :class="{ 'featured': product.featured }"
-              >
-                <div class="product-image">
-                  <span class="product-emoji">{{ product.emoji }}</span>
-                  <span v-if="product.popular" class="popular-badge">🔥 Popular</span>
-                </div>
-                <div class="product-info">
-                  <h3 class="product-name">{{ product.name }}</h3>
-                  <p class="product-desc">{{ product.desc }}</p>
-                  <div class="product-footer">
+            <div v-else>
+              <!-- 2-Column Product Grid -->
+              <div class="products-grid">
+                <div
+                  v-for="(product, idx) in paginatedProducts"
+                  :key="idx"
+                  class="product-card"
+                >
+                  <div class="product-image-area">
+                    <span class="product-emoji">🍽️</span>
+                  </div>
+                  <div class="product-info-area">
+                    <h3 class="product-title">{{ product.name }}</h3>
+                    <p class="product-subtitle">{{ product.desc }}</p>
+                  </div>
+                  <div class="product-actions-area">
                     <span class="product-price">₱{{ product.price }}</span>
                     <button
-                      class="add-to-cart-btn"
-                      :class="{ 'added': isProductAdded(product.name) }"
+                      class="product-add-btn"
+                      :class="{ added: isProductAdded(product.name) }"
                       @click="addToCart(product)"
                     >
-                      <span class="btn-icon">{{ isProductAdded(product.name) ? '✓' : '+' }}</span>
-                      <span>{{ isProductAdded(product.name) ? 'Added' : 'Add' }}</span>
+                      ✓ Add
                     </button>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- SECTION 2: CART -->
-        <div ref="cartSection" class="section-card cart-section">
-          <div class="section-header">
-            <div class="section-title-wrapper">
-              <span class="section-icon">🛒</span>
-              <h2 class="section-title">Your Cart</h2>
-            </div>
-            <span class="cart-item-count">{{ totalItems }} item{{ totalItems !== 1 ? 's' : '' }}</span>
-          </div>
-
-          <!-- Empty state -->
-          <div v-if="cart.length === 0" class="cart-empty">
-            <div class="empty-cart-illustration">
-              <span class="empty-cart-icon">🛒</span>
-              <span class="empty-cart-emoji">😋</span>
-            </div>
-            <h3>Your cart is empty</h3>
-            <p>Looks like you haven't added anything yet</p>
-            <button class="browse-menu-btn" @click="activeTab = 'restaurant'">
-              Browse Menu
-            </button>
-          </div>
-
-          <!-- Cart items -->
-          <div v-else class="cart-content">
-            <div class="cart-items">
-              <div v-for="(item, idx) in cart" :key="idx" class="cart-item">
-                <div class="cart-item-image">
-                  <span class="cart-item-emoji">{{ item.emoji }}</span>
-                </div>
-                <div class="cart-item-details">
-                  <h4 class="cart-item-name">{{ item.name }}</h4>
-                  <span class="cart-item-price">₱{{ item.price }}</span>
-                </div>
-                <div class="cart-item-actions">
-                  <div class="quantity-control">
-                    <button class="qty-btn minus" @click="changeQty(idx, -1)">
-                      <span>−</span>
-                    </button>
-                    <span class="qty-value">{{ item.qty }}</span>
-                    <button class="qty-btn plus" @click="changeQty(idx, 1)">
-                      <span>+</span>
+              <!-- Pagination -->
+              <div class="pagination-section">
+                <div class="pagination-controls">
+                  <button 
+                    class="pagination-btn" 
+                    :disabled="currentPage === 1"
+                    @click="previousPage"
+                  >
+                    Previous
+                  </button>
+                  
+                  <div class="page-numbers">
+                    <button
+                      v-for="page in totalPages"
+                      :key="page"
+                      class="page-number"
+                      :class="{ active: currentPage === page }"
+                      @click="goToPage(page)"
+                    >
+                      {{ page }}
                     </button>
                   </div>
-                  <button class="remove-item" @click="removeItem(idx)" title="Remove item">
-                    <span>✕</span>
+                  
+                  <button 
+                    class="pagination-btn" 
+                    :disabled="currentPage === totalPages"
+                    @click="nextPage"
+                  >
+                    Next
                   </button>
                 </div>
-              </div>
-            </div>
 
-            <!-- Cart summary -->
-            <div class="cart-summary">
-              <div class="summary-row">
-                <span>Subtotal</span>
-                <span>₱{{ cartTotal }}</span>
+                <div class="pagination-info">
+                  Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }}-{{ Math.min(currentPage * itemsPerPage, filteredProducts.length) }} of {{ filteredProducts.length }} items
+                </div>
               </div>
-              <div class="summary-row">
-                <span>Delivery Fee</span>
-                <span class="free-delivery">FREE</span>
-              </div>
-              <div class="summary-row discount" v-if="cartTotal > 500">
-                <span>Island Discount</span>
-                <span>-₱50</span>
-              </div>
-              <div class="summary-total">
-                <span>Total</span>
-                <span>₱{{ calculateTotalWithDiscount }}</span>
-              </div>
-
-              <div v-if="!locationSaved" class="delivery-warning">
-                <span class="warning-icon">⚠️</span>
-                <span>Please set your delivery location first</span>
-              </div>
-
-              <button
-                class="checkout-btn"
-                :disabled="!locationSaved"
-                @click="placeOrder"
-              >
-                <span class="btn-icon">🛵</span>
-                <span>Place Order • ₱{{ calculateTotalWithDiscount }}</span>
-              </button>
-
-              <p class="checkout-note">✓ Free delivery • 30-45 mins</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- RIGHT COLUMN -->
-      <div class="right-col">
-        <!-- SECTION 3: DELIVERY LOCATION -->
-        <div ref="locationSection" class="section-card location-card">
-          <div class="section-header">
-            <div class="section-title-wrapper">
-              <span class="section-icon">📍</span>
-              <h2 class="section-title">Delivery Location</h2>
+      <!-- ========================================== -->
+      <!-- STAGE 2: REVIEW CART -->
+      <!-- ========================================== -->
+      <div v-if="currentStage === 2" class="stage-content">
+        <div class="cart-container">
+          <div class="cart-header">
+            <div class="cart-title-section">
+              <span class="cart-icon">🛒</span>
+              <h2 class="cart-title">Review Your Order</h2>
             </div>
-            <span v-if="locationSaved" class="saved-badge">✓ Saved</span>
+            <span class="item-count-badge">{{ totalItems }} item{{ totalItems !== 1 ? 's' : '' }}</span>
           </div>
 
-          <div class="location-content">
-            <div class="location-type-selector">
-              <div
-                v-for="type in locationTypes"
-                :key="type"
-                class="location-type"
-                :class="{ active: currentLocType === type }"
-                @click="selectLocType(type)"
+          <div v-if="cart.length === 0" class="empty-cart">
+            <div class="empty-illustration">
+              <span class="empty-icon">🛒</span>
+              <span class="empty-emoji">😋</span>
+            </div>
+            <h3>Your cart is empty</h3>
+            <p>Looks like you haven't added anything yet</p>
+            <button class="back-to-menu-btn" @click="goToStage(1)">
+              ← Back to Menu
+            </button>
+          </div>
+
+          <div v-else class="cart-review-content">
+            <div class="cart-items">
+              <div v-for="(item, idx) in cart" :key="idx" class="cart-item">
+                <div class="cart-item-left">
+                  <span class="cart-item-emoji">{{ item.emoji }}</span>
+                  <div class="cart-item-details">
+                    <h4 class="cart-item-name">{{ item.name }}</h4>
+                    <p class="cart-item-price-per">₱{{ item.price }} each</p>
+                  </div>
+                </div>
+                <div class="cart-item-right">
+                  <div class="quantity-controls">
+                    <button class="qty-btn" @click="changeQty(idx, -1)">−</button>
+                    <span class="qty-value">× {{ item.qty }}</span>
+                    <button class="qty-btn" @click="changeQty(idx, 1)">+</button>
+                  </div>
+                  <div class="cart-item-total">₱{{ item.price * item.qty }}</div>
+                  <button class="remove-btn" @click="removeItem(idx)">✕</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="cart-summary">
+              <h3 class="summary-heading">Order Summary</h3>
+              <div class="summary-rows">
+                <div class="summary-row">
+                  <span>Subtotal ({{ totalItems }} items)</span>
+                  <span class="row-value">₱{{ cartTotal }}</span>
+                </div>
+                <div class="summary-row">
+                  <span>Delivery Fee</span>
+                  <span class="row-value free">FREE</span>
+                </div>
+                <div v-if="cartTotal > 500" class="summary-row discount">
+                  <span>Island Discount</span>
+                  <span class="row-value discount">-₱50</span>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-row total">
+                  <span>Tentative Total</span>
+                  <span class="row-total">₱{{ calculateTotalWithDiscount }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="navigation-buttons">
+              <button class="nav-button back" @click="previousStage">
+                ← Back to Menu
+              </button>
+              <button class="nav-button proceed" @click="proceedToCheckout">
+                Proceed to Checkout →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- STAGE 3: CHECKOUT -->
+      <!-- ========================================== -->
+      <div v-if="currentStage === 3" class="stage-content">
+        <div class="checkout-container">
+          <div class="checkout-header">
+            <div class="checkout-title-section">
+              <span class="checkout-icon">📍</span>
+              <h2 class="checkout-title">Delivery & Checkout</h2>
+            </div>
+          </div>
+
+          <div class="checkout-body">
+            <div class="checkout-section">
+              <h3 class="section-heading">
+                <span class="section-icon">📍</span>
+                Delivery Location
+              </h3>
+              
+              <div class="location-types">
+                <div
+                  v-for="type in locationTypes"
+                  :key="type"
+                  class="location-type-option"
+                  :class="{ selected: currentLocType === type }"
+                  @click="selectLocType(type)"
+                >
+                  <span class="location-emoji">{{ locationEmojis[type] }}</span>
+                  <span class="location-name">{{ type }}</span>
+                </div>
+              </div>
+
+              <div v-if="currentLocType !== 'Day Guest'" class="form-field">
+                <label class="field-label">
+                  {{ currentLocType }} Number
+                  <span class="required">*</span>
+                </label>
+                <div class="field-input-wrapper">
+                  <span class="field-icon">🏷️</span>
+                  <input
+                    v-model="locationNumber"
+                    class="field-input"
+                    type="text"
+                    :placeholder="`Enter your ${currentLocType.toLowerCase()} number`"
+                  />
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label class="field-label">Special Instructions (optional)</label>
+                <div class="field-input-wrapper">
+                  <span class="field-icon">📝</span>
+                  <textarea
+                    v-model="locationNotes"
+                    class="field-textarea"
+                    placeholder="e.g., Please knock gently, baby sleeping..."
+                    rows="3"
+                  ></textarea>
+                </div>
+              </div>
+
+              <button class="confirm-location-btn" @click="saveLocation">
+                <span class="icon-inline">📍</span>
+                {{ locationSaved ? 'Update Location' : 'Confirm Location' }}
+              </button>
+
+              <transition name="slide-down">
+                <div v-if="showLocationSaved" class="success-alert">
+                  <span class="success-icon-inline">✅</span>
+                  Location confirmed!
+                </div>
+              </transition>
+            </div>
+
+            <div class="checkout-section">
+              <h3 class="section-heading">
+                <span class="section-icon">📋</span>
+                Order Review
+              </h3>
+
+              <div class="order-items-list">
+                <div v-for="(item, idx) in cart" :key="idx" class="order-item">
+                  <span class="order-item-name">{{ item.name }}</span>
+                  <span class="order-item-qty">× {{ item.qty }}</span>
+                  <span class="order-item-price">₱{{ item.price * item.qty }}</span>
+                </div>
+              </div>
+
+              <div class="order-totals">
+                <div class="order-total-row">
+                  <span>Subtotal</span>
+                  <span>₱{{ cartTotal }}</span>
+                </div>
+                <div class="order-total-row">
+                  <span>Delivery</span>
+                  <span class="free-label">FREE</span>
+                </div>
+                <div v-if="cartTotal > 500" class="order-total-row discount">
+                  <span>Discount</span>
+                  <span>-₱50</span>
+                </div>
+                <div class="order-total-divider"></div>
+                <div class="order-total-row final">
+                  <span>Total Amount</span>
+                  <span class="final-amount">₱{{ calculateTotalWithDiscount }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-box">
+              <span class="info-box-icon">ℹ️</span>
+              <div class="info-box-text">
+                <strong>Delivery Time:</strong> 30-45 minutes<br>
+                <strong>Payment:</strong> Cash on delivery
+              </div>
+            </div>
+
+            <div v-if="!locationSaved" class="warning-box">
+              <span class="warning-box-icon">⚠️</span>
+              Please confirm your delivery location before placing order
+            </div>
+
+            <div class="navigation-buttons">
+              <button class="nav-button back" @click="previousStage">
+                ← Back to Cart
+              </button>
+              <button 
+                class="nav-button submit" 
+                :disabled="!locationSaved"
+                @click="placeOrder"
               >
-                <span class="type-emoji">{{ locationEmojis[type] }}</span>
-                <span class="type-name">{{ type }}</span>
-              </div>
+                <span class="icon-inline">🛵</span>
+                Place Order • ₱{{ calculateTotalWithDiscount }}
+              </button>
             </div>
-
-            <div v-if="currentLocType !== 'Day Guest'" class="input-group">
-              <label class="input-label">
-                {{ currentLocType }} Number
-                <span class="required-star">*</span>
-              </label>
-              <div class="input-wrapper">
-                <span class="input-icon">🏷️</span>
-                <input
-                  v-model="locationNumber"
-                  class="form-input"
-                  type="text"
-                  :placeholder="`Enter ${currentLocType.toLowerCase()} number`"
-                />
-              </div>
-            </div>
-
-            <div class="input-group">
-              <label class="input-label">Special Instructions (optional)</label>
-              <div class="input-wrapper">
-                <span class="input-icon">📝</span>
-                <textarea
-                  v-model="locationNotes"
-                  class="form-textarea"
-                  placeholder="Any specific instructions? e.g., Please knock gently, baby sleeping..."
-                  rows="3"
-                ></textarea>
-              </div>
-            </div>
-
-            <button class="save-location-btn" @click="saveLocation">
-              <span class="btn-icon">📍</span>
-              <span>{{ locationSaved ? 'Update Location' : 'Save Location' }}</span>
-            </button>
-
-            <transition name="slide">
-              <div v-if="showLocationSaved" class="success-message">
-                <span class="success-icon">✅</span>
-                <span>Location saved successfully!</span>
-              </div>
-            </transition>
-
-            <div v-if="locationSaved" class="saved-location-display">
-              <div class="saved-location-header">
-                <span class="saved-icon">📍</span>
-                <span class="saved-location-text">{{ currentLocation }}</span>
-              </div>
-              <p v-if="locationNotes" class="saved-notes">{{ locationNotes }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECTION 4: ACTIVE ORDER TRACKING -->
-        <div class="section-card tracking-card">
-          <div class="section-header">
-            <div class="section-title-wrapper">
-              <span class="section-icon">🛵</span>
-              <h2 class="section-title">Live Order Tracking</h2>
-            </div>
-            <span class="live-badge">LIVE</span>
-          </div>
-
-          <div class="active-order">
-            <div class="order-header">
-              <div>
-                <span class="order-number">#ORD-0042</span>
-                <span class="order-time">15 min ago</span>
-              </div>
-              <span class="order-status preparing">Preparing</span>
-            </div>
-
-            <div class="order-items-preview">
-              <span class="item-pill">Beef Mami ×1</span>
-              <span class="item-pill">Mango Shake ×2</span>
-              <span class="item-pill">+1 more</span>
-            </div>
-
-            <div class="delivery-timeline">
-              <div class="timeline-step completed">
-                <div class="step-dot">✓</div>
-                <div class="step-content">
-                  <span class="step-title">Order placed</span>
-                  <span class="step-time">2:14 PM</span>
-                </div>
-              </div>
-              <div class="timeline-step completed">
-                <div class="step-dot">✓</div>
-                <div class="step-content">
-                  <span class="step-title">Preparing</span>
-                  <span class="step-time">2:20 PM</span>
-                </div>
-              </div>
-              <div class="timeline-step active">
-                <div class="step-dot">🛵</div>
-                <div class="step-content">
-                  <span class="step-title">On the way</span>
-                  <span class="step-time">Est. 2:50 PM</span>
-                </div>
-              </div>
-              <div class="timeline-step">
-                <div class="step-dot">📦</div>
-                <div class="step-content">
-                  <span class="step-title">Delivered</span>
-                  <span class="step-time">Pending</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="delivery-partner">
-              <span class="partner-icon">🛵</span>
-              <div class="partner-info">
-                <span class="partner-name">Junjun is delivering</span>
-                <span class="partner-eta">5 min away • Call now</span>
-              </div>
-              <button class="call-partner">📞</button>
-            </div>
-          </div>
-
-          <div class="past-orders">
-            <h3 class="past-orders-title">Past Orders</h3>
-            
-            <div class="past-order-item">
-              <div class="past-order-header">
-                <span class="past-order-number">#ORD-0038</span>
-                <span class="past-order-status delivered">Delivered</span>
-              </div>
-              <div class="past-order-details">
-                <span class="past-order-items">Iced Café Latte ×1, Toiletry Kit ×1</span>
-                <span class="past-order-total">₱260</span>
-              </div>
-              <span class="past-order-date">Today, 10:05 AM</span>
-            </div>
-
-            <div class="past-order-item">
-              <div class="past-order-header">
-                <span class="past-order-number">#ORD-0031</span>
-                <span class="past-order-status delivered">Delivered</span>
-              </div>
-              <div class="past-order-details">
-                <span class="past-order-items">Crispy Calamari ×2, Pasta Carbonara ×1</span>
-                <span class="past-order-total">₱700</span>
-              </div>
-              <span class="past-order-date">Yesterday, 7:30 PM</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECTION 5: ACCOUNT INFO -->
-        <div class="section-card account-card">
-          <div class="account-header">
-            <div class="account-avatar">
-              <span>J</span>
-            </div>
-            <div class="account-info">
-              <h3 class="account-name">Juan dela Cruz</h3>
-              <p class="account-email">juan.delacruz@email.com</p>
-            </div>
-            <button class="account-menu-btn">⋮</button>
-          </div>
-
-          <div class="account-stats">
-            <div class="stat-item">
-              <span class="stat-value">12</span>
-              <span class="stat-label">Orders</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">₱2.4k</span>
-              <span class="stat-label">Spent</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">★ 4.8</span>
-              <span class="stat-label">Rating</span>
-            </div>
-          </div>
-
-          <div class="account-actions">
-            <button class="account-action">
-              <span>❤️</span>
-              <span>Favorites</span>
-            </button>
-            <button class="account-action">
-              <span>🎁</span>
-              <span>Rewards</span>
-            </button>
-            <button class="account-action">
-              <span>💬</span>
-              <span>Support</span>
-            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- SUCCESS TOAST -->
-    <div class="toast" :class="{ show: showToast }">
-      <span class="toast-icon">🎉</span>
-      <div class="toast-content">
+    <!-- Toast Notification -->
+    <div class="toast-notification" :class="{ visible: showToast }">
+      <span class="toast-icon-emoji">🎉</span>
+      <div class="toast-message">
         <strong>Order placed successfully!</strong>
         <span>Your food is on the way</span>
       </div>
     </div>
 
-    <!-- FLOATING ACTION BUTTON -->
-    <button class="floating-cart" @click="scrollToCart" v-show="totalItems > 0">
-      <span class="floating-cart-icon">🛒</span>
-      <span class="floating-cart-count">{{ totalItems }}</span>
+    <!-- Floating Cart (Stage 1 only) -->
+    <button 
+      class="floating-cart-button" 
+      @click="proceedToCart" 
+      v-show="currentStage === 1 && totalItems > 0"
+    >
+      <span class="float-cart-icon">🛒</span>
+      <span class="float-cart-badge">{{ totalItems }}</span>
     </button>
   </div>
 </template>
@@ -441,7 +420,7 @@ import { ref, computed, onMounted } from 'vue'
 
 const API_BASE = 'http://localhost:8000/api/pos'
 
-// ── STATE ──
+// State
 const activeTab = ref('restaurant')
 const cart = ref([])
 const currentLocType = ref('Room')
@@ -451,11 +430,14 @@ const locationSaved = ref(false)
 const showLocationSaved = ref(false)
 const showToast = ref(false)
 const addedProducts = ref(new Set())
-const cartSection = ref(null)
-const locationSection = ref(null)
 const searchQuery = ref('')
 
-// ── LOCATION DATA ──
+// Stage & Pagination
+const currentStage = ref(1)
+const currentPage = ref(1)
+const itemsPerPage = ref(16)
+
+// Location Data
 const locationTypes = ['Room', 'Cottage', 'Day Guest']
 const locationEmojis = {
   'Room': '🛏️',
@@ -463,91 +445,23 @@ const locationEmojis = {
   'Day Guest': '☀️'
 }
 
-// ── PRODUCTS DATA ──
+// Fallback Products
 const fallbackProducts = {
   restaurant: [
-    {
-      name: 'Beef Mami Noodle Soup',
-      price: 185,
-      emoji: '🍜',
-      desc: 'Rich broth, tender beef, fresh noodles',
-      popular: true,
-      featured: true
-    },
-    {
-      name: 'Creamy Pasta Carbonara',
-      price: 220,
-      emoji: '🍝',
-      desc: 'Bacon, egg, parmesan, cream sauce',
-      popular: true
-    },
-    {
-      name: 'Crispy Calamari',
-      price: 240,
-      emoji: '🦑',
-      desc: 'With garlic aioli dipping sauce'
-    },
-    {
-      name: 'Seafood Sinuglaw Bowl',
-      price: 295,
-      emoji: '🍚',
-      desc: 'Fresh kinilaw + grilled pork, served with rice',
-      popular: true,
-      featured: true
-    },
-    {
-      name: 'Mango Shake (Large)',
-      price: 95,
-      emoji: '🥭',
-      desc: 'Fresh mango, milk, crushed ice',
-      popular: true
-    },
-    {
-      name: 'Iced Café Latte',
-      price: 110,
-      emoji: '☕',
-      desc: 'Resort blend espresso + fresh milk'
-    }
+    { name: 'Beef Mami Noodle Soup', price: 185, emoji: '🍜', desc: 'Rich broth, tender beef, fresh noodles', popular: true },
+    { name: 'Creamy Pasta Carbonara', price: 220, emoji: '🍝', desc: 'Bacon, egg, parmesan, cream sauce', popular: true },
+    { name: 'Crispy Calamari', price: 240, emoji: '🦑', desc: 'With garlic aioli dipping sauce' },
+    { name: 'Seafood Sinuglaw Bowl', price: 295, emoji: '🍚', desc: 'Fresh kinilaw + grilled pork, served with rice', popular: true },
+    { name: 'Mango Shake (Large)', price: 95, emoji: '🥭', desc: 'Fresh mango, milk, crushed ice', popular: true },
+    { name: 'Iced Café Latte', price: 110, emoji: '☕', desc: 'Resort blend espresso + fresh milk' }
   ],
   store: [
-    {
-      name: 'Sunscreen SPF 50+',
-      price: 180,
-      emoji: '🧴',
-      desc: 'Resort edition, water-resistant'
-    },
-    {
-      name: 'Bottled Water (1L) × 6',
-      price: 90,
-      emoji: '💧',
-      desc: 'Chilled, purified drinking water',
-      popular: true
-    },
-    {
-      name: 'Resort Souvenir T-Shirt',
-      price: 450,
-      emoji: '👕',
-      desc: 'Available in S, M, L, XL'
-    },
-    {
-      name: 'Resort Flip Flops',
-      price: 350,
-      emoji: '🩴',
-      desc: 'Eduardo\'s branded, all sizes'
-    },
-    {
-      name: 'Snack Bundle Pack',
-      price: 120,
-      emoji: '🍫',
-      desc: 'Chips + chocolate + candy assorted',
-      popular: true
-    },
-    {
-      name: 'Toiletry Kit',
-      price: 150,
-      emoji: '🪥',
-      desc: 'Toothbrush, toothpaste, shampoo, soap'
-    }
+    { name: 'Sunscreen SPF 50+', price: 180, emoji: '🧴', desc: 'Resort edition, water-resistant' },
+    { name: 'Bottled Water (1L) × 6', price: 90, emoji: '💧', desc: 'Chilled, purified drinking water', popular: true },
+    { name: 'Resort Souvenir T-Shirt', price: 450, emoji: '👕', desc: 'Available in S, M, L, XL' },
+    { name: 'Resort Flip Flops', price: 350, emoji: '🩴', desc: 'Eduardo\'s branded, all sizes' },
+    { name: 'Snack Bundle Pack', price: 120, emoji: '🍫', desc: 'Chips + chocolate + candy assorted', popular: true },
+    { name: 'Toiletry Kit', price: 150, emoji: '🪥', desc: 'Toothbrush, toothpaste, shampoo, soap' }
   ]
 }
 
@@ -555,121 +469,150 @@ const products = ref({ ...fallbackProducts })
 const isLoading = ref(false)
 const loadError = ref('')
 
-// Tab labels
-const tabLabels = {
-  restaurant: 'Restaurant',
-  store: 'Mini Mart'
-}
-
-// ── COMPUTED ──
-const totalItems = computed(() => {
-  return cart.value.reduce((sum, item) => sum + item.qty, 0)
-})
-
-const cartTotal = computed(() => {
-  return cart.value.reduce((sum, item) => sum + item.price * item.qty, 0)
-})
-
+// Computed
+const totalItems = computed(() => cart.value.reduce((sum, item) => sum + item.qty, 0))
+const cartTotal = computed(() => cart.value.reduce((sum, item) => sum + item.price * item.qty, 0))
 const calculateTotalWithDiscount = computed(() => {
   let total = cartTotal.value
-  if (total > 500) {
-    total -= 50
-  }
-  return total
-})
-
-const currentLocation = computed(() => {
-  if (currentLocType.value === 'Day Guest') {
-    return 'Day Guest (Pool/Garden Area)'
-  }
-  return `${currentLocType.value} ${locationNumber.value}`
+  return total > 500 ? total - 50 : total
 })
 
 const filteredProducts = computed(() => {
   const currentProducts = products.value[activeTab.value] || []
   if (!searchQuery.value) return currentProducts
-  
   return currentProducts.filter(p => 
     p.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
     p.desc.toLowerCase().includes(searchQuery.value.toLowerCase())
   )
 })
 
-// ── METHODS ──
-const getTabCount = (tab) => {
-  return products.value[tab]?.length || 0
-}
+const totalPages = computed(() => Math.ceil(filteredProducts.value.length / itemsPerPage.value))
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  return filteredProducts.value.slice(start, start + itemsPerPage.value)
+})
+
+// Methods
+const getTabCount = (tab) => products.value[tab]?.length || 0
 
 const switchTab = (tab) => {
   activeTab.value = tab
   searchQuery.value = ''
+  currentPage.value = 1
 }
 
-const scrollToLocation = () => {
-  if (locationSection.value) {
-    locationSection.value.scrollIntoView({ behavior: 'smooth' })
+const goToStage = (stage) => {
+  currentStage.value = stage
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const nextStage = () => currentStage.value < 3 && goToStage(currentStage.value + 1)
+const previousStage = () => currentStage.value > 1 && goToStage(currentStage.value - 1)
+
+const proceedToCart = () => {
+  if (cart.value.length === 0) return alert('Please add items to your cart first')
+  goToStage(2)
+}
+
+const proceedToCheckout = () => {
+  if (cart.value.length === 0) return alert('Your cart is empty')
+  goToStage(3)
+}
+
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    window.scrollTo({ top: 300, behavior: 'smooth' })
   }
 }
 
-const isProductAdded = (productName) => {
-  return addedProducts.value.has(productName)
-}
+const nextPage = () => currentPage.value < totalPages.value && (currentPage.value++)
+const previousPage = () => currentPage.value > 1 && (currentPage.value--)
+
+const isProductAdded = (productName) => addedProducts.value.has(productName)
 
 const addToCart = (product) => {
-  const existing = cart.value.find((i) => i.name === product.name)
+  const existing = cart.value.find(i => i.name === product.name)
   if (existing) {
     existing.qty++
   } else {
     cart.value.push({ ...product, qty: 1 })
   }
-
   addedProducts.value.add(product.name)
-  setTimeout(() => {
-    addedProducts.value.delete(product.name)
-  }, 1200)
+  setTimeout(() => addedProducts.value.delete(product.name), 1200)
 }
 
 const changeQty = (idx, delta) => {
   cart.value[idx].qty += delta
-  if (cart.value[idx].qty <= 0) {
-    cart.value.splice(idx, 1)
-  }
+  if (cart.value[idx].qty <= 0) cart.value.splice(idx, 1)
 }
 
-const removeItem = (idx) => {
-  cart.value.splice(idx, 1)
-}
+const removeItem = (idx) => cart.value.splice(idx, 1)
 
 const selectLocType = (type) => {
   currentLocType.value = type
-  if (type === 'Day Guest') {
-    locationNumber.value = ''
-  }
+  if (type === 'Day Guest') locationNumber.value = ''
 }
 
 const saveLocation = () => {
   if (currentLocType.value !== 'Day Guest' && !locationNumber.value.trim()) {
-    alert(`Please enter your ${currentLocType.value} number.`)
-    return
+    return alert(`Please enter your ${currentLocType.value} number.`)
   }
   locationSaved.value = true
   showLocationSaved.value = true
-  setTimeout(() => {
-    showLocationSaved.value = false
-  }, 3000)
+  setTimeout(() => showLocationSaved.value = false, 3000)
 }
 
-const placeOrder = () => {
-  showToast.value = true
-  cart.value = []
-  setTimeout(() => {
-    showToast.value = false
-  }, 4000)
-}
+const placeOrder = async () => {
+  if (!locationSaved.value) return alert('Please set your delivery location first')
+  if (cart.value.length === 0) return alert('Your cart is empty')
+  
+  try {
+    // Prepare order data
+    const orderData = {
+      cart: cart.value.map(item => ({
+        name: item.name,
+        price: item.price,
+        qty: item.qty
+      })),
+      locationType: currentLocType.value,
+      locationNumber: locationNumber.value,
+      deliveryNotes: locationNotes.value,
+      totalAmount: calculateTotalWithDiscount.value
+    }
 
-const scrollToCart = () => {
-  if (cartSection.value) {
-    cartSection.value.scrollIntoView({ behavior: 'smooth' })
+    // Call backend API
+    const response = await fetch(`${API_BASE}/eshop/order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(orderData)
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to place order')
+    }
+
+    // Success! Show toast notification
+    showToast.value = true
+    
+    // Clear cart and form
+    cart.value = []
+    locationSaved.value = false
+    locationNumber.value = ''
+    locationNotes.value = ''
+    currentStage.value = 1
+    
+    // Hide toast after 4 seconds
+    setTimeout(() => showToast.value = false, 4000)
+
+    console.log('Order placed successfully:', result)
+  } catch (error) {
+    console.error('Error placing order:', error)
+    alert(`Failed to place order: ${error.message}. Please try again.`)
   }
 }
 
@@ -680,9 +623,9 @@ const getEmojiForCategory = (category) => {
 }
 
 const mapPosItems = (items, category) => {
-  return items.map((item) => ({
+  return items.map(item => ({
     name: item.name || 'Unnamed item',
-    price: Number.parseFloat(item.price) || 0,
+    price: parseFloat(item.price) || 0,
     emoji: getEmojiForCategory(category),
     desc: item.description || 'No description available'
   }))
@@ -690,9 +633,7 @@ const mapPosItems = (items, category) => {
 
 const fetchCategoryItems = async (category) => {
   const response = await fetch(`${API_BASE}/items/category/${category}`)
-  if (!response.ok) {
-    throw new Error(`Failed to load ${category} items`)
-  }
+  if (!response.ok) throw new Error(`Failed to load ${category} items`)
   const data = await response.json()
   return Array.isArray(data) ? data : []
 }
@@ -707,9 +648,7 @@ const fetchProducts = async () => {
     ])
 
     const restaurant = mapPosItems(restaurantItems, 'restaurant')
-    const store = storeItems.length > 0
-      ? mapPosItems(storeItems, 'store')
-      : fallbackProducts.store
+    const store = storeItems.length > 0 ? mapPosItems(storeItems, 'store') : fallbackProducts.store
 
     products.value = {
       restaurant: restaurant.length > 0 ? restaurant : fallbackProducts.restaurant,
@@ -730,267 +669,244 @@ onMounted(() => {
 </script>
 
 <style scoped>
-:root {
-  --primary: #FF6B4A;
-  --primary-dark: #E55A3C;
-  --primary-light: #FFE8E3;
-  --secondary: #2EC4B6;
-  --secondary-dark: #25A096;
-  --secondary-light: #E0F7F4;
-  --accent: #FFB347;
-  --dark: #2D3047;
-  --gray-100: #F8F9FA;
-  --gray-200: #E9ECEF;
-  --gray-300: #DEE2E6;
-  --gray-400: #ADB5BD;
-  --gray-500: #6C757D;
-  --gray-600: #495057;
-  --success: #06D6A0;
-  --warning: #FFD166;
-  --danger: #EF476F;
-  --white: #FFFFFF;
-  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  --shadow-colored: 0 10px 15px -3px rgba(255, 107, 74, 0.2);
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .eshop-container {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f7fa;
   min-height: 100vh;
-  color: var(--dark);
 }
 
-/* ── NAVBAR ── */
-.navbar {
-  background: var(--white);
+/* ══════════════════════════════════════════ */
+/* HEADER */
+/* ══════════════════════════════════════════ */
+.eshop-header {
+  background: white;
   padding: 1rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: var(--shadow-md);
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
 }
 
-.logo {
-  font-size: 1.5rem;
-  font-weight: 800;
+.header-left {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--dark);
-}
-
-.logo-icon {
-  font-size: 2rem;
-}
-
-.shop-tag {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  color: var(--white);
-  font-size: 0.75rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  letter-spacing: 0.5px;
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.location-pill {
-  background: var(--gray-100);
-  padding: 0.5rem 1rem;
-  border-radius: 40px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid var(--gray-200);
-}
-
-.location-pill:hover {
-  background: var(--gray-200);
-  transform: translateY(-1px);
-}
-
-.location-icon {
-  font-size: 1.1rem;
-}
-
-.location-text {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--gray-600);
-}
-
-.dropdown-arrow {
-  font-size: 0.7rem;
-  color: var(--gray-400);
-}
-
-.cart-btn {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  color: var(--white);
-  border: none;
-  border-radius: 40px;
-  padding: 0.5rem 1.25rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-  box-shadow: var(--shadow-colored);
-}
-
-.cart-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 15px 20px -5px rgba(255, 107, 74, 0.4);
-}
-
-.cart-icon {
-  font-size: 1.1rem;
-}
-
-.cart-text {
-  margin-right: 0.25rem;
-}
-
-.cart-count {
-  background: var(--white);
-  color: var(--primary);
-  border-radius: 20px;
-  width: 24px;
-  height: 24px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ── HERO BANNER ── */
-.hero-banner {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  margin: 1.5rem 2rem;
-  border-radius: 24px;
-  padding: 2rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.hero-banner::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><circle cx="30" cy="30" r="10" fill="rgba(255,255,255,0.1)"/></svg>');
-  opacity: 0.3;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 1;
-  color: var(--white);
-}
-
-.hero-title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin: 0 0 0.5rem;
-  line-height: 1.2;
-}
-
-.hero-title span {
-  font-size: 1.5rem;
-  font-weight: 400;
-  opacity: 0.9;
-}
-
-.hero-subtitle {
-  font-size: 1rem;
-  opacity: 0.9;
-  margin-bottom: 1rem;
-}
-
-.hero-badges {
-  display: flex;
   gap: 0.75rem;
 }
 
-.hero-badge {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(5px);
-  padding: 0.25rem 1rem;
+.header-icon {
+  font-size: 2rem;
+}
+
+.header-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.market-tag {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.2rem 0.8rem;
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
-/* ── PAGE LAYOUT ── */
-.page {
-  max-width: 1400px;
-  margin: 0 auto 2rem;
-  padding: 0 2rem;
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 1.5rem;
-  align-items: start;
+.header-right {
+  display: flex;
+  gap: 1rem;
 }
 
-/* ── SECTION CARD ── */
-.section-card {
-  background: var(--white);
-  border-radius: 24px;
-  box-shadow: var(--shadow-md);
+.location-btn {
+  background: white;
+  border: 1px solid #e1e8ed;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  transition: all 0.2s;
+}
+
+.location-btn:hover {
+  background: #f8f9fa;
+}
+
+.location-pin {
+  color: #e91e63;
+  font-size: 1.1rem;
+}
+
+.dropdown-icon {
+  font-size: 0.7rem;
+  color: #95a5a6;
+}
+
+.cart-header-btn {
+  background: #5b8dee;
+  border: none;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.cart-header-btn:hover {
+  background: #4a7cd6;
+}
+
+.cart-icon-header {
+  font-size: 1.1rem;
+}
+
+.cart-badge-header {
+  background: white;
+  color: #5b8dee;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* ══════════════════════════════════════════ */
+/* BLUE GRADIENT SECTION */
+/* ══════════════════════════════════════════ */
+.blue-gradient-section {
+  background: linear-gradient(135deg, #667eea 0%, #5b8dee 100%);
+  padding: 2rem;
+}
+
+.stage-tabs-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.stage-tab-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: white;
+  opacity: 0.7;
+}
+
+.stage-tab-btn:hover {
+  opacity: 1;
+}
+
+.stage-tab-btn.active {
+  background: white;
+  color: #667eea;
+  opacity: 1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.stage-tab-btn.completed:not(.active) {
+  opacity: 1;
+}
+
+.stage-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.stage-tab-btn.active .stage-icon {
+  background: #667eea;
+  color: white;
+}
+
+.stage-tab-btn.completed .stage-icon {
+  background: #10b981;
+  color: white;
+}
+
+.stage-label {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* ══════════════════════════════════════════ */
+/* MAIN WRAPPER */
+/* ══════════════════════════════════════════ */
+.main-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.stage-content {
+  width: 100%;
+}
+
+/* ══════════════════════════════════════════ */
+/* STAGE 1: MENU */
+/* ══════════════════════════════════════════ */
+.menu-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   overflow: hidden;
-  margin-bottom: 1.5rem;
-  transition: transform 0.2s;
 }
 
-.section-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
-}
-
-.section-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 2px solid var(--gray-200);
+.menu-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 2px solid #f1f3f5;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.section-title-wrapper {
+.menu-title-section {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
-.section-icon {
-  font-size: 1.5rem;
+.menu-icon {
+  font-size: 1.8rem;
 }
 
-.section-title {
-  font-size: 1.25rem;
+.menu-title {
+  font-size: 1.4rem;
   font-weight: 700;
-  color: var(--dark);
+  color: #2c3e50;
   margin: 0;
 }
 
-/* ── SEARCH BOX ── */
 .search-box {
   position: relative;
 }
@@ -1000,55 +916,53 @@ onMounted(() => {
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--gray-400);
+  font-size: 1.1rem;
+  color: #95a5a6;
 }
 
 .search-input {
-  padding: 0.5rem 1rem 0.5rem 2.5rem;
-  border: 2px solid var(--gray-200);
-  border-radius: 40px;
-  font-size: 0.9rem;
-  width: 250px;
-  transition: all 0.2s;
+  padding: 0.7rem 1rem 0.7rem 3rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  width: 300px;
+  transition: border 0.2s;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-light);
+  border-color: #667eea;
 }
 
-/* ── PRODUCT TABS ── */
+/* Product Tabs */
 .product-tabs {
   display: flex;
+  padding: 0 2rem;
   gap: 0.5rem;
-  padding: 1rem 1.5rem;
-  background: var(--gray-100);
+  border-bottom: 2px solid #f1f3f5;
 }
 
-.tab {
-  flex: 1;
-  padding: 0.75rem;
-  border-radius: 12px;
+.product-tab {
+  background: transparent;
+  border: none;
+  padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
   cursor: pointer;
+  color: #7f8c8d;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
   transition: all 0.2s;
-  background: var(--white);
-  border: 2px solid transparent;
 }
 
-.tab:hover {
-  background: var(--primary-light);
-  transform: translateY(-1px);
+.product-tab:hover {
+  color: #667eea;
 }
 
-.tab.active {
-  background: var(--white);
-  border-color: var(--primary);
-  box-shadow: var(--shadow-sm);
+.product-tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
 }
 
 .tab-emoji {
@@ -1056,277 +970,358 @@ onMounted(() => {
 }
 
 .tab-text {
-  font-weight: 600;
-  color: var(--gray-600);
-}
-
-.tab.active .tab-text {
-  color: var(--primary);
+  font-size: 1rem;
 }
 
 .tab-count {
-  background: var(--gray-200);
-  padding: 0.15rem 0.5rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--gray-600);
-}
-
-/* ── PRODUCTS GRID ── */
-.products-container {
-  padding: 1.5rem;
-}
-
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
-.product-card {
-  background: var(--white);
-  border: 2px solid var(--gray-200);
-  border-radius: 16px;
-  overflow: hidden;
-  transition: all 0.2s;
-  position: relative;
-}
-
-.product-card:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.product-card.featured {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, var(--white) 0%, var(--primary-light) 100%);
-}
-
-.product-image {
-  padding: 1rem;
-  background: var(--gray-100);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.product-emoji {
-  font-size: 3rem;
-}
-
-.popular-badge {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--warning) 100%);
-  color: var(--dark);
-  padding: 0.2rem 0.5rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
+  background: #e3f2fd;
+  color: #667eea;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
   font-weight: 700;
 }
 
-.product-info {
-  padding: 1rem;
+.product-tab.active .tab-count {
+  background: #667eea;
+  color: white;
 }
 
-.product-name {
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0 0 0.25rem;
-  color: var(--dark);
+/* Products Section */
+.products-section {
+  padding: 2rem;
 }
 
-.product-desc {
-  font-size: 0.8rem;
-  color: var(--gray-500);
-  margin: 0 0 0.75rem;
-  line-height: 1.3;
-}
-
-.product-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.product-price {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--primary);
-}
-
-.add-to-cart-btn {
-  background: var(--primary);
-  color: var(--white);
-  border: none;
-  border-radius: 40px;
-  padding: 0.4rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  transition: all 0.2s;
-}
-
-.add-to-cart-btn:hover {
-  background: var(--primary-dark);
-  transform: scale(1.05);
-}
-
-.add-to-cart-btn.added {
-  background: var(--success);
-}
-
-.btn-icon {
-  font-size: 1rem;
-}
-
-/* ── LOADING & ERROR STATES ── */
-.loading-state {
+.loading-container,
+.error-container {
   text-align: center;
-  padding: 3rem;
+  padding: 4rem 2rem;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--gray-200);
-  border-top-color: var(--primary);
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-.error-state {
-  text-align: center;
-  padding: 3rem;
-}
-
-.error-icon {
+.error-emoji {
   font-size: 3rem;
   display: block;
   margin-bottom: 1rem;
 }
 
-.retry-btn {
-  background: var(--primary);
-  color: var(--white);
+.retry-button {
+  background: #667eea;
+  color: white;
   border: none;
-  border-radius: 40px;
-  padding: 0.5rem 1.5rem;
-  font-size: 0.9rem;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   margin-top: 1rem;
 }
 
-/* ── CART SECTION ── */
-.cart-section {
-  background: var(--white);
+.retry-button:hover {
+  background: #5568d3;
 }
 
-.cart-item-count {
-  background: var(--gray-200);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
+/* 4-Column Grid */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
-.cart-empty {
+.product-card {
+  border: 2px solid #f1f3f5;
+  border-radius: 12px;
+  padding: 1rem;
+  transition: all 0.2s;
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.product-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-2px);
+}
+
+.product-image-area {
   text-align: center;
-  padding: 3rem 1.5rem;
+  margin-bottom: 0.75rem;
 }
 
-.empty-cart-illustration {
-  position: relative;
-  width: 100px;
-  height: 100px;
-  margin: 0 auto 1rem;
+.product-emoji {
+  font-size: 2.5rem;
+  background: #f8f9fa;
+  width: 60px;
+  height: 60px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
 }
 
-.empty-cart-icon {
-  font-size: 4rem;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+.product-info-area {
+  text-align: center;
+  margin-bottom: 0.75rem;
+  flex: 1;
 }
 
-.empty-cart-emoji {
-  font-size: 2rem;
-  position: absolute;
-  bottom: 0;
-  right: 0;
+.product-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 0.35rem;
 }
 
-.cart-empty h3 {
+.product-subtitle {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.product-actions-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f1f3f5;
+}
+
+.product-price {
   font-size: 1.1rem;
-  margin: 0 0 0.25rem;
+  font-weight: 800;
+  color: #2c3e50;
 }
 
-.cart-empty p {
-  color: var(--gray-500);
-  font-size: 0.9rem;
-  margin: 0 0 1rem;
-}
-
-.browse-menu-btn {
-  background: var(--primary);
-  color: var(--white);
+.product-add-btn {
+  background: #5b8dee;
+  color: white;
   border: none;
-  border-radius: 40px;
-  padding: 0.5rem 1.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.product-add-btn:hover {
+  background: #4a7cd6;
+  transform: scale(1.05);
+}
+
+.product-add-btn.added {
+  background: #10b981;
+}
+
+/* Pagination */
+.pagination-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #f1f3f5;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.pagination-btn {
+  background: white;
+  border: 2px solid #e1e8ed;
+  color: #2c3e50;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.page-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid #e1e8ed;
+  background: white;
+  color: #2c3e50;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-number:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.page-number.active {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+.pagination-info {
+  text-align: center;
+  color: #7f8c8d;
   font-size: 0.9rem;
+}
+
+/* ══════════════════════════════════════════ */
+/* STAGE 2: CART REVIEW */
+/* ══════════════════════════════════════════ */
+.cart-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.cart-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 2px solid #f1f3f5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cart-title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cart-icon {
+  font-size: 1.8rem;
+}
+
+.cart-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.item-count-badge {
+  background: #e3f2fd;
+  color: #667eea;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-weight: 700;
+}
+
+.empty-cart {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-illustration {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-cart h3 {
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.empty-cart p {
+  color: #7f8c8d;
+  margin-bottom: 2rem;
+}
+
+.back-to-menu-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.cart-content {
-  padding: 1.5rem;
+.back-to-menu-btn:hover {
+  background: #5568d3;
+}
+
+.cart-review-content {
+  padding: 2rem;
 }
 
 .cart-items {
-  margin-bottom: 1.5rem;
+  max-height: 500px;
+  overflow-y: auto;
+  margin-bottom: 2rem;
 }
 
 .cart-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  border: 2px solid var(--gray-200);
+  justify-content: space-between;
+  padding: 1.25rem;
+  background: #f8f9fa;
   border-radius: 12px;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
   transition: all 0.2s;
 }
 
 .cart-item:hover {
-  border-color: var(--primary);
-  background: var(--primary-light);
+  background: #e9ecef;
+  transform: translateX(4px);
 }
 
-.cart-item-image {
-  width: 50px;
-  height: 50px;
-  background: var(--gray-100);
-  border-radius: 10px;
+.cart-item-left {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 1rem;
+  flex: 1;
 }
 
 .cart-item-emoji {
-  font-size: 1.5rem;
+  font-size: 2.5rem;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 12px;
 }
 
 .cart-item-details {
@@ -1334,807 +1329,592 @@ onMounted(() => {
 }
 
 .cart-item-name {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2c3e50;
   margin: 0 0 0.25rem;
 }
 
-.cart-item-price {
-  font-size: 0.8rem;
-  color: var(--gray-500);
+.cart-item-price-per {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  margin: 0;
 }
 
-.cart-item-actions {
+.cart-item-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.quantity-controls {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.quantity-control {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: var(--gray-100);
-  border-radius: 30px;
-  padding: 0.15rem;
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: 2px solid #e1e8ed;
 }
 
 .qty-btn {
-  width: 28px;
-  height: 28px;
+  background: none;
   border: none;
-  border-radius: 50%;
-  background: var(--white);
-  color: var(--gray-600);
+  color: #667eea;
+  font-size: 1.2rem;
+  font-weight: 700;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
+  padding: 0.25rem 0.5rem;
 }
 
 .qty-btn:hover {
-  background: var(--primary);
-  color: var(--white);
+  color: #5568d3;
 }
 
 .qty-value {
-  min-width: 24px;
-  text-align: center;
   font-weight: 700;
-  color: var(--dark);
+  font-size: 1rem;
+  color: #2c3e50;
+  min-width: 60px;
+  text-align: center;
 }
 
-.remove-item {
-  width: 28px;
-  height: 28px;
+.cart-item-total {
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: #667eea;
+  min-width: 100px;
+  text-align: right;
+}
+
+.remove-btn {
+  background: #ef4444;
+  color: white;
   border: none;
-  border-radius: 50%;
-  background: var(--gray-100);
-  color: var(--gray-500);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   transition: all 0.2s;
 }
 
-.remove-item:hover {
-  background: var(--danger);
-  color: var(--white);
+.remove-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
 }
 
 .cart-summary {
-  background: var(--gray-100);
-  border-radius: 16px;
-  padding: 1.25rem;
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.summary-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 1rem;
+}
+
+.summary-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
-  font-size: 0.9rem;
-  color: var(--gray-600);
+  font-size: 1rem;
+  color: #495057;
 }
 
-.free-delivery {
-  color: var(--success);
+.row-value {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.row-value.free {
+  color: #10b981;
   font-weight: 700;
+}
+
+.row-value.discount {
+  color: #ef4444;
 }
 
 .summary-row.discount {
-  color: var(--success);
-  font-weight: 600;
+  color: #ef4444;
 }
 
-.summary-total {
-  display: flex;
-  justify-content: space-between;
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--dark);
-  margin: 1rem 0;
-  padding-top: 0.75rem;
-  border-top: 2px dashed var(--gray-300);
+.summary-divider {
+  height: 2px;
+  background: #dee2e6;
+  margin: 0.5rem 0;
 }
 
-.delivery-warning {
-  background: var(--warning);
-  color: var(--dark);
-  padding: 0.75rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.warning-icon {
-  font-size: 1.1rem;
-}
-
-.checkout-btn {
-  width: 100%;
-  background: linear-gradient(135deg, var(--success) 0%, var(--secondary) 100%);
-  color: var(--white);
-  border: none;
-  border-radius: 40px;
-  padding: 1rem;
-  font-size: 1rem;
+.summary-row.total {
+  font-size: 1.2rem;
   font-weight: 700;
-  cursor: pointer;
+  color: #2c3e50;
+  margin-top: 0.5rem;
+}
+
+.row-total {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #667eea;
+}
+
+/* ══════════════════════════════════════════ */
+/* STAGE 3: CHECKOUT */
+/* ══════════════════════════════════════════ */
+.checkout-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.checkout-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 2px solid #f1f3f5;
+}
+
+.checkout-title-section {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
+  gap: 0.75rem;
 }
 
-.checkout-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 15px 20px -5px rgba(6, 214, 160, 0.4);
+.checkout-icon {
+  font-size: 1.8rem;
 }
 
-.checkout-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.checkout-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
 }
 
-.checkout-note {
-  text-align: center;
-  font-size: 0.8rem;
-  color: var(--gray-500);
-  margin-top: 0.75rem;
+.checkout-body {
+  padding: 2rem;
 }
 
-/* ── LOCATION CARD ── */
-.location-card {
-  background: var(--white);
-}
-
-.location-content {
+.checkout-section {
+  background: #f8f9fa;
   padding: 1.5rem;
-}
-
-.location-type-selector {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  border-radius: 12px;
   margin-bottom: 1.5rem;
 }
 
-.location-type {
-  border: 2px solid var(--gray-200);
-  border-radius: 12px;
-  padding: 0.75rem 0.25rem;
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 1.25rem;
+}
+
+.section-icon {
+  font-size: 1.5rem;
+}
+
+.location-types {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.location-type-option {
+  background: white;
+  border: 2px solid #e1e8ed;
+  padding: 1rem;
+  border-radius: 10px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.location-type:hover {
-  border-color: var(--primary);
-  background: var(--primary-light);
+.location-type-option:hover {
+  border-color: #667eea;
 }
 
-.location-type.active {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  color: var(--white);
+.location-type-option.selected {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
 }
 
-.type-emoji {
-  font-size: 1.5rem;
+.location-emoji {
+  font-size: 2rem;
   display: block;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
-.type-name {
-  font-size: 0.8rem;
+.location-name {
   font-weight: 600;
+  font-size: 0.95rem;
 }
 
-.input-group {
-  margin-bottom: 1.25rem;
+.form-field {
+  margin-bottom: 1.5rem;
 }
 
-.input-label {
+.field-label {
   display: block;
-  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--gray-600);
-  margin-bottom: 0.35rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
 }
 
-.required-star {
-  color: var(--danger);
+.required {
+  color: #ef4444;
 }
 
-.input-wrapper {
+.field-input-wrapper {
   position: relative;
 }
 
-.input-icon {
+.field-icon {
   position: absolute;
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--gray-400);
-  z-index: 1;
+  font-size: 1.1rem;
 }
 
-.form-input,
-.form-textarea {
+.field-input,
+.field-textarea {
   width: 100%;
-  border: 2px solid var(--gray-200);
-  border-radius: 12px;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  background: var(--white);
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  border: 2px solid #e1e8ed;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border 0.2s;
 }
 
-.form-textarea {
-  resize: vertical;
-  min-height: 80px;
-  line-height: 1.4;
-}
-
-.form-input:focus,
-.form-textarea:focus {
+.field-input:focus,
+.field-textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-light);
+  border-color: #667eea;
 }
 
-.save-location-btn {
+.field-textarea {
+  resize: vertical;
+}
+
+.confirm-location-btn {
   width: 100%;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  color: var(--white);
+  background: #667eea;
+  color: white;
   border: none;
-  border-radius: 12px;
   padding: 0.75rem;
-  font-size: 0.9rem;
-  font-weight: 700;
+  border-radius: 10px;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.2s;
-  margin-bottom: 1rem;
 }
 
-.save-location-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-colored);
+.confirm-location-btn:hover {
+  background: #5568d3;
 }
 
-.success-message {
-  background: var(--secondary-light);
-  border: 2px solid var(--secondary);
-  border-radius: 12px;
-  padding: 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--secondary-dark);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.success-icon {
+.icon-inline {
   font-size: 1.1rem;
 }
 
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.3s ease;
+.success-alert {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  font-weight: 600;
 }
 
-.slide-enter-from,
-.slide-leave-to {
+.success-icon-inline {
+  font-size: 1.2rem;
+}
+
+.order-items-list {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.order-item-name {
+  flex: 1;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.order-item-qty {
+  color: #7f8c8d;
+  margin: 0 1rem;
+}
+
+.order-item-price {
+  font-weight: 700;
+  color: #667eea;
+  min-width: 100px;
+  text-align: right;
+}
+
+.order-totals {
+  background: white;
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.order-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  color: #495057;
+}
+
+.order-total-row.final {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-top: 0.5rem;
+}
+
+.free-label {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.order-total-row.discount {
+  color: #ef4444;
+}
+
+.order-total-divider {
+  height: 2px;
+  background: #f1f3f5;
+  margin: 0.75rem 0;
+}
+
+.final-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #667eea;
+}
+
+.info-box {
+  background: #dbeafe;
+  border-left: 4px solid #3b82f6;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-box-icon {
+  font-size: 1.5rem;
+}
+
+.info-box-text {
+  font-size: 0.95rem;
+  color: #1e40af;
+  line-height: 1.6;
+}
+
+.warning-box {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.warning-box-icon {
+  font-size: 1.5rem;
+}
+
+/* ══════════════════════════════════════════ */
+/* NAVIGATION BUTTONS */
+/* ══════════════════════════════════════════ */
+.navigation-buttons {
+  display: flex;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #f1f3f5;
+}
+
+.nav-button {
+  flex: 1;
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.nav-button.back {
+  background: white;
+  border: 2px solid #e1e8ed;
+  color: #495057;
+}
+
+.nav-button.back:hover {
+  background: #f8f9fa;
+}
+
+.nav-button.proceed,
+.nav-button.submit {
+  background: #667eea;
+  border: none;
+  color: white;
+}
+
+.nav-button.proceed:hover,
+.nav-button.submit:hover:not(:disabled) {
+  background: #5568d3;
+}
+
+.nav-button.submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ══════════════════════════════════════════ */
+/* TOAST & FLOATING CART */
+/* ══════════════════════════════════════════ */
+.toast-notification {
+  position: fixed;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: top 0.3s;
+  z-index: 1000;
+}
+
+.toast-notification.visible {
+  top: 2rem;
+}
+
+.toast-icon-emoji {
+  font-size: 2rem;
+}
+
+.toast-message {
+  display: flex;
+  flex-direction: column;
+}
+
+.toast-message strong {
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.toast-message span {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.floating-cart-button {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #667eea;
+  color: white;
+  border: none;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 999;
+}
+
+.floating-cart-button:hover {
+  transform: scale(1.1);
+}
+
+.float-cart-icon {
+  font-size: 1.8rem;
+}
+
+.float-cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: 3px solid white;
+}
+
+/* Slide animation */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s;
+}
+
+.slide-down-enter-from {
   opacity: 0;
   transform: translateY(-10px);
 }
 
-.saved-location-display {
-  background: var(--primary-light);
-  border: 2px solid var(--primary);
-  border-radius: 12px;
-  padding: 1rem;
-}
-
-.saved-location-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.saved-icon {
-  font-size: 1.2rem;
-}
-
-.saved-location-text {
-  font-weight: 700;
-  color: var(--dark);
-}
-
-.saved-notes {
-  font-size: 0.8rem;
-  color: var(--gray-600);
-  margin: 0;
-  padding-left: 1.7rem;
-}
-
-/* ── TRACKING CARD ── */
-.tracking-card {
-  background: var(--white);
-}
-
-.live-badge {
-  background: var(--danger);
-  color: var(--white);
-  padding: 0.2rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  animation: pulse 1.5s infinite;
-}
-
-.active-order {
-  padding: 1.5rem;
-  border-bottom: 2px solid var(--gray-200);
-}
-
-.order-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.order-number {
-  font-weight: 700;
-  color: var(--dark);
-  margin-right: 0.5rem;
-}
-
-.order-time {
-  font-size: 0.8rem;
-  color: var(--gray-500);
-}
-
-.order-status {
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.order-status.preparing {
-  background: var(--warning);
-  color: var(--dark);
-}
-
-.order-items-preview {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-}
-
-.item-pill {
-  background: var(--gray-100);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  color: var(--gray-600);
-}
-
-.delivery-timeline {
-  margin-bottom: 1.5rem;
-}
-
-.timeline-step {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  position: relative;
-}
-
-.timeline-step:not(:last-child)::before {
-  content: '';
-  position: absolute;
-  left: 12px;
-  top: 24px;
-  bottom: -8px;
-  width: 2px;
-  background: var(--gray-200);
-}
-
-.step-dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--gray-200);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  z-index: 1;
-}
-
-.timeline-step.completed .step-dot {
-  background: var(--success);
-  color: var(--white);
-}
-
-.timeline-step.active .step-dot {
-  background: var(--primary);
-  color: var(--white);
-  animation: pulse 1.5s infinite;
-}
-
-.step-content {
-  flex: 1;
-}
-
-.step-title {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--dark);
-}
-
-.step-time {
-  display: block;
-  font-size: 0.7rem;
-  color: var(--gray-500);
-}
-
-.delivery-partner {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--gray-100);
-  border-radius: 12px;
-}
-
-.partner-icon {
-  font-size: 1.5rem;
-}
-
-.partner-info {
-  flex: 1;
-}
-
-.partner-name {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.partner-eta {
-  display: block;
-  font-size: 0.7rem;
-  color: var(--success);
-  font-weight: 600;
-}
-
-.call-partner {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 50%;
-  background: var(--primary);
-  color: var(--white);
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.call-partner:hover {
-  transform: scale(1.1);
-  background: var(--primary-dark);
-}
-
-.past-orders {
-  padding: 1.5rem;
-}
-
-.past-orders-title {
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0 0 1rem;
-}
-
-.past-order-item {
-  padding: 1rem;
-  border: 2px solid var(--gray-200);
-  border-radius: 12px;
-  margin-bottom: 0.75rem;
-  transition: all 0.2s;
-}
-
-.past-order-item:hover {
-  border-color: var(--primary);
-  background: var(--primary-light);
-}
-
-.past-order-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.past-order-number {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--gray-600);
-}
-
-.past-order-status {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.15rem 0.5rem;
-  border-radius: 12px;
-}
-
-.past-order-status.delivered {
-  background: var(--success);
-  color: var(--white);
-}
-
-.past-order-details {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.25rem;
-}
-
-.past-order-items {
-  font-size: 0.8rem;
-  color: var(--gray-600);
-}
-
-.past-order-total {
-  font-weight: 700;
-  color: var(--dark);
-}
-
-.past-order-date {
-  font-size: 0.7rem;
-  color: var(--gray-500);
-}
-
-/* ── ACCOUNT CARD ── */
-.account-card {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  color: var(--white);
-}
-
-.account-header {
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.account-avatar {
-  width: 60px;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: 700;
-  backdrop-filter: blur(5px);
-}
-
-.account-info {
-  flex: 1;
-}
-
-.account-name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0 0 0.25rem;
-}
-
-.account-email {
-  font-size: 0.8rem;
-  opacity: 0.8;
-  margin: 0;
-}
-
-.account-menu-btn {
-  background: none;
-  border: none;
-  color: var(--white);
-  font-size: 1.5rem;
-  cursor: pointer;
-  opacity: 0.8;
-}
-
-.account-stats {
-  padding: 1.5rem;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.stat-value {
-  display: block;
-  font-size: 1.25rem;
-  font-weight: 800;
-  margin-bottom: 0.25rem;
-}
-
-.stat-label {
-  font-size: 0.7rem;
-  opacity: 0.8;
-}
-
-.account-actions {
-  padding: 1.5rem;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-}
-
-.account-action {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 12px;
-  padding: 0.75rem;
-  color: var(--white);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-  backdrop-filter: blur(5px);
-}
-
-.account-action:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-2px);
-}
-
-.account-action span:first-child {
-  font-size: 1.2rem;
-}
-
-/* ── TOAST ── */
-.toast {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%) translateY(100px);
-  background: linear-gradient(135deg, var(--success) 0%, var(--secondary) 100%);
-  color: var(--white);
-  border-radius: 40px;
-  padding: 1rem 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: 0 20px 25px -5px rgba(6, 214, 160, 0.4);
-  z-index: 999;
-  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.toast.show {
-  transform: translateX(-50%) translateY(0);
-}
-
-.toast-icon {
-  font-size: 1.5rem;
-}
-
-.toast-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.toast-content strong {
-  font-size: 0.9rem;
-}
-
-.toast-content span {
-  font-size: 0.8rem;
-  opacity: 0.9;
-}
-
-/* ── FLOATING CART ── */
-.floating-cart {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  border: none;
-  border-radius: 50%;
-  color: var(--white);
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-lg);
-  transition: all 0.2s;
-  z-index: 90;
-}
-
-.floating-cart:hover {
-  transform: scale(1.1);
-  box-shadow: 0 20px 30px -5px rgba(255, 107, 74, 0.5);
-}
-
-.floating-cart-count {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: var(--white);
-  color: var(--primary);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  font-size: 0.8rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--primary);
-}
-
-/* ── ANIMATIONS ── */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-/* ── RESPONSIVE ── */
-@media (max-width: 968px) {
-  .page {
-    grid-template-columns: 1fr;
-  }
-  
-  .products-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .hero-banner {
-    margin: 1rem;
-  }
-  
-  .navbar {
-    padding: 0.75rem 1rem;
-  }
-  
-  .location-text {
-    display: none;
-  }
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }
 </style>
