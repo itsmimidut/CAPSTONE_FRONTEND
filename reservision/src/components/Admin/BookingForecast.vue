@@ -137,17 +137,15 @@ const generateForecast = async () => {
   error.value = null
 
   try {
-    const response = await axios.post('http://127.0.0.1:5000/predict', {
-      date: predictDate.value,
-      today_bookings: todayBookings.value
-    })
-
-    prediction.value = response.data
-
-    // Render charts after data is loaded
-    setTimeout(() => {
-      renderCharts()
-    }, 100)
+    // Use backend Node.js API for tomorrow's bookings prediction
+    const response = await axios.get('/api/prediction/tomorrow-bookings');
+    prediction.value = {
+      next_day: {
+        prediction: response.data.prediction,
+        date: new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]
+      },
+      details: response.data.details || []
+    };
 
   } catch (err) {
     error.value = err.response?.data?.error || 'Failed to connect to Flask server. Make sure it\'s running on port 5000.'

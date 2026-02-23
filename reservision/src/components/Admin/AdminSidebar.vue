@@ -202,6 +202,12 @@ const navItems = [
     roles: ['admin', 'restaurantstaff', 'receptionist']
   },
   {
+    path: '/admin/sales-report',
+    label: 'Sales Report',
+    icon: 'fas fa-chart-line',
+    roles: ['admin', 'restaurantstaff', 'receptionist']
+  },
+  {
     path: '/admin/swimming',
     label: 'Swimming Pools',
     icon: 'fas fa-swimming-pool',
