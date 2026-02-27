@@ -55,8 +55,8 @@
             <thead>
               <tr>
                 <th>Guest Name</th>
-                <th>Check-in</th>
-                <th>Check-out</th>
+                <th>Check In</th>
+                <th>Check Out</th>
                 <th>Booking Type</th>
                 <th>Payment Method</th>
                 <th>Code</th>
@@ -67,8 +67,8 @@
             <tbody>
               <tr v-for="booking in bookings" :key="booking.id">
                 <td>{{ booking.guest_name }}</td>
-                <td>{{ formatDate(booking.check_in) }}</td>
-                <td>{{ formatDate(booking.check_out) }}</td>
+                <td>{{ getCheckInDisplay(booking) }}</td>
+                <td>{{ getCheckOutDisplay(booking) }}</td>
                 <td>
                   <span :class="getItemBadgeClass(booking.items_list)" class="item-badge">
                     {{ getItemLabel(booking.items_list) }}
@@ -201,12 +201,12 @@
 
             <div class="card-body">
               <div>
-                <div class="card-label">Check-in</div>
-                <div class="card-value">{{ formatDate(booking.check_in) }}</div>
+                <div class="card-label">{{ isSwimmingBooking(booking.items_list) ? 'First Class' : 'Check-in' }}</div>
+                <div class="card-value">{{ getCheckInDisplay(booking) }}</div>
               </div>
               <div>
-                <div class="card-label">Check-out</div>
-                <div class="card-value">{{ formatDate(booking.check_out) }}</div>
+                <div class="card-label">{{ isSwimmingBooking(booking.items_list) ? 'Last Class' : 'Check-out' }}</div>
+                <div class="card-value">{{ getCheckOutDisplay(booking) }}</div>
               </div>
               <div>
                 <div class="card-label">Booking Type</div>
@@ -343,7 +343,8 @@ const fetchBookings = async () => {
           payment_reference: booking.payment_reference || 'N/A',
           total: booking.total,
           item_count: booking.item_count || 0,
-          items_list: booking.items_summary || 'N/A'
+          items_list: booking.items_summary || 'N/A',
+          items_descriptions: booking.items_descriptions || null
         }
       })
       
@@ -368,8 +369,71 @@ const fetchBookings = async () => {
 }
 
 const formatDate = (dateStr) => {
+  if (!dateStr) return 'N/A'
   const date = new Date(dateStr)
+  // Check if it's the default 1970 date (invalid date)
+  if (date.getFullYear() === 1970) return 'N/A'
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+// Helper function to parse swimming details from item_description
+const parseSwimmingDetails = (itemsDescriptions) => {
+  if (!itemsDescriptions) return null
+  
+  try {
+    // Split multiple descriptions (separated by |||)
+    const descriptions = itemsDescriptions.split('|||')
+    
+    for (const desc of descriptions) {
+      if (!desc || desc === 'null') continue
+      
+      try {
+        const parsed = JSON.parse(desc)
+        // Check if this is swimming details (has dates array)
+        if (parsed && parsed.dates && Array.isArray(parsed.dates)) {
+          return parsed
+        }
+      } catch (e) {
+        // Skip if can't parse individual description
+        continue
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing swimming details:', error)
+  }
+  
+  return null
+}
+
+// Check if booking is a swimming lesson
+const isSwimmingBooking = (itemsList) => {
+  if (!itemsList) return false
+  return String(itemsList).toLowerCase().includes('swimming')
+}
+
+// Get display dates for check-in (for swimming, returns first class date)
+const getCheckInDisplay = (booking) => {
+  if (isSwimmingBooking(booking.items_list)) {
+    const swimmingDetails = parseSwimmingDetails(booking.items_descriptions)
+    if (swimmingDetails && swimmingDetails.dates && swimmingDetails.dates.length > 0) {
+      // Return first date
+      return formatDate(swimmingDetails.dates[0])
+    }
+  }
+  return formatDate(booking.check_in)
+}
+
+// Get display dates for check-out (for swimming, returns last class date)
+const getCheckOutDisplay = (booking) => {
+  if (isSwimmingBooking(booking.items_list)) {
+    const swimmingDetails = parseSwimmingDetails(booking.items_descriptions)
+    if (swimmingDetails && swimmingDetails.dates && swimmingDetails.dates.length > 0) {
+      // Return last date
+      const lastDate = swimmingDetails.dates[swimmingDetails.dates.length - 1]
+      return formatDate(lastDate)
+    }
+  }
+  return formatDate(booking.check_out)
 }
 
 const formatStatus = (status) => {

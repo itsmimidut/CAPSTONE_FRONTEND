@@ -201,12 +201,12 @@ const navItems = [
     icon: 'fas fa-cash-register',
     roles: ['admin', 'restaurantstaff', 'receptionist']
   },
-  {
-    path: '/admin/sales-report',
-    label: 'Sales Report',
-    icon: 'fas fa-chart-line',
-    roles: ['admin', 'restaurantstaff', 'receptionist']
-  },
+  // {
+  //   path: '/admin/sales-report',
+  //   label: 'Sales Report',
+  //   icon: 'fas fa-chart-line',
+  //   roles: ['admin', 'restaurantstaff', 'receptionist']
+  // },
   {
     path: '/admin/swimming',
     label: 'Swimming Pools',
