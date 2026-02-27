@@ -29,9 +29,10 @@
       </div>
 
       <div class="content-wrapper">
-        <div v-if="loadError" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div v-if="loadError" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {{ loadError }}
         </div>
+
         <CustomerDashboardSection
           v-show="activeSection === 'dashboard'"
           :summary-cards="summaryCards"
@@ -380,25 +381,26 @@ onMounted(() => {
   flex-direction: column;
 }
 
+/* ✅ Adds ~0.5 inch spacing under header to prevent overlap */
 .header-container {
-  padding: 1rem 2rem;
+  padding: 0.85rem 1.25rem;
   background-color: #ffffff;
   border-bottom: 1px solid #e2e8f0;
   top: 0;
   z-index: 50;
-  margin-bottom: 10px;
+  margin-bottom: 48px; /* ~0.5 inch gap */
 }
 
-
+/* ✅ Reduce extra top padding (previously too large), maximize visible content */
 .content-wrapper {
-  padding-top: 1.5rem;
+  padding-top: 0.25rem;
 }
 
 @media (min-width: 768px) {
   .main-content {
     grid-column: 2;
     grid-row: 1;
-    padding: 1.5rem;
+    padding: 1.25rem;
   }
 
   .main-content.shifted {
@@ -406,7 +408,7 @@ onMounted(() => {
   }
 
   .content-wrapper {
-    padding-top: 4.5rem;
+    padding-top: 0.25rem;
   }
 }
 </style>

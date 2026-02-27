@@ -1,10 +1,6 @@
 <template>
   <section>
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-      <div>
-        <h2 class="text-3xl font-semibold text-gray-900">Profile</h2>
-        <p class="text-gray-500 mt-1">Keep your booking details up to date.</p>
-      </div>
+    <div class="flex flex-wrap items-center justify-end gap-4 mb-3">
       <button
         type="button"
         class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition"
@@ -15,10 +11,10 @@
       </button>
     </div>
 
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-blue-100 w-full">
-      <div class="grid gap-8 lg:grid-cols-5">
-        <div class="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-white p-6 lg:col-span-2">
-          <div class="flex flex-col items-center gap-5">
+    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-blue-100 w-full">
+      <div class="grid gap-6 lg:grid-cols-5">
+        <div class="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-white p-5 sm:p-6 lg:col-span-2">
+          <div class="flex flex-col items-center gap-4">
             <div class="relative w-full flex items-center justify-center">
               <div class="w-3/4 aspect-square rounded-2xl border border-blue-100 overflow-hidden bg-blue-50 flex items-center justify-center">
                 <img v-if="previewImage" :src="previewImage" alt="Profile" class="w-full h-full object-cover" />
@@ -39,7 +35,7 @@
         </div>
 
         <div class="lg:col-span-3">
-          <form class="grid gap-4 sm:grid-cols-2" @submit.prevent="saveProfile">
+          <form class="grid gap-3 sm:gap-4 sm:grid-cols-2" @submit.prevent="saveProfile">
             <div>
               <label class="block text-xs uppercase tracking-wide text-gray-500 mb-2">First Name</label>
               <input
@@ -112,7 +108,7 @@
                 class="w-full rounded-lg border px-4 py-2 text-gray-800 bg-white disabled:bg-gray-50"
               />
             </div>
-            <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
+            <div class="sm:col-span-2 flex flex-wrap items-center gap-3 pt-1">
               <button
                 type="submit"
                 :disabled="!isEditing || isSaving"
