@@ -9,7 +9,7 @@
       </button>
       
       <div class="header-title">
-        <h1>{{ title }}</h1>
+        <h1 tabindex="-1" class="no-highlight">{{ title }}</h1>
         <p>{{ subtitle }}</p>
       </div>
     </div>
@@ -101,6 +101,21 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
   font-weight: 700;
   color: #111827;
   line-height: 1.2;
+  background: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  outline: none;
+  user-select: none;
+  pointer-events: none;
+  transition: background 0.2s;
+}
+.header-title h1:focus {
+  background: #f3f4f6;
+  outline: none;
+}
+.no-highlight {
+  user-select: none;
+  pointer-events: none;
 }
 
 .header-title p {
