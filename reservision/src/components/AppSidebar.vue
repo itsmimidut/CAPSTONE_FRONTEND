@@ -70,6 +70,8 @@ const navLinks = [
   { name: 'Amenities', path: '/amenities' },
   { name: 'Rates', path: '/rates' },
   { name: 'Swimming', path: '/swimming' },
+  // { name: 'E-Shop', path: '/eshop' },
+  // { name: 'My Orders', path: '/my-orders' },
   { name: 'Gallery', path: '/gallery' },
   { name: 'Contact', path: '/contact' },
   { name: 'About', path: '/about' }
