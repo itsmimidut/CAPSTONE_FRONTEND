@@ -5,6 +5,8 @@
         <AdminHeader 
           title="Swimming Management"
           subtitle="Manage Students, Coaches, and Payments"
+          :has-notifications="pendingStudents > 0"
+          :pending-count="pendingStudents"
           @toggle-sidebar="sidebarOpen = !sidebarOpen"
         />
       </div>
@@ -413,13 +415,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import AdminHeader from '../../components/Admin/AdminHeader.vue'
 import AdminSidebar from '../../components/Admin/AdminSidebar.vue'
+import { useNotificationStore } from '../../stores/notifications'
 
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const activeTab = ref('Students')
+const notifications = useNotificationStore()
 const tabs = ['Students', 'Schedule & Coaches', 'Payments']
 
 const students = ref([])
@@ -453,7 +457,7 @@ const paidStudents = computed(() =>
 )
 
 const pendingStudents = computed(() => 
-  students.value.filter(s => s.paymentStatus === 'Pending').length
+  students.value.filter(s => s.enrollmentStatus === 'Pending').length
 )
 
 const inactiveStudents = computed(() => 
@@ -880,6 +884,11 @@ const getTabIcon = (tab) => {
   }
   return icons[tab] || 'fas fa-info-circle'
 }
+
+// Update notification store when pending count changes
+watch(() => pendingStudents.value, (newCount) => {
+  notifications.setSwimmingPending(newCount)
+})
 
 // Load data on mount
 onMounted(async () => {

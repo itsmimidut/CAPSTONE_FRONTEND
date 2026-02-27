@@ -18,6 +18,8 @@
         <AdminHeader 
           title="Reservation Management"
           subtitle="Manage all guest bookings"
+          :has-notifications="pendingCount > 0"
+          :pending-count="pendingCount"
           @toggle-sidebar="sidebarOpen = !sidebarOpen"
         />
       </div>
@@ -256,13 +258,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import AdminSidebar from '../../components/admin/AdminSidebar.vue'
 import AdminHeader from '../../components/admin/AdminHeader.vue'
 import ReservationStats from '../../components/admin/ReservationStats.vue'
 import ReservationFilters from '../../components/admin/ReservationFilters.vue'
 import ReservationCalendar from '../../components/admin/ReservationCalendar.vue'
+import { useNotificationStore } from '../../stores/notifications'
 
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
@@ -274,6 +277,7 @@ const limit = 15
 const totalCount = ref(0)
 const totalPages = ref(0)
 const reservationCalendar = ref(null)
+const notifications = useNotificationStore()
 
 const filters = ref({
   search: '',
@@ -295,6 +299,10 @@ const stats = computed(() => {
     { label: 'Cancelled', value: statusCounts.cancelled || 0, type: 'cancelled', icon: 'fas fa-times-circle', color: 'red' }
   ]
 })
+
+const pendingCount = computed(() => 
+  bookings.value.filter(b => b.status === 'pending').length
+)
 
 const visiblePages = computed(() => {
   const pages = []
@@ -632,6 +640,11 @@ const nextPage = () => {
     fetchBookings()
   }
 }
+
+// Update notification store when pending count changes
+watch(() => pendingCount.value, (newCount) => {
+  notifications.setReservationPending(newCount)
+})
 
 onMounted(() => {
   fetchBookings()

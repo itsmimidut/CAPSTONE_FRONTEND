@@ -15,9 +15,11 @@
     </div>
 
     <div class="header-right">
-      <button class="notification-bell">
+      <button class="notification-bell" :class="{ 'has-notifications': hasNotifications }">
         <i class="fas fa-bell"></i>
-        <span v-if="hasNotifications" class="notification-badge"></span>
+        <span v-if="hasNotifications" class="notification-badge">
+          {{ pendingCount > 9 ? '9+' : pendingCount }}
+        </span>
       </button>
 
       <div class="user-initial">
@@ -34,7 +36,8 @@ const props = defineProps({
   title: { type: String, default: 'Dashboard' },
   subtitle: { type: String, default: 'Welcome back, Admin' },
   userName: { type: String, default: 'Admin User' },
-  hasNotifications: { type: Boolean, default: true }
+  hasNotifications: { type: Boolean, default: false },
+  pendingCount: { type: Number, default: 0 }
 })
 
 defineEmits(['toggle-sidebar'])
@@ -140,21 +143,60 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
   background: none;
   border: none;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
 .notification-bell:hover {
   background: #F3F4F6;
 }
 
+.notification-bell.has-notifications {
+  color: #EF4444;
+  animation: bellGlow 2s ease-in-out infinite;
+}
+
+.notification-bell.has-notifications:hover {
+  background: #FEE2E2;
+}
+
+@keyframes bellGlow {
+  0%, 100% {
+    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
+  }
+}
+
 .notification-badge {
   position: absolute;
-  top: 0.25rem;
-  right: 0.25rem;
-  width: 0.5rem;
-  height: 0.5rem;
-  background: #EF4444;
+  top: 0.1rem;
+  right: 0.1rem;
+  minimum-width: 1.2rem;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  background: linear-gradient(135deg, #EF4444, #DC2626);
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.7rem;
+  border: 2px solid white;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+  }
 }
 
 .user-initial {

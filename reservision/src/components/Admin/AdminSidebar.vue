@@ -57,6 +57,24 @@
           >
             <i :class="item.icon" class="nav-icon"></i>
             <span class="nav-text">{{ item.label }}</span>
+            <span 
+              v-if="item.path === '/admin/swimming' && notifications.swimmingPendingCount > 0" 
+              class="notification-badge-sidebar"
+            >
+              {{ notifications.swimmingPendingCount > 9 ? '9+' : notifications.swimmingPendingCount }}
+            </span>
+            <span 
+              v-if="item.path === '/admin/reservations' && notifications.reservationPendingCount > 0" 
+              class="notification-badge-sidebar"
+            >
+              {{ notifications.reservationPendingCount > 9 ? '9+' : notifications.reservationPendingCount }}
+            </span>
+            <span 
+              v-if="item.path === '/pos' && notifications.eshopPendingCount > 0" 
+              class="notification-badge-sidebar"
+            >
+              {{ notifications.eshopPendingCount > 9 ? '9+' : notifications.eshopPendingCount }}
+            </span>
           </router-link>
 
           <!-- Dropdown Link -->
@@ -112,6 +130,7 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { useNotificationStore } from '../../stores/notifications'
 
 const props = defineProps({
   isOpen: Boolean,
@@ -127,6 +146,7 @@ defineEmits(['close'])
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const notifications = useNotificationStore()
 
 // Logout handler
 const handleLogout = () => {
@@ -536,5 +556,33 @@ onMounted(() => {
 .dropdown-leave-to {
   max-height: 0;
   opacity: 0;
+}
+
+/* Notification Badge for Sidebar */
+.notification-badge-sidebar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  color: white;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin-left: auto;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  animation: badgePulseSidebar 2s ease-in-out infinite;
+}
+
+@keyframes badgePulseSidebar {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+  }
 }
 </style>
