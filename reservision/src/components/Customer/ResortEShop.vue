@@ -9,11 +9,11 @@
         <h1 class="header-title">Eduardo's <span class="market-tag">MARKET</span></h1>
       </div>
       <div class="header-right">
-        <button class="location-btn" @click="goToStage(3)">
+        <!-- <button class="location-btn" @click="goToStage(3)">
           <span class="location-pin">📍</span>
           <span>Set delivery location</span>
           <span class="dropdown-icon">▼</span>
-        </button>
+        </button> -->
         <button class="cart-header-btn" @click="currentStage === 1 && cart.length > 0 ? proceedToCart() : null">
           <span class="cart-icon-header">🛒</span>
           <span>Cart</span>
@@ -267,115 +267,125 @@
           </div>
 
           <div class="checkout-body">
-            <div class="checkout-section">
-              <h3 class="section-heading">
-                <span class="section-icon">📍</span>
-                Delivery Location
-              </h3>
-              
-              <div class="location-types">
-                <div
-                  v-for="type in locationTypes"
-                  :key="type"
-                  class="location-type-option"
-                  :class="{ selected: currentLocType === type }"
-                  @click="selectLocType(type)"
-                >
-                  <span class="location-emoji">{{ locationEmojis[type] }}</span>
-                  <span class="location-name">{{ type }}</span>
+            <!-- Two Column Layout -->
+            <div class="checkout-columns">
+              <!-- LEFT COLUMN: Delivery Location -->
+              <div class="checkout-left">
+                <div class="checkout-section">
+                  <h3 class="section-heading">
+                    <span class="section-icon">📍</span>
+                    Delivery Location
+                  </h3>
+                  
+                  <div class="location-types">
+                    <div
+                      v-for="type in locationTypes"
+                      :key="type"
+                      class="location-type-option"
+                      :class="{ selected: currentLocType === type }"
+                      @click="selectLocType(type)"
+                    >
+                      <span class="location-emoji">{{ locationEmojis[type] }}</span>
+                      <span class="location-name">{{ type }}</span>
+                    </div>
+                  </div>
+
+                  <div v-if="currentLocType !== 'Day Guest'" class="form-field">
+                    <label class="field-label">
+                      {{ currentLocType }} Number
+                      <span class="required">*</span>
+                    </label>
+                    <div class="field-input-wrapper">
+                      <span class="field-icon">🏷️</span>
+                      <input
+                        v-model="locationNumber"
+                        class="field-input"
+                        type="text"
+                        :placeholder="`Enter your ${currentLocType.toLowerCase()} number`"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="form-field">
+                    <label class="field-label">Special Instructions (optional)</label>
+                    <div class="field-input-wrapper">
+                      <span class="field-icon">📝</span>
+                      <textarea
+                        v-model="locationNotes"
+                        class="field-textarea"
+                        placeholder="e.g., Please knock gently, baby sleeping..."
+                        rows="3"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <button class="confirm-location-btn" @click="saveLocation">
+                    <span class="icon-inline">📍</span>
+                    {{ locationSaved ? 'Update Location' : 'Confirm Location' }}
+                  </button>
+
+                  <transition name="slide-down">
+                    <div v-if="showLocationSaved" class="success-alert">
+                      <span class="success-icon-inline">✅</span>
+                      Location confirmed!
+                    </div>
+                  </transition>
                 </div>
               </div>
 
-              <div v-if="currentLocType !== 'Day Guest'" class="form-field">
-                <label class="field-label">
-                  {{ currentLocType }} Number
-                  <span class="required">*</span>
-                </label>
-                <div class="field-input-wrapper">
-                  <span class="field-icon">🏷️</span>
-                  <input
-                    v-model="locationNumber"
-                    class="field-input"
-                    type="text"
-                    :placeholder="`Enter your ${currentLocType.toLowerCase()} number`"
-                  />
+              <!-- RIGHT COLUMN: Order Review -->
+              <div class="checkout-right">
+                <div class="checkout-section">
+                  <h3 class="section-heading">
+                    <span class="section-icon">📋</span>
+                    Order Review
+                  </h3>
+
+                  <div class="order-items-list">
+                    <div v-for="(item, idx) in cart" :key="idx" class="order-item">
+                      <span class="order-item-name">{{ item.name }}</span>
+                      <span class="order-item-qty">× {{ item.qty }}</span>
+                      <span class="order-item-price">₱{{ item.price * item.qty }}</span>
+                    </div>
+                  </div>
+
+                  <div class="order-totals">
+                    <div class="order-total-row">
+                      <span>Subtotal</span>
+                      <span>₱{{ cartTotal }}</span>
+                    </div>
+                    <div class="order-total-row">
+                      <span>Delivery</span>
+                      <span class="free-label">FREE</span>
+                    </div>
+                    <div v-if="cartTotal > 500" class="order-total-row discount">
+                      <span>Discount</span>
+                      <span>-₱50</span>
+                    </div>
+                    <div class="order-total-divider"></div>
+                    <div class="order-total-row final">
+                      <span>Total Amount</span>
+                      <span class="final-amount">₱{{ calculateTotalWithDiscount }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="info-box">
+                  <span class="info-box-icon">ℹ️</span>
+                  <div class="info-box-text">
+                    <strong>Delivery Time:</strong> 30-45 minutes<br>
+                    <strong>Payment:</strong> Cash on delivery
+                  </div>
+                </div>
+
+                <div v-if="!locationSaved" class="warning-box">
+                  <span class="warning-box-icon">⚠️</span>
+                  Please confirm your delivery location before placing order
                 </div>
               </div>
-
-              <div class="form-field">
-                <label class="field-label">Special Instructions (optional)</label>
-                <div class="field-input-wrapper">
-                  <span class="field-icon">📝</span>
-                  <textarea
-                    v-model="locationNotes"
-                    class="field-textarea"
-                    placeholder="e.g., Please knock gently, baby sleeping..."
-                    rows="3"
-                  ></textarea>
-                </div>
-              </div>
-
-              <button class="confirm-location-btn" @click="saveLocation">
-                <span class="icon-inline">📍</span>
-                {{ locationSaved ? 'Update Location' : 'Confirm Location' }}
-              </button>
-
-              <transition name="slide-down">
-                <div v-if="showLocationSaved" class="success-alert">
-                  <span class="success-icon-inline">✅</span>
-                  Location confirmed!
-                </div>
-              </transition>
             </div>
 
-            <div class="checkout-section">
-              <h3 class="section-heading">
-                <span class="section-icon">📋</span>
-                Order Review
-              </h3>
-
-              <div class="order-items-list">
-                <div v-for="(item, idx) in cart" :key="idx" class="order-item">
-                  <span class="order-item-name">{{ item.name }}</span>
-                  <span class="order-item-qty">× {{ item.qty }}</span>
-                  <span class="order-item-price">₱{{ item.price * item.qty }}</span>
-                </div>
-              </div>
-
-              <div class="order-totals">
-                <div class="order-total-row">
-                  <span>Subtotal</span>
-                  <span>₱{{ cartTotal }}</span>
-                </div>
-                <div class="order-total-row">
-                  <span>Delivery</span>
-                  <span class="free-label">FREE</span>
-                </div>
-                <div v-if="cartTotal > 500" class="order-total-row discount">
-                  <span>Discount</span>
-                  <span>-₱50</span>
-                </div>
-                <div class="order-total-divider"></div>
-                <div class="order-total-row final">
-                  <span>Total Amount</span>
-                  <span class="final-amount">₱{{ calculateTotalWithDiscount }}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="info-box">
-              <span class="info-box-icon">ℹ️</span>
-              <div class="info-box-text">
-                <strong>Delivery Time:</strong> 30-45 minutes<br>
-                <strong>Payment:</strong> Cash on delivery
-              </div>
-            </div>
-
-            <div v-if="!locationSaved" class="warning-box">
-              <span class="warning-box-icon">⚠️</span>
-              Please confirm your delivery location before placing order
-            </div>
-
+            <!-- Navigation Buttons -->
             <div class="navigation-buttons">
               <button class="nav-button back" @click="previousStage">
                 ← Back to Cart
@@ -437,30 +447,29 @@ const currentStage = ref(1)
 const currentPage = ref(1)
 const itemsPerPage = ref(16)
 
-// Location Data
-const locationTypes = ['Room', 'Cottage', 'Day Guest']
+// Location Data (Day Guest removed)
+const locationTypes = ['Room', 'Cottage']
 const locationEmojis = {
   'Room': '🛏️',
-  'Cottage': '🏡',
-  'Day Guest': '☀️'
+  'Cottage': '🏡'
 }
 
 // Fallback Products
 const fallbackProducts = {
   restaurant: [
-    { name: 'Beef Mami Noodle Soup', price: 185, emoji: '🍜', desc: 'Rich broth, tender beef, fresh noodles', popular: true },
-    { name: 'Creamy Pasta Carbonara', price: 220, emoji: '🍝', desc: 'Bacon, egg, parmesan, cream sauce', popular: true },
+    { name: 'Beef Mami Noodle Soup', price: 185, emoji: '🍜', desc: 'Rich broth, tender beef, fresh noodles' },
+    { name: 'Creamy Pasta Carbonara', price: 220, emoji: '🍝', desc: 'Bacon, egg, parmesan, cream sauce' },
     { name: 'Crispy Calamari', price: 240, emoji: '🦑', desc: 'With garlic aioli dipping sauce' },
-    { name: 'Seafood Sinuglaw Bowl', price: 295, emoji: '🍚', desc: 'Fresh kinilaw + grilled pork, served with rice', popular: true },
-    { name: 'Mango Shake (Large)', price: 95, emoji: '🥭', desc: 'Fresh mango, milk, crushed ice', popular: true },
+    { name: 'Seafood Sinuglaw Bowl', price: 295, emoji: '🍚', desc: 'Fresh kinilaw + grilled pork, served with rice' },
+    { name: 'Mango Shake (Large)', price: 95, emoji: '🥭', desc: 'Fresh mango, milk, crushed ice' },
     { name: 'Iced Café Latte', price: 110, emoji: '☕', desc: 'Resort blend espresso + fresh milk' }
   ],
   store: [
     { name: 'Sunscreen SPF 50+', price: 180, emoji: '🧴', desc: 'Resort edition, water-resistant' },
-    { name: 'Bottled Water (1L) × 6', price: 90, emoji: '💧', desc: 'Chilled, purified drinking water', popular: true },
+    { name: 'Bottled Water (1L) × 6', price: 90, emoji: '💧', desc: 'Chilled, purified drinking water' },
     { name: 'Resort Souvenir T-Shirt', price: 450, emoji: '👕', desc: 'Available in S, M, L, XL' },
     { name: 'Resort Flip Flops', price: 350, emoji: '🩴', desc: 'Eduardo\'s branded, all sizes' },
-    { name: 'Snack Bundle Pack', price: 120, emoji: '🍫', desc: 'Chips + chocolate + candy assorted', popular: true },
+    { name: 'Snack Bundle Pack', price: 120, emoji: '🍫', desc: 'Chips + chocolate + candy assorted' },
     { name: 'Toiletry Kit', price: 150, emoji: '🪥', desc: 'Toothbrush, toothpaste, shampoo, soap' }
   ]
 }
@@ -470,23 +479,37 @@ const isLoading = ref(false)
 const loadError = ref('')
 
 // Computed
-const totalItems = computed(() => cart.value.reduce((sum, item) => sum + item.qty, 0))
-const cartTotal = computed(() => cart.value.reduce((sum, item) => sum + item.price * item.qty, 0))
+const totalItems = computed(() =>
+  cart.value.reduce((sum, item) => sum + item.qty, 0)
+)
+
+const cartTotal = computed(() =>
+  cart.value.reduce((sum, item) => sum + item.price * item.qty, 0)
+)
+
+// Apply discount if cart total is over 500
 const calculateTotalWithDiscount = computed(() => {
-  let total = cartTotal.value
+  const total = cartTotal.value
   return total > 500 ? total - 50 : total
 })
+
+// Discount removed — total is now direct subtotal
+const finalTotal = computed(() => cartTotal.value)
 
 const filteredProducts = computed(() => {
   const currentProducts = products.value[activeTab.value] || []
   if (!searchQuery.value) return currentProducts
-  return currentProducts.filter(p => 
+
+  return currentProducts.filter(p =>
     p.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
     p.desc.toLowerCase().includes(searchQuery.value.toLowerCase())
   )
 })
 
-const totalPages = computed(() => Math.ceil(filteredProducts.value.length / itemsPerPage.value))
+const totalPages = computed(() =>
+  Math.ceil(filteredProducts.value.length / itemsPerPage.value)
+)
+
 const paginatedProducts = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
   return filteredProducts.value.slice(start, start + itemsPerPage.value)
@@ -506,16 +529,18 @@ const goToStage = (stage) => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-const nextStage = () => currentStage.value < 3 && goToStage(currentStage.value + 1)
-const previousStage = () => currentStage.value > 1 && goToStage(currentStage.value - 1)
+const previousStage = () =>
+  currentStage.value > 1 && goToStage(currentStage.value - 1)
 
 const proceedToCart = () => {
-  if (cart.value.length === 0) return alert('Please add items to your cart first')
+  if (cart.value.length === 0)
+    return alert('Please add items to your cart first')
   goToStage(2)
 }
 
 const proceedToCheckout = () => {
-  if (cart.value.length === 0) return alert('Your cart is empty')
+  if (cart.value.length === 0)
+    return alert('Your cart is empty')
   goToStage(3)
 }
 
@@ -526,49 +551,59 @@ const goToPage = (page) => {
   }
 }
 
-const nextPage = () => currentPage.value < totalPages.value && (currentPage.value++)
-const previousPage = () => currentPage.value > 1 && (currentPage.value--)
+const nextPage = () =>
+  currentPage.value < totalPages.value && currentPage.value++
 
-const isProductAdded = (productName) => addedProducts.value.has(productName)
+const previousPage = () =>
+  currentPage.value > 1 && currentPage.value--
+
+const isProductAdded = (productName) =>
+  addedProducts.value.has(productName)
 
 const addToCart = (product) => {
   const existing = cart.value.find(i => i.name === product.name)
+
   if (existing) {
     existing.qty++
   } else {
     cart.value.push({ ...product, qty: 1 })
   }
+
   addedProducts.value.add(product.name)
   setTimeout(() => addedProducts.value.delete(product.name), 1200)
 }
 
 const changeQty = (idx, delta) => {
   cart.value[idx].qty += delta
-  if (cart.value[idx].qty <= 0) cart.value.splice(idx, 1)
+  if (cart.value[idx].qty <= 0)
+    cart.value.splice(idx, 1)
 }
 
-const removeItem = (idx) => cart.value.splice(idx, 1)
+const removeItem = (idx) =>
+  cart.value.splice(idx, 1)
 
 const selectLocType = (type) => {
   currentLocType.value = type
-  if (type === 'Day Guest') locationNumber.value = ''
 }
 
 const saveLocation = () => {
-  if (currentLocType.value !== 'Day Guest' && !locationNumber.value.trim()) {
+  if (!locationNumber.value.trim()) {
     return alert(`Please enter your ${currentLocType.value} number.`)
   }
+
   locationSaved.value = true
   showLocationSaved.value = true
   setTimeout(() => showLocationSaved.value = false, 3000)
 }
 
 const placeOrder = async () => {
-  if (!locationSaved.value) return alert('Please set your delivery location first')
-  if (cart.value.length === 0) return alert('Your cart is empty')
-  
+  if (!locationSaved.value)
+    return alert('Please set your delivery location first')
+
+  if (cart.value.length === 0)
+    return alert('Your cart is empty')
+
   try {
-    // Prepare order data
     const orderData = {
       cart: cart.value.map(item => ({
         name: item.name,
@@ -581,38 +616,30 @@ const placeOrder = async () => {
       totalAmount: calculateTotalWithDiscount.value
     }
 
-    // Call backend API
     const response = await fetch(`${API_BASE}/eshop/order`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData)
     })
 
     const result = await response.json()
 
-    if (!response.ok) {
+    if (!response.ok)
       throw new Error(result.error || 'Failed to place order')
-    }
 
-    // Success! Show toast notification
     showToast.value = true
-    
-    // Clear cart and form
+
+    // Reset
     cart.value = []
     locationSaved.value = false
     locationNumber.value = ''
     locationNotes.value = ''
     currentStage.value = 1
-    
-    // Hide toast after 4 seconds
+
     setTimeout(() => showToast.value = false, 4000)
 
-    console.log('Order placed successfully:', result)
   } catch (error) {
-    console.error('Error placing order:', error)
-    alert(`Failed to place order: ${error.message}. Please try again.`)
+    alert(`Failed to place order: ${error.message}`)
   }
 }
 
@@ -633,7 +660,8 @@ const mapPosItems = (items, category) => {
 
 const fetchCategoryItems = async (category) => {
   const response = await fetch(`${API_BASE}/items/category/${category}`)
-  if (!response.ok) throw new Error(`Failed to load ${category} items`)
+  if (!response.ok)
+    throw new Error(`Failed to load ${category} items`)
   const data = await response.json()
   return Array.isArray(data) ? data : []
 }
@@ -641,6 +669,7 @@ const fetchCategoryItems = async (category) => {
 const fetchProducts = async () => {
   isLoading.value = true
   loadError.value = ''
+
   try {
     const [restaurantItems, storeItems] = await Promise.all([
       fetchCategoryItems('restaurant'),
@@ -648,14 +677,18 @@ const fetchProducts = async () => {
     ])
 
     const restaurant = mapPosItems(restaurantItems, 'restaurant')
-    const store = storeItems.length > 0 ? mapPosItems(storeItems, 'store') : fallbackProducts.store
+    const store = storeItems.length > 0
+      ? mapPosItems(storeItems, 'store')
+      : fallbackProducts.store
 
     products.value = {
-      restaurant: restaurant.length > 0 ? restaurant : fallbackProducts.restaurant,
+      restaurant: restaurant.length > 0
+        ? restaurant
+        : fallbackProducts.restaurant,
       store
     }
+
   } catch (error) {
-    console.error('Error loading e-shop items:', error)
     loadError.value = 'Unable to load items from the server.'
     products.value = { ...fallbackProducts }
   } finally {
@@ -677,7 +710,7 @@ onMounted(() => {
 
 .eshop-container {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #f5f7fa;
+  background: #F5F5F5; /* neutral-gray */
   min-height: 100vh;
 }
 
@@ -685,12 +718,12 @@ onMounted(() => {
 /* HEADER */
 /* ══════════════════════════════════════════ */
 .eshop-header {
-  background: white;
+  background: #fff;
   padding: 1rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 4px rgba(43, 108, 176, 0.08); /* primary-blue shadow */
 }
 
 .header-left {
@@ -706,13 +739,13 @@ onMounted(() => {
 .header-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #2B6CB0; /* primary-blue */
   margin: 0;
 }
 
 .market-tag {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #C19A6B 0%, #8B5E3C 100%); /* warm-brown to deep-brown */
+  color: #fff;
   padding: 0.2rem 0.8rem;
   border-radius: 20px;
   font-size: 0.75rem;
@@ -726,8 +759,8 @@ onMounted(() => {
 }
 
 .location-btn {
-  background: white;
-  border: 1px solid #e1e8ed;
+  background: #fff;
+  border: 1px solid #C19A6B; /* warm-brown border */
   padding: 0.6rem 1.2rem;
   border-radius: 8px;
   display: flex;
@@ -735,12 +768,12 @@ onMounted(() => {
   gap: 0.5rem;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #2c3e50;
+  color: #8B5E3C; /* deep-brown text */
   transition: all 0.2s;
 }
 
 .location-btn:hover {
-  background: #f8f9fa;
+  background: #F5F5F5; /* neutral-gray */
 }
 
 .location-pin {
@@ -754,9 +787,9 @@ onMounted(() => {
 }
 
 .cart-header-btn {
-  background: #5b8dee;
+  background: #2B6CB0; /* primary-blue */
   border: none;
-  color: white;
+  color: #fff;
   padding: 0.6rem 1.2rem;
   border-radius: 8px;
   display: flex;
@@ -768,7 +801,7 @@ onMounted(() => {
 }
 
 .cart-header-btn:hover {
-  background: #4a7cd6;
+  background: #63B3ED; /* accent-blue */
 }
 
 .cart-icon-header {
@@ -776,8 +809,8 @@ onMounted(() => {
 }
 
 .cart-badge-header {
-  background: white;
-  color: #5b8dee;
+  background: #fff;
+  color: #2B6CB0; /* primary-blue */
   border-radius: 50%;
   width: 22px;
   height: 22px;
@@ -792,7 +825,7 @@ onMounted(() => {
 /* BLUE GRADIENT SECTION */
 /* ══════════════════════════════════════════ */
 .blue-gradient-section {
-  background: linear-gradient(135deg, #667eea 0%, #5b8dee 100%);
+  background: linear-gradient(135deg, #2B6CB0 0%, #63B3ED 100%); /* primary-blue to accent-blue */
   padding: 2rem;
 }
 
@@ -823,10 +856,10 @@ onMounted(() => {
 }
 
 .stage-tab-btn.active {
-  background: white;
-  color: #667eea;
+  background: #fff;
+  color: #2B6CB0; /* primary-blue */
   opacity: 1;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.15);
 }
 
 .stage-tab-btn.completed:not(.active) {
@@ -845,13 +878,13 @@ onMounted(() => {
 }
 
 .stage-tab-btn.active .stage-icon {
-  background: #667eea;
-  color: white;
+  background: #2B6CB0; /* primary-blue */
+  color: #fff;
 }
 
 .stage-tab-btn.completed .stage-icon {
-  background: #10b981;
-  color: white;
+  background: #C19A6B; /* warm-brown */
+  color: #fff;
 }
 
 .stage-label {
@@ -876,9 +909,9 @@ onMounted(() => {
 /* STAGE 1: MENU */
 /* ══════════════════════════════════════════ */
 .menu-container {
-  background: white;
+  background: #fff;
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(43, 108, 176, 0.08);
   overflow: hidden;
 }
 
@@ -903,7 +936,7 @@ onMounted(() => {
 .menu-title {
   font-size: 1.4rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #2B6CB0; /* primary-blue */
   margin: 0;
 }
 
@@ -957,12 +990,12 @@ onMounted(() => {
 }
 
 .product-tab:hover {
-  color: #667eea;
+  color: #2B6CB0; /* primary-blue */
 }
 
 .product-tab.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
+  color: #2B6CB0; /* primary-blue */
+  border-bottom-color: #2B6CB0;
 }
 
 .tab-emoji {
@@ -974,8 +1007,8 @@ onMounted(() => {
 }
 
 .tab-count {
-  background: #e3f2fd;
-  color: #667eea;
+  background: #63B3ED22; /* accent-blue, transparent */
+  color: #2B6CB0; /* primary-blue */
   padding: 0.2rem 0.6rem;
   border-radius: 12px;
   font-size: 0.85rem;
@@ -983,8 +1016,8 @@ onMounted(() => {
 }
 
 .product-tab.active .tab-count {
-  background: #667eea;
-  color: white;
+  background: #2B6CB0; /* primary-blue */
+  color: #fff;
 }
 
 /* Products Section */
@@ -1020,8 +1053,8 @@ onMounted(() => {
 }
 
 .retry-button {
-  background: #667eea;
-  color: white;
+  background: #2B6CB0; /* primary-blue */
+  color: #fff;
   border: none;
   padding: 0.75rem 2rem;
   border-radius: 8px;
@@ -1031,7 +1064,7 @@ onMounted(() => {
 }
 
 .retry-button:hover {
-  background: #5568d3;
+  background: #63B3ED; /* accent-blue */
 }
 
 /* 4-Column Grid */
@@ -1475,29 +1508,31 @@ onMounted(() => {
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   overflow: hidden;
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
 .checkout-header {
-  padding: 1.5rem 2rem;
-  border-bottom: 2px solid #f1f3f5;
+  background: linear-gradient(135deg, #2B6CB0 0%, #63B3ED 100%);
+  padding: 2rem;
+  text-align: center;
 }
 
 .checkout-title-section {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
 }
 
 .checkout-icon {
-  font-size: 1.8rem;
+  font-size: 2rem;
 }
 
 .checkout-title {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #fff;
   margin: 0;
 }
 
@@ -1505,11 +1540,25 @@ onMounted(() => {
   padding: 2rem;
 }
 
+.checkout-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.checkout-left,
+.checkout-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .checkout-section {
-  background: #f8f9fa;
+  background: #ffffff;
   padding: 1.5rem;
   border-radius: 12px;
-  margin-bottom: 1.5rem;
+  border: 1px solid #e1e8ed;
 }
 
 .section-heading {
@@ -1519,16 +1568,16 @@ onMounted(() => {
   font-size: 1.1rem;
   font-weight: 700;
   color: #2c3e50;
-  margin: 0 0 1.25rem;
+  margin: 0 0 1.5rem;
 }
 
 .section-icon {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 }
 
 .location-types {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -1536,8 +1585,8 @@ onMounted(() => {
 .location-type-option {
   background: white;
   border: 2px solid #e1e8ed;
-  padding: 1rem;
-  border-radius: 10px;
+  padding: 1.5rem 1rem;
+  border-radius: 12px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
@@ -1548,20 +1597,20 @@ onMounted(() => {
 }
 
 .location-type-option.selected {
-  background: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-color: #667eea;
   color: white;
 }
 
 .location-emoji {
-  font-size: 2rem;
+  font-size: 2.5rem;
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .location-name {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .form-field {
@@ -1573,6 +1622,7 @@ onMounted(() => {
   font-weight: 600;
   color: #2c3e50;
   margin-bottom: 0.5rem;
+  font-size: 0.95rem;
 }
 
 .required {
@@ -1599,13 +1649,15 @@ onMounted(() => {
   border-radius: 10px;
   font-size: 1rem;
   font-family: inherit;
-  transition: border 0.2s;
+  transition: all 0.2s;
+  background: #f8f9fa;
 }
 
 .field-input:focus,
 .field-textarea:focus {
   outline: none;
   border-color: #667eea;
+  background: white;
 }
 
 .field-textarea {
@@ -1614,12 +1666,13 @@ onMounted(() => {
 
 .confirm-location-btn {
   width: 100%;
-  background: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  padding: 0.75rem;
+  padding: 0.875rem 1.5rem;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1629,7 +1682,8 @@ onMounted(() => {
 }
 
 .confirm-location-btn:hover {
-  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .icon-inline {
@@ -1637,15 +1691,17 @@ onMounted(() => {
 }
 
 .success-alert {
-  background: #d1fae5;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   color: #065f46;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
+  padding: 0.875rem 1.25rem;
+  border-radius: 10px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   margin-top: 1rem;
   font-weight: 600;
+  border: 2px solid #10b981;
 }
 
 .success-icon-inline {
@@ -1653,59 +1709,69 @@ onMounted(() => {
 }
 
 .order-items-list {
-  background: white;
+  background: #f8f9fa;
   border-radius: 10px;
   padding: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .order-item {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 0.75rem;
-  border-bottom: 1px solid #f1f3f5;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
 }
 
 .order-item:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .order-item-name {
   flex: 1;
   font-weight: 600;
   color: #2c3e50;
+  font-size: 0.95rem;
 }
 
 .order-item-qty {
   color: #7f8c8d;
   margin: 0 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .order-item-price {
   font-weight: 700;
   color: #667eea;
-  min-width: 100px;
+  min-width: 80px;
   text-align: right;
+  font-size: 1rem;
 }
 
 .order-totals {
   background: white;
   border-radius: 10px;
   padding: 1.25rem;
+  border: 1px solid #e1e8ed;
 }
 
 .order-total-row {
   display: flex;
   justify-content: space-between;
-  padding: 0.75rem 0;
+  padding: 0.5rem 0;
   color: #495057;
+  font-size: 0.95rem;
 }
 
 .order-total-row.final {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #2c3e50;
   margin-top: 0.5rem;
+  padding-top: 0.75rem;
 }
 
 .free-label {
@@ -1719,24 +1785,23 @@ onMounted(() => {
 
 .order-total-divider {
   height: 2px;
-  background: #f1f3f5;
+  background: #e1e8ed;
   margin: 0.75rem 0;
 }
 
 .final-amount {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 800;
   color: #667eea;
 }
 
 .info-box {
-  background: #dbeafe;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
   border-left: 4px solid #3b82f6;
-  padding: 1rem 1.25rem;
-  border-radius: 8px;
+  padding: 1.25rem;
+  border-radius: 10px;
   display: flex;
   gap: 1rem;
-  margin-bottom: 1.5rem;
 }
 
 .info-box-icon {
@@ -1750,19 +1815,22 @@ onMounted(() => {
 }
 
 .warning-box {
-  background: #fef3c7;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   color: #92400e;
-  padding: 1rem 1.25rem;
-  border-radius: 8px;
+  padding: 1rem;
+  border-radius: 10px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  text-align: center;
+  border: 2px solid #f59e0b;
 }
 
 .warning-box-icon {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
 }
 
 /* ══════════════════════════════════════════ */
@@ -1771,8 +1839,8 @@ onMounted(() => {
 .navigation-buttons {
   display: flex;
   gap: 1rem;
-  padding-top: 1.5rem;
-  border-top: 2px solid #f1f3f5;
+  padding-top: 0;
+  border-top: none;
 }
 
 .nav-button {
@@ -1797,23 +1865,27 @@ onMounted(() => {
 
 .nav-button.back:hover {
   background: #f8f9fa;
+  border-color: #667eea;
 }
 
 .nav-button.proceed,
 .nav-button.submit {
-  background: #667eea;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   color: white;
+  box-shadow: 0 2px 8px rgba(43, 108, 176, 0.3);
 }
 
 .nav-button.proceed:hover,
 .nav-button.submit:hover:not(:disabled) {
-  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.4);
 }
 
 .nav-button.submit:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 /* ══════════════════════════════════════════ */
@@ -1865,10 +1937,10 @@ onMounted(() => {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #667eea;
-  color: white;
+  background: #2B6CB0; /* primary-blue */
+  color: #fff;
   border: none;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 24px rgba(43, 108, 176, 0.4);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1889,8 +1961,8 @@ onMounted(() => {
   position: absolute;
   top: -4px;
   right: -4px;
-  background: #ef4444;
-  color: white;
+  background: #C19A6B; /* warm-brown */
+  color: #fff;
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -1899,7 +1971,7 @@ onMounted(() => {
   justify-content: center;
   font-size: 0.9rem;
   font-weight: 700;
-  border: 3px solid white;
+  border: 3px solid #fff;
 }
 
 /* Slide animation */
@@ -1917,4 +1989,245 @@ onMounted(() => {
   opacity: 0;
   transform: translateY(10px);
 }
+
+/* ══════════════════════════════════════════ */
+/* RESPONSIVE DESIGN */
+/* ══════════════════════════════════════════ */
+
+/* Tablet and smaller */
+@media (max-width: 768px) {
+  .eshop-header {
+    padding: 1rem;
+  }
+
+  .header-title {
+    font-size: 1.2rem;
+  }
+
+  .header-right {
+    gap: 0.5rem;
+  }
+
+  .location-btn span:not(.location-pin) {
+    display: none;
+  }
+
+  .stage-tabs-container {
+    gap: 0.75rem;
+  }
+
+  .stage-tab-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .stage-label {
+    display: none;
+  }
+
+  .main-wrapper {
+    padding: 1rem;
+  }
+
+  .menu-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Stage 3 Checkout Responsive */
+  .checkout-container {
+    margin: 0 0.5rem;
+  }
+
+  .checkout-header {
+    padding: 1.5rem 1rem;
+  }
+
+  .checkout-title {
+    font-size: 1.4rem;
+  }
+
+  .checkout-icon {
+    font-size: 1.6rem;
+  }
+
+  .checkout-body {
+    padding: 1.25rem;
+  }
+
+  .checkout-columns {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .checkout-section {
+    padding: 1.25rem;
+  }
+
+  .section-heading {
+    font-size: 1.05rem;
+  }
+
+  .location-types {
+    grid-template-columns: 1fr;
+  }
+
+  .location-type-option {
+    padding: 1.5rem;
+  }
+
+  .location-emoji {
+    font-size: 2.5rem;
+  }
+
+  .navigation-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .nav-button {
+    padding: 0.875rem 1.5rem;
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+  .header-icon {
+    font-size: 1.5rem;
+  }
+
+  .header-title {
+    font-size: 1rem;
+  }
+
+  .market-tag {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.6rem;
+  }
+
+  .cart-header-btn span:not(.cart-icon-header):not(.cart-badge-header) {
+    display: none;
+  }
+
+  .blue-gradient-section {
+    padding: 1rem;
+  }
+
+  .stage-tab-btn {
+    padding: 0.5rem;
+  }
+
+  .stage-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+  }
+
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Stage 3 Mobile */
+  .checkout-header {
+    padding: 1.25rem 1rem;
+  }
+
+  .checkout-title {
+    font-size: 1.2rem;
+  }
+
+  .checkout-icon {
+    font-size: 1.4rem;
+  }
+
+  .checkout-body {
+    padding: 1rem;
+  }
+
+  .checkout-section {
+    padding: 1rem;
+  }
+
+  .section-heading {
+    font-size: 1rem;
+  }
+
+  .section-icon {
+    font-size: 1.2rem;
+  }
+
+  .location-type-option {
+    padding: 1.25rem 1rem;
+  }
+
+  .location-emoji {
+    font-size: 2rem;
+  }
+
+  .location-name {
+    font-size: 0.9rem;
+  }
+
+  .field-input,
+  .field-textarea {
+    padding: 0.75rem 0.875rem 0.75rem 2.75rem;
+    font-size: 0.9rem;
+  }
+
+  .field-icon {
+    font-size: 1rem;
+    left: 0.875rem;
+  }
+
+  .confirm-location-btn {
+    font-size: 0.95rem;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .order-item {
+    padding: 0.625rem;
+  }
+
+  .order-item-name {
+    font-size: 0.9rem;
+  }
+
+  .order-item-qty,
+  .order-item-price {
+    font-size: 0.85rem;
+  }
+
+  .order-total-row {
+    font-size: 0.9rem;
+    padding: 0.375rem 0;
+  }
+
+  .order-total-row.final {
+    font-size: 1rem;
+  }
+
+  .final-amount {
+    font-size: 1.2rem;
+  }
+
+  .info-box,
+  .warning-box {
+    padding: 0.875rem;
+    font-size: 0.85rem;
+  }
+
+  .nav-button {
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+  }
+}
 </style>
+
