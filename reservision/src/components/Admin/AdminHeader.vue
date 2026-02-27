@@ -3,7 +3,7 @@
     <div class="header-left">
       <button 
         @click="$emit('toggle-sidebar')"
-        class="mobile-menu-btn md:hidden"
+        class="mobile-menu-btn"
       >
         <i class="fas fa-bars"></i>
       </button>
@@ -15,13 +15,11 @@
     </div>
 
     <div class="header-right">
-      <!-- Notification Bell -->
       <button class="notification-bell">
         <i class="fas fa-bell"></i>
         <span v-if="hasNotifications" class="notification-badge"></span>
       </button>
 
-      <!-- User Initial -->
       <div class="user-initial">
         {{ userInitial }}
       </div>
@@ -31,30 +29,17 @@
 
 <script setup>
 import { computed } from 'vue'
+
 const props = defineProps({
-  title: {
-    type: String,
-    default: 'Dashboard'
-  },
-  subtitle: {
-    type: String,
-    default: 'Welcome back, Admin'
-  },
-  userName: {
-    type: String,
-    default: 'Admin User'
-  },
-  hasNotifications: {
-    type: Boolean,
-    default: true
-  }
+  title: { type: String, default: 'Dashboard' },
+  subtitle: { type: String, default: 'Welcome back, Admin' },
+  userName: { type: String, default: 'Admin User' },
+  hasNotifications: { type: Boolean, default: true }
 })
 
 defineEmits(['toggle-sidebar'])
 
-const userInitial = computed(() => {
-  return props.userName.charAt(0).toUpperCase()
-})
+const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
 </script>
 
 <style scoped>
@@ -63,15 +48,16 @@ const userInitial = computed(() => {
   top: 0;
   left: 0;
   right: 0;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  padding: 1rem 1.5rem;
-  margin: 0;
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, #1a3a6b, #c8971a, #1a3a6b) 1;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(15, 35, 71, 0.1);
+  /* ❌ removed border-bottom */
+  padding: 0.4rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 40;
-  border-bottom: 1px solid #e2e8f0;
+  z-index: 200;
   transition: margin-left 0.3s ease;
 }
 
@@ -81,19 +67,26 @@ const userInitial = computed(() => {
   }
 }
 
+/* ── Left ───────────────────────── */
 .header-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.625rem;
 }
 
 .mobile-menu-btn {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   color: #374151;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 0.375rem;
+  transition: background 0.2s;
+}
+
+.mobile-menu-btn:hover {
+  background: #F3F4F6;
 }
 
 .header-title {
@@ -132,6 +125,7 @@ const userInitial = computed(() => {
   font-weight: 400;
 }
 
+/* ── Right ──────────────────────── */
 .header-right {
   display: flex;
   align-items: center;
@@ -143,10 +137,10 @@ const userInitial = computed(() => {
   padding: 0.5rem;
   border-radius: 50%;
   color: #6B7280;
-  transition: background 0.2s;
   background: none;
   border: none;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 .notification-bell:hover {

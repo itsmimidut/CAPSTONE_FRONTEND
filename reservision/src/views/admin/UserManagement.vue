@@ -328,6 +328,7 @@ onMounted(async () => {
 .user-management {
   padding: 20px;
   margin-left: 260px;
+  margin-top: 90px; /* keeps content below fixed header */
   transition: padding 0.3s ease;
 }
 
@@ -335,10 +336,19 @@ onMounted(async () => {
   .user-management {
     margin-left: 0;
     padding: 20px;
+    margin-top: 90px;
   }
 }
 
-/* Ensure sidebar stays fixed */
+/* Remove the extra white box styling */
+.header-container {
+  padding: 0;
+  background: transparent;
+  border: none;
+  margin: 0;
+}
+
+/* Sidebar */
 .admin-sidebar {
   position: fixed;
   top: 0;
@@ -350,18 +360,7 @@ onMounted(async () => {
   z-index: 1000;
 }
 
-/* Optional: prevent content from overlapping sidebar */
 body {
   overflow-x: hidden;
 }
-
-.header-container {
-  padding: 1rem 2rem;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  top: 0;
-  z-index: 50;
-  margin-bottom: 10px;
-}
-
 </style>
