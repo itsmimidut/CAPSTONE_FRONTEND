@@ -261,6 +261,7 @@ export const useRoomsStore = defineStore('rooms', {
           description: room.description,
           max_guests: room.max_guests,
           price: room.price,
+          quantity: room.quantity || 1,
           status: room.status,
           promo: room.promo ? 1 : 0,
           images: room.images || [], // Array of image URLs/paths

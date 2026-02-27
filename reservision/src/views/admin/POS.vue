@@ -16,6 +16,8 @@
         <AdminHeader
           title="Point of Sale"
           subtitle="Walk-in Payments"
+          :has-notifications="eshopPendingCount > 0"
+          :pending-count="eshopPendingCount"
           @toggle-sidebar="sidebarOpen = !sidebarOpen"
         />
       </div>
@@ -221,9 +223,20 @@
                 v-else
                 v-for="(trans, index) in filteredTransactionHistory" 
                 :key="trans.receiptNo"
-                class="border-b hover:bg-blue-50 transition-colors"
+                :class="[
+                  'border-b hover:bg-blue-50 transition-colors',
+                  trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo) ? 'bg-yellow-50 border-l-4 border-yellow-400' : ''
+                ]"
               >
-                <td class="p-3 font-semibold text-blue-700">POS-{{ trans.receiptNo }}</td>
+                <td class="p-3 font-semibold text-blue-700">
+                  POS-{{ trans.receiptNo }}
+                  <span 
+                    v-if="trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo)"
+                    class="ml-2 inline-block bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-bold"
+                  >
+                    <i class="fas fa-star mr-1"></i>NEW
+                  </span>
+                </td>
                 <td class="p-3">
                   <div class="text-gray-700">{{ getItemsPreview(trans.items) }}</div>
                   <button @click="viewDetails(trans.receiptNo)" class="text-blue-600 text-xs hover:underline mt-1 transition-all">
@@ -408,6 +421,7 @@
 import AdminSidebar from '../../components/Admin/AdminSidebar.vue';
 import AdminHeader from '../../components/admin/AdminHeader.vue';
 import { useAuthStore } from '../../stores/auth';
+import { useNotificationStore } from '../../stores/notifications';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:8000/api/pos';
@@ -423,6 +437,7 @@ export default {
       sidebarOpen: false,
       sidebarCollapsed: false,
       auth: useAuthStore(),
+      notifications: useNotificationStore(),
       cart: [],
       total: 0,
       receiptNo: 1,
@@ -473,7 +488,8 @@ export default {
           icon: 'calendar-alt',
           items: []
         }
-      ]
+      ],
+      viewedTransactions: new Set(JSON.parse(localStorage.getItem('viewedEshopOrders') || '[]'))
     };
   },
   computed: {
@@ -521,6 +537,11 @@ export default {
         
         return true;
       });
+    },
+    eshopPendingCount() {
+      return this.transactionHistory.filter(trans => 
+        trans.source === 'eshop' && !this.viewedTransactions.has(trans.receiptNo)
+      ).length;
     }
   },
   watch: {
@@ -533,6 +554,9 @@ export default {
       if (newCategory !== 'restaurant') {
         this.restaurantTypeFilter = 'all';
       }
+    },
+    eshopPendingCount(newCount) {
+      this.notifications.setEshopPending(newCount)
     }
   },
   async mounted() {
@@ -586,15 +610,28 @@ export default {
     async fetchTransactions() {
       try {
         const response = await axios.get(`${API_BASE}/transactions`);
-        this.transactionHistory = response.data.map(trans => ({
-          receiptNo: trans.receipt_no,
-          items: trans.items,
-          type: trans.type,
-          payment: trans.payment_method,
-          total: parseFloat(trans.total_amount),
-          date: trans.transaction_date,
-          time: trans.transaction_time
-        }));
+        this.transactionHistory = response.data.map(trans => {
+          // Detect if it's an eshop order by checking receipt number format
+          const isEshop = trans.receipt_no && trans.receipt_no.toString().includes('ESHOP');
+          return {
+            receiptNo: trans.receipt_no,
+            items: trans.items,
+            type: trans.type,
+            payment: trans.payment_method,
+            total: parseFloat(trans.total_amount),
+            date: trans.transaction_date,
+            time: trans.transaction_time,
+            source: trans.source || (isEshop ? 'eshop' : 'pos')
+          }
+        });
+        
+        // Clean up viewed transactions that no longer exist
+        const currentReceiptNos = new Set(this.transactionHistory.map(t => t.receiptNo));
+        const viewedToKeep = new Set(
+          Array.from(this.viewedTransactions).filter(receiptNo => currentReceiptNos.has(receiptNo))
+        );
+        this.viewedTransactions = viewedToKeep;
+        localStorage.setItem('viewedEshopOrders', JSON.stringify(Array.from(this.viewedTransactions)));
       } catch (error) {
         console.error('Error fetching transactions:', error);
       }
@@ -714,6 +751,12 @@ export default {
     viewDetails(receiptNo) {
       const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
       if (!trans) return;
+      
+      // Mark as viewed
+      this.viewedTransactions.add(receiptNo);
+      
+      // Persist to localStorage
+      localStorage.setItem('viewedEshopOrders', JSON.stringify(Array.from(this.viewedTransactions)))
       
       let itemsDetail = trans.items.map(item => `${item.name} - ₱${item.price.toLocaleString()}`).join('\n');
       

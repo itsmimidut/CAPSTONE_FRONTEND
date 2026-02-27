@@ -18,6 +18,8 @@
         <AdminHeader 
           title="Reservation Management"
           subtitle="Manage all guest bookings"
+          :has-notifications="pendingCount > 0"
+          :pending-count="pendingCount"
           @toggle-sidebar="sidebarOpen = !sidebarOpen"
         />
       </div>
@@ -34,6 +36,15 @@
         v-model:to="filters.to"
         @apply="applyFilters"
         @reset="resetFilters"
+      />
+
+      <!-- Reservation Calendar -->
+      <ReservationCalendar
+        ref="reservationCalendar"
+        :bookings="bookings"
+        @confirm="confirmBooking"
+        @cancel="cancelBooking"
+        @delete="deleteBooking"
       />
 
       <!-- Desktop Table -->
@@ -247,12 +258,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import AdminSidebar from '../../components/admin/AdminSidebar.vue'
 import AdminHeader from '../../components/admin/AdminHeader.vue'
 import ReservationStats from '../../components/admin/ReservationStats.vue'
 import ReservationFilters from '../../components/admin/ReservationFilters.vue'
+import ReservationCalendar from '../../components/admin/ReservationCalendar.vue'
+import { useNotificationStore } from '../../stores/notifications'
 
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
@@ -263,6 +276,8 @@ const currentPage = ref(1)
 const limit = 15
 const totalCount = ref(0)
 const totalPages = ref(0)
+const reservationCalendar = ref(null)
+const notifications = useNotificationStore()
 
 const filters = ref({
   search: '',
@@ -284,6 +299,10 @@ const stats = computed(() => {
     { label: 'Cancelled', value: statusCounts.cancelled || 0, type: 'cancelled', icon: 'fas fa-times-circle', color: 'red' }
   ]
 })
+
+const pendingCount = computed(() => 
+  bookings.value.filter(b => b.status === 'pending').length
+)
 
 const visiblePages = computed(() => {
   const pages = []
@@ -335,13 +354,13 @@ const fetchBookings = async () => {
           reservation_code: booking.booking_reference,
           check_in: booking.check_in_date,
           check_out: booking.check_out_date,
-          adults: booking.adults || 0,
-          children: booking.children || 0,
+          adults: parseInt(booking.adults) || 0,
+          children: parseInt(booking.children) || 0,
           status: booking.booking_status?.toLowerCase() || 'pending',
           payment_status: booking.payment_status,
           payment_method: booking.payment_method || 'N/A',
           payment_reference: booking.payment_reference || 'N/A',
-          total: booking.total,
+          total: parseFloat(booking.total) || 0,
           item_count: booking.item_count || 0,
           items_list: booking.items_summary || 'N/A',
           items_descriptions: booking.items_descriptions || null
@@ -508,6 +527,7 @@ const confirmBooking = async (id) => {
   if (!confirm('Confirm this booking?')) return
   
   try {
+    console.log('Confirming booking:', id)
     const response = await fetch(`http://localhost:8000/api/bookings/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -520,6 +540,7 @@ const confirmBooking = async (id) => {
     
     if (result.success) {
       alert('Booking confirmed successfully')
+      // Refresh data
       fetchBookings()
     } else {
       throw new Error(result.message)
@@ -534,6 +555,7 @@ const cancelBooking = async (id) => {
   if (!confirm('Cancel this booking?')) return
   
   try {
+    console.log('Cancelling booking:', id)
     const response = await fetch(`http://localhost:8000/api/bookings/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -546,6 +568,7 @@ const cancelBooking = async (id) => {
     
     if (result.success) {
       alert('Booking cancelled successfully')
+      // Refresh data
       fetchBookings()
     } else {
       throw new Error(result.message)
@@ -560,6 +583,7 @@ const deleteBooking = async (id) => {
   if (!confirm('Delete this booking permanently? This action cannot be undone.')) return
   
   try {
+    console.log('Deleting booking:', id)
     const response = await fetch(`http://localhost:8000/api/bookings/${id}`, {
       method: 'DELETE'
     })
@@ -568,6 +592,7 @@ const deleteBooking = async (id) => {
     
     if (result.success) {
       alert('Booking deleted successfully')
+      // Refresh data
       fetchBookings()
     } else {
       throw new Error(result.message)
@@ -615,6 +640,11 @@ const nextPage = () => {
     fetchBookings()
   }
 }
+
+// Update notification store when pending count changes
+watch(() => pendingCount.value, (newCount) => {
+  notifications.setReservationPending(newCount)
+})
 
 onMounted(() => {
   fetchBookings()

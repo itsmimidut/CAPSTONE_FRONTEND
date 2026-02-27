@@ -222,6 +222,17 @@
             </div>
 
             <div class="form-group">
+              <label for="quantity">
+                <i class="fas fa-box"></i> Quantity Available
+              </label>
+              <div class="select-wrapper">
+                <select id="quantity" v-model.number="form.quantity" class="form-control">
+                  <option v-for="n in 50" :key="n" :value="n">{{ n }} {{ n === 1 ? entityLabel : entityLabel + 's' }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
               <label>
                 <i class="fas fa-tag"></i> Promotional Offer
               </label>
@@ -277,6 +288,7 @@ const form = ref({
   category_type: 'room',
   max_guests: 2,
   price: null,
+  quantity: 1,
   description: '',
   status: 'Available',
   date: '',
@@ -346,6 +358,7 @@ const resetForm = () => {
     category_type: 'room',
     max_guests: 2,
     price: null,
+    quantity: 1,
     description: '',
     status: 'Available',
     date: '',
