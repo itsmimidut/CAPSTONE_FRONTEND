@@ -1,7 +1,9 @@
-<template>
+<template> 
   <header 
-    :class="['sticky top-0 z-[100] bg-gradient-to-r from-blue-900/95 to-blue-800/95 backdrop-blur-lg shadow-lg transition-all duration-300', 
-             isVisible ? 'translate-y-0' : '-translate-y-full']"
+    :class="[
+      'sticky top-0 z-[100] bg-gradient-to-r from-[#1E88B6]/95 to-[#1F8DBF]/95 backdrop-blur-lg shadow-lg transition-all duration-300', 
+      isVisible ? 'translate-y-0' : '-translate-y-full'
+    ]"
   >
     <div class="container mx-auto px-4 py-4">
       <div class="flex items-center justify-between">
@@ -20,11 +22,11 @@
             v-for="link in mainNavLinks"
             :key="link.name"
             :to="link.path"
-            class="font-semibold text-white hover:text-yellow-300 transition-all duration-300 relative
+            class="font-semibold text-white hover:text-[#F4C400] transition-all duration-300 relative
                   after:content-[''] after:absolute after:bottom-[-8px] after:left-0
-                  after:w-0 after:h-[2px] after:bg-yellow-400 after:transition-all
+                  after:w-0 after:h-[2px] after:bg-[#F2C200] after:transition-all
                   after:duration-300 hover:after:w-full"
-            active-class="text-yellow-300 after:w-full"
+            active-class="text-[#F4C400] after:w-full"
           >
             {{ link.name }}
           </router-link>
@@ -34,26 +36,26 @@
             <button 
               @click="dropdownOpen = !dropdownOpen"
               @mouseenter="dropdownOpen = true"
-              class="font-semibold text-white hover:text-yellow-300 transition-colors duration-300 flex items-center gap-2 group"
+              class="font-semibold text-white hover:text-[#F4C400] transition-colors duration-300 flex items-center gap-2 group"
             >
               About Us
               <i :class="['fas fa-chevron-down text-xs transition-transform duration-300', 
-                         dropdownOpen ? 'rotate-180 text-yellow-300' : 'text-white group-hover:text-yellow-300']"></i>
+                         dropdownOpen ? 'rotate-180 text-[#F4C400]' : 'text-white group-hover:text-[#F4C400]']"></i>
             </button>
             
             <div 
               v-if="dropdownOpen"
-              class="absolute top-full mt-3 w-56 bg-gradient-to-b from-blue-800 to-blue-900 rounded-xl shadow-2xl border border-blue-700/50 py-3 z-50"
+              class="absolute top-full mt-3 w-56 bg-gradient-to-b from-[#1F8DBF] to-[#1E88B6] rounded-xl shadow-2xl border border-[#1E88B6]/50 py-3 z-50"
               @mouseleave="dropdownOpen = false"
             >
               <router-link
                 v-for="link in dropdownLinks"
                 :key="link.name"
                 :to="link.path"
-                class="block px-5 py-3 hover:bg-blue-700/50 hover:text-yellow-300 transition-all duration-300 font-medium text-white border-b border-blue-700/30 last:border-b-0"
+                class="block px-5 py-3 hover:bg-[#1E88B6]/50 hover:text-[#F4C400] transition-all duration-300 font-medium text-white border-b border-[#1E88B6]/30 last:border-b-0"
                 @click="dropdownOpen = false"
               >
-                <i class="fas fa-caret-right text-yellow-400/70 mr-3 text-xs"></i>
+                <i class="fas fa-caret-right text-[#F2C200]/70 mr-3 text-xs"></i>
                 {{ link.name }}
               </router-link>
             </div>
@@ -62,24 +64,26 @@
 
         <!-- Desktop Auth Buttons -->
         <div class="flex items-center space-x-5">
+          <!-- Login Button - Now with ReserVision dark blue text (#0C3B5E) -->
           <router-link
             to="/login"
-            class="hidden md:flex items-center gap-2 px-5 py-2.5 border-2 border-yellow-400 text-yellow-400 rounded-xl hover:bg-yellow-400/10 hover:border-yellow-300 hover:text-yellow-300 transition-all duration-300 font-semibold group"
+            class="hidden md:flex items-center gap-2 px-5 py-2.5 border-2 border-[#F2C200] text-[#0C3B5E] rounded-xl hover:bg-[#F4C400]/10 hover:border-[#F4C400] hover:text-[#0C3B5E]/80 transition-all duration-300 font-semibold group"
           >
             <i class="fas fa-sign-in-alt text-sm"></i>
             Login
           </router-link>
 
+          <!-- Sign Up Button -->
           <router-link
             to="/signup"
-            class="hidden md:flex items-center gap-2 px-6 py-2.5 bg-yellow-300 text-blue-900 rounded-xl hover:bg-yellow-400 hover:shadow-lg hover:shadow-yellow-400/30 transition-all duration-300 font-bold group"
+            class="hidden md:flex items-center gap-2 px-6 py-2.5 bg-[#F4C400] text-[#1E88B6] rounded-xl hover:bg-[#F2C200] hover:shadow-lg hover:shadow-[#F4C400]/30 transition-all duration-300 font-bold group"
           >
             <i class="fas fa-user-plus text-sm"></i>
             Sign Up
           </router-link>
                     
           <!-- Mobile Menu Button -->
-          <button @click="$emit('toggle-sidebar')" class="md:hidden text-2xl text-yellow-400 hover:text-yellow-300 hover:scale-110 transition-all duration-300">
+          <button @click="$emit('toggle-sidebar')" class="md:hidden text-2xl text-[#F4C400] hover:text-[#F2C200] hover:scale-110 transition-all duration-300">
             <i class="fas fa-bars"></i>
           </button>
         </div>
@@ -147,45 +151,110 @@ onUnmounted(() => {
   transition-duration: 300ms;
 }
 
-/* Golden accent colors for resort theme */
-.text-yellow-300 {
-  color: #fcd34d;
+/* ======================================================
+   APPLIED POSTER PALETTE
+   🔵 Blue #1: #1E88B6 (slightly deeper cerulean)
+   🔵 Blue #2: #1F8DBF (brighter cerulean)
+   🔵 ReserVision Blue: #0C3B5E (dark blue)
+   🟡 Yellow #1: #F2C200 (rich golden yellow)
+   🟡 Yellow #2: #F4C400 (brighter golden yellow)
+   ====================================================== */
+
+/* Text yellows */
+.text-\[\#F4C400\] {
+  color: #F4C400;
+}
+.text-\[\#F2C200\] {
+  color: #F2C200;
+}
+.hover\:text-\[\#F4C400\]:hover {
+  color: #F4C400;
+}
+.hover\:text-\[\#F2C200\]:hover {
+  color: #F2C200;
 }
 
-.text-yellow-400 {
-  color: #fbbf24;
+/* Text blues */
+.text-\[\#0C3B5E\] {
+  color: #0C3B5E;
+}
+.text-\[\#1E88B6\] {
+  color: #1E88B6;
+}
+.text-\[\#1F8DBF\] {
+  color: #1F8DBF;
+}
+.hover\:text-\[\#0C3B5E\]\/80:hover {
+  color: rgba(12, 59, 94, 0.8);
 }
 
-.bg-yellow-500 {
-  background-color: #f59e0b;
+/* Button backgrounds */
+.bg-\[\#F4C400\] {
+  background-color: #F4C400;
+}
+.bg-\[\#F2C200\] {
+  background-color: #F2C200;
+}
+.bg-\[\#1F8DBF\] {
+  background-color: #1F8DBF;
+}
+.bg-\[\#1E88B6\] {
+  background-color: #1E88B6;
+}
+.hover\:bg-\[\#F4C400\]\/10:hover {
+  background-color: rgba(244, 196, 0, 0.1);
+}
+.hover\:bg-\[\#F2C200\]:hover {
+  background-color: #F2C200;
 }
 
-.hover\:bg-yellow-400:hover {
-  background-color: #fbbf24;
+/* Borders */
+.border-\[\#F2C200\] {
+  border-color: #F2C200;
+}
+.hover\:border-\[\#F4C400\]:hover {
+  border-color: #F4C400;
 }
 
-.border-yellow-400 {
-  border-color: #fbbf24;
+/* Header gradient blues */
+.from-\[\#1E88B6\]\/95 {
+  --tw-gradient-from: rgba(30, 136, 182, 0.95);
+}
+.to-\[\#1F8DBF\]\/95 {
+  --tw-gradient-to: rgba(31, 141, 191, 0.95);
 }
 
-.hover\:border-yellow-300:hover {
-  border-color: #fcd34d;
+/* Dropdown backgrounds */
+.from-\[\#1F8DBF\] {
+  --tw-gradient-from: #1F8DBF;
+}
+.to-\[\#1E88B6\] {
+  --tw-gradient-to: #1E88B6;
 }
 
-/* Dark blue gradient for header */
-.from-blue-900\/95 {
-  --tw-gradient-from: rgb(30 58 138 / 0.95);
+/* Border / hover blues used in dropdown */
+.border-\[\#1E88B6\]\/50 {
+  border-color: rgba(30, 136, 182, 0.5);
+}
+.border-\[\#1E88B6\]\/30 {
+  border-color: rgba(30, 136, 182, 0.3);
+}
+.hover\:bg-\[\#1E88B6\]\/50:hover {
+  background-color: rgba(30, 136, 182, 0.5);
 }
 
-.to-blue-800\/95 {
-  --tw-gradient-to: rgb(30 64 175 / 0.95);
+/* Underline color for nav */
+.after\:bg-\[\#F2C200\]::after {
+  background-color: #F2C200;
 }
 
-.bg-blue-800 {
-  background-color: rgb(30 64 175);
+/* Caret highlight */
+.text-\[\#F2C200\]\/70 {
+  color: rgba(242, 194, 0, 0.7);
 }
 
-.bg-blue-900 {
-  background-color: rgb(30 58 138);
+/* Shadow effects */
+.hover\:shadow-\[\#F4C400\]\/30:hover {
+  --tw-shadow-color: rgba(244, 196, 0, 0.3);
 }
 </style>

@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center justify-end gap-4 mb-3">
       <button
         type="button"
-        class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition"
+        class="inline-flex items-center gap-2 rounded-full border border-[#1E88B6]/25 bg-white px-4 py-2 text-sm font-semibold text-[#166B8F] hover:bg-[#E3F2F9] transition"
         @click="toggleEdit"
       >
         <i class="fas fa-pen"></i>
@@ -11,114 +11,135 @@
       </button>
     </div>
 
-    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-blue-100 w-full">
+    <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-[#1E88B6]/15 w-full">
       <div class="grid gap-6 lg:grid-cols-5">
-        <div class="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-white p-5 sm:p-6 lg:col-span-2">
+        <!-- removed gradient: same layout, just solid cohesive surfaces -->
+        <div class="rounded-2xl border border-[#1E88B6]/15 bg-[#E3F2F9] p-5 sm:p-6 lg:col-span-2">
           <div class="flex flex-col items-center gap-4">
             <div class="relative w-full flex items-center justify-center">
-              <div class="w-3/4 aspect-square rounded-2xl border border-blue-100 overflow-hidden bg-blue-50 flex items-center justify-center">
+              <div class="w-3/4 aspect-square rounded-2xl border border-[#1E88B6]/15 overflow-hidden bg-white flex items-center justify-center">
                 <img v-if="previewImage" :src="previewImage" alt="Profile" class="w-full h-full object-cover" />
-                <span v-else class="text-3xl font-semibold text-blue-600">{{ initials }}</span>
+                <span v-else class="text-3xl font-semibold text-[#1E88B6]">{{ initials }}</span>
               </div>
-              <label v-if="isEditing" class="absolute bottom-2 right-6 bg-blue-600 text-white rounded-full p-2.5 cursor-pointer shadow">
+
+              <label
+                v-if="isEditing"
+                class="absolute bottom-2 right-6 bg-[#1E88B6] text-white rounded-full p-2.5 cursor-pointer shadow"
+              >
                 <input type="file" class="hidden" accept="image/*" @change="handleImageChange" />
                 <i class="fas fa-camera text-xs"></i>
               </label>
             </div>
+
             <div class="text-center">
-              <h3 class="text-xl font-semibold text-gray-900">{{ displayName }}</h3>
-              <p class="text-sm text-gray-500">{{ form.email || 'No email' }}</p>
+              <h3 class="text-xl font-semibold text-[#0B2230]">{{ displayName }}</h3>
+              <p class="text-sm text-[#0B2230]/70">{{ form.email || 'No email' }}</p>
             </div>
-            <div class="bg-blue-50 text-blue-700 text-xs font-semibold px-4 py-1.5 rounded-full">Customer</div>
-            <p class="text-xs text-gray-400 text-center">Your profile image is stored in the customer database.</p>
+
+            <div class="bg-white text-[#166B8F] text-xs font-semibold px-4 py-1.5 rounded-full border border-[#1E88B6]/15">
+              Customer
+            </div>
+
+            <p class="text-xs text-[#0B2230]/60 text-center">
+              Your profile image is stored in the customer database.
+            </p>
           </div>
         </div>
 
         <div class="lg:col-span-3">
           <form class="grid gap-3 sm:gap-4 sm:grid-cols-2" @submit.prevent="saveProfile">
             <div>
-              <label class="block text-xs uppercase tracking-wide text-gray-500 mb-2">First Name</label>
+              <label class="block text-xs uppercase tracking-wide text-[#0B2230]/70 mb-2">First Name</label>
               <input
                 v-model="form.firstName"
                 type="text"
                 :disabled="!isEditing"
-                class="w-full rounded-lg border px-4 py-2 text-gray-800 bg-white disabled:bg-gray-50"
+                class="w-full rounded-lg border border-[#1E88B6]/20 px-4 py-2 text-[#0B2230] bg-white disabled:bg-[#E3F2F9]/60"
               />
             </div>
+
             <div>
-              <label class="block text-xs uppercase tracking-wide text-gray-500 mb-2">Last Name</label>
+              <label class="block text-xs uppercase tracking-wide text-[#0B2230]/70 mb-2">Last Name</label>
               <input
                 v-model="form.lastName"
                 type="text"
                 :disabled="!isEditing"
-                class="w-full rounded-lg border px-4 py-2 text-gray-800 bg-white disabled:bg-gray-50"
+                class="w-full rounded-lg border border-[#1E88B6]/20 px-4 py-2 text-[#0B2230] bg-white disabled:bg-[#E3F2F9]/60"
               />
             </div>
+
             <div>
-              <label class="block text-xs uppercase tracking-wide text-gray-500 mb-2">Email</label>
+              <label class="block text-xs uppercase tracking-wide text-[#0B2230]/70 mb-2">Email</label>
               <input
                 v-model="form.email"
                 type="email"
                 disabled
-                class="w-full rounded-lg border px-4 py-2 text-gray-500 bg-gray-50"
+                class="w-full rounded-lg border border-[#1E88B6]/20 px-4 py-2 text-[#0B2230]/70 bg-[#E3F2F9]/60"
               />
             </div>
+
             <div>
-              <label class="block text-xs uppercase tracking-wide text-gray-500 mb-2">Phone</label>
+              <label class="block text-xs uppercase tracking-wide text-[#0B2230]/70 mb-2">Phone</label>
               <input
                 v-model="form.phone"
                 type="text"
                 :disabled="!isEditing"
-                class="w-full rounded-lg border px-4 py-2 text-gray-800 bg-white disabled:bg-gray-50"
+                class="w-full rounded-lg border border-[#1E88B6]/20 px-4 py-2 text-[#0B2230] bg-white disabled:bg-[#E3F2F9]/60"
               />
             </div>
+
             <div class="sm:col-span-2">
-              <label class="block text-xs uppercase tracking-wide text-gray-500 mb-2">Address</label>
+              <label class="block text-xs uppercase tracking-wide text-[#0B2230]/70 mb-2">Address</label>
               <input
                 v-model="form.address"
                 type="text"
                 :disabled="!isEditing"
-                class="w-full rounded-lg border px-4 py-2 text-gray-800 bg-white disabled:bg-gray-50"
+                class="w-full rounded-lg border border-[#1E88B6]/20 px-4 py-2 text-[#0B2230] bg-white disabled:bg-[#E3F2F9]/60"
               />
             </div>
+
             <div>
-              <label class="block text-xs uppercase tracking-wide text-gray-500 mb-2">City</label>
+              <label class="block text-xs uppercase tracking-wide text-[#0B2230]/70 mb-2">City</label>
               <input
                 v-model="form.city"
                 type="text"
                 :disabled="!isEditing"
-                class="w-full rounded-lg border px-4 py-2 text-gray-800 bg-white disabled:bg-gray-50"
+                class="w-full rounded-lg border border-[#1E88B6]/20 px-4 py-2 text-[#0B2230] bg-white disabled:bg-[#E3F2F9]/60"
               />
             </div>
+
             <div>
-              <label class="block text-xs uppercase tracking-wide text-gray-500 mb-2">Country</label>
+              <label class="block text-xs uppercase tracking-wide text-[#0B2230]/70 mb-2">Country</label>
               <input
                 v-model="form.country"
                 type="text"
                 :disabled="!isEditing"
-                class="w-full rounded-lg border px-4 py-2 text-gray-800 bg-white disabled:bg-gray-50"
+                class="w-full rounded-lg border border-[#1E88B6]/20 px-4 py-2 text-[#0B2230] bg-white disabled:bg-[#E3F2F9]/60"
               />
             </div>
+
             <div>
-              <label class="block text-xs uppercase tracking-wide text-gray-500 mb-2">Postal Code</label>
+              <label class="block text-xs uppercase tracking-wide text-[#0B2230]/70 mb-2">Postal Code</label>
               <input
                 v-model="form.postalCode"
                 type="text"
                 :disabled="!isEditing"
-                class="w-full rounded-lg border px-4 py-2 text-gray-800 bg-white disabled:bg-gray-50"
+                class="w-full rounded-lg border border-[#1E88B6]/20 px-4 py-2 text-[#0B2230] bg-white disabled:bg-[#E3F2F9]/60"
               />
             </div>
+
             <div class="sm:col-span-2 flex flex-wrap items-center gap-3 pt-1">
               <button
                 type="submit"
                 :disabled="!isEditing || isSaving"
-                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                class="inline-flex items-center gap-2 rounded-lg bg-[#1E88B6] px-5 py-2 text-sm font-semibold text-white hover:bg-[#166B8F] disabled:opacity-50"
               >
                 <i class="fas fa-save"></i>
                 {{ isSaving ? 'Saving...' : 'Save Changes' }}
               </button>
-              <span v-if="saveMessage" class="text-sm text-green-600">{{ saveMessage }}</span>
-              <span v-if="saveError" class="text-sm text-red-600">{{ saveError }}</span>
+
+              <span v-if="saveMessage" class="text-sm text-[#166B8F]">{{ saveMessage }}</span>
+              <span v-if="saveError" class="text-sm text-[#C99F00]">{{ saveError }}</span>
             </div>
           </form>
         </div>

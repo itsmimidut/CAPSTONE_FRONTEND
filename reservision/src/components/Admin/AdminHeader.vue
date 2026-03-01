@@ -46,16 +46,26 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
 </script>
 
 <style scoped>
+/* ========================================
+   Tropical Ocean + Sunflower Gold Palette
+   - Ocean Blue:     #1E88B6
+   - Ocean Dark:     #166B8F
+   - Ocean Pale:     #E3F2F9
+   - Gold Accent:    #F2C200
+   - Gold Light:     #FFD633
+   - Deep Text:      #0B2230
+   ======================================== */
+
 .page-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  border-top: 3px solid transparent;
-  border-image: linear-gradient(90deg, #1a3a6b, #c8971a, #1a3a6b) 1;
+
   background: #ffffff;
-  box-shadow: 0 2px 10px rgba(15, 35, 71, 0.1);
-  /* ❌ removed border-bottom */
+  border-top: 3px solid #F2C200;
+  box-shadow: 0 6px 16px rgba(22, 107, 143, 0.12);
+
   padding: 0.4rem 1.5rem;
   display: flex;
   justify-content: space-between;
@@ -71,6 +81,7 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
 }
 
 /* ── Left ───────────────────────── */
+
 .header-left {
   display: flex;
   align-items: center;
@@ -79,17 +90,18 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
 
 .mobile-menu-btn {
   font-size: 1.1rem;
-  color: #374151;
+  color: #166B8F;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0.3rem 0.4rem;
   border-radius: 0.375rem;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
 .mobile-menu-btn:hover {
-  background: #F3F4F6;
+  background: #E3F2F9;
+  color: #1E88B6;
 }
 
 .header-title {
@@ -102,20 +114,17 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
+  color: #0B2230;
   line-height: 1.2;
-  background: #f3f4f6;
+
+  background: #E3F2F9;
   border-radius: 0.5rem;
   padding: 0.25rem 0.75rem;
   outline: none;
   user-select: none;
   pointer-events: none;
-  transition: background 0.2s;
 }
-.header-title h1:focus {
-  background: #f3f4f6;
-  outline: none;
-}
+
 .no-highlight {
   user-select: none;
   pointer-events: none;
@@ -124,22 +133,24 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
 .header-title p {
   margin: 0;
   font-size: 0.875rem;
-  color: #9CA3AF;
-  font-weight: 400;
+  color: #166B8F;
+  font-weight: 500;
 }
 
 /* ── Right ──────────────────────── */
+
 .header-right {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
+/* Notification Bell */
 .notification-bell {
   position: relative;
   padding: 0.5rem;
   border-radius: 50%;
-  color: #6B7280;
+  color: #166B8F;
   background: none;
   border: none;
   cursor: pointer;
@@ -147,68 +158,49 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
 }
 
 .notification-bell:hover {
-  background: #F3F4F6;
+  background: #E3F2F9;
 }
 
 .notification-bell.has-notifications {
-  color: #EF4444;
-  animation: bellGlow 2s ease-in-out infinite;
+  color: #F2C200;
 }
 
-.notification-bell.has-notifications:hover {
-  background: #FEE2E2;
-}
-
-@keyframes bellGlow {
-  0%, 100% {
-    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
-  }
-  50% {
-    text-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
-  }
-}
-
+/* Badge */
 .notification-badge {
   position: absolute;
   top: 0.1rem;
   right: 0.1rem;
-  minimum-width: 1.2rem;
   min-width: 1.2rem;
   height: 1.2rem;
-  background: linear-gradient(135deg, #EF4444, #DC2626);
+
+  background: #F2C200;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+
+  color: #0B2230;
   font-weight: 700;
   font-size: 0.7rem;
-  border: 2px solid white;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
-  animation: badgePulse 2s ease-in-out infinite;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(242, 194, 0, 0.4);
 }
 
-@keyframes badgePulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
-  }
-  50% {
-    transform: scale(1.1);
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
-  }
-}
-
+/* User Initial Circle */
 .user-initial {
   width: 2.25rem;
   height: 2.25rem;
-  background: #63B3ED;
-  color: white;
+
+  background: #1E88B6;
+  color: #ffffff;
+
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.875rem;
+
+  box-shadow: 0 6px 14px rgba(22, 107, 143, 0.18);
 }
 </style>

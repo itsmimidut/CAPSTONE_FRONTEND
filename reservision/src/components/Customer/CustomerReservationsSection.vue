@@ -59,3 +59,17 @@ defineProps({
   },
 });
 </script>
+
+<style scoped>
+/* Apply SAME Tropical Resort Palette (Color-only)
+   - Ocean Blue (primary):    #1E88B6
+   - Ocean Blue (light):      #4AA3D0
+   - Ocean Blue (dark):       #166B8F
+   - Ocean Blue (pale):       #E3F2F9
+   - Sunflower Gold (accent): #F2C200
+   - Sunflower Gold (light):  #FFD633
+   - Sunflower Gold (dark):   #C99F00
+   - Text on dark:            #FFFFFF
+   - Text on light:           #0B2230
+*/
+</style>

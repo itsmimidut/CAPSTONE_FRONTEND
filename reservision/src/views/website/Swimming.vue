@@ -6,39 +6,70 @@
     <!-- Sidebar -->
     <AppSidebar :is-open="sidebarOpen" @close="sidebarOpen = false" />
 
-    <!-- Hero Section -->
-    <section class="hero-section">
-      <div class="hero-overlay"></div>
-      <div class="hero-content">
-        <h1 class="hero-title animate-fade-in">
-          <span class="text-blue-800">Swimming</span> 
-          <span class="text-blue-600">Lessons</span>
-        </h1>
-        <p class="hero-subtitle animate-slide-up">
-          Learn to swim with certified instructors in a safe, fun environment
-        </p>
-        <div class="hero-actions animate-slide-up">
-          <button @click="revealEnrollmentForm" class="btn-primary">
-            <i class="fas fa-swimming-pool mr-2"></i>
-            Enroll Now
-          </button>
-          <button @click="downloadBrochure" class="btn-outline">
-            <i class="fas fa-download mr-2"></i>
-            View/Download Enrollment Form
-          </button>
+    <!-- Hero Section - Now matching RatesHero exactly -->
+    <section class="relative flex items-center justify-center min-h-[450px] sm:min-h-[550px] swimming-hero text-center px-4 overflow-hidden">
+      <!-- Animated background elements -->
+      <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute top-10 left-10 w-32 h-32 bg-[#1F8DBF]/20 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute bottom-10 right-10 w-40 h-40 bg-[#F4C400]/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+      
+      <!-- Gradient overlay with more yellow presence -->
+      <div class="absolute inset-0 bg-gradient-to-br from-[#1F8DBF]/20 via-[#F4C400]/10 to-[#F4C400]/20"></div>
+      
+      <!-- Glass card - horizontally elongated with ~50% opacity - EXACTLY like RatesHero -->
+      <div class="relative z-10 max-w-4xl w-full backdrop-blur-md bg-white/50 rounded-2xl p-8 sm:p-10 md:p-12 shadow-2xl mx-4 flex flex-col justify-center border border-white/40 my-12">
+        
+        <!-- Inner glass layer for depth with yellow undertone -->
+        <div class="absolute inset-0 bg-gradient-to-br from-white/20 via-[#F4C400]/5 to-[#1F8DBF]/10 rounded-2xl pointer-events-none"></div>
+        
+        <!-- Content with relative positioning -->
+        <div class="relative z-20 flex flex-col items-center justify-center">
+          <!-- Yellow glow effect (background only) -->
+          <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 w-32 h-32 bg-[#F4C400]/30 rounded-full blur-2xl animate-pulse-slow"></div>
+          
+          <!-- Titles - Swimming Lessons in dark blue -->
+          <h1 class="text-[32px] sm:text-[40px] md:text-[48px] font-bold leading-tight relative mb-2">
+            <span class="text-[#0C3B5E] drop-shadow-lg">Swimming Lessons</span>
+          </h1>
+
+          <!-- Body text - exactly matching reference size and style -->
+          <div class="mt-4 mb-2">
+            <p class="text-xs sm:text-sm text-[#0C3B5E]/80 leading-relaxed drop-shadow-md font-medium max-w-2xl mx-auto">
+              Learn to swim with certified instructors in a safe, fun environment
+            </p>
+          </div>
+
+          <!-- CTA Buttons with updated colors -->
+          <div class="flex flex-wrap justify-center gap-3 sm:gap-4 pt-4">
+            <button @click="revealEnrollmentForm" class="px-10 sm:px-12 md:px-14 py-3 sm:py-4 bg-[#F4C400] text-[#0C3B5E] font-extrabold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 text-sm sm:text-base md:text-lg relative overflow-hidden group border-2 border-[#F4C400] hover:border-[#F4C400]">
+              <span class="relative z-10 group-hover:text-white transition-colors duration-300">
+                <i class="fas fa-swimming-pool mr-2"></i>
+                Enroll Now
+              </span>
+              <div class="absolute inset-0 bg-[#0A2F4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+            <button @click="downloadBrochure" class="px-10 sm:px-12 md:px-14 py-3 sm:py-4 bg-transparent text-[#0C3B5E] font-extrabold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 text-sm sm:text-base md:text-lg relative overflow-hidden group border-2 border-[#0C3B5E] hover:border-[#F4C400]">
+              <span class="relative z-10 group-hover:text-white transition-colors duration-300">
+                <i class="fas fa-download mr-2"></i>
+                View/Download Enrollment Form
+              </span>
+              <div class="absolute inset-0 bg-[#0A2F4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- About Section -->
-    <section class="section-container bg-white">
+    <section class="section-container bg-white py-16">
       <div class="max-w-6xl mx-auto px-4">
         <div class="text-center mb-10">
-          <h2 class="section-title">
-            <span class="text-blue-800">Why Choose Our</span> 
-            <span class="text-blue-600">Swimming Lessons?</span>
+          <h2 class="section-title text-2xl md:text-3xl lg:text-4xl font-bold mb-2 flex flex-col md:flex-row items-center justify-center gap-2">
+            <span class="text-[#0C3B5E]">Why Choose Our</span> 
+            <span class="text-[#1F8DBF]">Swimming Lessons?</span>
           </h2>
-          <p class="section-subtitle">
+          <p class="section-subtitle text-sm md:text-base text-[#0C3B5E]/70 max-w-2xl mx-auto">
             Professional instruction tailored to your skill level
           </p>
         </div>
@@ -47,65 +78,68 @@
           <div 
             v-for="feature in features" 
             :key="feature.title"
-            class="feature-card reveal"
+            class="feature-card bg-white p-6 rounded-xl border border-[#1F8DBF]/20 hover:border-[#1F8DBF] transition-all duration-300 hover:translate-y-[-8px] hover:shadow-xl reveal"
           >
-            <div :class="['feature-icon', feature.colorClass]">
+            <div :class="['feature-icon w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center text-2xl', 'bg-[#1F8DBF]/10 text-[#1F8DBF]']">
               <i :class="feature.icon"></i>
             </div>
-            <h3 class="feature-title">{{ feature.title }}</h3>
-            <p class="feature-description">{{ feature.description }}</p>
+            <h3 class="feature-title text-lg font-semibold mb-2 text-[#0C3B5E]">{{ feature.title }}</h3>
+            <p class="feature-description text-sm text-[#0C3B5E]/70 leading-relaxed">{{ feature.description }}</p>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Lesson Types -->
-    <section class="bg-gradient-to-b from-blue-50 to-white py-16">
+    <section class="bg-gradient-to-b from-[#1F8DBF]/5 to-white py-16">
       <div class="max-w-6xl mx-auto px-4">
         <div class="text-center mb-10">
-          <h2 class="section-title">
-            <span class="text-blue-800">Our</span> 
-            <span class="text-blue-600">Programs</span>
+          <h2 class="section-title text-2xl md:text-3xl lg:text-4xl font-bold mb-2 flex flex-col md:flex-row items-center justify-center gap-2">
+            <span class="text-[#0C3B5E]">Our</span> 
+            <span class="text-[#1F8DBF]">Programs</span>
           </h2>
-          <p class="section-subtitle">Choose the perfect lesson type for you</p>
+          <p class="section-subtitle text-sm md:text-base text-[#0C3B5E]/70">Choose the perfect lesson type for you</p>
         </div>
 
         <div class="grid md:grid-cols-2 gap-7 max-w-4xl mx-auto">
           <div 
             v-for="lesson in lessonTypes" 
             :key="lesson.type"
-            class="lesson-card reveal"
+            class="lesson-card bg-white rounded-xl overflow-hidden border border-[#1F8DBF]/20 hover:border-[#1F8DBF] transition-all duration-300 hover:translate-y-[-4px] hover:shadow-xl reveal"
           >
             <!-- Lesson Image -->
-            <div class="lesson-image" v-if="lesson.image">
-              <img :src="lesson.image" :alt="lesson.type" />
+            <div class="lesson-image w-full h-48 overflow-hidden" v-if="lesson.image">
+              <img :src="lesson.image" :alt="lesson.type" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
             </div>
             
-            <div class="lesson-header">
-              <div :class="['lesson-badge', lesson.badgeClass]">
+            <div class="lesson-header p-5 flex items-center gap-3 bg-gradient-to-r from-[#1F8DBF]/10 to-[#F4C400]/10">
+              <div :class="['lesson-badge w-14 h-14 rounded-full flex items-center justify-center text-xl', 'bg-[#1F8DBF]/20 text-[#1F8DBF]']">
                 <i :class="lesson.icon"></i>
               </div>
               <div>
-                <h3 class="lesson-title">{{ lesson.type }}</h3>
-                <p class="lesson-subtitle">{{ lesson.subtitle }}</p>
+                <h3 class="lesson-title text-xl font-bold text-[#0C3B5E]">{{ lesson.type }}</h3>
+                <p class="lesson-subtitle text-sm text-[#0C3B5E]/70">{{ lesson.subtitle }}</p>
               </div>
             </div>
-            <div class="lesson-body">
-              <div class="lesson-price">
-                <span class="price-amount">₱{{ lesson.price.toLocaleString() }}</span>
-                <span class="price-duration">/ {{ lesson.duration }}</span>
+            <div class="lesson-body p-5">
+              <div class="lesson-price mb-4">
+                <span class="price-amount text-2xl font-bold text-[#1F8DBF]">₱{{ lesson.price.toLocaleString() }}</span>
+                <span class="price-duration text-sm text-[#0C3B5E]/60">/ {{ lesson.duration }}</span>
               </div>
-              <ul class="lesson-features">
-                <li v-for="feature in lesson.features" :key="feature">
-                  <i class="fas fa-check-circle text-green-500 mr-2"></i>
+              <ul class="lesson-features space-y-2 mb-5">
+                <li v-for="feature in lesson.features" :key="feature" class="text-sm text-[#0C3B5E]/70 flex items-start">
+                  <i class="fas fa-check-circle text-[#F4C400] mr-2 mt-0.5"></i>
                   {{ feature }}
                 </li>
               </ul>
               <button 
                 @click="openClassBookingModal(lesson.type)"
-                class="lesson-enroll-btn"
+                class="w-full px-6 py-3 bg-[#F4C400] text-[#0C3B5E] font-extrabold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 text-sm relative overflow-hidden group border-2 border-[#F4C400] hover:border-[#F4C400]"
               >
-                Book {{ lesson.type }} package
+                <span class="relative z-10 group-hover:text-white transition-colors duration-300">
+                  Book {{ lesson.type }} package
+                </span>
+                <div class="absolute inset-0 bg-[#0A2F4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
             </div>
           </div>
@@ -114,60 +148,69 @@
     </section>
 
     <!-- Schedule Section -->
-    <section class="bg-gradient-to-br from-blue-50 to-blue-100 py-16">
+    <section class="bg-gradient-to-br from-[#1F8DBF]/5 to-[#F4C400]/5 py-16">
       <div class="max-w-4xl mx-auto px-4">
         <div class="text-center mb-10">
-          <h2 class="section-title">
-            <span class="text-blue-800">Class</span> 
-            <span class="text-blue-600">Schedule</span>
+          <h2 class="section-title text-2xl md:text-3xl lg:text-4xl font-bold mb-2 flex flex-col md:flex-row items-center justify-center gap-2">
+            <span class="text-[#0C3B5E]">Class</span> 
+            <span class="text-[#1F8DBF]">Schedule</span>
           </h2>
-          <p class="section-subtitle">Find a time that works for you</p>
+          <p class="section-subtitle text-sm md:text-base text-[#0C3B5E]/70">Find a time that works for you</p>
         </div>
 
-        <div class="schedule-table-container reveal">
-          <table class="schedule-table">
-            <thead>
+        <div class="schedule-table-container bg-white rounded-xl overflow-hidden shadow-lg border border-[#1F8DBF]/20 reveal">
+          <table class="schedule-table w-full border-collapse">
+            <thead class="bg-[#0C3B5E] text-white">
               <tr>
-                <th>Time</th>
-                <th>Monday - Friday</th>
-                <th>Saturday - Sunday</th>
+                <th class="py-3 px-4 text-left text-sm font-semibold">Time</th>
+                <th class="py-3 px-4 text-left text-sm font-semibold">Monday - Friday</th>
+                <th class="py-3 px-4 text-left text-sm font-semibold">Saturday - Sunday</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="slot in schedule" :key="slot.time">
-                <td class="font-semibold">{{ slot.time }}</td>
-                <td>{{ slot.weekday }}</td>
-                <td>{{ slot.weekend }}</td>
+              <tr v-for="slot in schedule" :key="slot.time" class="border-b border-[#1F8DBF]/10 hover:bg-[#1F8DBF]/5 transition-colors">
+                <td class="py-3 px-4 text-sm font-semibold text-[#0C3B5E]">{{ slot.time }}</td>
+                <td class="py-3 px-4 text-sm text-[#0C3B5E]/80">{{ slot.weekday }}</td>
+                <td class="py-3 px-4 text-sm text-[#0C3B5E]/80">{{ slot.weekend }}</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="mt-6 text-center">
-          <button @click="openClassBookingModal()" class="class-session-btn">
-            <i class="fas fa-calendar-plus mr-2"></i>
-            Book a Class Session
+        <div class="mt-8 text-center">
+          <button @click="openClassBookingModal()" class="px-10 sm:px-12 md:px-14 py-3 sm:py-4 bg-[#F4C400] text-[#0C3B5E] font-extrabold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 text-sm sm:text-base md:text-lg relative overflow-hidden group border-2 border-[#F4C400] hover:border-[#F4C400]">
+            <span class="relative z-10 group-hover:text-white transition-colors duration-300">
+              <i class="fas fa-calendar-plus mr-2"></i>
+              Book a Class Session
+            </span>
+            <div class="absolute inset-0 bg-[#0A2F4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
         </div>
       </div>
     </section>
 
     <!-- CTA Section -->
-    <section class="cta-section">
+    <section class="cta-section bg-gradient-to-r from-[#0C3B5E] to-[#1F8DBF] py-16">
       <div class="max-w-4xl mx-auto px-4 text-center">
-        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
-          <span class="text-yellow-300">Ready to Make a Splash?</span>
+        <h2 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4">
+          <span class="text-[#F4C400]">Ready to Make a Splash?</span>
         </h2>
-        <p class="text-xl text-blue-100 mb-8">
+        <p class="text-base md:text-lg text-white/80 mb-8">
           Join hundreds of students who've learned to swim with us
         </p>
         <div class="flex flex-wrap justify-center gap-4">
-          <button @click="revealEnrollmentForm" class="btn-yellow">
-            <i class="fas fa-user-plus mr-2"></i>
-            Enroll Now
+          <button @click="revealEnrollmentForm" class="px-10 sm:px-12 md:px-14 py-3 sm:py-4 bg-[#F4C400] text-[#0C3B5E] font-extrabold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 text-sm sm:text-base md:text-lg relative overflow-hidden group border-2 border-[#F4C400] hover:border-[#F4C400]">
+            <span class="relative z-10 group-hover:text-white transition-colors duration-300">
+              <i class="fas fa-user-plus mr-2"></i>
+              Enroll Now
+            </span>
+            <div class="absolute inset-0 bg-[#0A2F4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
-          <a href="/contact" class="btn-outline-white">
-            <i class="fas fa-phone mr-2"></i>
-            Contact Us
+          <a href="/contact" class="px-10 sm:px-12 md:px-14 py-3 sm:py-4 bg-transparent text-white font-extrabold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 text-sm sm:text-base md:text-lg relative overflow-hidden group border-2 border-white hover:border-[#F4C400]">
+            <span class="relative z-10 group-hover:text-white transition-colors duration-300">
+              <i class="fas fa-phone mr-2"></i>
+              Contact Us
+            </span>
+            <div class="absolute inset-0 bg-[#0A2F4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </a>
         </div>
       </div>
@@ -208,88 +251,95 @@
       />
     </Teleport>
 
-    <!-- Enrollment Form Modal -->
+    <!-- Enrollment Form Modal - UPDATED WITH COLOR PALETTE -->
     <Teleport to="body">
-      <div v-if="showEnrollmentForm" class="modal-overlay" @click.self="closeEnrollmentForm">
-        <div class="modal-card">
-          <div class="modal-header">
+      <div v-if="showEnrollmentForm" class="modal-overlay fixed inset-0 bg-[#0C3B5E]/60 flex items-center justify-center p-6 z-50" @click.self="closeEnrollmentForm">
+        <div class="modal-card w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl p-6 md:p-8 shadow-2xl border-t-4 border-[#F4C400]">
+          <div class="modal-header flex items-start justify-between gap-4 pb-4 border-b border-[#1F8DBF]/20 mb-6">
             <div>
-              <h2 class="section-title">
-                <span class="text-blue-800">Registration</span> 
-                <span class="text-blue-600">Form</span>
+              <h2 class="section-title text-xl md:text-2xl font-bold flex flex-wrap items-center gap-2">
+                <span class="text-[#0C3B5E]">Registration Form</span> 
+                
               </h2>
-              <p class="section-subtitle">Please complete all required fields</p>
+              <p class="section-subtitle text-xs md:text-sm text-[#0C3B5E]/70 mt-1">Please complete all required fields <span class="text-[#F4C400] font-semibold">*</span></p>
             </div>
-            <button class="modal-close" @click="closeEnrollmentForm" aria-label="Close">
-              <i class="fas fa-times"></i>
+            <button class="modal-close w-8 h-8 rounded-full bg-gray-100 hover:bg-[#F4C400]/20 flex items-center justify-center transition-colors" @click="closeEnrollmentForm" aria-label="Close">
+              <i class="fas fa-times text-[#0C3B5E]"></i>
             </button>
           </div>
 
-          <div class="text-center text-sm text-blue-600 mb-6">
+          <div class="text-center text-xs md:text-sm text-[#1F8DBF] mb-6 font-medium bg-[#1F8DBF]/5 py-2 px-4 rounded-full inline-block mx-auto">
+            <i class="fas fa-map-marker-alt mr-2 text-[#F4C400]"></i>
             Nautical Highway, Bayanan II, Calapan City, Oriental Mindoro 5200
           </div>
 
           <!-- Info message for regular enrollment -->
-          <div v-if="enrollmentMode === 'regular'" class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 class="text-base font-semibold text-blue-800 mb-2">
-              <i class="fas fa-info-circle mr-2"></i>
+          <div v-if="enrollmentMode === 'regular'" class="mb-6 p-4 bg-gradient-to-r from-[#1F8DBF]/10 to-[#F4C400]/10 border border-[#1F8DBF]/20 rounded-lg">
+            <h3 class="text-sm md:text-base font-semibold text-[#0C3B5E] mb-2 flex items-center">
+              <i class="fas fa-info-circle mr-2 text-[#F4C400]"></i>
               New Enrollment
             </h3>
-            <p class="text-sm text-blue-700">
+            <p class="text-xs md:text-sm text-[#0C3B5E]/70">
               Fill out the form below to register for swimming lessons. Payment and scheduling will be arranged after enrollment approval.
             </p>
           </div>
 
-          <nav class="form-nav">
-            <a class="form-nav-link" href="#section-basic">Basic Info</a>
-            <a class="form-nav-link" href="#section-personal">Personal Details</a>
-            <a class="form-nav-link" href="#section-contact">Contact</a>
-            <a class="form-nav-link" href="#section-guardian">Guardian</a>
+          <nav class="form-nav flex flex-wrap gap-2 p-2 bg-gradient-to-r from-[#1F8DBF]/5 to-[#F4C400]/5 rounded-xl mb-6 sticky top-0 z-10">
+            <a class="form-nav-link text-xs md:text-sm font-semibold px-3 py-1.5 rounded-full border border-[#1F8DBF]/30 hover:bg-[#F4C400]/20 transition-colors text-[#0C3B5E]" href="#section-basic">Basic Info</a>
+            <a class="form-nav-link text-xs md:text-sm font-semibold px-3 py-1.5 rounded-full border border-[#1F8DBF]/30 hover:bg-[#F4C400]/20 transition-colors text-[#0C3B5E]" href="#section-personal">Personal Details</a>
+            <a class="form-nav-link text-xs md:text-sm font-semibold px-3 py-1.5 rounded-full border border-[#1F8DBF]/30 hover:bg-[#F4C400]/20 transition-colors text-[#0C3B5E]" href="#section-contact">Contact</a>
+            <a class="form-nav-link text-xs md:text-sm font-semibold px-3 py-1.5 rounded-full border border-[#1F8DBF]/30 hover:bg-[#F4C400]/20 transition-colors text-[#0C3B5E]" href="#section-guardian">Guardian</a>
           </nav>
 
-          <form class="space-y-8" @submit.prevent="submitEnrollmentForm">
-            <div id="section-basic" class="form-section">
-              <h3 class="form-section-title text-sm md:text-base">Basic Info</h3>
+          <form class="space-y-6" @submit.prevent="submitEnrollmentForm">
+            <div id="section-basic" class="form-section border border-[#1F8DBF]/20 rounded-xl p-5 hover:border-[#1F8DBF]/40 transition-colors">
+              <h3 class="form-section-title text-sm md:text-base font-bold text-[#0C3B5E] mb-4 flex items-center">
+                <span class="w-1 h-5 bg-[#F4C400] rounded-full mr-2"></span>
+                Basic Info
+              </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="md:col-span-2">
-                  <label class="form-label text-xs md:text-sm required">Name</label>
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Name</label>
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <input type="text" class="form-input text-sm md:text-base" placeholder="Family" v-model="formData.familyName" required />
-                      <p class="form-hint text-xs md:text-sm">Family</p>
+                      <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" placeholder="Family" v-model="formData.familyName" required />
+                      <p class="form-hint text-[10px] md:text-xs text-[#0C3B5E]/50 mt-1">Family</p>
                     </div>
                     <div>
-                      <input type="text" class="form-input text-sm md:text-base" placeholder="First" v-model="formData.firstName" required />
-                      <p class="form-hint text-xs md:text-sm">First</p>
+                      <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" placeholder="First" v-model="formData.firstName" required />
+                      <p class="form-hint text-[10px] md:text-xs text-[#0C3B5E]/50 mt-1">First</p>
                     </div>
                     <div>
-                      <input type="text" class="form-input text-sm md:text-base" placeholder="Middle" v-model="formData.middleName" />
-                      <p class="form-hint text-xs md:text-sm">Middle</p>
+                      <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" placeholder="Middle" v-model="formData.middleName" />
+                      <p class="form-hint text-[10px] md:text-xs text-[#0C3B5E]/50 mt-1">Middle</p>
                     </div>
                   </div>
                 </div>
 
                 <div class="md:col-span-2">
-                  <label class="form-label text-xs md:text-sm required">Date of Birth</label>
-                  <input type="date" class="form-input text-sm md:text-base" v-model="formData.dateOfBirth" required />
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Date of Birth</label>
+                  <input type="date" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.dateOfBirth" required />
                 </div>
               </div>
             </div>
 
-            <div id="section-personal" class="form-section">
-              <h3 class="form-section-title text-sm md:text-base">Personal Details</h3>
+            <div id="section-personal" class="form-section border border-[#1F8DBF]/20 rounded-xl p-5 hover:border-[#1F8DBF]/40 transition-colors">
+              <h3 class="form-section-title text-sm md:text-base font-bold text-[#0C3B5E] mb-4 flex items-center">
+                <span class="w-1 h-5 bg-[#F4C400] rounded-full mr-2"></span>
+                Personal Details
+              </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Lesson Type</label>
-                  <select class="form-input text-sm md:text-base" v-model="formData.lessonType" required>
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Lesson Type</label>
+                  <select class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.lessonType" required>
                     <option value="" disabled selected>Select Lesson Type</option>
                     <option value="Group Lessons">Group Lessons</option>
                     <option value="Private Lessons">Private Lessons</option>
                   </select>
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Sex</label>
-                  <select class="form-input text-sm md:text-base" v-model="formData.sex" required>
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Sex</label>
+                  <select class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.sex" required>
                     <option value="" disabled selected>Sex</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -299,8 +349,8 @@
 
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Height (cm)</label>
-                  <select class="form-input text-sm md:text-base" v-model="formData.height" required>
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Height (cm)</label>
+                  <select class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.height" required>
                     <option value="" disabled selected>Select Height</option>
                     <option value="140">140 cm</option>
                     <option value="145">145 cm</option>
@@ -318,8 +368,8 @@
                   </select>
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Weight (kg)</label>
-                  <select class="form-input text-sm md:text-base" v-model="formData.weight" required>
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Weight (kg)</label>
+                  <select class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.weight" required>
                     <option value="" disabled selected>Select Weight</option>
                     <option value="30">30 kg</option>
                     <option value="35">35 kg</option>
@@ -341,8 +391,8 @@
                   </select>
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Name of Coach</label>
-                  <select class="form-input text-sm md:text-base" v-model="formData.preferredCoach" required>
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Name of Coach</label>
+                  <select class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.preferredCoach" required>
                     <option value="" disabled selected>Select a Coach</option>
                     <option v-for="coach in coaches" :key="coach.coach_id" :value="coach.coach_id">
                       {{ coach.name }} - {{ coach.specialization }}
@@ -352,70 +402,80 @@
               </div>
             </div>
 
-            <div id="section-contact" class="form-section">
-              <h3 class="form-section-title text-sm md:text-base">Contact Information</h3>
+            <div id="section-contact" class="form-section border border-[#1F8DBF]/20 rounded-xl p-5 hover:border-[#1F8DBF]/40 transition-colors">
+              <h3 class="form-section-title text-sm md:text-base font-bold text-[#0C3B5E] mb-4 flex items-center">
+                <span class="w-1 h-5 bg-[#F4C400] rounded-full mr-2"></span>
+                Contact Information
+              </h3>
               <div>
-                <label class="form-label text-xs md:text-sm required">Student's Address</label>
-                <input type="text" class="form-input text-sm md:text-base" v-model="formData.address" required />
+                <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Student's Address</label>
+                <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.address" required />
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Mobile Phone</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.mobilePhone" required />
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Mobile Phone</label>
+                  <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.mobilePhone" required />
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Email Address</label>
-                  <input type="email" class="form-input text-sm md:text-base" v-model="formData.email" required />
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Email Address</label>
+                  <input type="email" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.email" required />
                 </div>
               </div>
             </div>
 
-            <div id="section-guardian" class="form-section">
-              <h3 class="form-section-title text-sm md:text-base">Guardian Details</h3>
+            <div id="section-guardian" class="form-section border border-[#1F8DBF]/20 rounded-xl p-5 hover:border-[#1F8DBF]/40 transition-colors">
+              <h3 class="form-section-title text-sm md:text-base font-bold text-[#0C3B5E] mb-4 flex items-center">
+                <span class="w-1 h-5 bg-[#F4C400] rounded-full mr-2"></span>
+                Guardian Details
+              </h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Father's Name</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.fatherName" required />
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Father's Name</label>
+                  <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.fatherName" required />
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Mother's Name</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.motherName" required />
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <div>
-                  <label class="form-label text-xs md:text-sm">School or Employer Name</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.schoolOrEmployerName" />
-                </div>
-                <div>
-                  <label class="form-label text-xs md:text-sm">School or Employer Address</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.schoolOrEmployerAddress" />
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Mother's Name</label>
+                  <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.motherName" required />
                 </div>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Contact Person</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.contactPerson" required />
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5">School or Employer Name</label>
+                  <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.schoolOrEmployerName" />
                 </div>
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Contact Number</label>
-                  <input type="text" class="form-input text-sm md:text-base" v-model="formData.contactNumber" required />
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5">School or Employer Address</label>
+                  <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.schoolOrEmployerAddress" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Contact Person</label>
+                  <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.contactPerson" required />
+                </div>
+                <div>
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Contact Number</label>
+                  <input type="text" class="form-input w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all" v-model="formData.contactNumber" required />
                 </div>
               </div>
 
               <!-- Booking Reference (Only for booking mode) -->
-              <div v-if="enrollmentMode === 'booking'" class="mt-6">
+              <div v-if="enrollmentMode === 'booking'" class="mt-6 p-4 bg-gradient-to-r from-[#1F8DBF]/5 to-[#F4C400]/5 rounded-lg border border-[#F4C400]/20">
+                <h4 class="text-sm font-semibold text-[#0C3B5E] mb-3 flex items-center">
+                  <i class="fas fa-ticket-alt mr-2 text-[#F4C400]"></i>
+                  Booking Reference
+                </h4>
                 <div>
-                  <label class="form-label text-xs md:text-sm required">Booking Reference</label>
+                  <label class="form-label block text-xs md:text-sm font-semibold text-[#0C3B5E] mb-1.5 required">Booking Reference</label>
                   <div class="flex gap-2">
                     <input 
                       type="text" 
                       v-model="bookingReference" 
                       placeholder="e.g., SWM12345678"
-                      class="flex-1 form-input text-sm md:text-base"
+                      class="flex-1 w-full px-4 py-2.5 text-sm border border-[#1F8DBF]/20 rounded-xl focus:outline-none focus:border-[#1F8DBF] focus:ring-2 focus:ring-[#1F8DBF]/20 transition-all"
                       @input="bookingValidated = false"
                       required
                     />
@@ -423,14 +483,14 @@
                       type="button"
                       @click="validateBookingReference"
                       :disabled="!bookingReference || validatingBooking"
-                      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-xs md:text-sm whitespace-nowrap"
+                      class="px-4 py-2.5 bg-[#F4C400] text-[#0C3B5E] font-bold rounded-xl hover:bg-[#F4C400]/80 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-xs md:text-sm whitespace-nowrap border-2 border-[#F4C400] hover:border-[#F4C400]"
                     >
                       <i v-if="validatingBooking" class="fas fa-spinner fa-spin mr-1"></i>
                       {{ validatingBooking ? 'Checking...' : 'Validate' }}
                     </button>
                   </div>
-                  <p class="form-hint text-xs md:text-sm mt-2">
-                    <i class="fas fa-info-circle mr-1"></i>
+                  <p class="form-hint text-[10px] md:text-xs text-[#0C3B5E]/50 mt-2">
+                    <i class="fas fa-info-circle mr-1 text-[#F4C400]"></i>
                     Get your booking reference from the Reservation page after booking and payment
                   </p>
                   
@@ -446,17 +506,30 @@
                   </div>
                   
                   <!-- Booking Info (compact) -->
-                  <div v-if="bookingValidated && bookingInfo" class="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-                    <span class="text-green-800 font-medium">✓ Verified:</span>
-                    <span class="text-gray-700">{{ bookingInfo.package_name }} - {{ bookingInfo.available_slots || 0 }} slot(s) available ({{ bookingInfo.enrolled_count || 0 }}/{{ bookingInfo.paid_slots }} enrolled)</span>
+                  <div v-if="bookingValidated && bookingInfo" class="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg text-xs">
+                    <div class="flex items-center gap-2 mb-1">
+                      <i class="fas fa-check-circle text-green-500"></i>
+                      <span class="font-semibold text-green-700">Booking Verified!</span>
+                    </div>
+                    <p class="text-gray-700 ml-5">{{ bookingInfo.package_name }} - {{ bookingInfo.available_slots || 0 }} slot(s) available ({{ bookingInfo.enrolled_count || 0 }}/{{ bookingInfo.paid_slots }} enrolled)</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
-              <button class="btn-yellow w-full sm:w-auto" type="submit" :disabled="isSubmittingForm">
-                {{ isSubmittingForm ? 'Submitting...' : 'Submit Enrollment' }}
+            <div class="pt-4 flex flex-col sm:flex-row gap-3 justify-center">
+              <button class="px-10 sm:px-12 md:px-14 py-3 sm:py-4 bg-[#F4C400] text-[#0C3B5E] font-extrabold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 text-sm sm:text-base md:text-lg relative overflow-hidden group border-2 border-[#F4C400] hover:border-[#F4C400] w-full sm:w-auto" type="submit" :disabled="isSubmittingForm">
+                <span class="relative z-10 group-hover:text-white transition-colors duration-300">
+                  <i class="fas fa-paper-plane mr-2"></i>
+                  {{ isSubmittingForm ? 'Submitting...' : 'Submit Enrollment' }}
+                </span>
+                <div class="absolute inset-0 bg-[#0A2F4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </button>
+              <button type="button" @click="closeEnrollmentForm" class="px-10 sm:px-12 md:px-14 py-3 sm:py-4 bg-transparent text-[#0C3B5E] font-extrabold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 text-sm sm:text-base md:text-lg relative overflow-hidden group border-2 border-[#0C3B5E] hover:border-[#F4C400] w-full sm:w-auto">
+                <span class="relative z-10 group-hover:text-white transition-colors duration-300">
+                  Cancel
+                </span>
+                <div class="absolute inset-0 bg-[#0A2F4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
             </div>
           </form>
@@ -572,6 +645,10 @@ const schedule = [
   { time: '10:00 AM - 11:00 AM', weekday: 'Intermediate Group', weekend: 'Kids Group' },
   { time: '2:00 PM - 3:00 PM', weekday: 'Kids Group', weekend: 'Beginner Group' },
   { time: '4:00 PM - 5:00 PM', weekday: 'Private Sessions', weekend: 'Advanced Group' }
+]
+
+const galleryImages = [
+  // Add your gallery images here
 ]
 
 const revealEnrollmentForm = () => {
@@ -875,7 +952,7 @@ const fetchCoaches = async () => {
   }
 }
 
-// Intersection Observer for reveal animations
+// Intersection Observer for reveal animations (keep for scroll animations)
 onMounted(() => {
   // Fetch coaches on component mount
   fetchCoaches()
@@ -892,200 +969,212 @@ onMounted(() => {
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
 })
 </script>
+
 <style scoped>
 .bg-gradient {
   background: linear-gradient(to bottom, #E0F7FA, white);
 }
 
-.hero-section {
-  position: relative;
-  height: 320px;
+/* Hero Section Styles - Updated with color palette */
+.swimming-hero {
   background-image: 
-    radial-gradient(circle at 20% 80%, rgba(30, 64, 175, 0.2) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(253, 224, 71, 0.15) 0%, transparent 50%),
-    linear-gradient(135deg, rgba(30, 64, 175, 0.3) 0%, rgba(253, 224, 71, 0.2) 100%),
+    radial-gradient(circle at 30% 40%, rgba(31, 141, 191, 0.25) 0%, transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(244, 196, 0, 0.2) 0%, transparent 40%),
+    linear-gradient(125deg, rgba(31, 141, 191, 0.4) 0%, rgba(244, 196, 0, 0.3) 100%),
     url('https://www.eduardosresort.com/images/IMG_4224.JPG');
-  background-size: cover;
   background-position: center;
+  background-size: cover;
   background-blend-mode: overlay;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
 }
 
-.hero-overlay {
+.swimming-hero::before {
+  content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom right, rgba(30, 64, 175, 0.3), rgba(253, 224, 71, 0.2));
-  z-index: 1;
+  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.2) 100%);
+  pointer-events: none;
 }
 
-.hero-content {
-  position: relative;
-  z-index: 10;
-  text-align: center;
-  color: white;
-  max-width: 800px;
-  padding: 2rem;
-  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9));
-  backdrop-filter: blur(10px);
-  border-radius: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  width: 90%;
+/* Enhanced glass morphism effect with ~50% opacity */
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-.hero-title {
-  font-size: 2.25rem;
+/* Animation for background elements ONLY (not content) */
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.2; transform: scale(1) translateX(-50%); }
+  50% { opacity: 0.4; transform: scale(1.2) translateX(-50%); }
+}
+
+.animate-pulse {
+  animation: pulse 4s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 6s ease-in-out infinite;
+  left: 50% !important;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
+}
+
+/* Custom spacing for vertical elongation - matching reference exactly */
+.min-h-\[450px\] {
+  min-height: 450px;
+}
+
+@media (min-width: 640px) {
+  .sm\:min-h-\[550px\] {
+    min-height: 550px;
+  }
+}
+
+/* Horizontal box padding - matching RatesHero */
+.p-8 {
+  padding: 2.5rem 2rem;
+}
+
+@media (min-width: 640px) {
+  .sm\:p-10 {
+    padding: 3rem 2.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .md\:p-12 {
+    padding: 3.5rem 3rem;
+  }
+}
+
+.my-12 {
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+}
+
+/* Fixed body text container - wider for horizontal layout */
+.max-w-2xl {
+  max-width: 42rem;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Proper vertical spacing between elements */
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+/* Section container */
+.section-container {
+  padding: 4rem 0;
+}
+
+/* Section title with responsive flex */
+.section-title {
+  font-size: 1.5rem;
+  line-height: 2rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
 }
 
-.hero-subtitle {
-  font-size: 1rem;
-  margin-bottom: 1.25rem;
-  color: rgb(30, 41, 59);
-  opacity: 0.95;
-  font-weight: 500;
+@media (min-width: 768px) {
+  .section-title {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
 }
 
-.hero-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: nowrap;
-}
-
-/* Yellow-300 Primary Button - High Contrast */
-.btn-primary {
-  background: #fbbf24;
-  color: #1e40af;
-  padding: 0.85rem 1.5rem;
-  border-radius: 50px;
-  font-weight: 700;
-  border: 3px solid #f59e0b;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
-  white-space: nowrap;
-  font-size: 0.95rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
-  background: #f59e0b;
-  border-color: #d97706;
-  color: #1e3a8a;
-}
-
-.btn-outline {
-  background: transparent;
-  color: #1e40af;
-  padding: 0.85rem 1.5rem;
-  border-radius: 50px;
-  font-weight: 600;
-  border: 2px solid #1e40af;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  font-size: 0.95rem;
-}
-
-.btn-outline:hover {
-  background: #1e40af;
-  color: white;
-}
-
-.section-container {
-  padding: 3rem 0;
-}
-
-.section-title {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
+@media (min-width: 1024px) {
+  .section-title {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
 }
 
 .section-subtitle {
-  font-size: 0.95rem;
-  color: #718096;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   margin-bottom: 2rem;
 }
 
+@media (min-width: 768px) {
+  .section-subtitle {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+}
+
+/* Feature card */
 .feature-card {
   background: white;
-  padding: 1.5rem;
   border-radius: 1rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   transition: all 0.3s ease;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border: 1px solid #E2E8F0;
+  border: 1px solid rgba(31, 141, 191, 0.2);
 }
 
 .feature-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  border-color: #2B6CB0;
+  border-color: #1F8DBF;
 }
 
 .feature-icon {
-  width: 60px;
-  height: 60px;
-  margin: 0 auto 0.75rem;
-  border-radius: 50%;
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  background-color: rgba(31, 141, 191, 0.1);
+  color: #1F8DBF;
 }
 
 .feature-title {
   font-size: 1.125rem;
+  line-height: 1.75rem;
   font-weight: 600;
-  color: #2D3748;
   margin-bottom: 0.5rem;
+  color: #0C3B5E;
 }
 
 .feature-description {
-  color: #718096;
-  line-height: 1.6;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+  color: rgba(12, 59, 94, 0.7);
 }
 
+/* Lesson card */
 .lesson-card {
   background: white;
   border-radius: 1rem;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   transition: all 0.3s ease;
-  border: 1px solid #E2E8F0;
+  border: 1px solid rgba(31, 141, 191, 0.2);
 }
 
 .lesson-card:hover {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  transform: translateY(-4px);
-  border-color: #2B6CB0;
+  border-color: #1F8DBF;
 }
 
 .lesson-image {
   width: 100%;
-  height: 200px;
+  height: 12rem;
   overflow: hidden;
-  position: relative;
 }
 
 .lesson-image img {
@@ -1100,32 +1189,37 @@ onMounted(() => {
 }
 
 .lesson-header {
-  background: linear-gradient(135deg, #F7FAFC, #EDF2F7);
   padding: 1.25rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  background: linear-gradient(to right, rgba(31, 141, 191, 0.1), rgba(244, 196, 0, 0.1));
 }
 
 .lesson-badge {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  background-color: rgba(31, 141, 191, 0.2);
+  color: #1F8DBF;
 }
 
 .lesson-title {
   font-size: 1.25rem;
+  line-height: 1.75rem;
   font-weight: 700;
-  color: #2D3748;
+  color: #0C3B5E;
 }
 
 .lesson-subtitle {
-  color: #718096;
   font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(12, 59, 94, 0.7);
 }
 
 .lesson-body {
@@ -1133,118 +1227,46 @@ onMounted(() => {
 }
 
 .lesson-price {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .price-amount {
-  font-size: 1.875rem;
+  font-size: 1.5rem;
+  line-height: 2rem;
   font-weight: 700;
-  color: #2B6CB0;
+  color: #1F8DBF;
 }
 
 .price-duration {
-  color: #718096;
-  font-size: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(12, 59, 94, 0.6);
 }
 
 .lesson-features {
   list-style: none;
   padding: 0;
   margin: 1.25rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .lesson-features li {
-  padding: 0.4rem 0;
-  color: #4A5568;
-  font-size: 0.95rem;
-}
-
-/* White button with HIGH CONTRAST yellow outline - turns blue on hover */
-.lesson-enroll-btn {
-  width: 100%;
-  background: white;
-  color: #1e40af;
-  padding: 1rem;
-  border-radius: 0.75rem;
-  font-weight: 700;
-  border: 3px solid #f59e0b;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 1rem;
-  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.2);
-}
-
-.lesson-enroll-btn:hover {
-  background: #1e40af;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(30, 64, 175, 0.3);
-  border-color: #1e40af;
-  border-width: 3px;
-}
-
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem;
-}
-
-@media (min-width: 768px) {
-  .gallery-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.gallery-item {
-  position: relative;
-  height: 180px;
-  background-size: cover;
-  background-position: center;
-  border-radius: 1rem;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.gallery-item:hover {
-  transform: scale(1.05);
-}
-
-.gallery-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(30, 64, 175, 0.8);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(12, 59, 94, 0.7);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  align-items: flex-start;
 }
 
-.gallery-item:hover .gallery-overlay {
-  opacity: 1;
-}
-
-.gallery-caption {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 1rem;
-  background: linear-gradient(to top, rgba(30, 64, 175, 0.8), transparent);
-  color: white;
-  font-weight: 600;
-}
-
+/* Schedule table */
 .schedule-table-container {
   background: white;
   border-radius: 1rem;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  border: 1px solid #E2E8F0;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(31, 141, 191, 0.2);
 }
 
 .schedule-table {
@@ -1252,170 +1274,43 @@ onMounted(() => {
   border-collapse: collapse;
 }
 
-.schedule-table thead {
-  background: #1e40af;
+.schedule-table th {
+  background-color: #0C3B5E;
   color: white;
-}
-
-.schedule-table th,
-.schedule-table td {
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
 }
 
-.schedule-table tbody tr {
-  border-bottom: 1px solid #E5E7EB;
+.schedule-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border-bottom: 1px solid rgba(31, 141, 191, 0.1);
+}
+
+.schedule-table tr:last-child td {
+  border-bottom: none;
 }
 
 .schedule-table tbody tr:hover {
-  background: #F7FAFC;
+  background-color: rgba(31, 141, 191, 0.05);
+  transition: background-color 0.2s ease;
 }
 
-/* White button with HIGH CONTRAST yellow outline - turns blue on hover */
-.class-session-btn {
-  background: white;
-  color: #1e40af;
-  padding: 1rem 2rem;
-  border-radius: 50px;
-  font-weight: 700;
-  border: 3px solid #f59e0b;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 1rem;
-}
-
-.class-session-btn:hover {
-  background: #1e40af;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.3);
-  border-color: #1e40af;
-  border-width: 3px;
-}
-
-.class-session-btn i {
-  transition: transform 0.3s ease;
-}
-
-.class-session-btn:hover i {
-  transform: rotate(15deg);
-}
-
+/* CTA Section */
 .cta-section {
-  background: linear-gradient(135deg, #2B6CB0, #1e40af);
-  padding: 2rem 0;
+  background: linear-gradient(to right, #0C3B5E, #1F8DBF);
+  padding: 4rem 0;
 }
 
-/* Yellow-300 Button for CTA - High Contrast */
-.btn-yellow {
-  background: #fbbf24;
-  color: #1e40af;
-  padding: 1rem 2rem;
-  border-radius: 50px;
-  font-weight: 700;
-  border: 3px solid #f59e0b;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.btn-yellow:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
-  background: #f59e0b;
-  border-color: #d97706;
-  color: #1e3a8a;
-}
-
-.btn-yellow:disabled {
-  background: #d1d5db;
-  color: #6b7280;
-  border-color: #9ca3af;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.btn-yellow:disabled:hover {
-  transform: none;
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
-  background: #d1d5db;
-}
-
-.btn-outline-white {
-  background: transparent;
-  color: white;
-  padding: 1rem 2rem;
-  border-radius: 50px;
-  font-weight: 600;
-  border: 2px solid white;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  display: inline-block;
-}
-
-.btn-outline-white:hover {
-  background: white;
-  color: #2B6CB0;
-}
-
-.reveal {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.form-label {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #2D3748;
-  margin-bottom: 0.35rem;
-}
-
-.form-label.required::after {
-  content: ' *';
-  color: #e53e3e;
-  font-weight: 700;
-}
-
-.form-input {
-  width: 100%;
-  border: 1px solid #E2E8F0;
-  border-radius: 0.75rem;
-  padding: 0.65rem 0.9rem;
-  font-size: 0.95rem;
-  background: white;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #2B6CB0;
-  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.15);
-}
-
-.form-hint {
-  font-size: 0.75rem;
-  color: #A0AEC0;
-  margin-top: 0.25rem;
-}
-
+/* Modal styles - UPDATED WITH COLOR PALETTE */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background-color: rgba(12, 59, 94, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1427,11 +1322,18 @@ onMounted(() => {
   width: 100%;
   max-width: 900px;
   max-height: 90vh;
-  overflow: auto;
+  overflow-y: auto;
   background: white;
   border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-top: 4px solid #F4C400;
+}
+
+@media (min-width: 768px) {
+  .modal-card {
+    padding: 2rem;
+  }
 }
 
 .modal-header {
@@ -1439,123 +1341,189 @@ onMounted(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid rgba(31, 141, 191, 0.2);
+  margin-bottom: 1.5rem;
+}
+
+.modal-close {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  background-color: rgba(244, 196, 0, 0.2);
+}
+
+.modal-close i {
+  color: #0C3B5E;
+}
+
+/* Form styles - UPDATED WITH COLOR PALETTE */
+.form-label {
+  display: block;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  color: #0C3B5E;
+  margin-bottom: 0.375rem;
+}
+
+@media (min-width: 768px) {
+  .form-label {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
+.form-label.required::after {
+  content: ' *';
+  color: #F4C400;
+  font-weight: 700;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border: 1px solid rgba(31, 141, 191, 0.2);
+  border-radius: 0.75rem;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #1F8DBF;
+  box-shadow: 0 0 0 2px rgba(31, 141, 191, 0.2);
+}
+
+.form-hint {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  margin-top: 0.25rem;
+  color: rgba(12, 59, 94, 0.5);
 }
 
 .form-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  border-radius: 0.75rem;
   padding: 0.5rem;
+  background: linear-gradient(to right, rgba(31, 141, 191, 0.05), rgba(244, 196, 0, 0.05));
+  border-radius: 0.75rem;
   margin-bottom: 1.5rem;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 10;
 }
 
 .form-nav-link {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
   font-weight: 600;
-  color: #2B6CB0;
-  background: white;
-  border: 1px solid #CBD5E0;
-  border-radius: 999px;
-  padding: 0.35rem 0.85rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(31, 141, 191, 0.3);
+  color: #0C3B5E;
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
+@media (min-width: 768px) {
+  .form-nav-link {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    padding: 0.375rem 1rem;
+  }
+}
+
 .form-nav-link:hover {
-  background: #EBF8FF;
-  border-color: #90CDF4;
+  background-color: rgba(244, 196, 0, 0.2);
+  border-color: #F4C400;
 }
 
 .form-section {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  border: 1px solid rgba(31, 141, 191, 0.2);
   border-radius: 0.75rem;
-  padding: 1rem;
+  padding: 1.25rem;
+  background: white;
+  transition: border-color 0.2s ease;
+}
+
+.form-section:hover {
+  border-color: rgba(31, 141, 191, 0.4);
 }
 
 .form-section-title {
-  font-size: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   font-weight: 700;
-  color: #2D3748;
+  color: #0C3B5E;
   margin-bottom: 1rem;
-}
-
-.modal-close {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: none;
-  background: #EDF2F7;
-  color: #2D3748;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s ease;
 }
 
-.modal-close:hover {
-  background: #E2E8F0;
+@media (min-width: 768px) {
+  .form-section-title {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
 }
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* Reveal animation */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
 }
 
-@keyframes slide-up {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.animate-fade-in {
-  animation: fade-in 1s ease;
+/* Color palette */
+:root {
+  --reservision-blue: #0C3B5E;
+  --darker-blue: #0A2F4A;
+  --blue-1: #1E88B6;
+  --blue-2: #1F8DBF;
+  --yellow-1: #F2C200;
+  --yellow-2: #F4C400;
 }
 
-.animate-slide-up {
-  animation: slide-up 0.8s ease 0.2s both;
-}
-
-@media (max-width: 768px) {
-  .hero-section {
-    height: 280px;
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .swimming-hero {
+    min-height: 450px;
   }
   
-  .hero-content {
-    padding: 1.5rem;
-    width: 95%;
+  .mt-4 {
+    margin-top: 0.75rem;
   }
   
-  .hero-title {
-    font-size: 1.75rem;
-    flex-direction: column;
+  .max-w-2xl {
+    max-width: 100%;
   }
   
-  .hero-subtitle {
-    font-size: 0.875rem;
-  }
-  
-  .section-container {
-    padding: 1.5rem 0;
+  .text-\[32px\] {
+    font-size: 28px;
   }
   
   .section-title {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
     flex-direction: column;
-  }
-  
-  .section-subtitle {
-    margin-bottom: 1.5rem;
+    gap: 0.25rem;
   }
   
   .feature-card {
@@ -1571,25 +1539,15 @@ onMounted(() => {
   }
   
   .lesson-image {
-    height: 180px;
+    height: 10rem;
   }
   
-  .gallery-item {
-    height: 150px;
+  .modal-card {
+    padding: 1rem;
   }
   
-  .cta-section {
-    padding: 1.5rem 0;
-  }
-  
-  .hero-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .btn-primary, .btn-outline {
-    width: 100%;
-    max-width: 300px;
+  .form-section {
+    padding: 1rem;
   }
 }
 </style>
