@@ -1,17 +1,17 @@
 <template>
   <!-- Overlay -->
-  <div 
+  <div
     v-show="isOpen"
-    @click="$emit('close')"
     class="overlay"
     :class="{ active: isOpen }"
+    @click="emit('close')"
   ></div>
 
   <!-- Sidebar -->
-  <aside 
-    class="sidebar"
-    :class="{ active: isOpen, collapsed: isCollapsed }"
-  >
+  <aside class="sidebar" :class="{ active: isOpen, collapsed: isCollapsed }">
+    <!-- Subtle wave pattern overlay -->
+    <div class="sidebar-wave"></div>
+
     <!-- Header -->
     <div class="sidebar-header">
       <div class="logo-container">
@@ -23,7 +23,8 @@
           />
         </span>
       </div>
-      <button class="md:hidden" @click="emit('close')">
+
+      <button class="md:hidden header-icon-btn" @click="emit('close')">
         <i class="fas fa-bars"></i>
       </button>
     </div>
@@ -32,18 +33,19 @@
     <div class="user-info">
       <div class="user-avatar">
         <span>{{ userInitial }}</span>
+        <div class="avatar-glow"></div>
       </div>
-      <div>
-        <div class="font-medium">{{ userDisplayName }}</div>
-        <div class="text-xs opacity-70">{{ userRoleLabel }}</div>
+      <div class="user-details">
+        <div class="font-medium text-white">{{ userDisplayName }}</div>
+        <div class="text-xs text-white/80">{{ userRoleLabel }}</div>
       </div>
     </div>
 
     <!-- Navigation -->
     <div class="nav-container">
       <ul class="nav-list">
-        <li 
-          v-for="item in filteredNavItems" 
+        <li
+          v-for="item in filteredNavItems"
           :key="item.path || item.label"
           class="nav-item"
         >
@@ -53,43 +55,61 @@
             :to="item.path"
             class="nav-link"
             :class="{ active: activePath === item.path }"
-            @click="$emit('close')"
+            @click="emit('close')"
           >
-            <i :class="item.icon" class="nav-icon"></i>
+            <div class="nav-icon-wrapper">
+              <i :class="['nav-icon', item.icon]"></i>
+            </div>
+
             <span class="nav-text">{{ item.label }}</span>
-            <span 
-              v-if="item.path === '/admin/swimming' && notifications.swimmingPendingCount > 0" 
+
+            <!-- Notifications -->
+            <span
+              v-if="item.path === '/admin/swimming' && notifications.swimmingPendingCount > 0"
               class="notification-badge-sidebar"
+              aria-label="Pending swimming requests"
             >
               {{ notifications.swimmingPendingCount > 9 ? '9+' : notifications.swimmingPendingCount }}
             </span>
-            <span 
-              v-if="item.path === '/admin/reservations' && notifications.reservationPendingCount > 0" 
+
+            <span
+              v-if="item.path === '/admin/reservations' && notifications.reservationPendingCount > 0"
               class="notification-badge-sidebar"
+              aria-label="Pending reservations"
             >
               {{ notifications.reservationPendingCount > 9 ? '9+' : notifications.reservationPendingCount }}
             </span>
-            <span 
-              v-if="item.path === '/pos' && notifications.eshopPendingCount > 0" 
+
+            <span
+              v-if="item.path === '/pos' && notifications.eshopPendingCount > 0"
               class="notification-badge-sidebar"
+              aria-label="Pending e-shop orders"
             >
               {{ notifications.eshopPendingCount > 9 ? '9+' : notifications.eshopPendingCount }}
             </span>
           </router-link>
 
-          <!-- Dropdown Link -->
+          <!-- Dropdown -->
           <div v-else class="nav-dropdown">
             <button
               class="nav-link dropdown-trigger"
-              :class="{ 
+              :class="{
                 active: item.children.some(child => activePath === child.path),
                 open: openDropdown === item.label
               }"
               @click="toggleDropdown(item.label)"
+              type="button"
             >
-              <i :class="item.icon" class="nav-icon"></i>
+              <div class="nav-icon-wrapper">
+                <i :class="['nav-icon', item.icon]"></i>
+              </div>
+
               <span class="nav-text">{{ item.label }}</span>
-              <i class="fas fa-chevron-down dropdown-arrow" :class="{ rotate: openDropdown === item.label }"></i>
+
+              <i
+                class="fas fa-chevron-down dropdown-arrow"
+                :class="{ rotate: openDropdown === item.label }"
+              ></i>
             </button>
 
             <transition name="dropdown">
@@ -99,9 +119,11 @@
                     :to="child.path"
                     class="nav-link dropdown-item"
                     :class="{ active: activePath === child.path }"
-                    @click="$emit('close')"
+                    @click="emit('close')"
                   >
-                    <i :class="child.icon" class="nav-icon"></i>
+                    <div class="nav-icon-wrapper">
+                      <i :class="['nav-icon', child.icon]"></i>
+                    </div>
                     <span class="nav-text">{{ child.label }}</span>
                   </router-link>
                 </li>
@@ -114,15 +136,13 @@
 
     <!-- Logout -->
     <div class="logout-container">
-      <button
-        @click="handleLogout"
-        class="nav-link w-full text-left"
-      >
-        <i class="fas fa-sign-out-alt nav-icon"></i>
+      <button @click="handleLogout" class="nav-link logout-link" type="button">
+        <div class="nav-icon-wrapper">
+          <i class="fas fa-sign-out-alt nav-icon"></i>
+        </div>
         <span class="nav-text">Logout</span>
       </button>
     </div>
-
   </aside>
 </template>
 
@@ -141,7 +161,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['close'])
+const emit = defineEmits(['close'])
 
 const route = useRoute()
 const router = useRouter()
@@ -150,13 +170,8 @@ const notifications = useNotificationStore()
 
 // Logout handler
 const handleLogout = () => {
-  // Call auth store logout (clears authToken and user from localStorage)
   auth.logout()
-  
-  // Clear ALL localStorage to prevent accessing admin pages with old credentials
   localStorage.clear()
-  
-  // Redirect to login page
   router.push('/login')
 }
 
@@ -168,7 +183,6 @@ const userRoleLabel = computed(() => {
     restaurantstaff: 'Restaurant Staff',
     receptionist: 'Receptionist'
   }
-
   return roleLabels[role] || 'User'
 })
 const userInitial = computed(() => userDisplayName.value.charAt(0).toUpperCase())
@@ -179,22 +193,17 @@ const activePath = computed(() => props.currentPath || route.path)
 const openDropdown = ref(null)
 
 const toggleDropdown = (label) => {
-  openDropdown.value = openDropdown.value === label ? null : label
+  // Simple toggle without any extra logic that could cause blinking
+  if (openDropdown.value === label) {
+    openDropdown.value = null
+  } else {
+    openDropdown.value = label
+  }
 }
 
 const navItems = [
-  {
-    path: '/dashboard',
-    label: 'Dashboard',
-    icon: 'fas fa-tachometer-alt',
-    roles: ['admin', 'restaurantstaff', 'receptionist']
-  },
-  {
-    path: '/admin/reservations',
-    label: 'Reservations',
-    icon: 'fas fa-calendar-check',
-    roles: ['admin', 'receptionist']
-  },
+  { path: '/dashboard', label: 'Dashboard', icon: 'fas fa-tachometer-alt', roles: ['admin', 'restaurantstaff', 'receptionist'] },
+  { path: '/admin/reservations', label: 'Reservations', icon: 'fas fa-calendar-check', roles: ['admin', 'receptionist'] },
   {
     label: 'Rooms & Cottages',
     icon: 'fas fa-bed',
@@ -215,95 +224,66 @@ const navItems = [
       { path: '/admin/restaurants/inventory', label: 'Inventory', icon: 'fas fa-boxes', roles: ['admin', 'restaurantstaff'] }
     ]
   },
-  {
-    path: '/pos',
-    label: 'Point of Sale',
-    icon: 'fas fa-cash-register',
-    roles: ['admin', 'restaurantstaff', 'receptionist']
-  },
-  // {
-  //   path: '/admin/sales-report',
-  //   label: 'Sales Report',
-  //   icon: 'fas fa-chart-line',
-  //   roles: ['admin', 'restaurantstaff', 'receptionist']
-  // },
-  {
-    path: '/admin/swimming',
-    label: 'Swimming Pools',
-    icon: 'fas fa-swimming-pool',
-    roles: ['admin', 'receptionist']
-  },
-  {
-    path: '/admin/users',
-    label: 'User Management',
-    icon: 'fas fa-users',
-    roles: ['admin']
-  }
-  // { path: '/admin/reports', label: 'Reports & Analytics', icon: 'fas fa-chart-bar', roles: ['admin'] },
-  // { path: '/admin/settings', label: 'Site Configuration', icon: 'fas fa-cog', roles: ['admin'] },
-  // { path: '/admin/feedback', label: 'Feedback & Support', icon: 'fas fa-headset', roles: ['admin'] }
+  { path: '/pos', label: 'Point of Sale', icon: 'fas fa-cash-register', roles: ['admin', 'restaurantstaff', 'receptionist'] },
+  { path: '/admin/swimming', label: 'Swimming Pools', icon: 'fas fa-swimming-pool', roles: ['admin', 'receptionist'] },
+  { path: '/admin/users', label: 'User Management', icon: 'fas fa-users', roles: ['admin'] }
 ]
 
 const isRoleAllowed = (item, role) => {
-  if (!item.roles || item.roles.length === 0) {
-    return true
-  }
+  if (!item.roles || item.roles.length === 0) return true
   return item.roles.includes(role)
 }
 
 const filteredNavItems = computed(() => {
   const role = auth.role || ''
-
   return navItems
     .filter(item => isRoleAllowed(item, role))
     .map(item => {
-      if (!item.children) {
-        return item
-      }
-
+      if (!item.children) return item
       const filteredChildren = item.children.filter(child => isRoleAllowed(child, role))
-      return {
-        ...item,
-        children: filteredChildren
-      }
+      return { ...item, children: filteredChildren }
     })
     .filter(item => !item.children || item.children.length > 0)
 })
 
-// Auto-open dropdown if current path matches a child
+// Auto-open dropdown if current path matches a child - only on mount and route change
 const autoOpenDropdown = () => {
   for (const item of filteredNavItems.value) {
     if (item.children) {
       const isChildActive = item.children.some(child => activePath.value === child.path)
       if (isChildActive) {
         openDropdown.value = item.label
-        break
+        return
       }
     }
   }
+  // Don't auto-close if nothing is active - keep current dropdown state
 }
 
-// Watch for path changes
+// Only auto-open on mount and when route changes, but don't force close
 watch(() => activePath.value, () => {
   autoOpenDropdown()
 })
 
-// Auto-open on mount
 onMounted(() => {
   autoOpenDropdown()
 })
 </script>
 
 <style scoped>
+/* ========================================
+   ORIGINAL COLOR PALETTE RESTORED
+   ======================================== */
+
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(3px);
+  background: rgba(31, 141, 191, 0.7);
+  backdrop-filter: blur(4px);
   z-index: 39;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
 .overlay.active {
@@ -317,12 +297,16 @@ onMounted(() => {
   left: 0;
   width: 260px;
   height: 100vh;
-  background-color: #2B6CB0;
-  color: white;
+
+  background: linear-gradient(165deg, #1F8DBF 0%, #1E88B6 60%, #1F8DBF 100%);
+  color: #ffffff;
+
   z-index: 50;
   overflow: hidden;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-  transition: transform 0.3s ease;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  border-right: 2px solid #F4C400;
+
+  transition: transform 0.3s ease, width 0.3s ease;
   transform: translateX(-100%);
   display: flex;
   flex-direction: column;
@@ -332,46 +316,60 @@ onMounted(() => {
   transform: translateX(0);
 }
 
+/* Desktop: keep visible; allow collapse */
 @media (min-width: 768px) {
   .sidebar {
     transform: translateX(0) !important;
   }
-  
   .sidebar.collapsed {
     width: 70px;
   }
 }
 
+/* Wave overlay - subtle */
+.sidebar-wave {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(244, 196, 0, 0.05) 0%, transparent 40%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(244, 196, 0, 0.01) 0px,
+      rgba(244, 196, 0, 0.01) 2px,
+      transparent 2px,
+      transparent 10px
+    );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* HEADER - rectangular */
 .sidebar-header {
-  padding: 1.25rem;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  position: relative;
+  z-index: 2;
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid #F4C400;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: rgba(30, 136, 182, 0.3);
+  backdrop-filter: blur(4px);
+  min-height: 64px;
 }
 
-.logo-container {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-}
-
-.logo-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  background: rgba(255,255,255,0.1);
-  border-radius: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.header-icon-btn {
+  color: #ffffff;
+  background: transparent;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
 }
 
 .logo-text {
   font-family: 'Playfair Display', serif;
-  font-size: 1.25rem;
-  font-weight: 600;
-  width: 100%;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .logo-image {
@@ -380,28 +378,55 @@ onMounted(() => {
   display: block;
 }
 
+/* USER INFO - rectangular */
 .user-info {
-  padding: 1.25rem;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  position: relative;
+  z-index: 2;
+  padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.875rem;
+  background: rgba(244, 196, 0, 0.08);
+  border-bottom: 1px solid rgba(244, 196, 0, 0.2);
 }
 
 .user-avatar {
-  width: 3rem;
-  height: 3rem;
-  background: rgba(255,255,255,0.1);
-  border-radius: 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  background: #F4C400;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1F8DBF;
+  border: 2px solid #ffffff;
+  position: relative;
 }
 
+.avatar-glow {
+  position: absolute;
+  inset: -6px;
+  background: radial-gradient(circle, rgba(244, 196, 0, 0.25) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.user-details .font-medium,
+.user-details .text-xs {
+  color: #ffffff;
+}
+
+/* NAV */
 .nav-container {
+  position: relative;
+  z-index: 2;
   flex: 1;
   overflow-y: auto;
-  padding: 0.75rem;
+  padding: 0.5rem 0;
+  scrollbar-width: none;
+}
+.nav-container::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-list {
@@ -411,95 +436,76 @@ onMounted(() => {
 }
 
 .nav-item {
-  margin-bottom: 0.25rem;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem 1.25rem;
-  color: rgba(255,255,255,0.9);
-  text-decoration: none;
-  font-size: 0.9375rem;
-  border-radius: 0.5rem;
-  transition: all 0.3s;
-  white-space: nowrap;
-}
-
-.nav-link:hover {
-  background: rgba(255,255,255,0.1);
-  color: white;
-}
-
-.nav-link.active {
-  background: rgba(255,255,255,0.2);
-  font-weight: 600;
-  border-left: 3px solid white;
-}
-
-.nav-icon {
-  width: 1.25rem;
-  text-align: center;
-}
-
-.nav-text {
-  margin-left: 0.75rem;
-  opacity: 1;
-  transition: opacity 0.2s ease 0.1s;
-}
-
-.sidebar.collapsed .nav-text,
-.sidebar.collapsed .logo-text,
-.sidebar.collapsed .user-info > div {
-  opacity: 0;
-  visibility: hidden;
-  width: 0;
   margin: 0;
-  padding: 0;
-  overflow: hidden;
 }
 
-.sidebar.collapsed .logo-text {
-  display: none;
-}
-
-.logout-container {
-  padding: 0.75rem;
-  border-top: 1px solid rgba(255,255,255,0.1);
-}
-
-.logout-container button {
-  cursor: pointer;
-}
-
-/* Dropdown Styles */
-.nav-dropdown {
-  position: relative;
-  margin: 0.25rem 0;
-}
-
-.dropdown-trigger {
-  width: 100%;
-  /* background: rgba(255, 255, 255, 0.08); */
-  border: none;
-  text-align: left;
-  cursor: pointer;
+/* Links - rectangular (no radius) */
+.nav-link {
   position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border-radius: 0.5rem;
-  transition: all 0.3s ease;
+  padding: 0.7rem 1rem;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  width: 100%;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-.dropdown-trigger.active {
-  background: rgba(255, 255, 255, 0.2);
+.nav-link:hover {
+  background: rgba(244, 196, 0, 0.1);
+  color: #ffffff;
+}
+
+.nav-link.active {
+  background: rgba(244, 196, 0, 0.2);
   font-weight: 600;
-  border-left: 3px solid white;
+}
+
+.nav-icon-wrapper {
+  width: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-icon {
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+
+.nav-link:hover .nav-icon {
+  color: #F4C400;
+}
+
+.nav-link.active .nav-icon {
+  color: #F4C400;
+}
+
+.nav-text {
+  margin-left: 0;
+  color: #ffffff;
+}
+
+/* Dropdown */
+.nav-dropdown {
+  margin: 0;
+}
+
+.dropdown-trigger {
+  justify-content: flex-start;
 }
 
 .dropdown-trigger.open {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(244, 196, 0, 0.12);
 }
 
 .dropdown-arrow {
@@ -507,82 +513,119 @@ onMounted(() => {
   right: 1rem;
   font-size: 0.75rem;
   transition: transform 0.3s ease;
+  color: rgba(255, 255, 255, 0.9);
 }
-
 .dropdown-arrow.rotate {
   transform: rotate(180deg);
 }
 
+/* Dropdown menu - rectangular (no radius) */
 .dropdown-menu {
   list-style: none;
-  padding: 0.75rem 0.5rem;
-  margin: 0.5rem 0 0.25rem 0;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 0.75rem;
+  padding: 0.35rem 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.18);
+  border-top: 1px solid rgba(244, 196, 0, 0.15);
+  border-bottom: 1px solid rgba(244, 196, 0, 0.15);
+  border-left: 3px solid rgba(244, 196, 0, 0.35);
+  border-radius: 0;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .dropdown-item {
-  padding-left: 2.5rem !important;
-  padding-right: 1rem !important;
-  font-size: 0.875rem;
-  padding-top: 0.75rem !important;
-  padding-bottom: 0.75rem !important;
-  display: flex !important;
-  align-items: center;
-  border-radius: 0.5rem;
-  margin: 0.25rem 0.25rem !important;
-  transition: all 0.2s ease;
+  padding-left: 1.5rem;
+  padding-right: 1rem;
+  font-size: 0.92rem;
 }
 
-.dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+.dropdown-item .nav-icon-wrapper {
+  width: 1.75rem;
 }
 
-.dropdown-item .nav-icon {
-  width: 1rem;
-  font-size: 0.875rem;
-}
-
-/* Dropdown Animation */
+/* Dropdown animation - smooth without flicker */
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: all 0.3s ease;
-  max-height: 300px;
+  transition: opacity 0.2s ease;
+  opacity: 1;
 }
-
 .dropdown-enter-from,
 .dropdown-leave-to {
-  max-height: 0;
   opacity: 0;
 }
 
-/* Notification Badge for Sidebar */
+/* Logout container */
+.logout-container {
+  position: relative;
+  z-index: 2;
+  padding: 0.5rem 0;
+  border-top: 1px solid rgba(244, 196, 0, 0.2);
+}
+
+.logout-link {
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0.5rem 1rem;
+  width: calc(100% - 2rem);
+}
+
+.logout-link:hover {
+  background: rgba(244, 196, 0, 0.2) !important;
+}
+
+/* Notification badge - rectangular */
 .notification-badge-sidebar {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  background: linear-gradient(135deg, #EF4444, #DC2626);
-  color: white;
-  border-radius: 50%;
+  min-width: 1.6rem;
+  height: 1.35rem;
+  padding: 0 0.35rem;
+  background: #DC2626;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
   font-size: 0.65rem;
-  font-weight: 700;
-  margin-left: auto;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+  font-weight: 800;
+  border-radius: 0;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.45);
   animation: badgePulseSidebar 2s ease-in-out infinite;
 }
 
 @keyframes badgePulseSidebar {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.45);
   }
   50% {
-    transform: scale(1.15);
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+    transform: scale(1.12);
+    box-shadow: 0 0 18px rgba(220, 38, 38, 0.65);
   }
+}
+
+/* COLLAPSED behavior */
+.sidebar.collapsed .nav-text,
+.sidebar.collapsed .user-details,
+.sidebar.collapsed .logo-text {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.sidebar.collapsed .nav-link {
+  justify-content: center;
+  padding: 0.7rem 0;
+}
+
+.sidebar.collapsed .nav-icon-wrapper {
+  width: auto;
+}
+
+.sidebar.collapsed .user-avatar {
+  margin: 0 auto;
+}
+
+.sidebar.collapsed .dropdown-arrow,
+.sidebar.collapsed .notification-badge-sidebar {
+  display: none;
 }
 </style>

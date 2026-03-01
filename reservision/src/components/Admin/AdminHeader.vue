@@ -47,13 +47,15 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
 
 <style scoped>
 /* ========================================
-   Tropical Ocean + Sunflower Gold Palette
-   - Ocean Blue:     #1E88B6
-   - Ocean Dark:     #166B8F
-   - Ocean Pale:     #E3F2F9
-   - Gold Accent:    #F2C200
-   - Gold Light:     #FFD633
-   - Deep Text:      #0B2230
+   Tropical Resort Color Palette
+   - Ocean Blue:     #1F8DBF (primary)
+   - Ocean Deep:     #1E88B6 (secondary)
+   - Ocean Pale:     rgba(31, 141, 191, 0.1)
+   - Gold Accent:    #F4C400 (primary)
+   - Gold Deep:      #F2C200 (secondary)
+   - Gold Pale:      rgba(244, 196, 0, 0.1)
+   - Text Dark:      #1F8DBF (primary text)
+   - Text Light:     #1E88B6 (secondary text)
    ======================================== */
 
 .page-header {
@@ -63,8 +65,9 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
   right: 0;
 
   background: #ffffff;
-  border-top: 3px solid #F2C200;
-  box-shadow: 0 6px 16px rgba(22, 107, 143, 0.12);
+  border-top: 3px solid #F4C400;
+  border-bottom: 1px solid rgba(31, 141, 191, 0.1);
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
 
   padding: 0.4rem 1.5rem;
   display: flex;
@@ -90,18 +93,27 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
 
 .mobile-menu-btn {
   font-size: 1.1rem;
-  color: #166B8F;
+  color: #1F8DBF;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0.3rem 0.4rem;
   border-radius: 0.375rem;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.2s;
 }
 
 .mobile-menu-btn:hover {
-  background: #E3F2F9;
-  color: #1E88B6;
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
+  transform: scale(1.05);
+}
+
+.mobile-menu-btn i {
+  transition: transform 0.2s;
+}
+
+.mobile-menu-btn:hover i {
+  transform: rotate(90deg);
 }
 
 .header-title {
@@ -114,15 +126,16 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
   margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0B2230;
+  color: #1F8DBF;
   line-height: 1.2;
 
-  background: #E3F2F9;
+  background: rgba(31, 141, 191, 0.05);
   border-radius: 0.5rem;
   padding: 0.25rem 0.75rem;
   outline: none;
   user-select: none;
   pointer-events: none;
+  border-left: 3px solid #F4C400;
 }
 
 .no-highlight {
@@ -133,7 +146,7 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
 .header-title p {
   margin: 0;
   font-size: 0.875rem;
-  color: #166B8F;
+  color: #1E88B6;
   font-weight: 500;
 }
 
@@ -150,19 +163,38 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
   position: relative;
   padding: 0.5rem;
   border-radius: 50%;
-  color: #166B8F;
+  color: #1F8DBF;
   background: none;
   border: none;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.2s;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .notification-bell:hover {
-  background: #E3F2F9;
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
+  transform: scale(1.05);
 }
 
 .notification-bell.has-notifications {
-  color: #F2C200;
+  color: #F4C400;
+}
+
+.notification-bell.has-notifications::after {
+  content: '';
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  width: 8px;
+  height: 8px;
+  background: #F4C400;
+  border-radius: 50%;
+  border: 2px solid white;
 }
 
 /* Badge */
@@ -173,25 +205,25 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
   min-width: 1.2rem;
   height: 1.2rem;
 
-  background: #F2C200;
+  background: #F4C400;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
 
-  color: #0B2230;
+  color: #1F8DBF;
   font-weight: 700;
   font-size: 0.7rem;
   border: 2px solid #ffffff;
-  box-shadow: 0 0 10px rgba(242, 194, 0, 0.4);
+  box-shadow: 0 0 10px rgba(244, 196, 0, 0.4);
 }
 
 /* User Initial Circle */
 .user-initial {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
 
-  background: #1E88B6;
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
   color: #ffffff;
 
   border-radius: 50%;
@@ -199,8 +231,58 @@ const userInitial = computed(() => props.userName.charAt(0).toUpperCase())
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 1rem;
 
-  box-shadow: 0 6px 14px rgba(22, 107, 143, 0.18);
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.3);
+  border: 2px solid #F4C400;
+  transition: all 0.2s;
+}
+
+.user-initial:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 0.4rem 1rem;
+  }
+
+  .header-title h1 {
+    font-size: 1.25rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .header-title p {
+    font-size: 0.8rem;
+  }
+
+  .user-initial {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 0.9rem;
+  }
+
+  .notification-bell {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-title h1 {
+    font-size: 1rem;
+  }
+
+  .header-title p {
+    font-size: 0.7rem;
+  }
+
+  .user-initial {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.8rem;
+  }
 }
 </style>

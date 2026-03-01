@@ -23,7 +23,7 @@
         :count="inventory.filter(i => i.status === 'low').length"
         class="stat-low-stock"
         icon="fas fa-exclamation-triangle"
-        color="danger"
+        color="warning"
       />
       <!-- Card showing count of items with healthy stock levels -->
       <StatCard 
@@ -126,7 +126,7 @@
       </table>
       <!-- Empty state message when no items match search/filter criteria -->
       <div v-if="filteredInventory.length === 0" class="empty-state">
-        <i class="fas fa-inbox"></i>
+        <i class="fas fa-inbox empty-icon"></i>
         <p>No inventory items found</p>
       </div>
     </div>
@@ -135,7 +135,7 @@
     <div v-if="showAddItemModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>Add New Inventory Item</h3>
+          <h3><i class="fas fa-plus-circle"></i> Add New Inventory Item</h3>
           <!-- Close button for the modal -->
           <button class="btn-close" @click="closeModal">
             <i class="fas fa-times"></i>
@@ -220,7 +220,7 @@
     <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>Edit Inventory Item</h3>
+          <h3><i class="fas fa-edit"></i> Edit Inventory Item</h3>
           <!-- Close button for the modal -->
           <button class="btn-close" @click="closeEditModal">
             <i class="fas fa-times"></i>
@@ -1245,6 +1245,7 @@ watch(showMenuIngredientsModal, (newVal) => {
 .btn-edit {
   background: rgba(31, 141, 191, 0.1);
   color: #1F8DBF;
+  border: 1px solid rgba(31, 141, 191, 0.2);
 }
 
 .btn-edit:hover {
@@ -1257,6 +1258,7 @@ watch(showMenuIngredientsModal, (newVal) => {
 .btn-delete {
   background: rgba(244, 196, 0, 0.1);
   color: #F4C400;
+  border: 1px solid rgba(244, 196, 0, 0.2);
 }
 
 .btn-delete:hover {
@@ -1280,6 +1282,13 @@ watch(showMenuIngredientsModal, (newVal) => {
 
 .empty-state i {
   font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #F4C400;
+  opacity: 0.5;
+}
+
+.empty-icon {
+  font-size: 3.5rem;
   margin-bottom: 1rem;
   color: #F4C400;
   opacity: 0.5;
@@ -1344,6 +1353,13 @@ watch(showMenuIngredientsModal, (newVal) => {
   margin: 0;
   font-size: 1.25rem;
   color: #1F8DBF;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-header h3 i {
+  color: #F4C400;
 }
 
 .btn-close {
@@ -1355,11 +1371,12 @@ watch(showMenuIngredientsModal, (newVal) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.3s;
+  transition: all 0.3s;
 }
 
 .btn-close:hover {
   color: #F4C400;
+  transform: scale(1.1);
 }
 
 .modal-form {
@@ -1460,7 +1477,7 @@ watch(showMenuIngredientsModal, (newVal) => {
   color: #F4C400;
 }
 
-/* Menu Ingredients Modal Styles - Reworked for proper alignment */
+/* Menu Ingredients Modal Styles */
 .modal-large {
   z-index: 1001;
 }

@@ -24,395 +24,375 @@
 
       <div class="pos-container">
 
-      <!-- POS GRID -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 pos-grid">
+        <!-- POS GRID -->
+        <div class="pos-grid">
 
-        <!-- ITEMS -->
-        <div class="lg:col-span-2 card p-5 items-card">
-          <div class="items-topbar mb-3">
-            <h2 class="font-bold text-gray-800 section-title"><i class="fas fa-shopping-cart mr-2"></i>Services / Items</h2>
-            <div class="category-switch">
-              <button 
-                v-for="category in visibleCategories" 
-                :key="category.id"
-                @click="showCategory(category.id)" 
-                :id="`btn-${category.id}`" 
-                :class="['category-btn rounded-lg', currentCategory === category.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700']"
-              >
-                <i :class="`fas fa-${category.icon} mr-2`"></i>{{ category.name }}
-              </button>
-            </div>
-          </div>
-          
-          <!-- Search Bar -->
-          <div class="mb-4">
-            <div class="relative">
-              <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-              <input 
-                type="text" 
-                v-model="searchQuery" 
-                @input="filterItems"
-                placeholder="Search items..." 
-                class="border-2 p-3 pl-10 rounded-lg w-full"
-              >
-            </div>
-          </div>
-
-          <!-- Restaurant Type Filters -->
-          <div
-            v-if="currentCategory === 'restaurant' && restaurantTypeFilters.length > 0"
-            class="mb-4 menu-filter-wrap"
-          >
-            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Filter Menu</div>
-            <div class="flex flex-wrap gap-2">
-              <button
-                type="button"
-                @click="restaurantTypeFilter = 'all'"
-                :class="[
-                  'px-3 py-1.5 rounded-full text-sm font-semibold border transition-all chip-btn',
-                  restaurantTypeFilter === 'all'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-700'
-                ]"
-              >
-                All
-              </button>
-              <button
-                v-for="filter in restaurantTypeFilters"
-                :key="filter"
-                type="button"
-                @click="restaurantTypeFilter = filter"
-                :class="[
-                  'px-3 py-1.5 rounded-full text-sm font-semibold border transition-all chip-btn',
-                  restaurantTypeFilter === filter
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-700'
-                ]"
-              >
-                {{ filter }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Items Grid -->
-          <div class="items-scroll">
-            <div 
-              v-for="category in visibleCategories" 
-              :key="`items-${category.id}`"
-              v-show="currentCategory === category.id"
-              class="category-items grid grid-cols-2 md:grid-cols-3 gap-3"
-            >
-              <button 
-                v-for="item in getFilteredItems(category.items, category.id)" 
-                :key="item.name"
-                @click="addItem(item.name, item.price)" 
-                class="item-btn p-3 bg-white"
-              >
-                <div class="font-medium text-gray-800">{{ item.name }}</div>
-                <div class="text-green-600 font-bold text-lg mt-1">₱{{ item.price.toLocaleString() }}</div>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- CART -->
-        <div class="card p-5 cart-card">
-          <div class="cart-header">
-            <h2 class="font-bold text-lg text-gray-800"><i class="fas fa-receipt mr-2"></i>Current Transaction</h2>
-            <button @click="clearCart" class="text-red-600 hover:text-red-800 text-sm font-medium transition-all">
-              <i class="fas fa-trash mr-1"></i>Clear All
-            </button>
-          </div>
-
-          <div class="cart-content">
-            <div class="cart-items-area space-y-2 text-sm">
-              <div v-if="cart.length === 0" class="cart-empty-state">
-                <i class="fas fa-shopping-basket text-5xl mb-3 block"></i>
-                <p>No items added yet</p>
-              </div>
-              <div 
-                v-else
-                v-for="(item, index) in cart" 
-                :key="index"
-                class="cart-item flex justify-between items-center"
-              >
-                <span class="text-gray-700">{{ item.name }}</span>
-                <div class="flex items-center gap-3">
-                  <span class="font-semibold text-gray-800">₱{{ item.price.toLocaleString() }}</span>
-                  <button @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition-colors">
-                    <i class="fas fa-times-circle"></i>
-                  </button>
+          <!-- ITEMS PANEL -->
+          <div class="pos-card items-card">
+            <div class="pos-card-header">
+              <div class="pos-card-header-left">
+                <div class="pos-icon-wrap icon-blue">
+                  <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div>
+                  <h2 class="pos-card-title">Services / Items</h2>
+                  <p class="pos-card-sub">Select items to add to cart</p>
                 </div>
               </div>
+              <div class="category-switch">
+                <button 
+                  v-for="category in visibleCategories" 
+                  :key="category.id"
+                  @click="showCategory(category.id)" 
+                  :id="`btn-${category.id}`" 
+                  :class="['category-btn', currentCategory === category.id ? 'category-btn--active' : '']"
+                >
+                  <i :class="`fas fa-${category.icon}`"></i>{{ category.name }}
+                </button>
+              </div>
             </div>
 
-            <div class="cart-bottom">
-              <div class="total-panel">
-                <span class="text-lg font-semibold text-gray-700">Total</span>
-                <span class="text-4xl font-bold text-blue-600">₱{{ total.toLocaleString() }}</span>
+            <div class="items-body">
+              <!-- Search -->
+              <div class="search-wrap">
+                <i class="fas fa-search search-icon"></i>
+                <input 
+                  type="text" 
+                  v-model="searchQuery" 
+                  @input="filterItems"
+                  placeholder="Search items..." 
+                  class="search-input"
+                >
               </div>
 
-              <div class="payment-wrap">
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">
-                  <i class="fas fa-credit-card mr-2"></i>Payment Method
-                </label>
-                <div class="flex gap-3 mb-3">
+              <!-- Restaurant Type Filters -->
+              <div
+                v-if="currentCategory === 'restaurant' && restaurantTypeFilters.length > 0"
+                class="filter-wrap"
+              >
+                <span class="filter-label">Filter Menu</span>
+                <div class="filter-chips">
+                  <button type="button" @click="restaurantTypeFilter = 'all'" :class="['chip', restaurantTypeFilter === 'all' ? 'chip--active' : '']">All</button>
                   <button
+                    v-for="filter in restaurantTypeFilters"
+                    :key="filter"
                     type="button"
-                    class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
-                    :class="paymentMethod === 'GCash' ? 'bg-green-50 border-green-600 text-green-700 ring-2 ring-green-200' : 'bg-white border-gray-300 text-gray-700'"
-                    @click="paymentMethod = 'GCash'"
-                  >
-                    <i class="fas fa-wallet text-green-600 text-lg mr-2"></i> GCash
-                    <span v-if="paymentMethod === 'GCash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
-                  </button>
-                  <button
-                    type="button"
-                    class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
-                    :class="paymentMethod === 'Cash' ? 'bg-yellow-50 border-yellow-600 text-yellow-700 ring-2 ring-yellow-200' : 'bg-white border-gray-300 text-gray-700'"
-                    @click="paymentMethod = 'Cash'"
-                  >
-                    <i class="fas fa-money-bill-wave text-yellow-600 text-lg mr-2"></i> Cash
-                    <span v-if="paymentMethod === 'Cash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
-                  </button>
+                    @click="restaurantTypeFilter = filter"
+                    :class="['chip', restaurantTypeFilter === filter ? 'chip--active' : '']"
+                  >{{ filter }}</button>
                 </div>
               </div>
 
-              <button @click="checkout" class="btn-success w-full bg-green-600 text-white py-4 rounded-lg font-semibold text-lg pay-btn">
-                <i class="fas fa-check-circle mr-2"></i>Pay & Complete
+              <!-- Items Grid -->
+              <div class="items-scroll">
+                <div 
+                  v-for="category in visibleCategories" 
+                  :key="`items-${category.id}`"
+                  v-show="currentCategory === category.id"
+                  class="items-grid"
+                >
+                  <button 
+                    v-for="item in getFilteredItems(category.items, category.id)" 
+                    :key="item.name"
+                    @click="addItem(item.name, item.price)" 
+                    class="item-btn"
+                  >
+                    <div class="item-name">{{ item.name }}</div>
+                    <div class="item-price">&#8369;{{ item.price.toLocaleString() }}</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CART PANEL -->
+          <div class="pos-card cart-card">
+            <div class="pos-card-header">
+              <div class="pos-card-header-left">
+                <div class="pos-icon-wrap icon-yellow">
+                  <i class="fas fa-receipt"></i>
+                </div>
+                <div>
+                  <h2 class="pos-card-title">Current Transaction</h2>
+                  <p class="pos-card-sub">{{ cart.length }} item{{ cart.length !== 1 ? 's' : '' }} added</p>
+                </div>
+              </div>
+              <button @click="clearCart" class="clear-cart-btn">
+                <i class="fas fa-trash"></i> Clear
+              </button>
+            </div>
+
+            <div class="cart-body">
+              <!-- Cart Items -->
+              <div class="cart-items-area">
+                <div v-if="cart.length === 0" class="cart-empty">
+                  <i class="fas fa-shopping-basket"></i>
+                  <p>No items added yet</p>
+                </div>
+                <div 
+                  v-else
+                  v-for="(item, index) in cart" 
+                  :key="index"
+                  class="cart-item"
+                >
+                  <span class="cart-item-name">{{ item.name }}</span>
+                  <div class="cart-item-right">
+                    <span class="cart-item-price">&#8369;{{ item.price.toLocaleString() }}</span>
+                    <button @click="removeItem(index)" class="remove-item-btn">
+                      <i class="fas fa-times-circle"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cart Bottom -->
+              <div class="cart-bottom">
+                <div class="total-panel">
+                  <span class="total-label">Total</span>
+                  <span class="total-amount">&#8369;{{ total.toLocaleString() }}</span>
+                </div>
+
+                <div class="payment-wrap">
+                  <label class="payment-label">
+                    <i class="fas fa-credit-card"></i> Payment Method
+                  </label>
+                  <div class="payment-btns">
+                    <button
+                      type="button"
+                      :class="['pay-method-btn', paymentMethod === 'GCash' ? 'pay-method-btn--gcash' : '']"
+                      @click="paymentMethod = 'GCash'"
+                    >
+                      <i class="fas fa-wallet"></i> GCash
+                      <i v-if="paymentMethod === 'GCash'" class="fas fa-check-circle pay-check"></i>
+                    </button>
+                    <button
+                      type="button"
+                      :class="['pay-method-btn', paymentMethod === 'Cash' ? 'pay-method-btn--cash' : '']"
+                      @click="paymentMethod = 'Cash'"
+                    >
+                      <i class="fas fa-money-bill-wave"></i> Cash
+                      <i v-if="paymentMethod === 'Cash'" class="fas fa-check-circle pay-check"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <button @click="checkout" class="checkout-btn">
+                  <i class="fas fa-check-circle"></i> Pay &amp; Complete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TRANSACTIONS TABLE -->
+        <div class="pos-card transactions-card">
+          <div class="pos-card-header">
+            <div class="pos-card-header-left">
+              <div class="pos-icon-wrap icon-blue">
+                <i class="fas fa-history"></i>
+              </div>
+              <div>
+                <h2 class="pos-card-title">Recent POS Transactions</h2>
+                <p class="pos-card-sub">{{ filteredTransactionHistory.length }} record{{ filteredTransactionHistory.length !== 1 ? 's' : '' }}</p>
+              </div>
+            </div>
+            <div class="trans-header-actions">
+              <button @click="exportAllTransactions" class="trans-action-btn trans-action-btn--export">
+                <i class="fas fa-file-excel"></i> Export
+              </button>
+              <button @click="clearHistory" class="trans-action-btn trans-action-btn--clear">
+                <i class="fas fa-trash"></i> Clear History
               </button>
             </div>
           </div>
+
+          <div class="table-wrap">
+            <table class="pos-table">
+              <thead>
+                <tr>
+                  <th>Receipt</th>
+                  <th>Items</th>
+                  <th>Type</th>
+                  <th>Payment</th>
+                  <th>Amount</th>
+                  <th>Date &amp; Time</th>
+                  <th style="text-align:center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="filteredTransactionHistory.length === 0">
+                  <td colspan="7">
+                    <div class="table-empty">
+                      <i class="fas fa-inbox"></i>
+                      <span>No transactions yet</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr 
+                  v-else
+                  v-for="(trans, index) in filteredTransactionHistory" 
+                  :key="trans.receiptNo"
+                  :class="['table-row', trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo) ? 'table-row--new' : '']"
+                >
+                  <td class="receipt-cell">
+                    <span class="receipt-no">POS-{{ trans.receiptNo }}</span>
+                    <span 
+                      v-if="trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo)"
+                      class="new-badge"
+                    ><i class="fas fa-star"></i> NEW</span>
+                  </td>
+                  <td class="items-cell">
+                    <div class="items-preview">{{ getItemsPreview(trans.items) }}</div>
+                    <button @click="viewDetails(trans.receiptNo)" class="view-details-btn">
+                      <i class="fas fa-eye"></i> View Details
+                    </button>
+                  </td>
+                  <td class="type-cell">{{ trans.type }}</td>
+                  <td>
+                    <span :class="['payment-badge', trans.payment === 'GCash' ? 'payment-badge--gcash' : 'payment-badge--cash']">
+                      {{ trans.payment }}
+                    </span>
+                  </td>
+                  <td class="amount-cell">&#8369;{{ trans.total.toLocaleString() }}</td>
+                  <td class="date-cell">
+                    {{ trans.date }}
+                    <span class="time-sub">{{ trans.time }}</span>
+                  </td>
+                  <td class="actions-cell">
+                    <button @click="printReceipt(trans.receiptNo)"     class="tbl-btn tbl-btn--print"     title="Print"><i class="fas fa-print"></i></button>
+                    <button @click="downloadReceipt(trans.receiptNo)"  class="tbl-btn tbl-btn--download"  title="Download"><i class="fas fa-download"></i></button>
+                    <button @click="customizeReceipt(trans.receiptNo)" class="tbl-btn tbl-btn--customize" title="Customize"><i class="fas fa-palette"></i></button>
+                    <button @click="deleteTransaction(trans.receiptNo)"class="tbl-btn tbl-btn--delete"    title="Delete"><i class="fas fa-trash"></i></button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <!-- TRANSACTIONS -->
-      <div class="card p-6 mt-6">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="font-bold text-lg text-gray-800"><i class="fas fa-history mr-2"></i>Recent POS Transactions</h2>
-          <div class="flex gap-2">
-            <button @click="exportAllTransactions" class="text-green-600 hover:text-green-800 text-sm font-medium transition-all">
-              <i class="fas fa-file-excel mr-1"></i>Export to Excel
-            </button>
-            <button @click="clearHistory" class="text-red-600 hover:text-red-800 text-sm font-medium transition-all">
-              <i class="fas fa-trash mr-1"></i>Clear History
-            </button>
+      <!-- RECEIPT CUSTOMIZATION MODAL -->
+      <div v-if="showReceiptCustomizer" class="modal-overlay" @click="showReceiptCustomizer = false">
+        <div class="modal-box" @click.stop>
+          <div class="modal-head">
+            <div>
+              <h3 class="modal-title"><i class="fas fa-palette"></i> Customize Receipt</h3>
+              <p class="modal-sub">POS-{{ selectedReceipt?.receiptNo }}</p>
+            </div>
+            <button @click="showReceiptCustomizer = false" class="modal-close"><i class="fas fa-times"></i></button>
           </div>
-        </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200">
-                <th class="p-3 text-left font-semibold text-gray-700">Receipt</th>
-                <th class="p-3 text-left font-semibold text-gray-700">Items</th>
-                <th class="p-3 text-left font-semibold text-gray-700">Type</th>
-                <th class="p-3 text-left font-semibold text-gray-700">Payment</th>
-                <th class="p-3 text-left font-semibold text-gray-700">Amount</th>
-                <th class="p-3 text-left font-semibold text-gray-700">Date & Time</th>
-                <th class="p-3 text-center font-semibold text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="filteredTransactionHistory.length === 0">
-                <td colspan="7" class="p-8 text-center text-gray-400">
-                  <i class="fas fa-inbox text-4xl mb-2 block"></i>No transactions yet
-                </td>
-              </tr>
-              <tr 
-                v-else
-                v-for="(trans, index) in filteredTransactionHistory" 
-                :key="trans.receiptNo"
-                :class="[
-                  'border-b hover:bg-blue-50 transition-colors',
-                  trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo) ? 'bg-yellow-50 border-l-4 border-yellow-400' : ''
-                ]"
-              >
-                <td class="p-3 font-semibold text-blue-700">
-                  POS-{{ trans.receiptNo }}
-                  <span 
-                    v-if="trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo)"
-                    class="ml-2 inline-block bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-bold"
-                  >
-                    <i class="fas fa-star mr-1"></i>NEW
-                  </span>
-                </td>
-                <td class="p-3">
-                  <div class="text-gray-700">{{ getItemsPreview(trans.items) }}</div>
-                  <button @click="viewDetails(trans.receiptNo)" class="text-blue-600 text-xs hover:underline mt-1 transition-all">
-                    <i class="fas fa-eye"></i> View Details
-                  </button>
-                </td>
-                <td class="p-3 text-gray-700">{{ trans.type }}</td>
-                <td class="p-3">
-                  <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">{{ trans.payment }}</span>
-                </td>
-                <td class="p-3 font-bold text-gray-800">₱{{ trans.total.toLocaleString() }}</td>
-                <td class="p-3 text-gray-600">
-                  {{ trans.date }}<br>
-                  <span class="text-xs text-gray-400">{{ trans.time }}</span>
-                </td>
-                <td class="p-3 text-center">
-                  <button @click="printReceipt(trans.receiptNo)" class="text-green-600 hover:text-green-800 mr-3 transition-all hover:scale-110 inline-block" title="Print">
-                    <i class="fas fa-print text-lg"></i>
-                  </button>
-                  <button @click="downloadReceipt(trans.receiptNo)" class="text-blue-600 hover:text-blue-800 mr-3 transition-all hover:scale-110 inline-block" title="Download">
-                    <i class="fas fa-download text-lg"></i>
-                  </button>
-                  <button @click="customizeReceipt(trans.receiptNo)" class="text-purple-600 hover:text-purple-800 mr-3 transition-all hover:scale-110 inline-block" title="Customize">
-                    <i class="fas fa-palette text-lg"></i>
-                  </button>
-                  <button @click="deleteTransaction(trans.receiptNo)" class="text-red-600 hover:text-red-800 transition-all hover:scale-110 inline-block" title="Delete">
-                    <i class="fas fa-trash text-lg"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="modal-body">
+            <!-- Colors -->
+            <div class="modal-section">
+              <h4 class="modal-section-title"><i class="fas fa-paint-brush"></i> Colors</h4>
+              <div class="modal-grid-2">
+                <div class="form-group">
+                  <label class="form-label">Header Background</label>
+                  <div class="color-row">
+                    <input type="color" v-model="receiptStyle.headerBg" class="color-swatch">
+                    <input type="text"  v-model="receiptStyle.headerBg" class="form-input mono">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Header Text</label>
+                  <div class="color-row">
+                    <input type="color" v-model="receiptStyle.headerText" class="color-swatch">
+                    <input type="text"  v-model="receiptStyle.headerText" class="form-input mono">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Total Background</label>
+                  <div class="color-row">
+                    <input type="color" v-model="receiptStyle.totalBg" class="color-swatch">
+                    <input type="text"  v-model="receiptStyle.totalBg" class="form-input mono">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Total Text</label>
+                  <div class="color-row">
+                    <input type="color" v-model="receiptStyle.totalText" class="color-swatch">
+                    <input type="text"  v-model="receiptStyle.totalText" class="form-input mono">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Typography -->
+            <div class="modal-section">
+              <h4 class="modal-section-title"><i class="fas fa-font"></i> Typography</h4>
+              <div class="modal-grid-2">
+                <div class="form-group">
+                  <label class="form-label">Company Name Size</label>
+                  <input type="number" v-model.number="receiptStyle.companySize" min="12" max="32" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Item Font Size</label>
+                  <input type="number" v-model.number="receiptStyle.itemSize" min="10" max="16" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Total Font Size</label>
+                  <input type="number" v-model.number="receiptStyle.totalSize" min="14" max="28" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Font Family</label>
+                  <select v-model="receiptStyle.fontFamily" class="form-input">
+                    <option value="'Courier New', monospace">Courier New (Default)</option>
+                    <option value="'Arial', sans-serif">Arial</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="'Verdana', sans-serif">Verdana</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div class="modal-section">
+              <h4 class="modal-section-title"><i class="fas fa-file-alt"></i> Content</h4>
+              <div class="modal-checks">
+                <label class="check-row"><input type="checkbox" v-model="receiptStyle.showCompanyName" class="check-input"><span>Show Company Name</span></label>
+                <label class="check-row"><input type="checkbox" v-model="receiptStyle.showDateTime"    class="check-input"><span>Show Date &amp; Time</span></label>
+                <label class="check-row"><input type="checkbox" v-model="receiptStyle.showFooter"      class="check-input"><span>Show Footer Message</span></label>
+              </div>
+              <div class="modal-grid-2" style="margin-top:1rem">
+                <div class="form-group">
+                  <label class="form-label">Company Name</label>
+                  <input type="text" v-model="receiptStyle.companyName" placeholder="ReserVision" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Receipt Title</label>
+                  <input type="text" v-model="receiptStyle.receiptTitle" placeholder="Point of Sale" class="form-input">
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="modal-section">
+              <h4 class="modal-section-title"><i class="fas fa-eye"></i> Preview</h4>
+              <div class="receipt-preview" :style="{ fontFamily: receiptStyle.fontFamily }">
+                <div v-if="receiptStyle.showCompanyName" class="rp-header" :style="{ backgroundColor: receiptStyle.headerBg, color: receiptStyle.headerText }">
+                  <div :style="{ fontSize: receiptStyle.companySize + 'px' }"><strong>{{ receiptStyle.companyName }}</strong></div>
+                  <div style="font-size:12px">{{ receiptStyle.receiptTitle }}</div>
+                </div>
+                <div class="rp-body" :style="{ fontSize: receiptStyle.itemSize + 'px' }">
+                  <div class="rp-item">Sample Item 1 <span>&#8369;500.00</span></div>
+                  <div class="rp-item">Sample Item 2 <span>&#8369;500.00</span></div>
+                </div>
+                <div class="rp-total" :style="{ fontSize: receiptStyle.totalSize + 'px', backgroundColor: receiptStyle.totalBg, color: receiptStyle.totalText }">
+                  TOTAL: &#8369;1,000.00
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-foot">
+            <button @click="showReceiptCustomizer = false" class="modal-btn modal-btn--cancel">Cancel</button>
+            <button @click="downloadCustomizedReceipt"    class="modal-btn modal-btn--download"><i class="fas fa-download"></i> Download</button>
+            <button @click="saveReceiptStyle"             class="modal-btn modal-btn--save"><i class="fas fa-save"></i> Save Style</button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Receipt Customization Modal -->
-    <div v-if="showReceiptCustomizer" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <!-- Modal Header -->
-        <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex justify-between items-center border-b">
-          <div>
-            <h3 class="text-2xl font-bold"><i class="fas fa-palette mr-2"></i>Customize Receipt</h3>
-            <p class="text-blue-100 text-sm mt-1">POS-{{ selectedReceipt?.receiptNo }}</p>
-          </div>
-          <button @click="showReceiptCustomizer = false" class="text-2xl hover:bg-blue-600 p-2 rounded transition-colors">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-
-        <!-- Modal Body -->
-        <div class="p-6 space-y-6">
-          <!-- Color Settings -->
-          <div class="border rounded-lg p-4 bg-gray-50">
-            <h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-paint-brush mr-2"></i>Colors</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">Header Background</label>
-                <div class="flex gap-2">
-                  <input type="color" v-model="receiptStyle.headerBg" class="w-12 h-10 rounded cursor-pointer">
-                  <input type="text" v-model="receiptStyle.headerBg" class="flex-1 border rounded px-2 py-1 text-sm font-mono">
-                </div>
-              </div>
-              <div>
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">Header Text</label>
-                <div class="flex gap-2">
-                  <input type="color" v-model="receiptStyle.headerText" class="w-12 h-10 rounded cursor-pointer">
-                  <input type="text" v-model="receiptStyle.headerText" class="flex-1 border rounded px-2 py-1 text-sm font-mono">
-                </div>
-              </div>
-              <div>
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">Total Background</label>
-                <div class="flex gap-2">
-                  <input type="color" v-model="receiptStyle.totalBg" class="w-12 h-10 rounded cursor-pointer">
-                  <input type="text" v-model="receiptStyle.totalBg" class="flex-1 border rounded px-2 py-1 text-sm font-mono">
-                </div>
-              </div>
-              <div>
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">Total Text</label>
-                <div class="flex gap-2">
-                  <input type="color" v-model="receiptStyle.totalText" class="w-12 h-10 rounded cursor-pointer">
-                  <input type="text" v-model="receiptStyle.totalText" class="flex-1 border rounded px-2 py-1 text-sm font-mono">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Font Settings -->
-          <div class="border rounded-lg p-4 bg-gray-50">
-            <h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-font mr-2"></i>Typography</h4>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">Company Name Size</label>
-                <input type="number" v-model.number="receiptStyle.companySize" min="12" max="32" class="w-full border rounded px-3 py-2">
-              </div>
-              <div>
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">Item Font Size</label>
-                <input type="number" v-model.number="receiptStyle.itemSize" min="10" max="16" class="w-full border rounded px-3 py-2">
-              </div>
-              <div>
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">Total Font Size</label>
-                <input type="number" v-model.number="receiptStyle.totalSize" min="14" max="28" class="w-full border rounded px-3 py-2">
-              </div>
-              <div>
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">Font Family</label>
-                <select v-model="receiptStyle.fontFamily" class="w-full border rounded px-3 py-2">
-                  <option value="'Courier New', monospace">Courier New (Default)</option>
-                  <option value="'Arial', sans-serif">Arial</option>
-                  <option value="'Times New Roman', serif">Times New Roman</option>
-                  <option value="'Verdana', sans-serif">Verdana</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Receipt Content Settings -->
-          <div class="border rounded-lg p-4 bg-gray-50">
-            <h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-file-alt mr-2"></i>Content</h4>
-            <div class="space-y-3">
-              <div class="flex items-center">
-                <input type="checkbox" v-model="receiptStyle.showCompanyName" id="showCompany" class="w-4 h-4 rounded">
-                <label for="showCompany" class="ml-3 text-sm font-medium text-gray-700">Show Company Name</label>
-              </div>
-              <div class="flex items-center">
-                <input type="checkbox" v-model="receiptStyle.showDateTime" id="showDateTime" class="w-4 h-4 rounded">
-                <label for="showDateTime" class="ml-3 text-sm font-medium text-gray-700">Show Date & Time</label>
-              </div>
-              <div class="flex items-center">
-                <input type="checkbox" v-model="receiptStyle.showFooter" id="showFooter" class="w-4 h-4 rounded">
-                <label for="showFooter" class="ml-3 text-sm font-medium text-gray-700">Show Footer Message</label>
-              </div>
-              <div>
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">Company Name</label>
-                <input type="text" v-model="receiptStyle.companyName" placeholder="ReserVision" class="w-full border rounded px-3 py-2">
-              </div>
-              <div>
-                <label class="text-sm font-semibold text-gray-700 mb-2 block">Receipt Title</label>
-                <input type="text" v-model="receiptStyle.receiptTitle" placeholder="Point of Sale" class="w-full border rounded px-3 py-2">
-              </div>
-            </div>
-          </div>
-
-          <!-- Preview -->
-          <div class="border rounded-lg p-4 bg-gray-50">
-            <h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-eye mr-2"></i>Preview</h4>
-            <div class="bg-white border-2 border-dashed p-4" :style="{ fontFamily: receiptStyle.fontFamily }">
-              <div v-if="receiptStyle.showCompanyName" class="text-center" :style="{ fontSize: receiptStyle.companySize + 'px', color: receiptStyle.headerText }">
-                <strong>{{ receiptStyle.companyName }}</strong>
-              </div>
-              <div class="text-center text-sm mb-3" :style="{ fontSize: receiptStyle.itemSize + 'px' }">
-                {{ receiptStyle.receiptTitle }}
-              </div>
-              <div class="border-t border-b py-2 mb-2" v-if="selectedReceipt">
-                <div :style="{ fontSize: receiptStyle.itemSize + 'px' }" class="text-sm">Sample Item 1</div>
-              </div>
-              <div class="text-center font-bold p-2" :style="{ fontSize: receiptStyle.totalSize + 'px', backgroundColor: receiptStyle.totalBg, color: receiptStyle.totalText }">
-                TOTAL: ₱1,000.00
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="sticky bottom-0 bg-gray-100 p-6 flex gap-3 justify-end border-t">
-          <button @click="showReceiptCustomizer = false" class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-400 transition-colors">
-            Cancel
-          </button>
-          <button @click="downloadCustomizedReceipt" class="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors">
-            <i class="fas fa-download mr-2"></i>Download Receipt
-          </button>
-          <button @click="saveReceiptStyle" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-            <i class="fas fa-save mr-2"></i>Save Style
-          </button>
-        </div>
-      </div>
-    </div>
     </main>
   </div>
 </template>
@@ -428,10 +408,7 @@ const API_BASE = 'http://localhost:8000/api/pos';
 
 export default {
   name: 'POSSystem',
-  components: {
-    AdminSidebar,
-    AdminHeader
-  },
+  components: { AdminSidebar, AdminHeader },
   data() {
     return {
       sidebarOpen: false,
@@ -449,9 +426,9 @@ export default {
       showReceiptCustomizer: false,
       selectedReceipt: null,
       receiptStyle: {
-        headerBg: '#1e3a8a',
+        headerBg: '#1E88B6',
         headerText: '#ffffff',
-        totalBg: '#3b82f6',
+        totalBg: '#1F8DBF',
         totalText: '#ffffff',
         companySize: 20,
         itemSize: 13,
@@ -464,680 +441,196 @@ export default {
         receiptTitle: 'Point of Sale'
       },
       categories: [
-        {
-          id: 'restaurant',
-          name: 'Restaurant',
-          icon: 'utensils',
-          items: []
-        },
-        {
-          id: 'rooms',
-          name: 'Rooms',
-          icon: 'bed',
-          items: []
-        },
-        {
-          id: 'cottage',
-          name: 'Cottage',
-          icon: 'home',
-          items: []
-        },
-        {
-          id: 'event',
-          name: 'Event',
-          icon: 'calendar-alt',
-          items: []
-        }
+        { id: 'restaurant', name: 'Restaurant', icon: 'utensils',     items: [] },
+        { id: 'rooms',      name: 'Rooms',      icon: 'bed',          items: [] },
+        { id: 'cottage',    name: 'Cottage',    icon: 'home',         items: [] },
+        { id: 'event',      name: 'Event',      icon: 'calendar-alt', items: [] }
       ],
       viewedTransactions: new Set(JSON.parse(localStorage.getItem('viewedEshopOrders') || '[]'))
     };
   },
   computed: {
-    userRole() {
-      return this.auth.role || 'staff';
-    },
+    userRole() { return this.auth.role || 'staff'; },
     visibleCategories() {
-      if (this.userRole === 'admin') {
-        return this.categories;
-      }
-
-      if (this.userRole === 'receptionist') {
-        return this.categories.filter(category => category.id !== 'restaurant');
-      }
-
-      return this.categories.filter(category => category.id === 'restaurant');
+      if (this.userRole === 'admin') return this.categories;
+      if (this.userRole === 'receptionist') return this.categories.filter(c => c.id !== 'restaurant');
+      return this.categories.filter(c => c.id === 'restaurant');
     },
     restaurantTypeFilters() {
-      const restaurantCategory = this.categories.find(category => category.id === 'restaurant');
-      if (!restaurantCategory) {
-        return [];
-      }
-
-      return [...new Set(
-        restaurantCategory.items
-          .map(item => (item.description || '').trim())
-          .filter(Boolean)
-      )].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      const cat = this.categories.find(c => c.id === 'restaurant');
+      if (!cat) return [];
+      return [...new Set(cat.items.map(i => (i.description || '').trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     },
     filteredTransactionHistory() {
-      if (this.userRole === 'admin') {
-        return this.transactionHistory;
-      }
-
+      if (this.userRole === 'admin') return this.transactionHistory;
       return this.transactionHistory.filter(trans => {
-        const hasRestaurantItem = this.hasItemFromCategory(trans.items, 'restaurant');
-        
-        if (this.userRole === 'restaurantstaff') {
-          return hasRestaurantItem;
-        }
-        
-        if (this.userRole === 'receptionist') {
-          return !hasRestaurantItem;
-        }
-        
+        const hasRest = this.hasItemFromCategory(trans.items, 'restaurant');
+        if (this.userRole === 'restaurantstaff') return hasRest;
+        if (this.userRole === 'receptionist') return !hasRest;
         return true;
       });
     },
     eshopPendingCount() {
-      return this.transactionHistory.filter(trans => 
-        trans.source === 'eshop' && !this.viewedTransactions.has(trans.receiptNo)
-      ).length;
+      return this.transactionHistory.filter(t => t.source === 'eshop' && !this.viewedTransactions.has(t.receiptNo)).length;
     }
   },
   watch: {
-    visibleCategories(newCategories) {
-      if (!newCategories.some(category => category.id === this.currentCategory)) {
-        this.currentCategory = newCategories[0]?.id || '';
-      }
+    visibleCategories(newCats) {
+      if (!newCats.some(c => c.id === this.currentCategory)) this.currentCategory = newCats[0]?.id || '';
     },
-    currentCategory(newCategory) {
-      if (newCategory !== 'restaurant') {
-        this.restaurantTypeFilter = 'all';
-      }
-    },
-    eshopPendingCount(newCount) {
-      this.notifications.setEshopPending(newCount)
-    }
+    currentCategory(val) { if (val !== 'restaurant') this.restaurantTypeFilter = 'all'; },
+    eshopPendingCount(n) { this.notifications.setEshopPending(n); }
   },
   async mounted() {
     await this.fetchItems();
     await this.fetchTransactions();
     this.updateReceiptNumber();
-    
-    // Load saved receipt style from localStorage
-    const savedStyle = localStorage.getItem('receiptStyle');
-    if (savedStyle) {
-      try {
-        this.receiptStyle = { ...this.receiptStyle, ...JSON.parse(savedStyle) };
-      } catch (error) {
-        console.error('Error loading saved receipt style:', error);
-      }
-    }
+    const saved = localStorage.getItem('receiptStyle');
+    if (saved) { try { this.receiptStyle = { ...this.receiptStyle, ...JSON.parse(saved) }; } catch(e) {} }
   },
   methods: {
     async fetchItems() {
       try {
-        const response = await axios.get(`${API_BASE}/items`);
-        const items = response.data;
-        
-        console.log('📦 Fetched items from backend:', items);
-        console.log('📦 Total items:', items.length);
-        
-        // Log items by category
-        const categoryCounts = {};
-        items.forEach(item => {
-          categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
+        const res = await axios.get(`${API_BASE}/items`);
+        this.categories.forEach(cat => {
+          cat.items = res.data.filter(i => i.category === cat.id).map(i => ({
+            name: i.name, price: parseFloat(i.price), description: i.description || ''
+          }));
         });
-        console.log('📦 Items per category:', categoryCounts);
-        
-        // Group items by category
-        this.categories.forEach(category => {
-          category.items = items
-            .filter(item => item.category === category.id)
-            .map(item => ({
-              name: item.name,
-              price: parseFloat(item.price),
-              description: item.description || ''
-            }));
-          
-          console.log(`📦 ${category.name} (${category.id}):`, category.items.length, 'items');
-        });
-      } catch (error) {
-        console.error('Error fetching POS items:', error);
-        alert('Failed to load items from server');
-      }
+      } catch (e) { console.error(e); alert('Failed to load items from server'); }
     },
     async fetchTransactions() {
       try {
-        const response = await axios.get(`${API_BASE}/transactions`);
-        this.transactionHistory = response.data.map(trans => {
-          // Detect if it's an eshop order by checking receipt number format
-          const isEshop = trans.receipt_no && trans.receipt_no.toString().includes('ESHOP');
-          return {
-            receiptNo: trans.receipt_no,
-            items: trans.items,
-            type: trans.type,
-            payment: trans.payment_method,
-            total: parseFloat(trans.total_amount),
-            date: trans.transaction_date,
-            time: trans.transaction_time,
-            source: trans.source || (isEshop ? 'eshop' : 'pos')
-          }
-        });
-        
-        // Clean up viewed transactions that no longer exist
-        const currentReceiptNos = new Set(this.transactionHistory.map(t => t.receiptNo));
-        const viewedToKeep = new Set(
-          Array.from(this.viewedTransactions).filter(receiptNo => currentReceiptNos.has(receiptNo))
-        );
-        this.viewedTransactions = viewedToKeep;
+        const res = await axios.get(`${API_BASE}/transactions`);
+        this.transactionHistory = res.data.map(t => ({
+          receiptNo: t.receipt_no, items: t.items, type: t.type,
+          payment: t.payment_method, total: parseFloat(t.total_amount),
+          date: t.transaction_date, time: t.transaction_time,
+          source: t.source || (t.receipt_no?.toString().includes('ESHOP') ? 'eshop' : 'pos')
+        }));
+        const cur = new Set(this.transactionHistory.map(t => t.receiptNo));
+        this.viewedTransactions = new Set(Array.from(this.viewedTransactions).filter(r => cur.has(r)));
         localStorage.setItem('viewedEshopOrders', JSON.stringify(Array.from(this.viewedTransactions)));
-      } catch (error) {
-        console.error('Error fetching transactions:', error);
-      }
+      } catch (e) { console.error(e); }
     },
     updateReceiptNumber() {
-      if (this.transactionHistory.length > 0) {
-        const lastReceipt = Math.max(...this.transactionHistory.map(t => parseInt(t.receiptNo)));
-        this.receiptNo = lastReceipt + 1;
-      }
+      if (this.transactionHistory.length > 0)
+        this.receiptNo = Math.max(...this.transactionHistory.map(t => parseInt(t.receiptNo))) + 1;
     },
-    showCategory(categoryId) {
-      if (!this.visibleCategories.some(category => category.id === categoryId)) {
-        return;
-      }
-      this.currentCategory = categoryId;
-      this.searchQuery = '';
-      if (categoryId !== 'restaurant') {
-        this.restaurantTypeFilter = 'all';
-      }
+    showCategory(id) {
+      if (!this.visibleCategories.some(c => c.id === id)) return;
+      this.currentCategory = id; this.searchQuery = '';
+      if (id !== 'restaurant') this.restaurantTypeFilter = 'all';
     },
     getFilteredItems(items, categoryId) {
       let filtered = [...items];
-
-      if (this.searchQuery) {
-        const query = this.searchQuery.toLowerCase();
-        filtered = filtered.filter(item => item.name.toLowerCase().includes(query));
-      }
-
-      if (categoryId === 'restaurant' && this.restaurantTypeFilter !== 'all') {
-        filtered = filtered.filter(
-          item => (item.description || '').toLowerCase() === this.restaurantTypeFilter.toLowerCase()
-        );
-      }
-
+      if (this.searchQuery) filtered = filtered.filter(i => i.name.toLowerCase().includes(this.searchQuery.toLowerCase()));
+      if (categoryId === 'restaurant' && this.restaurantTypeFilter !== 'all')
+        filtered = filtered.filter(i => (i.description || '').toLowerCase() === this.restaurantTypeFilter.toLowerCase());
       return filtered;
     },
-    hasItemFromCategory(transactionItems, categoryId) {
-      const categoryItems = this.categories.find(cat => cat.id === categoryId)?.items || [];
-      const categoryItemNames = categoryItems.map(item => item.name.toLowerCase());
-      
-      return transactionItems.some(transItem => 
-        categoryItemNames.includes(transItem.name.toLowerCase())
-      );
+    hasItemFromCategory(txItems, catId) {
+      const names = (this.categories.find(c => c.id === catId)?.items || []).map(i => i.name.toLowerCase());
+      return txItems.some(i => names.includes(i.name.toLowerCase()));
     },
-    filterItems() {
-      // Filter is handled reactively in getFilteredItems
-    },
-    addItem(name, price) {
-      this.cart.push({ name, price });
-      this.total += price;
-    },
-    removeItem(index) {
-      this.total -= this.cart[index].price;
-      this.cart.splice(index, 1);
-    },
+    filterItems() {},
+    addItem(name, price) { this.cart.push({ name, price }); this.total += price; },
+    removeItem(i) { this.total -= this.cart[i].price; this.cart.splice(i, 1); },
     clearCart() {
-      if (this.cart.length > 0) {
-        if (confirm('Are you sure you want to clear all items from the current transaction?')) {
-          this.cart = [];
-          this.total = 0;
-        }
-      }
+      if (this.cart.length > 0 && confirm('Clear all items from the current transaction?')) { this.cart = []; this.total = 0; }
     },
     async checkout() {
-      if (this.cart.length === 0) {
-        alert("No items added");
-        return;
-      }
-
+      if (!this.cart.length) { alert('No items added'); return; }
       const now = new Date();
-      const date = now.toISOString().split("T")[0];
-      const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-      
-      const transaction = {
+      const tx = {
         receiptNo: String(this.receiptNo).padStart(3, '0'),
-        items: [...this.cart],
-        type: "Walk-in",
-        payment: this.paymentMethod,
-        total: this.total,
-        date: date,
-        time: time
+        items: [...this.cart], type: 'Walk-in', payment: this.paymentMethod,
+        total: this.total, date: now.toISOString().split('T')[0],
+        time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
       };
-
-      const payload = {
-        receipt_no: transaction.receiptNo,
-        items: transaction.items,
-        type: transaction.type,
-        payment_method: transaction.payment,
-        total_amount: transaction.total,
-        transaction_date: transaction.date,
-        transaction_time: transaction.time
-      };
-      
       try {
-        // Save to backend
-        await axios.post(`${API_BASE}/transactions`, payload);
-        
-        // Add to local history
-        this.transactionHistory.unshift(transaction);
-
+        await axios.post(`${API_BASE}/transactions`, {
+          receipt_no: tx.receiptNo, items: tx.items, type: tx.type,
+          payment_method: tx.payment, total_amount: tx.total,
+          transaction_date: tx.date, transaction_time: tx.time
+        });
+        this.transactionHistory.unshift(tx);
         this.receiptNo++;
-        alert(`Transaction completed! Receipt: POS-${transaction.receiptNo}\nTotal: ₱${this.total.toLocaleString()}`);
-        
-        // Clear cart after successful checkout
-        this.cart = [];
-        this.total = 0;
-      } catch (error) {
-        const details = error?.response?.data || error?.message || error;
-        console.error('Error saving transaction:', details);
-        alert('Failed to save transaction. Please try again.');
-      }
+        alert(`Transaction completed!\nReceipt: POS-${tx.receiptNo}\nTotal: ₱${this.total.toLocaleString()}`);
+        this.cart = []; this.total = 0;
+      } catch (e) { console.error(e); alert('Failed to save transaction. Please try again.'); }
     },
     getItemsPreview(items) {
-      const itemsList = items.map(item => item.name).join(", ");
-      return itemsList.length > 30 ? itemsList.substring(0, 30) + "..." : itemsList;
+      const s = items.map(i => i.name).join(', ');
+      return s.length > 30 ? s.substring(0, 30) + '...' : s;
     },
     viewDetails(receiptNo) {
-      const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
-      if (!trans) return;
-      
-      // Mark as viewed
+      const t = this.transactionHistory.find(x => x.receiptNo === receiptNo);
+      if (!t) return;
       this.viewedTransactions.add(receiptNo);
-      
-      // Persist to localStorage
-      localStorage.setItem('viewedEshopOrders', JSON.stringify(Array.from(this.viewedTransactions)))
-      
-      let itemsDetail = trans.items.map(item => `${item.name} - ₱${item.price.toLocaleString()}`).join('\n');
-      
-      alert(`Receipt: POS-${trans.receiptNo}\n` +
-            `Date: ${trans.date} ${trans.time}\n` +
-            `Type: ${trans.type}\n` +
-            `Payment: ${trans.payment}\n\n` +
-            `Items:\n${itemsDetail}\n\n` +
-            `Total: ₱${trans.total.toLocaleString()}`);
+      localStorage.setItem('viewedEshopOrders', JSON.stringify(Array.from(this.viewedTransactions)));
+      alert(`Receipt: POS-${t.receiptNo}\nDate: ${t.date} ${t.time}\nType: ${t.type}\nPayment: ${t.payment}\n\nItems:\n${t.items.map(i=>`${i.name} - ₱${i.price.toLocaleString()}`).join('\n')}\n\nTotal: ₱${t.total.toLocaleString()}`);
     },
     printReceipt(receiptNo) {
-      const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
-      if (!trans) return;
-      
-      const printWindow = window.open('', '', 'width=300,height=600');
-      
-      let itemsHTML = trans.items.map(item => 
-        `<tr>
-          <td style="padding: 4px 0;">${item.name}</td>
-          <td style="padding: 4px 0; text-align: right;">₱${item.price.toLocaleString()}</td>
-        </tr>`
-      ).join('');
-      
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Receipt POS-${trans.receiptNo}</title>
-          <style>
-            body {
-              font-family: 'Courier New', monospace;
-              width: 300px;
-              margin: 20px auto;
-              padding: 20px;
-            }
-            .header {
-              text-align: center;
-              border-bottom: 2px dashed #000;
-              padding-bottom: 10px;
-              margin-bottom: 15px;
-            }
-            .title {
-              font-size: 20px;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .info {
-              margin: 10px 0;
-              font-size: 12px;
-            }
-            table {
-              width: 100%;
-              margin: 15px 0;
-              font-size: 13px;
-            }
-            .total-section {
-              border-top: 2px dashed #000;
-              padding-top: 10px;
-              margin-top: 10px;
-            }
-            .total {
-              font-size: 16px;
-              font-weight: bold;
-              display: flex;
-              justify-content: space-between;
-            }
-            .footer {
-              text-align: center;
-              margin-top: 20px;
-              border-top: 2px dashed #000;
-              padding-top: 10px;
-              font-size: 11px;
-            }
-            @media print {
-              body {
-                margin: 0;
-                padding: 10px;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="title">ReserVision</div>
-            <div>Point of Sale</div>
-          </div>
-          
-          <div class="info">
-            <div><strong>Receipt:</strong> POS-${trans.receiptNo}</div>
-            <div><strong>Date:</strong> ${trans.date}</div>
-            <div><strong>Time:</strong> ${trans.time}</div>
-            <div><strong>Type:</strong> ${trans.type}</div>
-            <div><strong>Payment:</strong> ${trans.payment}</div>
-          </div>
-          
-          <table>
-            <thead>
-              <tr style="border-bottom: 1px solid #000;">
-                <th style="text-align: left; padding: 5px 0;">Item</th>
-                <th style="text-align: right; padding: 5px 0;">Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHTML}
-            </tbody>
-          </table>
-          
-          <div class="total-section">
-            <div class="total">
-              <span>TOTAL:</span>
-              <span>₱${trans.total.toLocaleString()}</span>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <p>Thank you for your business!</p>
-            <p>Please come again</p>
-          </div>
-        </body>
-        </html>
-      `);
-      
-      printWindow.document.close();
-      printWindow.focus();
-      
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 250);
+      const t = this.transactionHistory.find(x => x.receiptNo === receiptNo);
+      if (!t) return;
+      const win = window.open('', '', 'width=300,height=600');
+      const rows = t.items.map(i=>`<tr><td style="padding:4px 0">${i.name}</td><td style="padding:4px 0;text-align:right">₱${i.price.toLocaleString()}</td></tr>`).join('');
+      win.document.write(`<!DOCTYPE html><html><head><title>Receipt POS-${t.receiptNo}</title><style>body{font-family:'Courier New',monospace;width:300px;margin:20px auto;padding:20px}.header{text-align:center;background:#1E88B6;color:#fff;padding:15px;border-radius:6px;margin-bottom:15px}.title{font-size:20px;font-weight:bold;margin-bottom:4px}.info{margin:10px 0;font-size:12px}table{width:100%;margin:15px 0;font-size:13px}.total-section{border-top:2px dashed #ccc;padding-top:10px;margin-top:10px}.total{font-size:16px;font-weight:bold;display:flex;justify-content:space-between;background:#1F8DBF;color:#fff;padding:10px;border-radius:5px}.footer{text-align:center;margin-top:20px;border-top:2px dashed #ccc;padding-top:10px;font-size:11px}</style></head><body><div class="header"><div class="title">ReserVision</div><div>Point of Sale</div></div><div class="info"><div><b>Receipt:</b> POS-${t.receiptNo}</div><div><b>Date:</b> ${t.date}</div><div><b>Time:</b> ${t.time}</div><div><b>Type:</b> ${t.type}</div><div><b>Payment:</b> ${t.payment}</div></div><table><thead><tr style="border-bottom:1px solid #000"><th style="text-align:left;padding:5px 0">Item</th><th style="text-align:right;padding:5px 0">Price</th></tr></thead><tbody>${rows}</tbody></table><div class="total-section"><div class="total"><span>TOTAL:</span><span>₱${t.total.toLocaleString()}</span></div></div><div class="footer"><p>Thank you for your business!</p><p>Please come again</p></div></body></html>`);
+      win.document.close(); win.focus(); setTimeout(()=>{ win.print(); win.close(); }, 250);
     },
     async deleteTransaction(receiptNo) {
-      if (confirm('Are you sure you want to delete this transaction?')) {
-        const transIndex = this.transactionHistory.findIndex(t => t.receiptNo === receiptNo);
-        if (transIndex === -1) return;
-        
-        const transaction = this.transactionHistory[transIndex];
-        
-        try {
-          // Find transaction ID from backend
-          const response = await axios.get(`${API_BASE}/transactions`);
-          const backendTrans = response.data.find(t => t.receipt_no === transaction.receiptNo);
-          
-          if (backendTrans) {
-            await axios.delete(`${API_BASE}/transactions/${backendTrans.id}`);
-          }
-          
-          this.transactionHistory.splice(transIndex, 1);
-        } catch (error) {
-          console.error('Error deleting transaction:', error);
-          alert('Failed to delete transaction');
-        }
-      }
+      if (!confirm('Delete this transaction?')) return;
+      const idx = this.transactionHistory.findIndex(t => t.receiptNo === receiptNo);
+      if (idx === -1) return;
+      try {
+        const res = await axios.get(`${API_BASE}/transactions`);
+        const bt = res.data.find(t => t.receipt_no === this.transactionHistory[idx].receiptNo);
+        if (bt) await axios.delete(`${API_BASE}/transactions/${bt.id}`);
+        this.transactionHistory.splice(idx, 1);
+      } catch (e) { console.error(e); alert('Failed to delete transaction'); }
     },
     async clearHistory() {
-      if (confirm('Are you sure you want to clear all transaction history?')) {
-        try {
-          await axios.delete(`${API_BASE}/transactions`);
-          this.transactionHistory = [];
-        } catch (error) {
-          console.error('Error clearing history:', error);
-          alert('Failed to clear transaction history');
-        }
-      }
+      if (!confirm('Clear all transaction history?')) return;
+      try { await axios.delete(`${API_BASE}/transactions`); this.transactionHistory = []; }
+      catch (e) { console.error(e); alert('Failed to clear history'); }
     },
-    saveReceiptToCSV(transaction) {
-      let csv = 'ReserVision - Receipt\n';
-      csv += `Receipt Number,${transaction.receiptNo}\n`;
-      csv += `Date,${transaction.date}\n`;
-      csv += `Time,${transaction.time}\n`;
-      csv += `Type,${transaction.type}\n`;
-      csv += `Payment Method,${transaction.payment}\n\n`;
-      csv += 'Item,Price\n';
-      
-      transaction.items.forEach(item => {
-        csv += `"${item.name}",${item.price}\n`;
-      });
-      
-      csv += `\nTotal,${transaction.total}\n`;
-      
-      this.downloadCSV(csv, `Receipt_POS-${transaction.receiptNo}_${transaction.date}.csv`);
+    saveReceiptToCSV(t) {
+      let csv = `ReserVision - Receipt\nReceipt Number,${t.receiptNo}\nDate,${t.date}\nTime,${t.time}\nType,${t.type}\nPayment Method,${t.payment}\n\nItem,Price\n`;
+      t.items.forEach(i => { csv += `"${i.name}",${i.price}\n`; });
+      csv += `\nTotal,${t.total}\n`;
+      this.downloadCSV(csv, `Receipt_POS-${t.receiptNo}_${t.date}.csv`);
     },
     exportAllTransactions() {
-      if (this.transactionHistory.length === 0) {
-        alert('No transactions to export');
-        return;
-      }
-      
+      if (!this.transactionHistory.length) { alert('No transactions to export'); return; }
       let csv = 'Receipt Number,Date,Time,Type,Payment Method,Items,Total\n';
-      
-      this.transactionHistory.forEach(trans => {
-        const itemsList = trans.items.map(item => `${item.name} (₱${item.price})`).join('; ');
-        csv += `POS-${trans.receiptNo},${trans.date},${trans.time},${trans.type},${trans.payment},"${itemsList}",${trans.total}\n`;
+      this.transactionHistory.forEach(t => {
+        csv += `POS-${t.receiptNo},${t.date},${t.time},${t.type},${t.payment},"${t.items.map(i=>`${i.name} (₱${i.price})`).join('; ')}",${t.total}\n`;
       });
-      
-      const now = new Date();
-      const filename = `POS_Transactions_${now.toISOString().split('T')[0]}.csv`;
-      this.downloadCSV(csv, filename);
+      this.downloadCSV(csv, `POS_Transactions_${new Date().toISOString().split('T')[0]}.csv`);
     },
-    downloadCSV(csvContent, filename) {
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    downloadCSV(content, filename) {
+      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
-      
-      if (navigator.msSaveBlob) {
-        navigator.msSaveBlob(blob, filename);
-      } else {
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      link.href = URL.createObjectURL(blob); link.download = filename;
+      link.style.display = 'none'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
     },
-    downloadReceipt(receiptNo) {
-      const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
-      if (trans) {
-        this.saveReceiptToCSV(trans);
-      }
-    },
-    customizeReceipt(receiptNo) {
-      this.selectedReceipt = this.transactionHistory.find(t => t.receiptNo === receiptNo);
-      this.showReceiptCustomizer = true;
-    },
+    downloadReceipt(receiptNo) { const t = this.transactionHistory.find(x => x.receiptNo === receiptNo); if (t) this.saveReceiptToCSV(t); },
+    customizeReceipt(receiptNo) { this.selectedReceipt = this.transactionHistory.find(x => x.receiptNo === receiptNo); this.showReceiptCustomizer = true; },
     downloadCustomizedReceipt() {
       if (!this.selectedReceipt) return;
-      
-      const trans = this.selectedReceipt;
-      let itemsHTML = trans.items.map(item => 
-        `<tr>
-          <td style="padding: 4px 0;">${item.name}</td>
-          <td style="padding: 4px 0; text-align: right;">₱${item.price.toLocaleString()}</td>
-        </tr>`
-      ).join('');
-      
-      const printWindow = window.open('', '', 'width=300,height=600');
-      
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Receipt POS-${trans.receiptNo}</title>
-          <style>
-            body {
-              font-family: ${this.receiptStyle.fontFamily};
-              width: 300px;
-              margin: 20px auto;
-              padding: 20px;
-            }
-            .header {
-              text-align: center;
-              border-bottom: 2px dashed #000;
-              padding-bottom: 10px;
-              margin-bottom: 15px;
-              background-color: ${this.receiptStyle.headerBg};
-              color: ${this.receiptStyle.headerText};
-              padding: 15px;
-              border-radius: 5px;
-            }
-            .title {
-              font-size: ${this.receiptStyle.companySize}px;
-              font-weight: bold;
-              margin-bottom: 5px;
-            }
-            .subtitle {
-              font-size: 12px;
-            }
-            .info {
-              margin: 10px 0;
-              font-size: 12px;
-            }
-            table {
-              width: 100%;
-              margin: 15px 0;
-              font-size: ${this.receiptStyle.itemSize}px;
-            }
-            .total-section {
-              border-top: 2px dashed #000;
-              padding-top: 10px;
-              margin-top: 10px;
-            }
-            .total {
-              font-size: ${this.receiptStyle.totalSize}px;
-              font-weight: bold;
-              display: flex;
-              justify-content: space-between;
-              background-color: ${this.receiptStyle.totalBg};
-              color: ${this.receiptStyle.totalText};
-              padding: 10px;
-              border-radius: 5px;
-            }
-            .footer {
-              text-align: center;
-              margin-top: 20px;
-              border-top: 2px dashed #000;
-              padding-top: 10px;
-              font-size: 11px;
-            }
-            @media print {
-              body {
-                margin: 0;
-                padding: 10px;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          ${this.receiptStyle.showCompanyName ? `
-            <div class="header">
-              <div class="title">${this.receiptStyle.companyName}</div>
-              <div class="subtitle">${this.receiptStyle.receiptTitle}</div>
-            </div>
-          ` : ''}
-          
-          <div class="info">
-            <div><strong>Receipt:</strong> POS-${trans.receiptNo}</div>
-            ${this.receiptStyle.showDateTime ? `
-              <div><strong>Date:</strong> ${trans.date}</div>
-              <div><strong>Time:</strong> ${trans.time}</div>
-            ` : ''}
-            <div><strong>Type:</strong> ${trans.type}</div>
-            <div><strong>Payment:</strong> ${trans.payment}</div>
-          </div>
-          
-          <table>
-            <thead>
-              <tr style="border-bottom: 1px solid #000;">
-                <th style="text-align: left; padding: 5px 0;">Item</th>
-                <th style="text-align: right; padding: 5px 0;">Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHTML}
-            </tbody>
-          </table>
-          
-          <div class="total-section">
-            <div class="total">
-              <span>TOTAL:</span>
-              <span>₱${trans.total.toLocaleString()}</span>
-            </div>
-          </div>
-          
-          ${this.receiptStyle.showFooter ? `
-            <div class="footer">
-              <p>Thank you for your business!</p>
-              <p>Please come again</p>
-            </div>
-          ` : ''}
-        </body>
-        </html>
-      `);
-      
-      printWindow.document.close();
-      printWindow.focus();
-      
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 250);
-
-      // Also download as CSV
-      const trans_data = this.selectedReceipt;
-      let csv = `${this.receiptStyle.companyName}\n`;
-      csv += `${this.receiptStyle.receiptTitle}\n\n`;
-      csv += `Receipt Number,${trans_data.receiptNo}\n`;
-      csv += `Date,${trans_data.date}\n`;
-      csv += `Time,${trans_data.time}\n`;
-      csv += `Type,${trans_data.type}\n`;
-      csv += `Payment Method,${trans_data.payment}\n\n`;
-      csv += 'Item,Price\n';
-      
-      trans_data.items.forEach(item => {
-        csv += `"${item.name}",${item.price}\n`;
-      });
-      
-      csv += `\nTotal,${trans_data.total}\n`;
-      
-      this.downloadCSV(csv, `Receipt_POS-${trans_data.receiptNo}_${trans_data.date}_customized.csv`);
+      const t = this.selectedReceipt;
+      const rows = t.items.map(i=>`<tr><td style="padding:4px 0">${i.name}</td><td style="padding:4px 0;text-align:right">₱${i.price.toLocaleString()}</td></tr>`).join('');
+      const win = window.open('', '', 'width=300,height=600');
+      win.document.write(`<!DOCTYPE html><html><head><title>Receipt POS-${t.receiptNo}</title><style>body{font-family:${this.receiptStyle.fontFamily};width:300px;margin:20px auto;padding:20px}.header{text-align:center;background-color:${this.receiptStyle.headerBg};color:${this.receiptStyle.headerText};padding:15px;border-radius:6px;margin-bottom:15px}.title{font-size:${this.receiptStyle.companySize}px;font-weight:bold;margin-bottom:4px}.info{margin:10px 0;font-size:12px}table{width:100%;margin:15px 0;font-size:${this.receiptStyle.itemSize}px}.total-section{border-top:2px dashed #ccc;padding-top:10px;margin-top:10px}.total{font-size:${this.receiptStyle.totalSize}px;font-weight:bold;display:flex;justify-content:space-between;background-color:${this.receiptStyle.totalBg};color:${this.receiptStyle.totalText};padding:10px;border-radius:5px}.footer{text-align:center;margin-top:20px;border-top:2px dashed #ccc;padding-top:10px;font-size:11px}</style></head><body>${this.receiptStyle.showCompanyName?`<div class="header"><div class="title">${this.receiptStyle.companyName}</div><div>${this.receiptStyle.receiptTitle}</div></div>`:''}<div class="info"><div><b>Receipt:</b> POS-${t.receiptNo}</div>${this.receiptStyle.showDateTime?`<div><b>Date:</b> ${t.date}</div><div><b>Time:</b> ${t.time}</div>`:''}<div><b>Type:</b> ${t.type}</div><div><b>Payment:</b> ${t.payment}</div></div><table><thead><tr style="border-bottom:1px solid #000"><th style="text-align:left;padding:5px 0">Item</th><th style="text-align:right;padding:5px 0">Price</th></tr></thead><tbody>${rows}</tbody></table><div class="total-section"><div class="total"><span>TOTAL:</span><span>₱${t.total.toLocaleString()}</span></div></div>${this.receiptStyle.showFooter?`<div class="footer"><p>Thank you for your business!</p><p>Please come again</p></div>`:''}</body></html>`);
+      win.document.close(); win.focus(); setTimeout(()=>{ win.print(); win.close(); }, 250);
+      let csv = `${this.receiptStyle.companyName}\n${this.receiptStyle.receiptTitle}\n\nReceipt Number,${t.receiptNo}\nDate,${t.date}\nTime,${t.time}\nType,${t.type}\nPayment Method,${t.payment}\n\nItem,Price\n`;
+      t.items.forEach(i => { csv += `"${i.name}",${i.price}\n`; });
+      csv += `\nTotal,${t.total}\n`;
+      this.downloadCSV(csv, `Receipt_POS-${t.receiptNo}_${t.date}_customized.csv`);
     },
     saveReceiptStyle() {
-      // Save to localStorage for future use
       localStorage.setItem('receiptStyle', JSON.stringify(this.receiptStyle));
       alert('Receipt style saved successfully!');
     }
@@ -1146,252 +639,20 @@ export default {
 </script>
 
 <style scoped>
-.pos-container {
-  padding: 1.5rem;
-  background: #F8F7F4;
-  min-height: 100vh;
-  max-width: 1240px;
-  margin: 0 auto;
+/* ── Poster Palette Variables ──────────────────────────── */
+:root {
+  --blue-1:  #1E88B6;
+  --blue-2:  #1F8DBF;
+  --yellow-1:#F2C200;
+  --yellow-2:#F4C400;
 }
 
-.pos-grid {
-  align-items: stretch;
-}
-
-.items-card,
-.cart-card {
-  min-height: 680px;
-  max-height: 680px;
-}
-
-.items-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.cart-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.cart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.9rem;
-}
-
-.cart-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-}
-
-.cart-items-area {
-  flex: 1;
-  min-height: 280px;
-  overflow-y: auto;
-  padding-right: 2px;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 0.9rem;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.cart-items-area::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-
-.cart-empty-state {
-  min-height: 250px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #9ca3af;
-}
-
-.cart-bottom {
-  margin-top: auto;
-}
-
-.total-panel {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #f3f4f6;
-  border-radius: 10px;
-  padding: 0.9rem 1rem;
-  margin-bottom: 0.85rem;
-}
-
-.payment-wrap {
-  margin-bottom: 0.2rem;
-}
-
-.pay-btn {
-  min-height: 52px;
-}
-
-.items-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.9rem;
-  min-height: 30px;
-}
-
-.section-title {
-  font-size: 1.50rem;
-  line-height: 1;
-  margin: 0;
-  white-space: nowrap;
-}
-
-.category-switch {
-  display: flex;
-  gap: 0.45rem;
-  flex-wrap: nowrap;
-  justify-content: flex-end;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.category-switch::-webkit-scrollbar {
-  display: none;
-}
-
-.menu-filter-wrap {
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 0.65rem;
-}
-
-.chip-btn {
-  line-height: 1;
-}
-
-.items-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 2px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.items-scroll::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-
-.card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: all 0.3s ease;
-}
-
-.card:hover {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-}
-
-.item-btn {
-  transition: all 0.2s ease;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  cursor: pointer;
-  min-height: 76px;
-}
-
-.item-btn:hover {
-  border-color: #3b82f6;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(59, 130, 246, 0.16);
-}
-
-.category-btn {
-  transition: all 0.2s ease;
-  font-weight: 500;
-  border: 1px solid transparent;
-  line-height: 1;
-  height: 36px;
-  padding: 0 15px;
-  font-size: 0.86rem;
-  white-space: nowrap;
-}
-
-.category-btn i {
-  font-size: 0.75rem;
-}
-
-.category-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
-}
-
-.btn-primary {
-  background: var(--primary);
-  transition: all 0.2s ease;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
-}
-
-.btn-success {
-  transition: all 0.2s ease;
-}
-
-.btn-success:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
-}
-
-input[type="text"],
-select {
-  transition: all 0.2s ease;
-}
-
-input[type="text"]:focus,
-select:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
-}
-
-table tr {
-  transition: background-color 0.15s ease;
-}
-
-.cart-item {
-  transition: all 0.2s ease;
-  padding: 0.55rem;
-  border-radius: 6px;
-}
-
-.cart-item:hover {
-  background: #f9fafb;
-}
-
-/* Admin Layout Styles */
+/* ── Base ──────────────────────────────────────────────── */
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background: #F8F7F4;
-}
-
-.header-container {
-  padding: 1rem 2rem;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  top: 0;
-  z-index: 50;
-  margin-bottom: 10px;
-  margin-top:  20px;
+  background: #f0f4f8;
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 .main-content {
@@ -1399,24 +660,465 @@ table tr {
   margin-left: 260px;
   transition: margin-left 0.3s ease;
 }
+.main-content.shifted { margin-left: 70px; }
 
-.main-content.shifted {
-  margin-left: 70px;
+.header-container {
+  padding: 0.85rem 2rem;
+  background: #fff;
+  border-bottom: 1px solid #e8edf2;
+  position: sticky; top: 0; z-index: 50;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 
+.pos-container {
+  padding: 1.75rem;
+  max-width: 1360px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── POS Grid ──────────────────────────────────────────── */
+.pos-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* ── Card Base ─────────────────────────────────────────── */
+.pos-card {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #e8edf2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+
+.pos-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafcfe;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.pos-card-header-left { display: flex; align-items: center; gap: 0.8rem; }
+
+.pos-icon-wrap {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+}
+.icon-blue   { background: rgba(31,141,191,.12); color: #1F8DBF; }
+.icon-yellow { background: rgba(244,196,0,.18);  color: #a07800; }
+
+.pos-card-title { font-size: 0.97rem; font-weight: 700; color: #1e293b; margin: 0; }
+.pos-card-sub   { font-size: 0.75rem; color: #94a3b8; margin: 0.1rem 0 0; }
+
+/* ── Category Buttons ──────────────────────────────────── */
+.category-switch {
+  display: flex; gap: 0.4rem; flex-wrap: nowrap;
+  overflow-x: auto; scrollbar-width: none;
+}
+.category-switch::-webkit-scrollbar { display: none; }
+
+.category-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  height: 34px; padding: 0 13px;
+  border-radius: 9px; border: 1.5px solid #e8edf2;
+  background: #f8fafc; color: #64748b;
+  font-size: 0.82rem; font-weight: 600; white-space: nowrap;
+  cursor: pointer; transition: all 0.15s;
+}
+.category-btn i { font-size: 0.72rem; }
+.category-btn:hover {
+  border-color: #1F8DBF; color: #1F8DBF;
+  background: rgba(31,141,191,.06);
+}
+.category-btn--active {
+  background: #1F8DBF; color: #fff;
+  border-color: #1F8DBF;
+  box-shadow: 0 3px 10px rgba(31,141,191,.3);
+}
+.category-btn--active:hover { background: #1E88B6; border-color: #1E88B6; color: #fff; }
+
+/* ── Items Body ────────────────────────────────────────── */
+.items-body {
+  padding: 1.1rem 1.4rem;
+  display: flex; flex-direction: column; gap: 0.9rem;
+}
+
+.search-wrap { position: relative; }
+.search-icon {
+  position: absolute; left: 0.9rem; top: 50%; transform: translateY(-50%);
+  color: #94a3b8; font-size: 0.85rem; pointer-events: none;
+}
+.search-input {
+  width: 100%; padding: 0.65rem 0.9rem 0.65rem 2.4rem;
+  border: 1.5px solid #e8edf2; border-radius: 10px;
+  font-size: 0.9rem; color: #1e293b; background: #f8fafc;
+  transition: all 0.15s; box-sizing: border-box;
+}
+.search-input:focus {
+  outline: none; border-color: #1F8DBF; background: #fff;
+  box-shadow: 0 0 0 3px rgba(31,141,191,.1);
+}
+
+/* ── Filter Chips ──────────────────────────────────────── */
+.filter-wrap { border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; }
+.filter-label {
+  font-size: 0.7rem; font-weight: 700; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  display: block; margin-bottom: 0.5rem;
+}
+.filter-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chip {
+  padding: 0.25rem 0.75rem; border-radius: 30px;
+  border: 1.5px solid #e8edf2; background: #fff;
+  font-size: 0.78rem; font-weight: 600; color: #64748b;
+  cursor: pointer; transition: all 0.15s;
+}
+.chip:hover { border-color: #1F8DBF; color: #1F8DBF; }
+.chip--active { background: #1F8DBF; color: #fff; border-color: #1F8DBF; }
+
+/* ── Items Grid ────────────────────────────────────────── */
+.items-scroll {
+  max-height: 440px; overflow-y: auto; scrollbar-width: none;
+}
+.items-scroll::-webkit-scrollbar { display: none; }
+
+.items-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.65rem; }
+
+.item-btn {
+  padding: 0.8rem; min-height: 76px;
+  border: 1.5px solid #e8edf2; border-radius: 12px;
+  background: #fff; cursor: pointer; text-align: left;
+  display: flex; flex-direction: column; justify-content: space-between;
+  transition: all 0.2s;
+}
+.item-btn:hover {
+  border-color: #1F8DBF;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(31,141,191,.15);
+  background: rgba(31,141,191,.03);
+}
+.item-name  { font-size: 0.83rem; font-weight: 600; color: #1e293b; line-height: 1.3; }
+.item-price { font-size: 1rem; font-weight: 700; color: #1F8DBF; margin-top: 0.35rem; }
+
+/* ── Cart ──────────────────────────────────────────────── */
+.cart-card { display: flex; flex-direction: column; }
+
+.clear-cart-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.8rem; font-weight: 600; color: #ef4444;
+  background: rgba(239,68,68,.08); border: 1.5px solid rgba(239,68,68,.2);
+  border-radius: 8px; padding: 0.35rem 0.75rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.clear-cart-btn:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+
+.cart-body { display: flex; flex-direction: column; flex: 1; padding: 1.1rem 1.4rem; }
+
+.cart-items-area {
+  flex: 1; min-height: 240px; max-height: 240px;
+  overflow-y: auto; scrollbar-width: none;
+  border-bottom: 1px solid #f1f5f9; margin-bottom: 1rem;
+}
+.cart-items-area::-webkit-scrollbar { display: none; }
+
+.cart-empty {
+  min-height: 220px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: #94a3b8; gap: 0.6rem; text-align: center;
+}
+.cart-empty i { font-size: 2.2rem; color: #d1d5db; }
+.cart-empty p  { font-size: 0.88rem; margin: 0; }
+
+.cart-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.55rem 0.5rem; border-radius: 8px; transition: background 0.15s;
+}
+.cart-item:hover { background: #f8fafc; }
+.cart-item-name  { font-size: 0.88rem; color: #334155; font-weight: 500; }
+.cart-item-right { display: flex; align-items: center; gap: 0.6rem; }
+.cart-item-price { font-size: 0.9rem; font-weight: 700; color: #1e293b; }
+.remove-item-btn { background: none; border: none; cursor: pointer; color: #fca5a5; font-size: 1rem; transition: color 0.15s; }
+.remove-item-btn:hover { color: #ef4444; }
+
+/* ── Cart Bottom ───────────────────────────────────────── */
+.cart-bottom { display: flex; flex-direction: column; gap: 0.85rem; }
+
+.total-panel {
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(31,141,191,.06);
+  border: 1.5px solid rgba(31,141,191,.2);
+  border-radius: 12px; padding: 0.85rem 1rem;
+}
+.total-label  { font-size: 0.95rem; font-weight: 600; color: #64748b; }
+.total-amount { font-size: 2rem; font-weight: 800; color: #1F8DBF; line-height: 1; }
+
+.payment-label {
+  display: block; font-size: 0.78rem; font-weight: 700;
+  color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;
+  margin-bottom: 0.5rem;
+}
+.payment-btns { display: flex; gap: 0.6rem; }
+.pay-method-btn {
+  flex: 1; padding: 0.65rem 0.5rem; border-radius: 10px;
+  border: 1.5px solid #e8edf2; background: #fff;
+  font-size: 0.85rem; font-weight: 600; color: #64748b;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.35rem;
+  transition: all 0.15s;
+}
+.pay-method-btn:hover { border-color: #1E88B6; color: #1E88B6; }
+
+/* GCash selected — green tint */
+.pay-method-btn--gcash {
+  background: rgba(34,197,94,.06); border-color: #22c55e;
+  color: #15803d; box-shadow: 0 0 0 3px rgba(34,197,94,.12);
+}
+/* Cash selected — yellow/golden tint matching palette */
+.pay-method-btn--cash {
+  background: rgba(242,194,0,.1); border-color: #F2C200;
+  color: #8a6500; box-shadow: 0 0 0 3px rgba(244,196,0,.18);
+}
+.pay-check { font-size: 0.8rem; color: #1F8DBF; }
+
+.checkout-btn {
+  width: 100%; padding: 0.9rem;
+  background: linear-gradient(135deg, #1F8DBF, #1E88B6);
+  color: #fff; border: none; border-radius: 12px;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(31,141,191,.35);
+}
+.checkout-btn:hover {
+  background: linear-gradient(135deg, #1E88B6, #1a7aa8);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(30,136,182,.4);
+}
+
+/* ── Transactions ──────────────────────────────────────── */
+.transactions-card { width: 100%; }
+
+.trans-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.trans-action-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.4rem 0.9rem; border-radius: 9px;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s; border: 1.5px solid;
+}
+.trans-action-btn--export {
+  color: #15803d; background: rgba(34,197,94,.08); border-color: rgba(34,197,94,.3);
+}
+.trans-action-btn--export:hover { background: #22c55e; color: #fff; border-color: #22c55e; }
+.trans-action-btn--clear {
+  color: #ef4444; background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.3);
+}
+.trans-action-btn--clear:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+
+.table-wrap { overflow-x: auto; }
+.pos-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+
+.pos-table thead tr {
+  background: linear-gradient(90deg, rgba(31,141,191,.08), rgba(30,136,182,.13));
+  border-bottom: 2px solid rgba(31,141,191,.2);
+}
+.pos-table th {
+  padding: 0.85rem 1rem; text-align: left;
+  font-size: 0.75rem; font-weight: 700; color: #64748b;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.pos-table td { padding: 0.85rem 1rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
+
+.table-row { transition: background 0.15s; }
+.table-row:hover { background: rgba(31,141,191,.03); }
+/* NEW eshop row — golden yellow accent from palette */
+.table-row--new {
+  background: rgba(242,194,0,.07);
+  border-left: 3px solid #F4C400;
+}
+.table-row:last-child td { border-bottom: none; }
+
+.table-empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0.5rem; padding: 3rem; color: #94a3b8; text-align: center;
+}
+.table-empty i { font-size: 2rem; color: #d1d5db; }
+
+.receipt-no { font-weight: 700; color: #1F8DBF; }
+/* NEW badge uses yellow-2 from palette */
+.new-badge {
+  display: inline-block; margin-left: 0.4rem;
+  background: #F4C400; color: #6b4e00;
+  font-size: 0.68rem; font-weight: 800;
+  padding: 0.15rem 0.5rem; border-radius: 5px;
+}
+
+.items-preview { color: #334155; font-size: 0.85rem; }
+.view-details-btn {
+  background: none; border: none; cursor: pointer;
+  color: #1F8DBF; font-size: 0.75rem; font-weight: 600;
+  margin-top: 0.2rem; display: inline-flex; align-items: center; gap: 0.25rem;
+  transition: color 0.15s; padding: 0;
+}
+.view-details-btn:hover { color: #1E88B6; text-decoration: underline; }
+
+.type-cell  { color: #64748b; font-size: 0.85rem; }
+.amount-cell{ font-weight: 700; color: #1e293b; }
+.date-cell  { color: #334155; font-size: 0.85rem; }
+.time-sub   { display: block; font-size: 0.75rem; color: #94a3b8; margin-top: 0.1rem; }
+
+/* Payment badges */
+.payment-badge {
+  display: inline-block; padding: 0.25rem 0.65rem;
+  border-radius: 30px; font-size: 0.75rem; font-weight: 600;
+}
+.payment-badge--gcash { background: rgba(34,197,94,.1);  color: #15803d; }
+/* Cash badge uses palette yellow */
+.payment-badge--cash  { background: rgba(242,194,0,.15); color: #7a5200; }
+
+.actions-cell { text-align: center; white-space: nowrap; }
+.tbl-btn {
+  width: 30px; height: 30px; border-radius: 7px;
+  border: 1.5px solid #e8edf2; background: #fff;
+  font-size: 0.85rem; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.15s; margin: 0 2px;
+}
+.tbl-btn:hover { transform: translateY(-1px); }
+/* Print — blue-2 */
+.tbl-btn--print    { color: #1F8DBF; }
+.tbl-btn--print:hover    { background: #1F8DBF; color: #fff; border-color: #1F8DBF; }
+/* Download — blue-1 */
+.tbl-btn--download { color: #1E88B6; }
+.tbl-btn--download:hover { background: #1E88B6; color: #fff; border-color: #1E88B6; }
+/* Customize — purple kept as-is (not part of this palette) */
+.tbl-btn--customize{ color: #8b5cf6; }
+.tbl-btn--customize:hover{ background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+/* Delete — red */
+.tbl-btn--delete   { color: #ef4444; }
+.tbl-btn--delete:hover   { background: #ef4444; color: #fff; border-color: #ef4444; }
+
+/* ── Modal ─────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,.55); backdrop-filter: blur(5px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; animation: fadeIn 0.2s;
+}
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+.modal-box {
+  background: #fff; border-radius: 20px;
+  width: 90%; max-width: 620px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0,0,0,.2);
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Modal header uses blue gradient from palette */
+.modal-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 1.4rem 1.5rem;
+  background: linear-gradient(135deg, #1E88B6, #1F8DBF);
+  border-radius: 20px 20px 0 0;
+}
+.modal-title { font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0; }
+.modal-sub   { font-size: 0.82rem; color: rgba(255,255,255,.75); margin: 0.25rem 0 0; }
+.modal-close {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: rgba(255,255,255,.15); border: none; color: #fff;
+  font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.modal-close:hover { background: rgba(255,255,255,.3); }
+
+.modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+.modal-section {
+  background: #f8fafc; border: 1px solid #e8edf2;
+  border-radius: 14px; padding: 1.1rem;
+}
+.modal-section-title {
+  font-size: 0.9rem; font-weight: 700; color: #1e293b; margin: 0 0 1rem;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.modal-section-title i { color: #1F8DBF; }
+
+.modal-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+.form-group  { display: flex; flex-direction: column; gap: 0.4rem; }
+.form-label  { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; }
+.form-input  {
+  padding: 0.6rem 0.85rem; border: 1.5px solid #e8edf2;
+  border-radius: 9px; font-size: 0.9rem; color: #1e293b;
+  background: #fff; transition: all 0.15s;
+  width: 100%; box-sizing: border-box;
+}
+.form-input:focus { outline: none; border-color: #1F8DBF; box-shadow: 0 0 0 3px rgba(31,141,191,.1); }
+.form-input.mono  { font-family: monospace; font-size: 0.82rem; }
+
+.color-row { display: flex; gap: 0.5rem; align-items: center; }
+.color-swatch {
+  width: 42px; height: 36px; border-radius: 8px;
+  border: 1.5px solid #e8edf2; cursor: pointer; padding: 2px; flex-shrink: 0;
+}
+
+.modal-checks { display: flex; flex-direction: column; gap: 0.6rem; }
+.check-row {
+  display: flex; align-items: center; gap: 0.65rem;
+  font-size: 0.88rem; color: #334155; cursor: pointer; font-weight: 500;
+}
+.check-input { width: 16px; height: 16px; accent-color: #1F8DBF; cursor: pointer; }
+
+/* Receipt preview */
+.receipt-preview {
+  background: #fff; border: 2px dashed #e8edf2;
+  border-radius: 10px; padding: 1rem;
+}
+.rp-header { text-align: center; padding: 12px; border-radius: 7px; margin-bottom: 10px; }
+.rp-body   { margin: 8px 0; }
+.rp-item   { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
+.rp-total  { text-align: center; font-weight: 700; padding: 10px; border-radius: 7px; margin-top: 8px; }
+
+.modal-foot {
+  padding: 1.1rem 1.5rem; border-top: 1px solid #f1f5f9;
+  background: #fafcfe; border-radius: 0 0 20px 20px;
+  display: flex; gap: 0.6rem; justify-content: flex-end;
+}
+.modal-btn {
+  padding: 0.55rem 1.2rem; border-radius: 10px;
+  font-size: 0.88rem; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  transition: all 0.15s; border: none;
+}
+.modal-btn--cancel   { background: #f1f5f9; color: #64748b; }
+.modal-btn--cancel:hover { background: #e2e8f0; }
+.modal-btn--download { background: #22c55e; color: #fff; }
+.modal-btn--download:hover { background: #16a34a; }
+/* Save uses blue-2 */
+.modal-btn--save     { background: #1F8DBF; color: #fff; }
+.modal-btn--save:hover { background: #1E88B6; }
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .pos-grid { grid-template-columns: 1fr; }
+}
 @media (max-width: 768px) {
-  .items-topbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .category-switch {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .main-content {
-    margin-left: 0;
-  }
+  .main-content { margin-left: 0; }
+  .pos-container { padding: 1rem; }
+  .pos-card-header { flex-direction: column; align-items: flex-start; }
+  .items-grid { grid-template-columns: repeat(2,1fr); }
+  .modal-grid-2 { grid-template-columns: 1fr; }
 }
 </style>
