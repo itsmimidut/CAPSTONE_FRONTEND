@@ -330,6 +330,8 @@ onMounted(async () => {
   margin-left: 260px;
   margin-top: 90px; /* keeps content below fixed header */
   transition: padding 0.3s ease;
+  background: linear-gradient(135deg, #1F8DBF/5 0%, #F4C400/5 100%);
+  min-height: calc(100vh - 90px);
 }
 
 @media (max-width: 767px) {
@@ -355,12 +357,210 @@ onMounted(async () => {
   left: 0;
   width: 260px;
   height: 100vh;
-  background-color: #fff;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  background: linear-gradient(165deg, #1F8DBF 0%, #1E88B6 100%);
+  box-shadow: 2px 0 10px rgba(31, 141, 191, 0.2);
+  border-right: 2px solid #F4C400;
   z-index: 1000;
 }
 
 body {
   overflow-x: hidden;
+  background: #ffffff;
+}
+
+/* Stats Cards - Will be applied via the component */
+:global(.stats-card) {
+  background: white;
+  border: 1px solid #1F8DBF/20;
+  border-radius: 8px;
+}
+
+:global(.stats-card .stat-value) {
+  color: #1F8DBF;
+}
+
+:global(.stats-card .stat-label) {
+  color: #1E88B6/80;
+}
+
+/* Table Styles */
+:global(.user-table) {
+  border: 1px solid #1F8DBF/20;
+}
+
+:global(.user-table th) {
+  background: #1F8DBF/10;
+  color: #1F8DBF;
+  font-weight: 600;
+}
+
+:global(.user-table td) {
+  color: #1E88B6;
+}
+
+:global(.user-table tr:hover) {
+  background: #F4C400/5;
+}
+
+/* Buttons */
+:global(.btn-primary) {
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+:global(.btn-primary:hover) {
+  background: linear-gradient(135deg, #1E88B6 0%, #1F8DBF 100%);
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.3);
+}
+
+:global(.btn-secondary) {
+  background: white;
+  color: #1F8DBF;
+  border: 1px solid #1F8DBF;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+:global(.btn-secondary:hover) {
+  background: #F4C400;
+  color: #1F8DBF;
+  border-color: #F4C400;
+}
+
+/* Form Controls */
+:global(.form-input) {
+  border: 1px solid #1F8DBF/20;
+  border-radius: 4px;
+  color: #1E88B6;
+}
+
+:global(.form-input:focus) {
+  border-color: #F4C400;
+  outline: none;
+  box-shadow: 0 0 0 2px #F4C400/20;
+}
+
+:global(.form-label) {
+  color: #1F8DBF;
+  font-weight: 500;
+}
+
+/* Badges/Role Tags */
+:global(.role-badge) {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+:global(.role-badge.admin) {
+  background: #1F8DBF/10;
+  color: #1F8DBF;
+  border: 1px solid #1F8DBF/30;
+}
+
+:global(.role-badge.staff) {
+  background: #F4C400/10;
+  color: #F4C400;
+  border: 1px solid #F4C400/30;
+}
+
+:global(.role-badge.customer) {
+  background: #1E88B6/10;
+  color: #1E88B6;
+  border: 1px solid #1E88B6/30;
+}
+
+/* Pagination */
+:global(.pagination-button) {
+  border: 1px solid #1F8DBF/20;
+  color: #1F8DBF;
+  background: white;
+  border-radius: 4px;
+}
+
+:global(.pagination-button:hover) {
+  background: #F4C400;
+  color: #1F8DBF;
+  border-color: #F4C400;
+}
+
+:global(.pagination-button.active) {
+  background: #1F8DBF;
+  color: white;
+  border-color: #1F8DBF;
+}
+
+/* Modal */
+:global(.modal-overlay) {
+  background: rgba(31, 141, 191, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+:global(.modal-content) {
+  background: white;
+  border: 2px solid #F4C400;
+  border-radius: 8px;
+}
+
+:global(.modal-header) {
+  border-bottom: 2px solid #1F8DBF;
+  color: #1F8DBF;
+}
+
+:global(.modal-footer) {
+  border-top: 1px solid #1F8DBF/20;
+}
+
+/* Search/Filter Controls */
+:global(.search-input) {
+  border: 1px solid #1F8DBF/20;
+  border-radius: 4px;
+  color: #1E88B6;
+}
+
+:global(.search-input:focus) {
+  border-color: #F4C400;
+  outline: none;
+}
+
+:global(.filter-select) {
+  border: 1px solid #1F8DBF/20;
+  border-radius: 4px;
+  color: #1F8DBF;
+  background: white;
+}
+
+/* Export Button */
+:global(.export-button) {
+  background: #F4C400;
+  color: #1F8DBF;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+:global(.export-button:hover) {
+  background: #1F8DBF;
+  color: white;
+}
+
+/* Add User Button */
+:global(.add-user-button) {
+  background: #1F8DBF;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+:global(.add-user-button:hover) {
+  background: #F4C400;
+  color: #1F8DBF;
 }
 </style>

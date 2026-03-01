@@ -56,8 +56,8 @@
     <!-- Search and Filter Controls -->
     <div class="controls-container">
       <!-- Search box for filtering items by name (case-insensitive) -->
-      <div class="search-box">
-        <i class="fas fa-search"></i>
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
         <input 
           v-model="searchQuery"
           type="text" 
@@ -91,8 +91,8 @@
           <tr v-for="item in filteredInventory" :key="item.id" :class="`status-${item.status}`">
             <!-- Item name with icon -->
             <td class="item-name">
-              <i class="fas fa-cubes"></i>
-              {{ item.item }}
+              <i class="fas fa-cubes item-icon"></i>
+              <span>{{ item.item }}</span>
             </td>
             <!-- Current quantity with badge styling -->
             <td class="quantity">
@@ -330,21 +330,28 @@
           <div v-else class="links-grid">
             <div v-for="menu in menuIngredientLinks" :key="menu.menu_id" class="menu-card">
               <div class="menu-header">
-                <h4><i class="fas fa-utensils"></i> {{ menu.menu_name }}</h4>
+                <div class="menu-title-section">
+                  <i class="fas fa-utensils menu-icon"></i>
+                  <h4>{{ menu.menu_name }}</h4>
+                </div>
                 <span class="menu-category">{{ menu.category }}</span>
               </div>
               
               <div class="ingredients-list">
                 <div v-for="ing in menu.ingredients" :key="ing.inventory_id" class="ingredient-item">
-                  <span class="ing-name">
-                    <i class="fas fa-cube"></i> {{ ing.item_name }}
-                  </span>
-                  <span class="ing-quantity">
-                    {{ ing.quantity_needed }} {{ ing.unit }} <small>per serving</small>
-                  </span>
-                  <span :class="`ing-status status-${ing.status}`">
-                    {{ ing.inventory_quantity }} {{ ing.unit }} available
-                  </span>
+                  <div class="ingredient-info">
+                    <span class="ing-name">
+                      <i class="fas fa-cube ing-bullet"></i>
+                      <span class="ing-name-text">{{ ing.item_name }}</span>
+                    </span>
+                    <span class="ing-quantity">{{ ing.quantity_needed }} {{ ing.unit }} <span class="per-serving">per serving</span></span>
+                  </div>
+                  <div class="ingredient-availability">
+                    <span :class="`ing-status status-${ing.status}`">
+                      <i class="fas fa-box"></i>
+                      {{ ing.inventory_quantity }} {{ ing.unit }} available
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -389,8 +396,8 @@
             <h4>Current Ingredients:</h4>
             <div class="ingredient-list-view">
               <div v-for="ing in selectedMenuCurrentIngredients" :key="ing.id" class="ingredient-preview-item">
-                <span>{{ ing.item_name }}</span>
-                <span class="qty-badge">{{ ing.quantity_needed }} {{ ing.unit }}</span>
+                <span class="preview-item-name">{{ ing.item_name }}</span>
+                <span class="preview-qty-badge">{{ ing.quantity_needed }} {{ ing.unit }}</span>
                 <button 
                   type="button"
                   class="btn-remove-ing"
@@ -412,7 +419,6 @@
                 v-model="newIngredient.inventory_id"
                 required
                 class="form-input"
-                style="flex: 1;"
               >
                 <option value="">Select inventory item...</option>
                 <option v-for="inv in inventory" :key="inv.id" :value="inv.id || inv.inventory_id">
@@ -426,8 +432,7 @@
                 required
                 min="0.01"
                 step="0.01"
-                class="form-input"
-                style="flex: 0.5; width: 100px;"
+                class="form-input quantity-input"
               />
               <button 
                 type="button"
@@ -459,14 +464,6 @@
 /**
  * InventorySection.vue
  * Purpose: Display and manage restaurant inventory items in a data table with CRUD operations
- * Functionality: 
- *   - Display inventory items in a sortable/filterable table
- *   - Add new inventory items via modal form
- *   - Edit existing inventory items
- *   - Delete inventory items with confirmation
- *   - Filter and search inventory by name and status
- *   - Calculate and display stock status (low/good) automatically
- *   - Show inventory statistics (low stock count, good stock count, total items)
  */
 
 import { ref, computed, watch } from 'vue'
@@ -908,8 +905,6 @@ watch(showMenuIngredientsModal, (newVal) => {
     fetchMenuIngredientLinks()
   }
 })
-
-
 </script>
 
 <style scoped>
@@ -917,7 +912,8 @@ watch(showMenuIngredientsModal, (newVal) => {
   background: white;
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  border: 1px solid rgba(31, 141, 191, 0.1);
 }
 
 .section-header {
@@ -927,6 +923,8 @@ watch(showMenuIngredientsModal, (newVal) => {
   margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid #F4C400;
 }
 
 .header-buttons {
@@ -938,7 +936,7 @@ watch(showMenuIngredientsModal, (newVal) => {
 .section-title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1F2937;
+  color: #1F8DBF;
   margin: 0;
   display: flex;
   align-items: center;
@@ -950,18 +948,19 @@ watch(showMenuIngredientsModal, (newVal) => {
   display: inline-block;
   width: 4px;
   height: 2rem;
-  background: linear-gradient(180deg, #2B6CB0, #63B3ED);
+  background: linear-gradient(180deg, #1F8DBF, #F4C400);
   border-radius: 2px;
 }
 
 .section-subtitle {
   margin: 0.5rem 0 0 0;
-  color: #6B7280;
+  color: #1E88B6;
   font-size: 0.95rem;
+  opacity: 0.8;
 }
 
-.btn-restock-all,
 .btn-add-item {
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -973,24 +972,16 @@ watch(showMenuIngredientsModal, (newVal) => {
   align-items: center;
   gap: 0.5rem;
   white-space: nowrap;
-}
-
-.btn-restock-all {
-  background: linear-gradient(135deg, #2B6CB0, #1E40AF);
-}
-
-.btn-restock-all:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
-}
-
-.btn-add-item {
-  background: linear-gradient(135deg, #10B981, #059669);
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
 }
 
 .btn-add-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
+}
+
+.btn-add-item i {
+  color: #F4C400;
 }
 
 .stats-container {
@@ -1002,7 +993,7 @@ watch(showMenuIngredientsModal, (newVal) => {
 
 /* Auto-Deduction Banner Styles */
 .auto-deduction-banner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -1010,8 +1001,9 @@ watch(showMenuIngredientsModal, (newVal) => {
   align-items: center;
   gap: 1.5rem;
   color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.3);
   animation: slideIn 0.5s ease-out;
+  border-left: 4px solid #F4C400;
 }
 
 @keyframes slideIn {
@@ -1025,61 +1017,9 @@ watch(showMenuIngredientsModal, (newVal) => {
   }
 }
 
-.banner-icon {
-  font-size: 3rem;
-  opacity: 0.9;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-}
-
-.banner-content {
-  flex: 1;
-}
-
-.banner-content h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.banner-content p {
-  margin: 0 0 1rem 0;
-  opacity: 0.95;
-  line-height: 1.5;
-}
-
-.banner-features {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.feature-badge {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
 .btn-view-links {
   background: white;
-  color: #667eea;
+  color: #1F8DBF;
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
@@ -1093,78 +1033,110 @@ watch(showMenuIngredientsModal, (newVal) => {
 }
 
 .btn-view-links:hover {
+  background: #F4C400;
+  color: #1F8DBF;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* Controls Container */
 .controls-container {
   display: flex;
   gap: 1rem;
   margin-bottom: 2rem;
   flex-wrap: wrap;
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  border: 2px solid #F4C400;
 }
 
-.search-box {
+.search-wrapper {
   flex: 1;
   min-width: 250px;
   display: flex;
   align-items: center;
-  background: #F3F4F6;
+  background: #F9FAFB;
   border-radius: 8px;
-  padding: 0 1rem;
-  border: 1px solid #E5E7EB;
+  border: 1px solid rgba(31, 141, 191, 0.2);
+  transition: all 0.3s ease;
+  padding: 0 0.75rem;
+  height: 46px;
 }
 
-.search-box i {
-  color: #9CA3AF;
+.search-wrapper:focus-within {
+  border-color: #F4C400;
+  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.15);
+}
+
+.search-icon {
+  color: #F4C400;
+  font-size: 0.95rem;
+  margin-right: 0.75rem;
+  width: 16px;
+  text-align: center;
 }
 
 .search-input {
   border: none;
   background: transparent;
-  padding: 0.75rem;
+  padding: 0.75rem 0;
   flex: 1;
   font-size: 0.95rem;
   outline: none;
+  color: #1F8DBF;
+  font-weight: 500;
+  height: 100%;
+}
+
+.search-input::placeholder {
+  color: rgba(31, 141, 191, 0.4);
+  font-weight: normal;
 }
 
 .filter-select {
-  padding: 0.75rem 1rem;
-  border: 1px solid #E5E7EB;
+  padding: 0 1.25rem;
+  border: 1px solid rgba(31, 141, 191, 0.2);
   border-radius: 8px;
   background: white;
-  color: #374151;
+  color: #1F8DBF;
   cursor: pointer;
   font-size: 0.95rem;
   transition: all 0.3s;
+  font-weight: 500;
+  min-width: 160px;
+  height: 46px;
 }
 
 .filter-select:hover {
-  border-color: #2B6CB0;
+  border-color: #1F8DBF;
 }
 
 .filter-select:focus {
   outline: none;
-  border-color: #2B6CB0;
-  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+  border-color: #F4C400;
+  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.15);
 }
 
+/* Table Styles */
 .table-container {
   overflow-x: auto;
   border-radius: 12px;
-  border: 1px solid #E5E7EB;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(31, 141, 191, 0.1);
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
 }
 
 .inventory-table {
   width: 100%;
   border-collapse: collapse;
   background: white;
+  table-layout: fixed;
 }
 
 .inventory-table thead {
-  background: linear-gradient(135deg, #2B6CB0 0%, #1E40AF 100%);
-  border-bottom: 3px solid #1E40AF;
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
+  border-bottom: 3px solid #F4C400;
 }
 
 .inventory-table th {
@@ -1172,92 +1144,87 @@ watch(showMenuIngredientsModal, (newVal) => {
   text-align: left;
   font-weight: 700;
   color: white;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.8px;
 }
 
+.inventory-table th:nth-child(1) { width: 30%; }
+.inventory-table th:nth-child(2) { width: 15%; }
+.inventory-table th:nth-child(3) { width: 12%; }
+.inventory-table th:nth-child(4) { width: 15%; }
+.inventory-table th:nth-child(5) { width: 28%; }
+
 .inventory-table tbody tr {
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid rgba(31, 141, 191, 0.1);
   transition: all 0.3s ease;
   background: white;
 }
 
 .inventory-table tbody tr:hover {
-  background: #F0F9FF;
-  box-shadow: inset 0 0 0 1px #DBEAFE;
+  background: rgba(244, 196, 0, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(244, 196, 0, 0.2);
 }
 
 .inventory-table tbody tr.status-low {
-  border-left: 4px solid #EF4444;
+  border-left: 4px solid #F4C400;
 }
 
 .inventory-table tbody tr.status-good {
-  border-left: 4px solid #10B981;
+  border-left: 4px solid #1F8DBF;
 }
 
 .inventory-table td {
   padding: 1.25rem 1rem;
-  color: #1F2937;
+  color: #1F8DBF;
   font-size: 0.95rem;
+  vertical-align: middle;
 }
 
 .item-name {
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: #1F2937;
+  color: #1F8DBF;
 }
 
-.item-name i {
-  color: #2B6CB0;
+.item-icon {
+  color: #F4C400;
   font-size: 1.1rem;
-}
-
-.quantity {
+  width: 20px;
   text-align: center;
 }
 
+.quantity {
+  text-align: left;
+}
+
 .qty-value {
-  background: linear-gradient(135deg, #EEF2FF, #DBEAFE);
-  color: #1E40AF;
+  background: rgba(31, 141, 191, 0.1);
+  color: #1F8DBF;
   padding: 0.5rem 0.875rem;
   border-radius: 8px;
   font-weight: 700;
   font-size: 0.95rem;
-  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
+  border: 1px solid rgba(31, 141, 191, 0.2);
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
 }
 
 .unit {
-  text-align: center;
-  color: #6B7280;
-  font-size: 0.9rem;
+  text-align: left;
+  color: #1E88B6;
+  font-size: 0.95rem;
   font-weight: 500;
-}
-
-.progress-cell {
-  width: 150px;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: #E5E7EB;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  transition: width 0.3s ease;
-  border-radius: 4px;
 }
 
 .actions-cell {
   display: flex;
   gap: 0.75rem;
-  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .btn-action {
@@ -1270,41 +1237,33 @@ watch(showMenuIngredientsModal, (newVal) => {
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  font-size: 0.95rem;
+  font-size: 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.btn-restock {
-  background: linear-gradient(135deg, #DBEAFE, #BAE6FD);
-  color: #0284C7;
-}
-
-.btn-restock:hover {
-  background: linear-gradient(135deg, #BAE6FD, #7DD3FC);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(2, 132, 199, 0.2);
+  flex-shrink: 0;
 }
 
 .btn-edit {
-  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
-  color: #B45309;
+  background: rgba(31, 141, 191, 0.1);
+  color: #1F8DBF;
 }
 
 .btn-edit:hover {
-  background: linear-gradient(135deg, #FDE68A, #FCD34D);
+  background: #1F8DBF;
+  color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(217, 119, 6, 0.2);
+  box-shadow: 0 4px 8px rgba(31, 141, 191, 0.2);
 }
 
 .btn-delete {
-  background: linear-gradient(135deg, #FEE2E2, #FECACA);
-  color: #B91C1C;
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
 }
 
 .btn-delete:hover {
-  background: linear-gradient(135deg, #FECACA, #FCA5A5);
+  background: #F4C400;
+  color: #1F8DBF;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.2);
+  box-shadow: 0 4px 8px rgba(244, 196, 0, 0.3);
 }
 
 .empty-state {
@@ -1313,13 +1272,16 @@ watch(showMenuIngredientsModal, (newVal) => {
   align-items: center;
   justify-content: center;
   padding: 3rem;
-  color: #9CA3AF;
+  color: #1F8DBF;
   text-align: center;
+  background: white;
+  border-radius: 12px;
 }
 
 .empty-state i {
   font-size: 3rem;
   margin-bottom: 1rem;
+  color: #F4C400;
   opacity: 0.5;
 }
 
@@ -1330,7 +1292,8 @@ watch(showMenuIngredientsModal, (newVal) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(31, 141, 191, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1351,10 +1314,11 @@ watch(showMenuIngredientsModal, (newVal) => {
 .modal-content {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 25px rgba(31, 141, 191, 0.15);
   max-width: 500px;
   width: 100%;
   animation: slideUp 0.3s ease;
+  border: 2px solid #F4C400;
 }
 
 @keyframes slideUp {
@@ -1373,20 +1337,20 @@ watch(showMenuIngredientsModal, (newVal) => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 2px solid #F4C400;
 }
 
 .modal-header h3 {
   margin: 0;
   font-size: 1.25rem;
-  color: #1F2937;
+  color: #1F8DBF;
 }
 
 .btn-close {
   background: none;
   border: none;
   cursor: pointer;
-  color: #6B7280;
+  color: #1F8DBF;
   font-size: 1.5rem;
   display: flex;
   align-items: center;
@@ -1395,7 +1359,7 @@ watch(showMenuIngredientsModal, (newVal) => {
 }
 
 .btn-close:hover {
-  color: #1F2937;
+  color: #F4C400;
 }
 
 .modal-form {
@@ -1416,31 +1380,33 @@ watch(showMenuIngredientsModal, (newVal) => {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #374151;
+  color: #1F8DBF;
   font-size: 0.95rem;
 }
 
 .form-input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #E5E7EB;
+  border: 2px solid rgba(31, 141, 191, 0.2);
   border-radius: 8px;
   font-size: 0.95rem;
   transition: all 0.3s;
   box-sizing: border-box;
+  color: #1E88B6;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #2B6CB0;
-  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+  border-color: #F4C400;
+  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.15);
 }
 
 .form-hint {
   display: block;
   margin-top: 0.5rem;
-  color: #6B7280;
+  color: #1F8DBF;
   font-size: 0.85rem;
+  opacity: 0.7;
 }
 
 .form-actions {
@@ -1448,7 +1414,7 @@ watch(showMenuIngredientsModal, (newVal) => {
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #E5E7EB;
+  border-top: 2px solid rgba(244, 196, 0, 0.3);
 }
 
 .btn-cancel,
@@ -1468,82 +1434,388 @@ watch(showMenuIngredientsModal, (newVal) => {
 }
 
 .btn-cancel {
-  background: #F3F4F6;
-  color: #374151;
+  background: rgba(31, 141, 191, 0.1);
+  color: #1F8DBF;
+  border: 1px solid rgba(31, 141, 191, 0.2);
 }
 
 .btn-cancel:hover {
-  background: #E5E7EB;
+  background: #F4C400;
+  color: #1F8DBF;
+  border-color: #F4C400;
 }
 
 .btn-submit {
-  background: linear-gradient(135deg, #10B981, #059669);
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
 }
 
 .btn-submit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1rem;
+.btn-submit i {
+  color: #F4C400;
 }
 
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  max-width: 500px;
-  width: 100%;
-  max-height: 90vh;
+/* Menu Ingredients Modal Styles - Reworked for proper alignment */
+.modal-large {
+  z-index: 1001;
+}
+
+.modal-wide {
+  max-width: 900px;
+  max-height: 85vh;
   overflow-y: auto;
 }
 
-.modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #E5E7EB;
+.info-box {
+  background: rgba(31, 141, 191, 0.1);
+  border: 1px solid rgba(31, 141, 191, 0.2);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #1F8DBF;
+  font-size: 0.95rem;
+}
+
+.info-box i {
+  font-size: 1.25rem;
+  color: #F4C400;
+  flex-shrink: 0;
+}
+
+.info-box p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 3rem;
+  color: #1F8DBF;
+  font-size: 1.1rem;
+}
+
+.loading-state i {
+  margin-right: 0.5rem;
+  color: #F4C400;
+}
+
+.empty-links {
+  text-align: center;
+  padding: 3rem;
+  color: #1F8DBF;
+}
+
+.empty-links i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #F4C400;
+  opacity: 0.5;
+}
+
+.empty-links p {
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+}
+
+.empty-links small {
+  color: #1E88B6;
+  opacity: 0.7;
+}
+
+.links-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+.menu-card {
+  background: white;
+  border: 1px solid rgba(31, 141, 191, 0.2);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(31, 141, 191, 0.05);
+}
+
+.menu-card:hover {
+  box-shadow: 0 8px 24px rgba(31, 141, 191, 0.15);
+  transform: translateY(-2px);
+  border-left: 4px solid #F4C400;
+}
+
+.menu-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #F4C400;
 }
 
-.modal-header h3 {
+.menu-title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.menu-icon {
+  color: #F4C400;
+  font-size: 1.1rem;
+  width: 20px;
+}
+
+.menu-header h4 {
   margin: 0;
   font-size: 1.25rem;
-  color: #1F2937;
+  font-weight: 700;
+  color: #1F8DBF;
 }
 
-.btn-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #6B7280;
-  font-size: 1.5rem;
-  padding: 0;
+.menu-category {
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid rgba(244, 196, 0, 0.2);
+  letter-spacing: 0.3px;
 }
 
-.btn-close:hover {
-  color: #1F2937;
+.ingredients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.form-hint {
-  display: block;
-  margin-top: 0.25rem;
-  color: #6B7280;
+.ingredient-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(31, 141, 191, 0.03);
+  border-radius: 8px;
+  border-left: 3px solid;
+  transition: all 0.2s ease;
+}
+
+.ingredient-item:hover {
+  background: rgba(244, 196, 0, 0.05);
+}
+
+.ingredient-item:has(.status-good) {
+  border-left-color: #1F8DBF;
+}
+
+.ingredient-item:has(.status-low) {
+  border-left-color: #F4C400;
+}
+
+.ingredient-info {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.ing-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 180px;
+}
+
+.ing-bullet {
+  color: #F4C400;
+  font-size: 0.85rem;
+  width: 16px;
+}
+
+.ing-name-text {
+  font-weight: 600;
+  color: #1F8DBF;
+  font-size: 0.95rem;
+}
+
+.ing-quantity {
+  color: #1E88B6;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.per-serving {
+  color: rgba(31, 141, 191, 0.5);
+  font-size: 0.8rem;
+  margin-left: 0.25rem;
+}
+
+.ingredient-availability {
+  display: flex;
+  align-items: center;
+}
+
+.ing-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ing-status i {
   font-size: 0.85rem;
 }
 
+.ing-status.status-good {
+  background: rgba(31, 141, 191, 0.1);
+  color: #1F8DBF;
+  border: 1px solid rgba(31, 141, 191, 0.2);
+}
+
+.ing-status.status-low {
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
+  border: 1px solid rgba(244, 196, 0, 0.2);
+}
+
+/* Add Ingredients to Menu Modal Styles */
+.ingredient-input-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ingredient-input-row .form-input {
+  flex: 1;
+  min-width: 150px;
+}
+
+.ingredient-input-row .quantity-input {
+  max-width: 100px;
+}
+
+.btn-action-add {
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
+  height: 46px;
+}
+
+.btn-action-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
+}
+
+.btn-action-add i {
+  color: #F4C400;
+}
+
+.ingredient-preview {
+  background: rgba(31, 141, 191, 0.05);
+  border: 1px solid rgba(31, 141, 191, 0.2);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.ingredient-preview h4 {
+  margin: 0 0 1rem 0;
+  color: #1F8DBF;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ingredient-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ingredient-preview-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border-left: 3px solid #1F8DBF;
+  font-size: 0.9rem;
+}
+
+.preview-item-name {
+  font-weight: 500;
+  color: #1F8DBF;
+  flex: 1;
+}
+
+.preview-qty-badge {
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
+  padding: 0.25rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: 1px solid rgba(244, 196, 0, 0.2);
+  margin: 0 1rem;
+}
+
+.btn-remove-ing {
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.btn-remove-ing:hover {
+  background: #F4C400;
+  color: #1F8DBF;
+  transform: scale(1.1);
+}
+
+.form-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.25rem 1.5rem;
+  border-top: 2px solid rgba(244, 196, 0, 0.3);
+  background: rgba(31, 141, 191, 0.02);
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .inventory-section {
     padding: 1.5rem;
@@ -1556,7 +1828,6 @@ watch(showMenuIngredientsModal, (newVal) => {
 
   .header-buttons {
     width: 100%;
-    flex-direction: column;
   }
 
   .header-buttons button {
@@ -1572,8 +1843,9 @@ watch(showMenuIngredientsModal, (newVal) => {
     flex-direction: column;
   }
 
-  .search-box {
+  .search-wrapper {
     min-width: auto;
+    width: 100%;
   }
 
   .filter-select {
@@ -1582,6 +1854,7 @@ watch(showMenuIngredientsModal, (newVal) => {
 
   .inventory-table {
     font-size: 0.9rem;
+    table-layout: auto;
   }
 
   .inventory-table th,
@@ -1596,6 +1869,44 @@ watch(showMenuIngredientsModal, (newVal) => {
   .form-row {
     grid-template-columns: 1fr;
   }
+  
+  .auto-deduction-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .ingredient-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ingredient-input-row .form-input,
+  .ingredient-input-row .quantity-input,
+  .btn-action-add {
+    width: 100%;
+    max-width: none;
+  }
+
+  .ingredient-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .ingredient-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .ingredient-availability {
+    width: 100%;
+  }
+
+  .ing-status {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1609,9 +1920,9 @@ watch(showMenuIngredientsModal, (newVal) => {
   }
 
   .btn-action {
-    width: 32px;
-    height: 32px;
-    font-size: 0.75rem;
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
   }
 
   .modal-content {
@@ -1621,297 +1932,23 @@ watch(showMenuIngredientsModal, (newVal) => {
   .form-actions {
     flex-direction: column;
   }
-}
-
-/* Menu Ingredients Modal Styles */
-.modal-large {
-  z-index: 1001;
-}
-
-.modal-wide {
-  max-width: 900px;
-  max-height: 85vh;
-  overflow-y: auto;
-}
-
-.info-box {
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: #1E40AF;
-}
-
-.info-box i {
-  font-size: 1.25rem;
-}
-
-.loading-state {
-  text-align: center;
-  padding: 3rem;
-  color: #6B7280;
-  font-size: 1.1rem;
-}
-
-.loading-state i {
-  margin-right: 0.5rem;
-}
-
-.empty-links {
-  text-align: center;
-  padding: 3rem;
-  color: #9CA3AF;
-}
-
-.empty-links i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.empty-links p {
-  font-size: 1.1rem;
-  margin: 0.5rem 0;
-}
-
-.empty-links small {
-  color: #6B7280;
-}
-
-.links-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
-}
-
-.menu-card {
-  background: white;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  padding: 1.25rem;
-  transition: all 0.3s;
-}
-
-.menu-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.menu-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #F3F4F6;
-}
-
-.menu-header h4 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #1F2937;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.menu-category {
-  background: #DBEAFE;
-  color: #1E40AF;
-  padding: 0.3rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.ingredients-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.ingredient-item {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.75rem;
-  background: #F9FAFB;
-  border-radius: 8px;
-  font-size: 0.9rem;
-}
-
-.ing-name {
-  font-weight: 600;
-  color: #374151;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.ing-name i {
-  color: #6B7280;
-}
-
-.ing-quantity {
-  color: #6B7280;
-  white-space: nowrap;
-}
-
-.ing-quantity small {
-  color: #9CA3AF;
-  font-size: 0.75rem;
-}
-
-.ing-status {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.ing-status.status-good {
-  background: #D1FAE5;
-  color: #065F46;
-}
-
-.ing-status.status-low {
-  background: #FEF3C7;
-  color: #92400E;
-}
-
-.ing-status.status-critical {
-  background: #FEE2E2;
-  color: #991B1B;
-}
-
-@media (max-width: 768px) {
+  
   .links-grid {
     grid-template-columns: 1fr;
   }
   
-  .ingredient-item {
-    grid-template-columns: 1fr;
+  .ingredient-preview-item {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 0.5rem;
   }
-  
-  .auto-deduction-banner {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .banner-icon {
-    font-size: 2rem;
-  }
-}
 
-/* Add Ingredients to Menu Modal Styles */
-.ingredient-input-row {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.btn-action-add {
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #10B981, #059669);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s;
-  white-space: nowrap;
-}
-
-.btn-action-add:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.ingredient-preview {
-  background: #F0FDF4;
-  border: 1px solid #BBEF63;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.ingredient-preview h4 {
-  margin: 0 0 0.75rem 0;
-  color: #16A34A;
-  font-size: 0.95rem;
-}
-
-.ingredient-list-view {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.ingredient-preview-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: white;
-  padding: 0.75rem;
-  border-radius: 6px;
-  border-left: 3px solid #10B981;
-  font-size: 0.9rem;
-}
-
-.qty-badge {
-  background: #DBEAFE;
-  color: #1E40AF;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.btn-remove-ing {
-  background: #FEE2E2;
-  color: #B91C1C;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-remove-ing:hover {
-  background: #FCA5A5;
-}
-
-.form-submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-@media (max-width: 768px) {
-  .ingredient-input-row {
-    flex-direction: column;
+  .preview-qty-badge {
+    margin: 0.5rem 0;
   }
 
-  .ingredient-input-row input,
-  .ingredient-input-row select {
-    width: 100%;
-  }
-
-  .btn-action-add {
-    width: 100%;
+  .btn-remove-ing {
+    align-self: flex-end;
   }
 }
 </style>

@@ -26,23 +26,29 @@
           </div>
 
           <!-- Controls -->
-          <div class="page-controls mb-4">
-            <div class="search-filter flex flex-wrap gap-2 items-center">
-              <input v-model="searchQuery" class="search-box" placeholder="Search cottages..." />
+          <div class="controls-container">
+            <div class="search-filter">
+              <div class="search-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input v-model="searchQuery" class="search-input" placeholder="Search cottages..." />
+              </div>
               <select v-model="statusFilter" class="filter-select">
                 <option value="all">All Status</option>
                 <option value="Available">Available</option>
                 <option value="Occupied">Occupied</option>
                 <option value="Under Maintenance">Maintenance</option>
               </select>
-              <button class="btn btn-primary" @click="openCottageModal()">
+              <button class="btn-add" @click="openCottageModal()">
                 <i class="fas fa-plus"></i> <span class="hidden sm:inline">Add New </span>Cottage
               </button>
             </div>
           </div>
 
           <!-- Summary -->
-          <div class="section-summary">Showing {{ filteredCottages.length }} cottage(s)</div>
+          <div class="cottages-summary">
+            <i class="fas fa-home" style="color: #F4C400; margin-right: 0.5rem;"></i>
+            Showing <span style="color: #F4C400; font-weight: 700;">{{ filteredCottages.length }}</span> cottage(s)
+          </div>
 
           <!-- Cottages Grid -->
           <div class="cottage-grid">
@@ -53,8 +59,12 @@
               @edit="openCottageModal(cottage)"
               @delete="deleteCottage(cottage.item_id)"
             />
-            <div v-if="filteredCottages.length === 0" class="text-center py-10 text-gray-500 col-span-full">
-              No cottages found.
+            <div v-if="filteredCottages.length === 0" class="empty-state col-span-full">
+              <i class="fas fa-home"></i>
+              <p>No cottages found</p>
+              <button @click="openCottageModal()" class="btn-add mt-3">
+                <i class="fas fa-plus"></i> Add Your First Cottage
+              </button>
             </div>
           </div>
         </div>
@@ -161,7 +171,7 @@ onMounted(() => {
 <style scoped>
 .admin-dashboard {
   min-height: 100vh;
-  background: #F3F4F6;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
 }
 
 .main-content {
@@ -198,7 +208,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 @media (min-width: 640px) {
@@ -220,161 +230,317 @@ onMounted(() => {
   }
 }
 
-.page-controls {
+/* Controls Container */
+.controls-container {
   background: white;
-  padding: 0.75rem;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  margin-bottom: 1rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(31, 141, 191, 0.1);
+  position: relative;
+  overflow: hidden;
 }
 
-@media (min-width: 640px) {
-  .page-controls {
-    padding: 1rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .page-controls {
-    padding: 1.5rem;
-    border-radius: 8px;
-  }
+.controls-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #1F8DBF 50%, #F4C400 50%);
 }
 
 .search-filter {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   align-items: center;
 }
 
-@media (min-width: 640px) {
-  .search-filter {
-    gap: 0.75rem;
-  }
+.search-wrapper {
+  position: relative;
+  flex: 2;
+  min-width: 250px;
 }
 
-@media (min-width: 1024px) {
-  .search-filter {
-    gap: 1rem;
-  }
-}
-
-.search-box {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #F4C400;
   font-size: 0.875rem;
-  flex: 1;
-  width: auto;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 2px solid rgba(31, 141, 191, 0.2);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  background: white;
+  color: #1F8DBF;
+  font-weight: 500;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #F4C400;
+  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.15);
+}
+
+.search-input::placeholder {
+  color: rgba(31, 141, 191, 0.4);
+  font-weight: normal;
 }
 
 @media (min-width: 640px) {
-  .search-box {
-    padding: 0.625rem 0.875rem;
+  .search-input {
+    padding: 0.875rem 1rem 0.875rem 2.5rem;
     font-size: 0.9rem;
   }
 }
 
 @media (min-width: 1024px) {
-  .search-box {
-    padding: 0.75rem 1rem;
+  .search-input {
+    padding: 1rem 1rem 1rem 2.5rem;
     font-size: 0.95rem;
   }
 }
 
 .filter-select {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #E5E7EB;
-  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(244, 196, 0, 0.3);
+  border-radius: 8px;
   background: white;
   cursor: pointer;
   font-size: 0.875rem;
+  color: #1F8DBF;
+  font-weight: 500;
+  min-width: 150px;
+  transition: all 0.3s ease;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #1F8DBF;
+  box-shadow: 0 0 0 3px rgba(31, 141, 191, 0.15);
 }
 
 @media (min-width: 640px) {
   .filter-select {
-    padding: 0.625rem 0.875rem;
+    padding: 0.875rem 1rem;
     font-size: 0.9rem;
   }
 }
 
 @media (min-width: 1024px) {
   .filter-select {
-    padding: 0.75rem 1rem;
+    padding: 1rem 1rem;
     font-size: 0.95rem;
   }
 }
 
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-  font-size: 0.875rem;
-}
-
-@media (min-width: 640px) {
-  .btn {
-    padding: 0.625rem 1.25rem;
-    font-size: 0.9rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .btn {
-    padding: 0.75rem 1.5rem;
-    font-size: 0.95rem;
-  }
-}
-
-.btn-primary {
-  background: #10B981;
+.btn-add {
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
   color: white;
-}
-
-.btn-primary:hover {
-  background: #059669;
-  transform: translateY(-2px);
-}
-
-.section-summary {
-  margin-bottom: 1rem;
-  color: #6B7280;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
   font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
+}
+
+.btn-add:hover {
+  background: linear-gradient(135deg, #1E88B6 0%, #1F8DBF 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
+}
+
+.btn-add i {
+  font-size: 0.875rem;
+  color: #F4C400;
+  transition: all 0.3s ease;
+}
+
+.btn-add:hover i {
+  transform: rotate(90deg);
+}
+
+@media (min-width: 640px) {
+  .btn-add {
+    padding: 0.875rem 1.5rem;
+    font-size: 0.9rem;
+  }
 }
 
 @media (min-width: 1024px) {
-  .section-summary {
+  .btn-add {
+    padding: 1rem 2rem;
     font-size: 0.95rem;
   }
 }
 
+/* Cottages Summary */
+.cottages-summary {
+  margin-bottom: 1.25rem;
+  padding: 0.5rem 1rem;
+  background: rgba(244, 196, 0, 0.05);
+  border-radius: 30px;
+  display: inline-block;
+  border: 1px solid rgba(31, 141, 191, 0.2);
+  color: #1F8DBF;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+@media (min-width: 1024px) {
+  .cottages-summary {
+    font-size: 0.95rem;
+    padding: 0.5rem 1.25rem;
+  }
+}
+
+/* Cottages Grid */
 .cottage-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 @media (min-width: 640px) {
   .cottage-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
+    gap: 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .cottage-grid {
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    gap: 1.75rem;
   }
 }
 
 @media (min-width: 1280px) {
   .cottage-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
   }
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: white;
+  border-radius: 12px;
+  border: 2px dashed #F4C400;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+}
+
+.empty-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #1F8DBF;
+  opacity: 0.3;
+}
+
+.empty-state p {
+  font-size: 1rem;
+  color: #1F8DBF;
+  margin-bottom: 1rem;
+}
+
+.empty-state .btn-add {
+  display: inline-flex;
+  margin-top: 0.5rem;
+}
+
+/* RoomCard Customization - will be applied to the component */
+:deep(.room-card) {
+  border-left: 4px solid #1F8DBF;
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+}
+
+:deep(.room-card:hover) {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(31, 141, 191, 0.15);
+  border-left-color: #F4C400;
+}
+
+:deep(.room-card .room-header) {
+  background: linear-gradient(to right, rgba(31, 141, 191, 0.05), rgba(244, 196, 0, 0.05));
+  border-bottom: 2px solid #F4C400;
+}
+
+:deep(.room-card .room-title) {
+  color: #1F8DBF;
+}
+
+:deep(.room-card .room-price) {
+  color: #F4C400;
+}
+
+:deep(.room-card .room-status.Available) {
+  background: rgba(31, 141, 191, 0.1);
+  color: #1F8DBF;
+  border: 1px solid #1F8DBF;
+}
+
+:deep(.room-card .room-status.Occupied) {
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
+  border: 1px solid #F4C400;
+}
+
+:deep(.room-card .room-status.Under\\ Maintenance) {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+:deep(.room-card .room-footer) {
+  border-top: 2px solid rgba(244, 196, 0, 0.2);
+  background: rgba(31, 141, 191, 0.02);
+}
+
+:deep(.room-card .btn-action) {
+  transition: all 0.2s ease;
+}
+
+:deep(.room-card .btn-action.edit-btn) {
+  background: rgba(31, 141, 191, 0.1);
+  color: #1F8DBF;
+}
+
+:deep(.room-card .btn-action.edit-btn:hover) {
+  background: #1F8DBF;
+  color: white;
+  transform: scale(1.1);
+}
+
+:deep(.room-card .btn-action.delete-btn) {
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
+}
+
+:deep(.room-card .btn-action.delete-btn:hover) {
+  background: #F4C400;
+  color: #1F8DBF;
+  transform: scale(1.1);
 }
 </style>

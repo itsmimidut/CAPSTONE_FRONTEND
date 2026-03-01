@@ -24,7 +24,6 @@
         />
       </div>
       
-
       <!-- Stats Grid -->
       <ReservationStats :stats="stats" />
 
@@ -55,14 +54,14 @@
             <button @click="exportData" class="btn btn-outline">
               <i class="fas fa-download mr-2"></i>Export
             </button>
-            <button @click="createNew" class="btn">
+            <button @click="createNew" class="btn btn-primary">
               <i class="fas fa-plus mr-2"></i>New
             </button>
           </div>
         </div>
 
         <div style="overflow-x:auto">
-          <table v-if="!loading && bookings.length > 0">
+          <table v-if="!loading && bookings.length > 0" class="reservations-table">
             <thead>
               <tr>
                 <th>Guest Name</th>
@@ -77,7 +76,12 @@
             </thead>
             <tbody>
               <tr v-for="booking in bookings" :key="booking.id">
-                <td>{{ booking.guest_name }}</td>
+                <td class="guest-cell">
+                  <div class="guest-avatar-mini">
+                    {{ booking.guest_name.charAt(0).toUpperCase() }}
+                  </div>
+                  <span>{{ booking.guest_name }}</span>
+                </td>
                 <td>{{ getCheckInDisplay(booking) }}</td>
                 <td>{{ getCheckOutDisplay(booking) }}</td>
                 <td>
@@ -86,14 +90,14 @@
                   </span>
                 </td>
                 <td>{{ booking.payment_method || 'N/A' }}</td>
-                <td>{{ booking.reservation_code || 'N/A' }}</td>
+                <td class="code-cell">{{ booking.reservation_code || 'N/A' }}</td>
                 <td>
-                  <span :class="getStatusClass(booking.status)">
+                  <span :class="getStatusClass(booking.status)" class="status-badge">
                     {{ formatStatus(booking.status) }}
                   </span>
                 </td>
                 <td>
-                  <div class="flex gap-1">
+                  <div class="action-group">
                     <button
                       v-if="booking.status === 'pending'"
                       @click="confirmBooking(booking.id)"
@@ -123,19 +127,22 @@
           </table>
 
           <div v-if="loading" class="text-center py-10">
-            <i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
-            <p class="mt-2 text-gray-500">Loading bookings...</p>
+            <i class="fas fa-spinner fa-spin text-3xl" style="color: #1F8DBF;"></i>
+            <p class="mt-2" style="color: #1E88B6;">Loading bookings...</p>
           </div>
 
-          <div v-if="!loading && bookings.length === 0" class="text-center py-10">
-            <i class="fas fa-inbox text-4xl text-gray-300 mb-3"></i>
-            <p class="text-gray-500">No bookings found</p>
+          <div v-if="!loading && bookings.length === 0" class="empty-state">
+            <i class="fas fa-calendar-check"></i>
+            <p>No bookings found</p>
+            <button @click="createNew" class="btn btn-primary mt-3">
+              <i class="fas fa-plus"></i> Create New Booking
+            </button>
           </div>
         </div>
 
         <!-- Pagination -->
         <div class="table-footer" v-if="!loading && bookings.length > 0">
-          <p class="text-sm text-gray-500">
+          <p class="text-sm" style="color: #6b7280;">
             Showing {{ (currentPage - 1) * limit + 1 }} to {{ Math.min(currentPage * limit, totalCount) }} of {{ totalCount }}
           </p>
           <div class="pagination">
@@ -171,22 +178,22 @@
         <div class="mobile-header">
           <h3>Recent Reservations</h3>
           <div class="flex gap-2">
-            <button @click="exportData" class="btn btn-outline text-xs px-2 py-1">
+            <button @click="exportData" class="btn btn-outline btn-sm">
               <i class="fas fa-download"></i>
             </button>
-            <button @click="createNew" class="btn text-xs px-2 py-1">
+            <button @click="createNew" class="btn btn-primary btn-sm">
               <i class="fas fa-plus"></i>
             </button>
           </div>
         </div>
 
         <div v-if="loading" class="text-center py-10">
-          <i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
+          <i class="fas fa-spinner fa-spin text-3xl" style="color: #1F8DBF;"></i>
         </div>
 
-        <div v-else-if="bookings.length === 0" class="text-center py-10">
-          <i class="fas fa-inbox text-4xl text-gray-300 mb-3"></i>
-          <p class="text-gray-500">No bookings found</p>
+        <div v-else-if="bookings.length === 0" class="empty-state">
+          <i class="fas fa-calendar-check"></i>
+          <p>No bookings found</p>
         </div>
 
         <div v-else>
@@ -201,37 +208,37 @@
                   {{ booking.guest_name.charAt(0).toUpperCase() }}
                 </div>
                 <div>
-                  <div class="font-semibold">{{ booking.guest_name }}</div>
-                  <div class="text-xs text-gray-500">{{ booking.email }}</div>
+                  <div class="font-semibold" style="color: #1F8DBF;">{{ booking.guest_name }}</div>
+                  <div class="text-xs" style="color: #1E88B6;">{{ booking.email }}</div>
                 </div>
               </div>
-              <span :class="getStatusClass(booking.status)">
+              <span :class="getStatusClass(booking.status)" class="status-badge">
                 {{ formatStatus(booking.status) }}
               </span>
             </div>
 
             <div class="card-body">
-              <div>
-                <div class="card-label">{{ isSwimmingBooking(booking.items_list) ? 'First Class' : 'Check-in' }}</div>
-                <div class="card-value">{{ getCheckInDisplay(booking) }}</div>
-              </div>
-              <div>
-                <div class="card-label">{{ isSwimmingBooking(booking.items_list) ? 'Last Class' : 'Check-out' }}</div>
-                <div class="card-value">{{ getCheckOutDisplay(booking) }}</div>
-              </div>
-              <div>
-                <div class="card-label">Booking Type</div>
-                <div class="card-value item-badge" :class="getItemBadgeClass(booking.items_list)">
-                  {{ getItemLabel(booking.items_list) }}
+              <div class="card-row">
+                <div>
+                  <div class="card-label">{{ isSwimmingBooking(booking.items_list) ? 'First Class' : 'Check-in' }}</div>
+                  <div class="card-value">{{ getCheckInDisplay(booking) }}</div>
+                </div>
+                <div>
+                  <div class="card-label">{{ isSwimmingBooking(booking.items_list) ? 'Last Class' : 'Check-out' }}</div>
+                  <div class="card-value">{{ getCheckOutDisplay(booking) }}</div>
                 </div>
               </div>
-              <div>
-                <div class="card-label">Payment Ref</div>
-                <div class="card-value">{{ booking.payment_reference || 'N/A' }}</div>
-              </div>
-              <div>
-                <div class="card-label">Code</div>
-                <div class="card-value">{{ booking.reservation_code || 'N/A' }}</div>
+              <div class="card-row">
+                <div>
+                  <div class="card-label">Booking Type</div>
+                  <div class="item-badge" :class="getItemBadgeClass(booking.items_list)">
+                    {{ getItemLabel(booking.items_list) }}
+                  </div>
+                </div>
+                <div>
+                  <div class="card-label">Code</div>
+                  <div class="card-value code">{{ booking.reservation_code || 'N/A' }}</div>
+                </div>
               </div>
             </div>
 
@@ -461,14 +468,14 @@ const formatStatus = (status) => {
 
 const getStatusClass = (status) => {
   const classes = {
-    pending: 'status status-pending',
-    confirmed: 'status status-confirmed',
-    checked_in: 'status status-confirmed',
-    checked_out: 'status status-confirmed',
-    cancelled: 'status status-cancelled',
-    no_show: 'status status-cancelled'
+    pending: 'status-pending',
+    confirmed: 'status-confirmed',
+    checked_in: 'status-confirmed',
+    checked_out: 'status-confirmed',
+    cancelled: 'status-cancelled',
+    no_show: 'status-cancelled'
   }
-  return classes[status] || 'status'
+  return classes[status] || 'status-pending'
 }
 
 const getItemLabel = (itemsList) => {
@@ -654,46 +661,451 @@ onMounted(() => {
 <style scoped>
 @import '../../assets/admin-styles.css';
 
+/* Main Layout */
+.admin-layout {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
+}
+
+.main-content {
+  margin-left: 0;
+  padding: 2rem 1rem;
+  transition: margin-left 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    margin-left: 260px;
+    padding: 2rem;
+  }
+}
+
+.header-container {
+  margin-bottom: 2rem;
+}
+
+/* Table Styles */
+.desktop-table {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  border: 1px solid rgba(31, 141, 191, 0.1);
+  margin-top: 2rem;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #F4C400;
+}
+
+.table-header h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1F8DBF;
+  margin: 0;
+}
+
+/* Button Styles */
+.btn {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1E88B6 0%, #1F8DBF 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid #1F8DBF;
+  color: #1F8DBF;
+}
+
+.btn-outline:hover {
+  background: #F4C400;
+  border-color: #F4C400;
+  color: #1F8DBF;
+  transform: translateY(-2px);
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+/* Table Styles */
+.reservations-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.reservations-table th {
+  text-align: left;
+  padding: 1rem 0.75rem;
+  background: rgba(31, 141, 191, 0.05);
+  color: #1F8DBF;
+  font-weight: 600;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.reservations-table td {
+  padding: 1rem 0.75rem;
+  border-bottom: 1px solid rgba(31, 141, 191, 0.1);
+  color: #1E88B6;
+  font-size: 0.875rem;
+}
+
+.reservations-table tbody tr:hover {
+  background: rgba(244, 196, 0, 0.05);
+}
+
+.guest-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.guest-avatar-mini {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  background: #F4C400;
+  color: #1F8DBF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  border: 1px solid white;
+}
+
+.code-cell {
+  font-family: monospace;
+  font-weight: 500;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-pending {
+  background: rgba(244, 196, 0, 0.15);
+  color: #F4C400;
+  border: 1px solid #F4C400;
+}
+
+.status-confirmed {
+  background: rgba(31, 141, 191, 0.15);
+  color: #1F8DBF;
+  border: 1px solid #1F8DBF;
+}
+
+.status-cancelled {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+/* Action Buttons */
+.action-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.confirm-btn {
+  background: rgba(31, 141, 191, 0.1);
+  color: #1F8DBF;
+}
+
+.confirm-btn:hover {
+  background: #1F8DBF;
+  color: white;
+  transform: scale(1.1);
+}
+
+.cancel-btn {
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
+}
+
+.cancel-btn:hover {
+  background: #F4C400;
+  color: #1F8DBF;
+  transform: scale(1.1);
+}
+
+.delete-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.delete-btn:hover {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.1);
+}
+
+/* Item Badges */
 .item-badge {
   display: inline-block;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
 }
 
-.item-cell {
-  min-width: 150px;
-}
-
 .badge-swimming {
-  background-color: #e0f2fe;
-  color: #0369a1;
-  border: 1px solid #0ea5e9;
+  background: rgba(31, 141, 191, 0.15);
+  color: #1F8DBF;
+  border: 1px solid #1F8DBF;
 }
 
 .badge-room {
-  background-color: #fef3c7;
-  color: #b45309;
-  border: 1px solid #fbbf24;
+  background: rgba(244, 196, 0, 0.15);
+  color: #F4C400;
+  border: 1px solid #F4C400;
 }
 
 .badge-cottage {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #3b82f6;
+  background: rgba(30, 136, 182, 0.15);
+  color: #1E88B6;
+  border: 1px solid #1E88B6;
 }
 
 .badge-event {
-  background-color: #f3e8ff;
-  color: #6b21a8;
-  border: 1px solid #d946ef;
+  background: rgba(242, 194, 0, 0.15);
+  color: #F2C200;
+  border: 1px solid #F2C200;
 }
 
 .badge-other {
-  background-color: #f3f4f6;
-  color: #374151;
+  background: #f3f4f6;
+  color: #6b7280;
   border: 1px solid #d1d5db;
+}
+
+/* Table Footer */
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(31, 141, 191, 0.1);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.pagination-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgba(31, 141, 191, 0.2);
+  background: white;
+  color: #1F8DBF;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #F4C400;
+  border-color: #F4C400;
+  color: #1F8DBF;
+}
+
+.pagination-btn.active {
+  background: #1F8DBF;
+  color: white;
+  border-color: #1F8DBF;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: white;
+  border-radius: 12px;
+  border: 2px dashed #F4C400;
+  color: #1F8DBF;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #F4C400;
+}
+
+.empty-state p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* Mobile Cards */
+.mobile-cards {
+  display: none;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .desktop-table {
+    display: none;
+  }
+  
+  .mobile-cards {
+    display: block;
+  }
+  
+  .mobile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #F4C400;
+  }
+  
+  .mobile-header h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1F8DBF;
+    margin: 0;
+  }
+}
+
+.booking-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  border: 1px solid rgba(31, 141, 191, 0.1);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(244, 196, 0, 0.3);
+}
+
+.guest-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.guest-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 8px;
+  background: #F4C400;
+  color: #1F8DBF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  border: 2px solid white;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.card-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.card-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+.card-value {
+  font-size: 0.875rem;
+  color: #1E88B6;
+  font-weight: 500;
+}
+
+.card-value.code {
+  font-family: monospace;
+  background: rgba(31, 141, 191, 0.05);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(244, 196, 0, 0.2);
 }
 </style>

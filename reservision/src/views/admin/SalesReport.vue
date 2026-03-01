@@ -41,10 +41,10 @@
 
           <!-- Sales Breakdown by Category -->
           <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-chart-pie mr-2"></i>Sales Breakdown by Category
-              <span class="ml-2 text-xs text-gray-400" title="See which categories contribute most to your revenue">(info)</span>
+            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-chart-pie mr-2 text-[#1F8DBF]"></i>Sales Breakdown by Category
+              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="See which categories contribute most to your revenue">(info)</span>
             </h2>
-            <p class="text-gray-500 text-sm mb-3">See which categories contribute most to your revenue.</p>
+            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">See which categories contribute most to your revenue.</p>
             <div class="overflow-x-auto rounded-lg">
               <table class="breakdown-table w-full">
                 <thead>
@@ -56,11 +56,11 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="cat in breakdown" :key="cat.category" class="hover:bg-blue-50 transition">
-                    <td>{{ cat.category }}</td>
-                    <td>₱{{ cat.revenue?.toLocaleString() }}</td>
-                    <td>{{ cat.count }}</td>
-                    <td>{{ cat.percent }}%</td>
+                  <tr v-for="cat in breakdown" :key="cat.category" class="hover:bg-[#F4C400]/10 transition">
+                    <td class="text-[#1F8DBF]">{{ cat.category }}</td>
+                    <td class="text-[#1E88B6]">₱{{ cat.revenue?.toLocaleString() }}</td>
+                    <td class="text-[#1E88B6]">{{ cat.count }}</td>
+                    <td class="text-[#1F8DBF] font-semibold">{{ cat.percent }}%</td>
                   </tr>
                 </tbody>
               </table>
@@ -69,119 +69,119 @@
 
           <!-- Top-Selling Items -->
           <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-utensils mr-2"></i>Top-Selling Restaurant Items
-              <span class="ml-2 text-xs text-gray-400" title="Most popular menu items">(info)</span>
+            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-utensils mr-2 text-[#F4C400]"></i>Top-Selling Restaurant Items
+              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Most popular menu items">(info)</span>
             </h2>
-            <p class="text-gray-500 text-sm mb-3">Most popular menu items among guests.</p>
+            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Most popular menu items among guests.</p>
             <ol class="top-items">
-              <li v-for="item in topItems" :key="item.name" class="py-1 flex justify-between hover:bg-blue-50 px-2 rounded transition">
-                <span class="item-name">{{ item.name }}</span>
-                <span class="item-count">{{ item.count }} sold</span>
+              <li v-for="item in topItems" :key="item.name" class="py-1 flex justify-between hover:bg-[#F4C400]/10 px-2 rounded transition">
+                <span class="item-name text-[#1F8DBF]">{{ item.name }}</span>
+                <span class="item-count text-[#F4C400]">{{ item.count }} sold</span>
               </li>
             </ol>
           </div>
 
           <!-- Revenue Trend -->
           <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-chart-line mr-2"></i>Daily Revenue Trend (Last 30 Days)
-              <span class="ml-2 text-xs text-gray-400" title="Visualize sales trends">(info)</span>
+            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-chart-line mr-2 text-[#1F8DBF]"></i>Daily Revenue Trend (Last 30 Days)
+              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Visualize sales trends">(info)</span>
             </h2>
-            <p class="text-gray-500 text-sm mb-3">Visualize sales trends and spot peaks or dips.</p>
+            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Visualize sales trends and spot peaks or dips.</p>
             <div class="trend-list">
               <div v-for="trend in trends" :key="trend.period" class="trend-bar-wrap group">
-                <span class="trend-date">{{ trend.period }}</span>
-                <div class="trend-bar group-hover:ring-2 group-hover:ring-blue-300 transition">
+                <span class="trend-date text-[#1F8DBF]">{{ trend.period }}</span>
+                <div class="trend-bar group-hover:ring-2 group-hover:ring-[#F4C400] transition">
                   <div class="trend-bar-inner" :style="{width: (trend.sales / (summary.totalSales/2) * 100) + '%'}"></div>
                 </div>
-                <span class="trend-sales">₱{{ trend.sales?.toLocaleString() }}</span>
+                <span class="trend-sales text-[#F4C400]">₱{{ trend.sales?.toLocaleString() }}</span>
               </div>
             </div>
           </div>
 
           <!-- Room Metrics -->
           <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-bed mr-2"></i>Room Metrics
-              <span class="ml-2 text-xs text-gray-400" title="Key performance indicators for rooms">(info)</span>
+            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-bed mr-2 text-[#1F8DBF]"></i>Room Metrics
+              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Key performance indicators for rooms">(info)</span>
             </h2>
-            <p class="text-gray-500 text-sm mb-3">Key performance indicators for rooms.</p>
+            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Key performance indicators for rooms.</p>
             <div class="metrics-grid">
-              <div class="metric hover:bg-blue-50 transition rounded-lg">
-                <div class="metric-label">Occupancy Rate</div>
-                <div class="metric-value">{{ rooms.occupancyRate?.toFixed(1) }}%</div>
+              <div class="metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <div class="metric-label text-[#1F8DBF]">Occupancy Rate</div>
+                <div class="metric-value text-[#1E88B6]">{{ rooms.occupancyRate?.toFixed(1) }}%</div>
               </div>
-              <div class="metric hover:bg-blue-50 transition rounded-lg">
-                <div class="metric-label">ADR</div>
-                <div class="metric-value">₱{{ rooms.adr?.toLocaleString(undefined, {maximumFractionDigits:2}) }}</div>
+              <div class="metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <div class="metric-label text-[#1F8DBF]">ADR</div>
+                <div class="metric-value text-[#1E88B6]">₱{{ rooms.adr?.toLocaleString(undefined, {maximumFractionDigits:2}) }}</div>
               </div>
-              <div class="metric hover:bg-blue-50 transition rounded-lg">
-                <div class="metric-label">RevPAR</div>
-                <div class="metric-value">₱{{ rooms.revpar?.toLocaleString(undefined, {maximumFractionDigits:2}) }}</div>
+              <div class="metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <div class="metric-label text-[#1F8DBF]">RevPAR</div>
+                <div class="metric-value text-[#1E88B6]">₱{{ rooms.revpar?.toLocaleString(undefined, {maximumFractionDigits:2}) }}</div>
               </div>
-              <div class="metric hover:bg-blue-50 transition rounded-lg">
-                <div class="metric-label">Total Rooms</div>
-                <div class="metric-value">{{ rooms.totalRooms }}</div>
+              <div class="metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <div class="metric-label text-[#1F8DBF]">Total Rooms</div>
+                <div class="metric-value text-[#1E88B6]">{{ rooms.totalRooms }}</div>
               </div>
-              <div class="metric hover:bg-blue-50 transition rounded-lg">
-                <div class="metric-label">Total Room Nights</div>
-                <div class="metric-value">{{ rooms.totalRoomNights }}</div>
+              <div class="metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <div class="metric-label text-[#1F8DBF]">Total Room Nights</div>
+                <div class="metric-value text-[#1E88B6]">{{ rooms.totalRoomNights }}</div>
               </div>
             </div>
           </div>
 
           <!-- Guest Data -->
           <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-users mr-2"></i>Customer & Guest Data
-              <span class="ml-2 text-xs text-gray-400" title="Guest and customer breakdown">(info)</span>
+            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-users mr-2 text-[#F4C400]"></i>Customer & Guest Data
+              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Guest and customer breakdown">(info)</span>
             </h2>
-            <p class="text-gray-500 text-sm mb-3">Guest and customer breakdown.</p>
+            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Guest and customer breakdown.</p>
             <div class="guest-grid">
-              <div class="guest-metric hover:bg-blue-50 transition rounded-lg">
-                <span class="guest-label">Total Guests</span>
-                <span class="guest-value">{{ guests.total }}</span>
+              <div class="guest-metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <span class="guest-label text-[#1F8DBF]">Total Guests</span>
+                <span class="guest-value text-[#1E88B6]">{{ guests.total }}</span>
               </div>
-              <div class="guest-metric hover:bg-blue-50 transition rounded-lg">
-                <span class="guest-label">Unique Customers</span>
-                <span class="guest-value">{{ guests.unique }}</span>
+              <div class="guest-metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <span class="guest-label text-[#1F8DBF]">Unique Customers</span>
+                <span class="guest-value text-[#1E88B6]">{{ guests.unique }}</span>
               </div>
-              <div class="guest-metric hover:bg-blue-50 transition rounded-lg">
-                <span class="guest-label">Walk-in Bookings</span>
-                <span class="guest-value">{{ guests.walkins }}</span>
+              <div class="guest-metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <span class="guest-label text-[#1F8DBF]">Walk-in Bookings</span>
+                <span class="guest-value text-[#1E88B6]">{{ guests.walkins }}</span>
               </div>
-              <div class="guest-metric hover:bg-blue-50 transition rounded-lg">
-                <span class="guest-label">Online Bookings</span>
-                <span class="guest-value">{{ guests.online }}</span>
+              <div class="guest-metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <span class="guest-label text-[#1F8DBF]">Online Bookings</span>
+                <span class="guest-value text-[#1E88B6]">{{ guests.online }}</span>
               </div>
             </div>
           </div>
 
           <!-- Expenses & Net Income -->
           <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-money-bill-wave mr-2"></i>Expenses & Net Income
-              <span class="ml-2 text-xs text-gray-400" title="Financial summary">(info)</span>
+            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-money-bill-wave mr-2 text-[#1F8DBF]"></i>Expenses & Net Income
+              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Financial summary">(info)</span>
             </h2>
-            <p class="text-gray-500 text-sm mb-3">Financial summary for the period.</p>
+            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Financial summary for the period.</p>
             <div class="finance-grid">
-              <div class="finance-metric hover:bg-blue-50 transition rounded-lg">
-                <span class="finance-label">Total Expenses</span>
-                <span class="finance-value">₱{{ expenses?.toLocaleString() }}</span>
+              <div class="finance-metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <span class="finance-label text-[#1F8DBF]">Total Expenses</span>
+                <span class="finance-value text-[#F4C400]">₱{{ expenses?.toLocaleString() }}</span>
               </div>
-              <div class="finance-metric hover:bg-blue-50 transition rounded-lg">
-                <span class="finance-label">Net Income</span>
-                <span class="finance-value">₱{{ netIncome?.toLocaleString() }}</span>
+              <div class="finance-metric hover:bg-[#F4C400]/10 transition rounded-lg">
+                <span class="finance-label text-[#1F8DBF]">Net Income</span>
+                <span class="finance-value text-[#1F8DBF]">₱{{ netIncome?.toLocaleString() }}</span>
               </div>
             </div>
           </div>
 
           <!-- Observations & Recommendations -->
           <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-lightbulb mr-2"></i>Observations & Recommendations
-              <span class="ml-2 text-xs text-gray-400" title="Insights and suggestions">(info)</span>
+            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-lightbulb mr-2 text-[#F4C400]"></i>Observations & Recommendations
+              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Insights and suggestions">(info)</span>
             </h2>
-            <p class="text-gray-500 text-sm mb-3">Insights and suggestions to improve performance.</p>
+            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Insights and suggestions to improve performance.</p>
             <ul class="recommend-list">
-              <li>Room occupancy is higher every Saturday.</li>
-              <li>Weekday promotions are recommended.</li>
-              <li>Top-selling food item: <span v-if="topItems[0]">{{ topItems[0].name }}</span></li>
+              <li class="text-[#1F8DBF]">Room occupancy is higher every Saturday.</li>
+              <li class="text-[#1F8DBF]">Weekday promotions are recommended.</li>
+              <li class="text-[#1F8DBF]">Top-selling food item: <span class="text-[#F4C400] font-semibold" v-if="topItems[0]">{{ topItems[0].name }}</span></li>
             </ul>
           </div>
         </div>
@@ -270,20 +270,20 @@ export default {
 .main-content {
   margin-top: 80px;
 }
-/* Modern Sales Report Styles */
+/* Modern Sales Report Styles - Tropical Resort Palette */
 .sales-report {
   max-width: 900px;
   margin: 2.5rem auto;
   background: #f8fafc;
   border-radius: 16px;
-  box-shadow: 0 4px 24px #0002;
+  box-shadow: 0 4px 24px rgba(31, 141, 191, 0.1);
   padding: 2.5rem 2rem 2rem 2rem;
   font-family: 'Segoe UI', Arial, sans-serif;
 }
 .report-title {
   font-size: 2.2rem;
   font-weight: 700;
-  color: #2563eb;
+  color: #1F8DBF;
   margin-bottom: 2rem;
   display: flex;
   align-items: center;
@@ -292,6 +292,7 @@ export default {
 .icon {
   font-size: 1.5rem;
   vertical-align: middle;
+  color: #F4C400;
 }
 .summary-cards {
   display: flex;
@@ -302,7 +303,7 @@ export default {
 .card {
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 2px 8px #0001;
+  box-shadow: 0 2px 8px rgba(31, 141, 191, 0.1);
   padding: 1.2rem 1.5rem;
   min-width: 180px;
   flex: 1 1 180px;
@@ -310,52 +311,61 @@ export default {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
+  border: 1px solid rgba(31, 141, 191, 0.1);
 }
 .card-main {
-  background: linear-gradient(90deg, #2563eb 60%, #60a5fa 100%);
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
   color: #fff;
-  box-shadow: 0 4px 16px #2563eb22;
+  box-shadow: 0 4px 16px rgba(31, 141, 191, 0.3);
+  border: none;
 }
 .card-label {
   font-size: 1rem;
-  opacity: 0.8;
+  opacity: 0.9;
+  color: inherit;
 }
 .card-value {
   font-size: 1.5rem;
   font-weight: 600;
   margin-top: 0.2rem;
+  color: inherit;
 }
 .card-desc {
   font-size: 0.85rem;
-  color: #64748b;
+  color: #1E88B6;
   margin-top: 0.2rem;
+}
+.card-main .card-desc {
+  color: rgba(255, 255, 255, 0.8);
 }
 .section {
   margin-bottom: 2.5rem;
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 2px 8px #0001;
+  box-shadow: 0 2px 8px rgba(31, 141, 191, 0.1);
   padding: 1.5rem 1.2rem 1.2rem 1.2rem;
+  border: 1px solid rgba(31, 141, 191, 0.1);
 }
 .breakdown-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
-  background: #f1f5f9;
+  background: #fff;
   border-radius: 8px;
   overflow: hidden;
+  border: 1px solid rgba(31, 141, 191, 0.2);
 }
 .breakdown-table th, .breakdown-table td {
   padding: 0.7rem 1rem;
   text-align: left;
 }
 .breakdown-table th {
-  background: #2563eb;
+  background: #1F8DBF;
   color: #fff;
   font-weight: 600;
 }
 .breakdown-table tr:nth-child(even) {
-  background: #e0e7ef;
+  background: rgba(31, 141, 191, 0.05);
 }
 .top-items {
   margin: 1rem 0 0 1.2rem;
@@ -364,9 +374,10 @@ export default {
 }
 .item-name {
   font-weight: 500;
+  color: #1F8DBF;
 }
 .item-count {
-  color: #2563eb;
+  color: #F4C400;
   margin-left: 0.5rem;
 }
 .trend-list {
@@ -381,17 +392,17 @@ export default {
 .trend-date {
   width: 90px;
   font-size: 0.95rem;
-  color: #64748b;
+  color: #1F8DBF;
 }
 .trend-bar {
   flex: 1;
-  background: #e0e7ef;
+  background: rgba(31, 141, 191, 0.1);
   border-radius: 6px;
   height: 16px;
   overflow: hidden;
 }
 .trend-bar-inner {
-  background: linear-gradient(90deg, #2563eb 60%, #60a5fa 100%);
+  background: linear-gradient(90deg, #1F8DBF 60%, #F4C400 100%);
   height: 100%;
   border-radius: 6px;
 }
@@ -399,7 +410,7 @@ export default {
   width: 110px;
   text-align: right;
   font-weight: 500;
-  color: #2563eb;
+  color: #F4C400;
 }
 .metrics-grid {
   display: flex;
@@ -408,21 +419,22 @@ export default {
   margin-top: 1.2rem;
 }
 .metric {
-  background: #f1f5f9;
+  background: rgba(31, 141, 191, 0.05);
   border-radius: 8px;
   padding: 1rem 1.2rem;
   min-width: 140px;
   flex: 1 1 140px;
   text-align: center;
+  border: 1px solid rgba(31, 141, 191, 0.1);
 }
 .metric-label {
   font-size: 1rem;
-  color: #64748b;
+  color: #1F8DBF;
 }
 .metric-value {
   font-size: 1.3rem;
   font-weight: 600;
-  color: #2563eb;
+  color: #1E88B6;
 }
 .guest-grid {
   display: flex;
@@ -431,21 +443,22 @@ export default {
   margin-top: 1.2rem;
 }
 .guest-metric {
-  background: #f1f5f9;
+  background: rgba(31, 141, 191, 0.05);
   border-radius: 8px;
   padding: 1rem 1.2rem;
   min-width: 140px;
   flex: 1 1 140px;
   text-align: center;
+  border: 1px solid rgba(31, 141, 191, 0.1);
 }
 .guest-label {
   font-size: 1rem;
-  color: #64748b;
+  color: #1F8DBF;
 }
 .guest-value {
   font-size: 1.3rem;
   font-weight: 600;
-  color: #2563eb;
+  color: #1E88B6;
 }
 .finance-grid {
   display: flex;
@@ -453,35 +466,40 @@ export default {
   margin-top: 1.2rem;
 }
 .finance-metric {
-  background: #f1f5f9;
+  background: rgba(31, 141, 191, 0.05);
   border-radius: 8px;
   padding: 1rem 1.2rem;
   min-width: 180px;
   flex: 1 1 180px;
   text-align: center;
+  border: 1px solid rgba(31, 141, 191, 0.1);
 }
 .finance-label {
   font-size: 1rem;
-  color: #64748b;
+  color: #1F8DBF;
 }
 .finance-value {
   font-size: 1.3rem;
   font-weight: 600;
-  color: #16a34a;
+  color: #F4C400;
 }
 .recommend-list {
   margin: 1rem 0 0 1.2rem;
   padding: 0;
   list-style: disc inside;
 }
+.recommend-list li {
+  color: #1F8DBF;
+  margin-bottom: 0.3rem;
+}
 .loading {
-  color: #2563eb;
+  color: #1F8DBF;
   font-size: 1.2rem;
   text-align: center;
   margin: 2rem 0;
 }
 .error {
-  color: #dc2626;
+  color: #F4C400;
   font-size: 1.1rem;
   text-align: center;
   margin: 2rem 0;
