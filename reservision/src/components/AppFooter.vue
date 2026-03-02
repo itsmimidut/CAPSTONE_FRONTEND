@@ -22,17 +22,17 @@
             <li>
               <strong>Email:</strong> 
               <a href="mailto:contact@reservision.com" class="hover:text-accent-blue transition-colors">
-                contact@reservision.com
+                Eduardosreservation@gmail.com
               </a>
             </li>
             <li>
               <strong>Phone:</strong> 
               <a href="tel:+639123456789" class="hover:text-accent-blue transition-colors">
-                +63 912 345 6789
+                +63 928 8906 708 / +63 921 507 4378
               </a>
             </li>
             <li>
-              <strong>Address:</strong> Barangay Masipit, Calapan City, Oriental Mindoro
+              <strong>Address:</strong> Nautical Highway, Bayanan II, Calapan City
             </li>
           </ul>
         </div>
@@ -65,8 +65,6 @@
 <script setup>
 const socials = [
   { name: 'Facebook', icon: 'fab fa-facebook-f', link: '#' },
-  { name: 'Instagram', icon: 'fab fa-instagram', link: '#' },
-  { name: 'Twitter', icon: 'fab fa-twitter', link: '#' },
   { name: 'Website', icon: 'fas fa-globe', link: '#' }
 ]
 </script>
