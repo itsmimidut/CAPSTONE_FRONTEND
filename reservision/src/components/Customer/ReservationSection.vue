@@ -1,33 +1,47 @@
 <template>
-  <div class=" min-h-screen">
+  <div class="min-h-screen" :style="{ backgroundColor: '#F0F9FF' }">
     <!-- Search Section -->
     <section v-if="!showBookingConfirmation" class="max-w-7xl mx-auto px-4 py-8">
-      <div class="bg-white rounded-2xl shadow-md border-2 border-gray-200 p-6 hover:shadow-lg transition">
+      <div class="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition" :style="{ border: '2px solid #1E88B6' }">
         <!-- Desktop Search -->
         <div class="hidden md:grid md:grid-cols-4 gap-4">
           <div>
-            <label class="text-xs text-gray-500 block mb-1 font-semibold">Check-in – Check-out</label>
-            <button @click="showCalendar = true" class="w-full rounded-xl border-2 border-gray-200 px-3 py-2.5 flex justify-between items-center hover:border-blue-700 bg-gray-50 hover:bg-blue-50 transition text-left">
-              <span class="text-sm font-semibold text-gray-700">{{ dateStr }}</span>
-              <i class="fas fa-calendar-alt text-blue-700"></i>
+            <label class="text-xs block mb-1 font-semibold" :style="{ color: '#1E88B6' }">Check-in – Check-out</label>
+            <button @click="showCalendar = true" class="w-full rounded-xl border-2 px-3 py-2.5 flex justify-between items-center transition text-left" 
+              :style="{ borderColor: '#E0E0E0', backgroundColor: '#F5F5F5' }"
+              @mouseover="e => e.currentTarget.style.borderColor = '#1E88B6'"
+              @mouseleave="e => e.currentTarget.style.borderColor = '#E0E0E0'"
+            >
+              <span class="text-sm font-semibold" :style="{ color: '#1E88B6' }">{{ dateStr }}</span>
+              <i class="fas fa-calendar-alt" :style="{ color: '#F2C200' }"></i>
             </button>
           </div>
 
           <div>
-            <label class="text-xs text-gray-500 block mb-1 font-semibold">Guests</label>
-            <button @click="showGuests = true" class="w-full rounded-xl border-2 border-gray-200 px-3 py-2.5 flex justify-between items-center hover:border-blue-700 bg-gray-50 hover:bg-blue-50 transition text-left">
-              <span class="text-sm font-semibold text-gray-700">{{ guestStr }}</span>
-              <i class="fas fa-user text-blue-700"></i>
+            <label class="text-xs block mb-1 font-semibold" :style="{ color: '#1E88B6' }">Guests</label>
+            <button @click="showGuests = true" class="w-full rounded-xl border-2 px-3 py-2.5 flex justify-between items-center transition text-left"
+              :style="{ borderColor: '#E0E0E0', backgroundColor: '#F5F5F5' }"
+              @mouseover="e => e.currentTarget.style.borderColor = '#1E88B6'"
+              @mouseleave="e => e.currentTarget.style.borderColor = '#E0E0E0'"
+            >
+              <span class="text-sm font-semibold" :style="{ color: '#1E88B6' }">{{ guestStr }}</span>
+              <i class="fas fa-user" :style="{ color: '#F2C200' }"></i>
             </button>
           </div>
 
           <div>
-            <label class="text-xs text-gray-500 block mb-1 font-semibold">Promo Code</label>
-            <input placeholder="Optional" class="w-full rounded-xl border-2 border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-700 bg-gray-50 transition" />
+            <label class="text-xs block mb-1 font-semibold" :style="{ color: '#1E88B6' }">Promo Code</label>
+            <input placeholder="Optional" class="w-full rounded-xl border-2 px-3 py-2.5 text-sm focus:outline-none transition"
+              :style="{ borderColor: '#E0E0E0', backgroundColor: '#F5F5F5' }"
+              @focus="e => e.target.style.borderColor = '#1E88B6'"
+              @blur="e => e.target.style.borderColor = '#E0E0E0'"
+            />
           </div>
 
           <div class="flex items-end">
-            <button class="w-full py-2.5 bg-gradient-to-r from-blue-700 to-blue-400 text-white rounded-xl font-bold hover:shadow-lg transition flex items-center justify-center gap-2">
+            <button class="w-full py-2.5 text-white rounded-xl font-bold hover:shadow-lg transition flex items-center justify-center gap-2"
+              :style="{ background: 'linear-gradient(135deg, #F2C200, #1E88B6)' }"
+            >
               <i class="fas fa-search"></i> Search
             </button>
           </div>
@@ -35,26 +49,46 @@
 
         <!-- Mobile Search -->
         <div class="md:hidden">
-          <button @click="mobileSearchOpen = !mobileSearchOpen" class="w-full py-2.5 bg-blue-700 text-white rounded-xl text-sm font-bold hover:bg-blue-800 transition">
+          <button @click="mobileSearchOpen = !mobileSearchOpen" class="w-full py-2.5 text-white rounded-xl text-sm font-bold transition"
+            :style="{ background: 'linear-gradient(135deg, #1E88B6, #1F8DBF)' }"
+          >
             Modify Search
           </button>
 
           <div v-if="mobileSearchOpen" class="mt-4 space-y-3">
-            <button @click="showCalendar = true" class="w-full rounded-xl border-2 border-gray-200 px-4 py-3 flex justify-between items-center text-left hover:border-blue-700 transition">
-              <span class="text-sm font-semibold">{{ dateStr }}</span>
-              <i class="fas fa-calendar-alt text-blue-700"></i>
+            <button @click="showCalendar = true" class="w-full rounded-xl border-2 px-4 py-3 flex justify-between items-center text-left transition"
+              :style="{ borderColor: '#E0E0E0' }"
+              @mouseover="e => e.currentTarget.style.borderColor = '#1E88B6'"
+              @mouseleave="e => e.currentTarget.style.borderColor = '#E0E0E0'"
+            >
+              <span class="text-sm font-semibold" :style="{ color: '#1E88B6' }">{{ dateStr }}</span>
+              <i class="fas fa-calendar-alt" :style="{ color: '#F2C200' }"></i>
             </button>
 
-            <button @click="showGuests = true" class="w-full rounded-xl border-2 border-gray-200 px-4 py-3 flex justify-between items-center text-left hover:border-blue-700 transition">
-              <span class="text-sm font-semibold">{{ guestStr }}</span>
-              <i class="fas fa-user text-blue-700"></i>
+            <button @click="showGuests = true" class="w-full rounded-xl border-2 px-4 py-3 flex justify-between items-center text-left transition"
+              :style="{ borderColor: '#E0E0E0' }"
+              @mouseover="e => e.currentTarget.style.borderColor = '#1E88B6'"
+              @mouseleave="e => e.currentTarget.style.borderColor = '#E0E0E0'"
+            >
+              <span class="text-sm font-semibold" :style="{ color: '#1E88B6' }">{{ guestStr }}</span>
+              <i class="fas fa-user" :style="{ color: '#F2C200' }"></i>
             </button>
 
-            <input placeholder="Promo code" class="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/30 transition" />
+            <input placeholder="Promo code" class="w-full rounded-xl border-2 px-4 py-3 text-sm focus:outline-none transition"
+              :style="{ borderColor: '#E0E0E0' }"
+              @focus="e => e.target.style.borderColor = '#1E88B6'"
+              @blur="e => e.target.style.borderColor = '#E0E0E0'"
+            />
 
             <div class="flex gap-3">
-              <button class="flex-1 py-3 bg-blue-700 text-white rounded-xl font-bold hover:bg-blue-800 transition">Search</button>
-              <button @click="mobileSearchOpen = false" class="flex-1 py-3 border-2 border-gray-200 rounded-xl font-bold hover:bg-gray-50 transition">Done</button>
+              <button class="flex-1 py-3 text-white rounded-xl font-bold transition"
+                :style="{ background: 'linear-gradient(135deg, #F2C200, #1E88B6)' }"
+              >Search</button>
+              <button @click="mobileSearchOpen = false" class="flex-1 py-3 border-2 rounded-xl font-bold transition"
+                :style="{ borderColor: '#E0E0E0', color: '#1E88B6' }"
+                @mouseover="e => e.currentTarget.style.backgroundColor = '#E3F2FD'"
+                @mouseleave="e => e.currentTarget.style.backgroundColor = 'transparent'"
+              >Done</button>
             </div>
           </div>
         </div>
@@ -67,23 +101,24 @@
         <!-- Items Section -->
         <section class="lg:w-2/3 space-y-8">
           <!-- Category Tabs -->
-          <div class="flex gap-2 flex-wrap">
+          <div class="flex gap-2 flex-wrap items-center">
             <button
               v-for="cat in Object.keys(itemData)"
               :key="cat"
               @click="currentCategory = cat; currentCategoryLabel = cat.charAt(0).toUpperCase() + cat.slice(1)"
-              :class="[
-                'px-4 py-2 rounded-full font-bold text-sm transition',
-                currentCategory === cat
-                  ? 'bg-blue-700 text-white shadow-md'
-                  : ' text-gray-700 hover:bg-gray-200'
-              ]"
+              :class="['px-4 py-2 rounded-full font-bold text-sm transition transform hover:scale-105']"
+              :style="{
+                backgroundColor: currentCategory === cat ? '#1E88B6' : '#FFFFFF',
+                color: currentCategory === cat ? '#FFFFFF' : '#1E88B6',
+                border: currentCategory === cat ? 'none' : '2px solid #1E88B6'
+              }"
             >
               {{ cat.charAt(0).toUpperCase() + cat.slice(1) }}
             </button>
 
-            <div class="text-sm space-y-6 mt-2 text-gray-500 ml-auto">
-              Showing: <span class="font-semibold text-gray-700">{{ currentCategoryLabel }}</span>
+            <div class="text-sm space-y-6 mt-2 ml-auto">
+              <span :style="{ color: '#666' }">Showing:</span>
+              <span class="font-semibold ml-1" :style="{ color: '#1E88B6' }">{{ currentCategoryLabel }}</span>
             </div>
           </div>
 
@@ -148,15 +183,16 @@
     />
 
     <!-- Contact & Billing Form Modal -->
-    <div v-if="showContactForm" class="fixed inset-0  flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div v-if="showContactForm" class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-50">
+      <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+           :style="{ border: '2px solid #1E88B6' }">
         <!-- Header -->
-        <div class="sticky top-0 z-99 bg-gradient-to-r from-blue-700 to-blue-500 text-white p-6 rounded-t-2xl">
-          <h2 class="text-2xl font-bold flex items-center gap-3">
-            <i class="fas fa-file-invoice"></i>
+        <div class="sticky top-0 z-10 p-6 rounded-t-2xl" :style="{ background: 'linear-gradient(135deg, #1E88B6, #1F8DBF)' }">
+          <h2 class="text-2xl font-bold flex items-center gap-3 text-white">
+            <i class="fas fa-file-invoice" :style="{ color: '#F2C200' }"></i>
             Contact & Billing Information
           </h2>
-          <p class="text-blue-100 text-sm mt-1">Please fill in your details to complete the booking</p>
+          <p class="text-sm mt-1" :style="{ color: '#E3F2FD' }">Please fill in your details to complete the booking</p>
         </div>
 
         <!-- Form Content -->
@@ -174,7 +210,7 @@
             :items="booking"
             :check-in="checkIn"
             :check-out="checkOut"
-            :subtotal="subtotal"
+            :subtotal="total"
             :total="total"
           />
 
@@ -182,13 +218,21 @@
           <div class="mt-6 flex gap-3">
             <button
               @click="showContactForm = false"
-              class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition"
+              class="flex-1 px-6 py-3 rounded-xl font-semibold transition"
+              :style="{ 
+                backgroundColor: '#F5F5F5',
+                color: '#1E88B6',
+                border: '2px solid #E0E0E0'
+              }"
+              @mouseover="e => e.currentTarget.style.backgroundColor = '#E3F2FD'"
+              @mouseleave="e => e.currentTarget.style.backgroundColor = '#F5F5F5'"
             >
               <i class="fas fa-arrow-left mr-2"></i>Back
             </button>
             <button
               @click="submitContactForm"
-              class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-xl font-semibold hover:shadow-lg transition"
+              class="flex-1 px-6 py-3 text-white rounded-xl font-semibold transition transform hover:scale-105"
+              :style="{ background: 'linear-gradient(135deg, #F2C200, #1E88B6)' }"
             >
               <i class="fas fa-check mr-2"></i>Confirm Booking
             </button>
@@ -555,7 +599,7 @@ export default {
         adults: this.adults,
         children: this.children,
         total: this.total,
-        subtotal: this.subtotal
+        subtotal: this.total
       }
       localStorage.setItem('pendingBooking', JSON.stringify(bookingData))
       // Show CustomerBookingConfirmation instead of redirecting
@@ -682,5 +726,23 @@ export default {
 
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+/* Custom scrollbar for the page */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F0F9FF;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #1E88B6, #1F8DBF);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #1F8DBF, #1E88B6);
 }
 </style>

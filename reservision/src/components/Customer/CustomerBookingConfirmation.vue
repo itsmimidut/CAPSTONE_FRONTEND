@@ -702,7 +702,7 @@ export default {
   color: var(--primary-blue); 
   display: flex; 
   align-items: center; 
-  justify-center: center; 
+  
   font-size: 0.875rem; 
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: linear-gradient(135deg, #FFFFFF 0%, #F8FBFF 100%);

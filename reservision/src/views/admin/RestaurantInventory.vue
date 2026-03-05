@@ -30,39 +30,16 @@
 </template>
 
 <script setup>
-// RestaurantInventory.vue - Main container component for restaurant inventory management
-// Purpose: Acts as a page-level component that manages the inventory view layout with sidebar and header
-// Functionality: Fetches inventory data from store, transforms it into displayable format, and emits CRUD operations
-
 import { ref, onMounted, computed } from 'vue'
 import { useRestaurantStore } from '../../stores/restaurant.js'
 import AdminHeader from '../../components/Admin/AdminHeader.vue'
 import AdminSidebar from '../../components/Admin/AdminSidebar.vue' 
 import InventorySection from '../../components/Restaurant/InventorySection.vue'
 
-// Initialize the Pinia store for restaurant data management
 const restaurant = useRestaurantStore()
-
-// Sidebar state management
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
 
-/**
- * Computed property that transforms raw inventory data from the store
- * Maps backend field names to frontend-friendly field names
- * 
- * Fields:
- * - id: Unique inventory item identifier (from inventory_id)
- * - item: Display name of the inventory item
- * - category: Product category for organization (optional, defaults to '')
- * - quantity: Current stock quantity
- * - unit: Unit of measurement (kg, L, pcs, etc)
- * - threshold: Reorder level alert threshold (uses backend threshold field)
- * - status: Backend-calculated status (good/low/critical based on threshold logic)
- * - supplier: Supplier information for the item (optional, defaults to '')
- * - last_updated: Timestamp of last inventory update
- * - image_url: Optional product image URL
- */
 const inventory = computed(() =>
   restaurant.inventory.map(i => ({
     id: i.inventory_id,
@@ -71,7 +48,7 @@ const inventory = computed(() =>
     quantity: i.quantity,
     unit: i.unit,
     threshold: i.threshold,
-    status: i.status, // Use backend-calculated status (good/low/critical)
+    status: i.status,
     supplier: i.supplier || '',
     last_updated: i.last_updated,
     image_url: i.image_url || ''
@@ -79,8 +56,6 @@ const inventory = computed(() =>
 )
 
 const updateStock = async (id, quantity, operation = 'set') => {
-  // Updates the quantity of an inventory item
-  // operation: 'set' (replace), 'add' (increase), 'subtract' (decrease)
   try {
     await restaurant.updateInventoryQuantity(id, quantity, operation)
   } catch (error) {
@@ -89,8 +64,6 @@ const updateStock = async (id, quantity, operation = 'set') => {
 }
 
 const addInventoryItem = async (item) => {
-  // Adds a new inventory item to the restaurant inventory
-  // Called from InventorySection when user submits add item form
   try {
     await restaurant.createInventoryItem(item)
   } catch (error) {
@@ -98,13 +71,9 @@ const addInventoryItem = async (item) => {
   }
 }
 
-const editInventoryItem = (item) => {
-  // Handler for edit action - currently handled in the InventorySection component
-}
+const editInventoryItem = (item) => {}
 
 const updateInventoryItem = async (item) => {
-  // Updates an existing inventory item with new data
-  // Supports field updates: item_name, quantity, unit, threshold
   try {
     const itemId = item.inventory_id || item.id
     await restaurant.updateInventoryItem(itemId, item)
@@ -114,8 +83,6 @@ const updateInventoryItem = async (item) => {
 }
 
 const deleteInventoryItem = async (id) => {
-  // Removes an inventory item from the database
-  // Called after user confirmation in the InventorySection component
   try {
     await restaurant.deleteInventoryItem(id)
   } catch (error) {
@@ -123,8 +90,6 @@ const deleteInventoryItem = async (id) => {
   }
 }
 
-// Lifecycle hook: Executes when component mounts
-// Fetches initial data from the backend for tables, menu items, and inventory
 onMounted(() => {
   restaurant.fetchTables()
   restaurant.fetchMenuItems()
@@ -133,9 +98,27 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* APPLIED POSTER PALETTE - ONLY THESE 4 COLORS */
+:root {
+  /* Blues */
+  --blue-deep: #1E88B6;     /* Slightly deeper cerulean */
+  --blue-bright: #1F8DBF;    /* Brighter cerulean */
+  
+  /* Yellows */
+  --yellow-rich: #F2C200;    /* Rich golden yellow */
+  --yellow-bright: #F4C400;   /* Brighter golden yellow */
+  
+  /* Neutrals (using only the palette colors with opacity) */
+  --white: #FFFFFF;
+  --bg-light: rgba(30, 136, 182, 0.03);
+  --border-light: rgba(30, 136, 182, 0.1);
+  --text-dark: #1E1E1E;
+  --text-light: #4A4A4A;
+}
+
 .admin-dashboard {
   min-height: 100vh;
-  background: #F3F4F6;
+  background: var(--bg-light);
 }
 
 .main-content {
@@ -160,5 +143,179 @@ onMounted(() => {
   .content-container {
     padding: 1rem;
   }
+}
+
+/* Page Controls Styling */
+:deep(.page-controls) {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 2px 8px rgba(30, 136, 182, 0.05);
+}
+
+:deep(.search-box),
+:deep(.filter-select) {
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  background: var(--white);
+  transition: all 0.2s ease;
+}
+
+:deep(.search-box:focus),
+:deep(.filter-select:focus) {
+  outline: none;
+  border-color: var(--blue-deep);
+  box-shadow: 0 0 0 3px rgba(30, 136, 182, 0.1);
+}
+
+:deep(.filter-select) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20' stroke='%231E88B6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+  appearance: none;
+}
+
+/* Button Styling */
+:deep(.btn) {
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+:deep(.btn-primary) {
+  background: var(--yellow-rich);
+  color: var(--text-dark);
+  box-shadow: 0 2px 8px rgba(242, 194, 0, 0.2);
+}
+
+:deep(.btn-primary:hover) {
+  background: var(--yellow-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(242, 194, 0, 0.3);
+}
+
+:deep(.btn-secondary) {
+  background: transparent;
+  border: 1px solid var(--blue-deep);
+  color: var(--blue-deep);
+}
+
+:deep(.btn-secondary:hover) {
+  background: var(--blue-deep);
+  color: var(--white);
+}
+
+/* Card Styling */
+:deep(.inventory-card) {
+  background: var(--white);
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  transition: all 0.2s ease;
+}
+
+:deep(.inventory-card:hover) {
+  border-color: var(--blue-bright);
+  box-shadow: 0 4px 12px rgba(30, 136, 182, 0.1);
+}
+
+/* Status Badges */
+:deep(.status-good) {
+  background: rgba(30, 136, 182, 0.1);
+  color: var(--blue-deep);
+  border: 1px solid rgba(30, 136, 182, 0.2);
+}
+
+:deep(.status-low) {
+  background: rgba(242, 194, 0, 0.1);
+  color: var(--yellow-rich);
+  border: 1px solid rgba(242, 194, 0, 0.2);
+}
+
+:deep(.status-critical) {
+  background: rgba(242, 194, 0, 0.15);
+  color: #B45309;
+  border: 1px solid var(--yellow-rich);
+}
+
+/* Table Styling */
+:deep(th) {
+  background: rgba(30, 136, 182, 0.03);
+  color: var(--blue-deep);
+  font-weight: 600;
+  border-bottom: 2px solid var(--blue-deep);
+}
+
+:deep(tr:hover td) {
+  background: rgba(30, 136, 182, 0.02);
+}
+
+/* Section Headers */
+:deep(.section-header) {
+  border-left: 4px solid var(--yellow-rich);
+  padding-left: 1rem;
+}
+
+:deep(.section-header h2) {
+  color: var(--blue-deep);
+}
+
+/* Modal Styling */
+:deep(.modal-header) {
+  background: var(--blue-deep);
+  color: var(--white);
+}
+
+:deep(.modal-header h3) {
+  color: var(--white);
+}
+
+:deep(.close-modal) {
+  color: var(--white);
+}
+
+:deep(.close-modal:hover) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Pagination */
+:deep(.pagination button) {
+  border: 1px solid var(--border-light);
+  background: var(--white);
+  color: var(--text-light);
+}
+
+:deep(.pagination button:hover) {
+  border-color: var(--blue-deep);
+  color: var(--blue-deep);
+}
+
+:deep(.pagination button.active) {
+  background: var(--blue-deep);
+  color: var(--white);
+  border-color: var(--blue-deep);
+}
+
+/* Scrollbar */
+.main-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.main-content::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+
+.main-content::-webkit-scrollbar-thumb {
+  background: var(--blue-deep);
+  border-radius: 4px;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: var(--blue-bright);
 }
 </style>

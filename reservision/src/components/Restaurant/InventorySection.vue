@@ -535,6 +535,8 @@ watch(showMenuIngredientsModal, v => { if (v) fetchMenuIngredientLinks() })
   border-bottom: 1px solid #e8edf8;
   flex-wrap: wrap;
   gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid #F4C400;
 }
 
 .section-title {
@@ -648,6 +650,11 @@ watch(showMenuIngredientsModal, v => { if (v) fetchMenuIngredientLinks() })
   border-bottom: 1px solid #e8edf8;
   background: #fafbff;
   flex-wrap: wrap;
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  border: 2px solid #F4C400;
 }
 
 .search-wrap {
@@ -794,6 +801,8 @@ watch(showMenuIngredientsModal, v => { if (v) fetchMenuIngredientLinks() })
   justify-content: center;
   padding: 4rem 2rem;
   text-align: center;
+  background: white;
+  border-radius: 12px;
 }
 
 .empty-icon {

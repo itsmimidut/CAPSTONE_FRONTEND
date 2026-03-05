@@ -1,27 +1,63 @@
 <template>
-  <section class="contact-hero">
-    <div class="overlay"></div>
+  <section class="relative flex items-center justify-center min-h-[450px] sm:min-h-[550px] contact-hero text-center px-4 overflow-hidden">
+    <!-- Animated background elements -->
+    <div class="absolute inset-0 overflow-hidden">
+      <div class="absolute top-10 left-10 w-32 h-32 bg-[#1F8DBF]/20 rounded-full blur-3xl animate-pulse"></div>
+      <div class="absolute bottom-10 right-10 w-40 h-40 bg-[#F4C400]/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+    </div>
+    
+    <!-- Gradient overlay with yellow presence -->
+    <div class="absolute inset-0 bg-gradient-to-br from-[#1F8DBF]/20 via-[#F4C400]/10 to-[#F4C400]/20"></div>
+    
+    <!-- Glass card - horizontally elongated with ~50% opacity -->
+    <div class="relative z-10 max-w-4xl w-full backdrop-blur-md bg-white/50 rounded-2xl p-8 sm:p-10 md:p-12 shadow-2xl mx-4 flex flex-col justify-center border border-white/40 my-12">
+      
+      <!-- Inner glass layer for depth with yellow undertone -->
+      <div class="absolute inset-0 bg-gradient-to-br from-white/20 via-[#F4C400]/5 to-[#1F8DBF]/10 rounded-2xl pointer-events-none"></div>
+      
+      <!-- Content with relative positioning -->
+      <div class="relative z-20 flex flex-col items-center justify-center">
+        <!-- Yellow glow effect -->
+        <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 w-32 h-32 bg-[#F4C400]/30 rounded-full blur-2xl animate-pulse-slow"></div>
+        
+        <!-- Titles - Get In Touch in one line -->
+        <h1 class="text-[32px] sm:text-[40px] md:text-[48px] font-bold leading-tight relative mb-4">
+          <span class="text-[#0C3B5E] drop-shadow-lg">Get In Touch</span>
+        </h1>
 
-    <div class="hero-card">
-      <h1>
-        <span class="text-blue">Get In</span>
-        <span class="text-gold">Touch</span>
-      </h1>
+        <!-- Body text - matching reference style with proper spacing -->
+        <div class="mt-2 mb-6">
+          <p class="text-xs sm:text-sm text-[#0C3B5E]/80 leading-relaxed drop-shadow-md font-medium max-w-2xl mx-auto">
+            We're here to assist with bookings, inquiries, or any questions about your stay.
+          </p>
+        </div>
 
-      <p>
-        We're here to assist with bookings, inquiries, or any questions about your stay.
-      </p>
+        <!-- Contact Buttons - Now matching exactly: Yellow first, transparent second, both turn blue on hover -->
+        <div class="flex flex-wrap justify-center gap-4 mt-2">
+          <!-- Phone Button - Starts YELLOW, becomes DARK BLUE on hover -->
+          <a 
+            href="tel:0432887153" 
+            class="flex items-center gap-3 px-8 py-4 bg-[#F4C400] text-[#0C3B5E] font-extrabold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 text-sm sm:text-base relative overflow-hidden group border-2 border-[#F4C400] hover:border-[#F4C400]"
+          >
+            <span class="relative z-10 flex items-center gap-3 group-hover:text-white transition-colors duration-300">
+              <i class="fas fa-phone-alt text-[#1F8DBF] group-hover:text-white transition-colors duration-300"></i>
+              (043) 288-7153
+            </span>
+            <div class="absolute inset-0 bg-[#0A2F4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </a>
 
-      <div class="contact-buttons">
-        <a href="tel:0432887153" class="btn btn-blue">
-          <i class="fas fa-phone-alt"></i>
-          (043) 288-7153
-        </a>
-
-        <a href="mailto:info@eduardoresort.com" class="btn btn-gold">
-          <i class="fas fa-envelope"></i>
-          info@eduardoresort.com
-        </a>
+          <!-- Email Button - Starts TRANSPARENT (matching glass card), becomes DARK BLUE on hover -->
+          <a 
+            href="mailto:info@eduardoresort.com" 
+            class="flex items-center gap-3 px-8 py-4 bg-transparent text-[#0C3B5E] font-extrabold rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 text-sm sm:text-base relative overflow-hidden group border-2 border-[#0C3B5E] hover:border-[#F4C400]"
+          >
+            <span class="relative z-10 flex items-center gap-3 group-hover:text-white transition-colors duration-300">
+              <i class="fas fa-envelope text-[#1F8DBF] group-hover:text-white transition-colors duration-300"></i>
+              info@eduardoresort.com
+            </span>
+            <div class="absolute inset-0 bg-[#0A2F4A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </a>
+        </div>
       </div>
     </div>
   </section>
@@ -29,131 +65,223 @@
 
 <style scoped>
 .contact-hero {
-  position: relative;
-  min-height: 380px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  text-align: center;
-  overflow: hidden;
-  color: #0f172a;
-
-  background-image:
-    radial-gradient(circle at 20% 80%, rgba(59,130,246,0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(212,175,55,0.15) 0%, transparent 50%),
-    linear-gradient(135deg, rgba(30,64,175,0.35), rgba(212,175,55,0.25)),
+  background-image: 
+    radial-gradient(circle at 30% 40%, rgba(31, 141, 191, 0.25) 0%, transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(244, 196, 0, 0.2) 0%, transparent 40%),
+    linear-gradient(125deg, rgba(31, 141, 191, 0.4) 0%, rgba(244, 196, 0, 0.3) 100%),
     url('https://www.eduardosresort.com/images/IMG_4224.JPG');
   background-position: center;
   background-size: cover;
   background-blend-mode: overlay;
+  position: relative;
 }
 
-/* Soft overlay depth */
-.overlay {
+.contact-hero::before {
+  content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom right,
-    rgba(30,64,175,0.25),
-    rgba(212,175,55,0.2)
-  );
+  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.2) 100%);
+  pointer-events: none;
 }
 
-/* Glass Card */
-.hero-card {
-  position: relative;
-  z-index: 2;
-  max-width: 650px;
-  width: 100%;
-  padding: 35px 30px;
-  border-radius: 20px;
-  backdrop-filter: blur(18px);
-  background: linear-gradient(
-    135deg,
-    rgba(255,255,255,0.95),
-    rgba(255,255,255,0.85)
-  );
-  border: 1px solid rgba(255,255,255,0.4);
-  box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+/* Enhanced glass morphism effect with ~50% opacity */
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-/* Heading */
-.hero-card h1 {
-  font-size: 2.8rem;
-  font-weight: 800;
-  margin-bottom: 18px;
+/* Animation for background elements only */
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
 }
 
-.text-blue {
-  color: #1e40af;
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.2; transform: scale(1) translateX(-50%); }
+  50% { opacity: 0.4; transform: scale(1.2) translateX(-50%); }
 }
 
-.text-gold {
-  color: #d4af37;
+.animate-pulse {
+  animation: pulse 4s ease-in-out infinite;
 }
 
-/* Paragraph */
-.hero-card p {
-  font-size: 1.1rem;
-  margin-bottom: 28px;
-  line-height: 1.6;
-  color: #1e293b;
+.animate-pulse-slow {
+  animation: pulse-slow 6s ease-in-out infinite;
+  left: 50% !important;
 }
 
-/* Buttons */
-.contact-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 18px;
+.delay-1000 {
+  animation-delay: 1s;
 }
 
-/* Base Button */
-.btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 26px;
-  border-radius: 14px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+/* Custom spacing - matching reference exactly */
+.min-h-\[450px\] {
+  min-height: 450px;
 }
 
-/* BLUE BUTTON */
-.btn-blue {
-  background: linear-gradient(to right, #1e40af, #2563eb);
+@media (min-width: 640px) {
+  .sm\:min-h-\[550px\] {
+    min-height: 550px;
+  }
+}
+
+/* Horizontal box padding */
+.p-8 {
+  padding: 2.5rem 2rem;
+}
+
+@media (min-width: 640px) {
+  .sm\:p-10 {
+    padding: 3rem 2.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .md\:p-12 {
+    padding: 3.5rem 3rem;
+  }
+}
+
+.my-12 {
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+}
+
+/* Fixed body text container - wider for horizontal layout */
+.max-w-2xl {
+  max-width: 42rem;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Proper vertical spacing between elements */
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+/* Button styles - Updated to match system */
+.rounded-xl {
+  border-radius: 0.75rem;
+}
+
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.hover\:shadow-2xl:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.hover\:scale-105:hover {
+  transform: scale(1.05);
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Button hover overlay effect */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}
+
+.group:hover .group-hover\:text-white {
   color: white;
 }
 
-.btn-blue:hover {
-  background: linear-gradient(to right, #1e3a8a, #1d4ed8); /* darker pure blue */
-  transform: translateY(-3px);
-  box-shadow: 0 12px 25px rgba(30,64,175,0.45);
+/* Icon transitions */
+.group .fa-phone-alt,
+.group .fa-envelope {
+  transition: color 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 10;
 }
 
-/* GOLD BUTTON */
-.btn-gold {
-  background: linear-gradient(to right, #d4af37, #facc15);
-  color: #1e3a8a;
+/* Color palette */
+:root {
+  --reservision-blue: #0C3B5E;
+  --darker-blue: #0A2F4A;
+  --blue-1: #1E88B6;
+  --blue-2: #1F8DBF;
+  --yellow-1: #F2C200;
+  --yellow-2: #F4C400;
 }
 
-.btn-gold:hover {
-  background: linear-gradient(to right, #b8941f, #eab308); /* deeper gold, no green */
-  transform: translateY(-3px);
-  box-shadow: 0 12px 25px rgba(212,175,55,0.5);
-}
-
-/* Responsive */
+/* Responsive adjustments */
 @media (max-width: 640px) {
-  .hero-card h1 {
-    font-size: 2.1rem;
+  .contact-hero {
+    min-height: 450px;
   }
+  
+  /* Ensure proper spacing on mobile */
+  .mt-2 {
+    margin-top: 0.25rem;
+  }
+  
+  .mb-6 {
+    margin-bottom: 1rem;
+  }
+  
+  /* Full width on mobile */
+  .max-w-2xl {
+    max-width: 100%;
+  }
+  
+  /* Adjust font size for mobile one-liner */
+  .text-\[32px\] {
+    font-size: 28px;
+  }
+  
+  /* Stack buttons on mobile */
+  .flex-wrap {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .flex-wrap a {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .gap-4 {
+    gap: 0.75rem;
+  }
+  
+  /* Adjust button padding for mobile */
+  .px-8 {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  .py-4 {
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+  }
+}
 
-  .hero-card {
-    padding: 25px 20px;
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .px-8 {
+    padding-left: 2rem;
+    padding-right: 2rem;
   }
 }
 </style>

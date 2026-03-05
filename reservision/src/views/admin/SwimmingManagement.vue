@@ -1,15 +1,15 @@
 <template>
   <div class="admin-dashboard">
     <!-- Header -->
-      <div class="header-container">
-        <AdminHeader 
-          title="Swimming Management"
-          subtitle="Manage Students, Coaches, and Payments"
-          :has-notifications="pendingStudents > 0"
-          :pending-count="pendingStudents"
-          @toggle-sidebar="sidebarOpen = !sidebarOpen"
-        />
-      </div>
+    <div class="header-container">
+      <AdminHeader 
+        title="Swimming Management"
+        subtitle="Manage Students, Coaches, and Payments"
+        :has-notifications="pendingStudents > 0"
+        :pending-count="pendingStudents"
+        @toggle-sidebar="sidebarOpen = !sidebarOpen"
+      />
+    </div>
 
     <!-- Sidebar -->
     <AdminSidebar 
@@ -22,42 +22,32 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="content-container">
-        <!-- Stats Cards -->
-        <div class="stats-cards">
-          <div class="stat-card total-card">
-            <div class="stat-icon">
-              <i class="fas fa-users"></i>
-            </div>
+
+        <!-- ───── Stats Row ───── -->
+        <div class="stats-grid">
+          <div class="stat-card total">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
             <div class="stat-content">
               <span class="stat-label">Total Students</span>
               <span class="stat-value">{{ totalStudents }}</span>
             </div>
           </div>
-
-          <div class="stat-card paid-card">
-            <div class="stat-icon">
-              <i class="fas fa-check-circle"></i>
-            </div>
+          <div class="stat-card paid">
+            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
             <div class="stat-content">
               <span class="stat-label">Paid</span>
               <span class="stat-value">{{ paidStudents }}</span>
             </div>
           </div>
-
-          <div class="stat-card pending-card">
-            <div class="stat-icon">
-              <i class="fas fa-clock"></i>
-            </div>
+          <div class="stat-card pending">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
             <div class="stat-content">
               <span class="stat-label">Pending</span>
               <span class="stat-value">{{ pendingStudents }}</span>
             </div>
           </div>
-
-          <div class="stat-card inactive-card">
-            <div class="stat-icon">
-              <i class="fas fa-times-circle"></i>
-            </div>
+          <div class="stat-card inactive">
+            <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
             <div class="stat-content">
               <span class="stat-label">Inactive</span>
               <span class="stat-value">{{ inactiveStudents }}</span>
@@ -65,350 +55,360 @@
           </div>
         </div>
 
-        <!-- Two Column Layout -->
-        <div class="main-layout">
-          <!-- Students Section (Left) -->
-          <div class="section students-section">
-            <h2 class="section-title">Enrolled Students</h2>
-            <div class="table-container">
-              <table class="students-table">
+        <!-- ───── TOP ROW: Students (left) + Calendar (right) ───── -->
+        <div class="top-row">
+
+          <!-- LEFT — Enrolled Students -->
+          <section class="panel students-panel">
+            <div class="panel-header">
+              <div class="panel-header-left">
+                <div class="panel-icon-wrap students-accent">
+                  <i class="fas fa-user-graduate"></i>
+                </div>
+                <div>
+                  <h2 class="panel-title">Enrolled Students</h2>
+                  <p class="panel-sub">All active enrollments</p>
+                </div>
+              </div>
+              <div class="panel-header-right">
+                <span class="count-badge">{{ students.length }} Total</span>
+                <button class="icon-btn" title="Filter"><i class="fas fa-filter"></i></button>
+                <button class="icon-btn" title="Export"><i class="fas fa-download"></i></button>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Lesson Type</th>
+                    <th>Student</th>
+                    <th>Lesson</th>
                     <th>Coach</th>
-                    <th>Enrollment Status</th>
-                    <th>Actions</th>
+                    <th>Status</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="student in students" :key="student.id" @click="selectStudent(student)" class="clickable-row" :class="{ active: selectedStudent?.id === student.id }">
-                    <td><strong>{{ student.name }}</strong></td>
-                    <td>{{ student.lessonType }}</td>
-                    <td>{{ student.coach }}</td>
+                  <tr
+                    v-for="student in students"
+                    :key="student.id"
+                    @click="selectStudent(student)"
+                    class="data-row"
+                    :class="{ 'row-active': selectedStudent?.id === student.id }"
+                  >
                     <td>
-                      <span 
-                        :class="{
-                          'active': student.enrollmentStatus === 'Active',
-                          'inactive': student.enrollmentStatus === 'Inactive'
-                        }"
-                      >
+                      <div class="student-cell">
+                        <div class="avatar">{{ student.name.charAt(0).toUpperCase() }}</div>
+                        <div class="student-meta">
+                          <span class="s-name">{{ student.name }}</span>
+                          <span class="s-email">{{ student.email || 'No email' }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="pill" :class="{
+                        'pill-group': student.lessonType?.toLowerCase().includes('group'),
+                        'pill-private': student.lessonType?.toLowerCase().includes('private')
+                      }">{{ student.lessonType }}</span>
+                    </td>
+                    <td>
+                      <div class="coach-cell">
+                        <i class="fas fa-user-tie"></i>
+                        <span>{{ student.coach || 'Unassigned' }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="status-pill" :class="student.enrollmentStatus?.toLowerCase()">
+                        <i class="fas" :class="{
+                          'fa-check-circle': student.enrollmentStatus === 'Approved',
+                          'fa-clock': student.enrollmentStatus === 'Pending',
+                          'fa-times-circle': student.enrollmentStatus === 'Inactive'
+                        }"></i>
                         {{ student.enrollmentStatus }}
                       </span>
                     </td>
                     <td>
-                      <button @click.stop="approveStudent(student.id)" class="btn-action approve" title="Approve">
-                        <i class="fas fa-check"></i>
-                      </button>
-                      <button @click.stop="editStudent(student.id)" class="btn-action edit" title="Edit">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      <button @click.stop="deleteStudent(student.id)" class="btn-action delete" title="Delete">
-                        <i class="fas fa-trash"></i>
-                      </button>
+                      <div class="row-actions">
+                        <button @click.stop="approveStudent(student.id)" class="act-btn approve" title="Approve">
+                          <i class="fas fa-check"></i>
+                        </button>
+                        <button @click.stop="editStudent(student.id)" class="act-btn edit" title="Edit">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button @click.stop="deleteStudent(student.id)" class="act-btn remove" title="Delete">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
+
                   <tr v-if="loading && students.length === 0">
-                    <td colspan="5" class="text-center">
-                      <i class="fas fa-spinner fa-spin"></i> Loading students...
+                    <td colspan="5">
+                      <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Loading students…</span>
+                      </div>
                     </td>
                   </tr>
                   <tr v-if="!loading && students.length === 0">
-                    <td colspan="5" class="text-center">No students enrolled yet.</td>
+                    <td colspan="5">
+                      <div class="empty-state">
+                        <i class="fas fa-users-slash"></i>
+                        <span>No students enrolled yet</span>
+                      </div>
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-          </div>
+          </section>
 
-          <!-- Schedules Section (Right) -->
-          <div class="section schedules-section">
-            <div class="schedules-header">
-              <h2 class="section-title">Schedules & Coaches</h2>
-              <button @click="openAddCoachModal" class="btn-add-coach">
-                <i class="fas fa-plus"></i> Add Coach
-              </button>
-            </div>
-            <div class="coaches-wrapper">
-              <div v-if="loading && schedules.length === 0" class="loading-message">
-                <i class="fas fa-spinner fa-spin"></i> Loading coaches...
-              </div>
-              <div v-else-if="!loading && schedules.length === 0" class="empty-message">
-                No coaches available.
-              </div>
-              <div v-else>
-                <!-- Pagination Controls -->
-                <div class="pagination-controls">
-                  <button @click="prevCoach" :disabled="currentCoachPage === 0" class="pagination-btn">
-                    <i class="fas fa-chevron-left"></i>
-                  </button>
-                  <span class="pagination-info">{{ currentCoachPage + 1 }} of {{ schedules.length }}</span>
-                  <button @click="nextCoach" :disabled="currentCoachPage >= schedules.length - 1" class="pagination-btn">
-                    <i class="fas fa-chevron-right"></i>
-                  </button>
+          <!-- RIGHT — Schedule Calendar -->
+          <section class="panel calendar-panel">
+            <div class="panel-header">
+              <div class="panel-header-left">
+                <div class="panel-icon-wrap calendar-accent">
+                  <i class="fas fa-calendar-alt"></i>
                 </div>
-
-                <!-- Coach Form -->
-                <div class="coach-form-section">
-                  <div class="coach-card" v-if="schedules[currentCoachPage]">
-                    <div class="coach-form">
-                      <h3 class="form-title">{{ schedules[currentCoachPage].coach }}</h3>
-                      
-                      <div class="form-group">
-                        <label class="form-label">Lesson Type</label>
-                        <input 
-                          type="text" 
-                          class="form-input" 
-                          v-model="editingCoach.lessonType"
-                          placeholder="e.g., Group Lessons"
-                        />
-                      </div>
-                      
-                      <div class="form-group">
-                        <label class="form-label">Coach Name</label>
-                        <input 
-                          type="text" 
-                          class="form-input" 
-                          v-model="editingCoach.coach"
-                          placeholder="Enter coach name"
-                        />
-                      </div>
-
-                      <div class="form-group">
-                        <label class="form-label">Email</label>
-                        <input 
-                          type="email" 
-                          class="form-input" 
-                          v-model="editingCoach.email"
-                          placeholder="coach@example.com"
-                        />
-                      </div>
-
-                      <div class="form-group">
-                        <label class="form-label">Phone</label>
-                        <input 
-                          type="text" 
-                          class="form-input" 
-                          v-model="editingCoach.phone"
-                          placeholder="Phone number"
-                        />
-                      </div>
-
-                      <div class="form-actions">
-                        <button @click="updateCoach" class="btn-action save">
-                          <i class="fas fa-save"></i> Save Changes
-                        </button>
-                        <button @click="deleteCoach" class="btn-action delete">
-                          <i class="fas fa-trash"></i> Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                <div>
+                  <h2 class="panel-title">Schedule Calendar</h2>
+                  <p class="panel-sub">Lesson availability</p>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Add/Edit Coach Modal -->
-        <div v-if="showAddCoachModal" class="modal-overlay" @click="closeAddCoachModal">
-          <div class="modal-content" @click.stop>
-            <div class="modal-header">
-              <h3>{{ isEditingCoach ? 'Edit Coach' : 'Add New Coach' }}</h3>
-              <button class="close-btn" @click="closeAddCoachModal">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-            <div class="modal-body">
-              <div class="form-group">
-                <label class="form-label">Lesson Type</label>
-                <input 
-                  type="text" 
-                  class="form-input modal-input" 
-                  v-model="newCoach.lessonType"
-                  placeholder="e.g., Group Lessons, Private"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Coach Name</label>
-                <input 
-                  type="text" 
-                  class="form-input modal-input" 
-                  v-model="newCoach.coach"
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Email</label>
-                <input 
-                  type="email" 
-                  class="form-input modal-input" 
-                  v-model="newCoach.email"
-                  placeholder="coach@example.com"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Phone</label>
-                <input 
-                  type="text" 
-                  class="form-input modal-input" 
-                  v-model="newCoach.phone"
-                  placeholder="Phone number"
-                />
+              <div class="month-nav">
+                <button @click="prevCalendarMonth" class="month-btn">
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <span class="month-label">{{ formatMonthYear(currentCalendarDate) }}</span>
+                <button @click="nextCalendarMonth" class="month-btn">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
               </div>
             </div>
-            <div class="modal-footer">
-              <button @click="closeAddCoachModal" class="btn-secondary">Cancel</button>
-              <button @click="saveCoach" class="btn-primary">{{ isEditingCoach ? 'Update Coach' : 'Add Coach' }}</button>
-            </div>
-          </div>
-        </div>
 
-        <!-- Calendar Section -->
-        <div class="calendar-section">
-          <div class="calendar-header">
-            <div>
-              <h3>Swimming Schedule Calendar</h3>
-              <p class="text-sm text-gray-500">View class schedules by date</p>
-            </div>
-            <div class="month-navigation">
-              <button @click="prevCalendarMonth" class="nav-btn">
-                <i class="fas fa-chevron-left"></i>
-              </button>
-              <span class="current-month">{{ formatMonthYear(currentCalendarDate) }}</span>
-              <button @click="nextCalendarMonth" class="nav-btn">
-                <i class="fas fa-chevron-right"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="calendar-wrapper">
-            <!-- Calendar (70%) -->
-            <div class="calendar-container">
-              <div class="weekdays">
-                <div v-for="day in weekDays" :key="day" class="weekday">
-                  {{ day }}
-                </div>
+            <div class="calendar-body">
+              <div class="cal-weekdays">
+                <span v-for="d in weekDays" :key="d" class="wd">{{ d }}</span>
               </div>
-
-              <div class="dates-grid">
-                <!-- Empty cells for days before month starts -->
-                <div v-for="i in firstDayOfCalendarMonth" :key="`empty-${i}`" class="date-cell empty"></div>
-
-                <!-- Calendar dates -->
+              <div class="cal-grid">
+                <div v-for="i in firstDayOfCalendarMonth" :key="`e-${i}`" class="cal-day empty"></div>
                 <div
                   v-for="date in daysInCalendarMonth"
                   :key="date"
                   @click="selectCalendarDate(date)"
-                  :class="getDayClassSwimming(date, selectedCalendarDate)"
-                  class="date-cell clickable"
+                  class="cal-day"
+                  :class="getDayClass(date)"
                 >
-                  <div class="date-number">{{ date }}</div>
+                  <span class="day-num">{{ date }}</span>
+                  <span v-if="hasLessonsOnDate(date)" class="dot"></span>
                 </div>
               </div>
-            </div>
 
-            <!-- Day Details (30%) -->
-            <div class="day-details-container">
-              <div v-if="selectedCalendarDate" class="day-details">
-                <h3 class="details-title">
-                  {{ formatCalendarDate(selectedCalendarDate) }}
-                </h3>
-                
-                <div v-if="studentsForSelectedDay.length > 0" class="lessons-list">
-                  <div v-for="(lesson, index) in studentsForSelectedDay" :key="index" class="lesson-item">
-                    <div class="lesson-student">
-                      <div class="student-name">{{ lesson.name }}</div>
-                      <div class="lesson-type">{{ lesson.lessonType }}</div>
-                    </div>
-                    <div class="lesson-info">
-                      <div class="lesson-time">
-                        <i class="fas fa-clock"></i>
-                        {{ lesson.time }}
+              <!-- Selected Date Panel -->
+              <div class="date-lessons" v-if="selectedCalendarDate">
+                <div class="date-lessons-header">
+                  <i class="fas fa-calendar-day"></i>
+                  <span>{{ formatSelectedDate(selectedCalendarDate) }}</span>
+                  <span class="lesson-count-badge" v-if="studentsForSelectedDay.length">
+                    {{ studentsForSelectedDay.length }} lesson{{ studentsForSelectedDay.length > 1 ? 's' : '' }}
+                  </span>
+                </div>
+                <div class="lessons-scroll">
+                  <template v-if="studentsForSelectedDay.length > 0">
+                    <div v-for="(lesson, i) in studentsForSelectedDay" :key="i" class="lesson-row">
+                      <div class="lesson-time-tag">
+                        <i class="fas fa-clock"></i> {{ lesson.time }}
                       </div>
-                      <div class="lesson-coach">
-                        <i class="fas fa-user-tie"></i>
-                        {{ lesson.coach }}
+                      <div class="lesson-info">
+                        <span class="lesson-name">{{ lesson.name }}</span>
+                        <span class="lesson-type-tag">{{ lesson.lessonType }}</span>
+                      </div>
+                      <div class="lesson-coach-tag">
+                        <i class="fas fa-user-tie"></i> {{ lesson.coach }}
                       </div>
                     </div>
+                  </template>
+                  <div v-else class="empty-state small">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>No lessons on this day</span>
                   </div>
                 </div>
-                <div v-else class="no-lessons">
-                  <i class="fas fa-calendar-check"></i>
-                  <p>No lessons scheduled</p>
+              </div>
+              <div v-else class="date-placeholder">
+                <i class="fas fa-hand-pointer"></i>
+                <span>Select a date to see lessons</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ───── BOTTOM ROW: Schedules & Coaches (full width) ───── -->
+        <section class="panel coaches-panel">
+          <div class="panel-header coaches-panel-header">
+            <div class="panel-header-left">
+              <div class="panel-icon-wrap coaches-accent">
+                <i class="fas fa-chalkboard-teacher"></i>
+              </div>
+              <div>
+                <h2 class="panel-title">Schedules &amp; Coaches</h2>
+                <p class="panel-sub">Manage your coaching team</p>
+              </div>
+            </div>
+            <button @click="openAddCoachModal" class="add-coach-btn">
+              <i class="fas fa-plus"></i> Add Coach
+            </button>
+          </div>
+
+          <!-- Coach Cards Grid -->
+          <div class="coaches-grid" v-if="schedules.length > 0">
+            <div
+              v-for="(coach, index) in schedules"
+              :key="index"
+              class="coach-card"
+              :class="{ 'coach-card--active': currentCoachPage === index }"
+              @click="currentCoachPage = index"
+            >
+              <div class="coach-card-top">
+                <div class="coach-ava">{{ coach.coach.charAt(0).toUpperCase() }}</div>
+                <div class="coach-card-info">
+                  <span class="coach-card-name">{{ coach.coach }}</span>
+                  <span class="coach-card-type">{{ coach.lessonType }}</span>
                 </div>
               </div>
-              <div v-else class="no-date-selected">
-                <i class="fas fa-hand-point-left"></i>
-                <p>Select a date to view lessons</p>
+
+              <div class="coach-card-details">
+                <div class="coach-detail-item" v-if="coach.email">
+                  <i class="fas fa-envelope"></i>
+                  <span>{{ coach.email }}</span>
+                </div>
+                <div class="coach-detail-item" v-if="coach.phone">
+                  <i class="fas fa-phone"></i>
+                  <span>{{ coach.phone }}</span>
+                </div>
+                <div class="coach-detail-item" v-if="coach.time">
+                  <i class="fas fa-clock"></i>
+                  <span>{{ coach.time }}</span>
+                </div>
+              </div>
+
+              <div class="coach-card-actions">
+                <button @click.stop="editCoachByIndex(index)" class="cta-edit">
+                  <i class="fas fa-edit"></i> Edit
+                </button>
+                <button @click.stop="deleteCoachByIndex(index)" class="cta-delete">
+                  <i class="fas fa-trash"></i> Remove
+                </button>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Student Details Modal -->
-        <div v-if="selectedStudent" class="modal-overlay" @click="selectedStudent = null">
-          <div class="modal-content" @click.stop>
-            <div class="modal-header">
-              <h3>Student Details</h3>
-              <button class="close-btn" @click="selectedStudent = null">
-                <i class="fas fa-times"></i>
-              </button>
+          <div v-else-if="loading" class="empty-state coaches-empty">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Loading coaches…</span>
+          </div>
+          <div v-else class="empty-state coaches-empty">
+            <i class="fas fa-user-slash"></i>
+            <span>No coaches available. Add one to get started.</span>
+          </div>
+        </section>
+
+        <!-- ───── Add / Edit Coach Modal ───── -->
+        <div v-if="showAddCoachModal" class="modal-overlay" @click="closeAddCoachModal">
+          <div class="modal-box" @click.stop>
+            <div class="modal-head">
+              <h3>{{ isEditingCoach ? 'Edit Coach' : 'Add New Coach' }}</h3>
+              <button class="close-btn" @click="closeAddCoachModal"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
+              <div class="form-group">
+                <label>Coach Name <span class="req">*</span></label>
+                <input type="text" v-model="newCoach.coach" placeholder="Full name" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Lesson Type <span class="req">*</span></label>
+                <input type="text" v-model="newCoach.lessonType" placeholder="e.g. Group, Private" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" v-model="newCoach.email" placeholder="coach@example.com" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="text" v-model="newCoach.phone" placeholder="Phone number" class="form-input" />
+              </div>
+            </div>
+            <div class="modal-foot">
+              <button @click="closeAddCoachModal" class="btn-sec">Cancel</button>
+              <button @click="saveCoach" class="btn-pri">
+                {{ isEditingCoach ? 'Update Coach' : 'Add Coach' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───── Student Details Modal ───── -->
+        <div v-if="selectedStudent" class="modal-overlay" @click="selectedStudent = null">
+          <div class="modal-box modal-box--wide" @click.stop>
+            <div class="modal-head">
+              <h3>Student Details</h3>
+              <button class="close-btn" @click="selectedStudent = null"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+              <div class="student-detail-header">
+                <div class="avatar avatar-lg">{{ selectedStudent.name.charAt(0).toUpperCase() }}</div>
+                <div>
+                  <h4 class="sd-name">{{ selectedStudent.name }}</h4>
+                  <span class="status-pill" :class="selectedStudent.enrollmentStatus?.toLowerCase()">
+                    {{ selectedStudent.enrollmentStatus }}
+                  </span>
+                </div>
+              </div>
               <div class="detail-grid">
                 <div class="detail-item">
-                  <span class="detail-label">Name</span>
-                  <span class="detail-value">{{ selectedStudent.name }}</span>
+                  <span class="di-label">Email</span>
+                  <span class="di-value">{{ selectedStudent.email || '—' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Email</span>
-                  <span class="detail-value">{{ selectedStudent.email }}</span>
+                  <span class="di-label">Phone</span>
+                  <span class="di-value">{{ selectedStudent.phone || '—' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Phone</span>
-                  <span class="detail-value">{{ selectedStudent.phone }}</span>
+                  <span class="di-label">Lesson Type</span>
+                  <span class="di-value">{{ selectedStudent.lessonType }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Lesson Type</span>
-                  <span class="detail-value">{{ selectedStudent.lessonType }}</span>
+                  <span class="di-label">Coach</span>
+                  <span class="di-value">{{ selectedStudent.coach || '—' }}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Coach</span>
-                  <span class="detail-value">{{ selectedStudent.coach }}</span>
+                  <span class="di-label">Payment</span>
+                  <span class="di-value" :class="selectedStudent.paymentStatus?.toLowerCase()">
+                    {{ selectedStudent.paymentStatus }}
+                  </span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Schedule</span>
-                  <div class="schedule-display">
-                    <div class="schedule-dates" v-if="selectedStudent.lessonDatesFormatted">
-                      <small class="dates-label">Lesson Dates:</small>
-                      <div class="dates-list">{{ selectedStudent.lessonDatesFormatted.join(', ') }}</div>
+                  <span class="di-label">Booking Ref</span>
+                  <span class="di-value mono">{{ selectedStudent.bookingReference || '—' }}</span>
+                </div>
+                <div class="detail-item detail-item--full">
+                  <span class="di-label">Schedule</span>
+                  <div class="schedule-block">
+                    <div v-if="selectedStudent.lessonDatesFormatted?.length" class="sched-row">
+                      <i class="fas fa-calendar-alt"></i>
+                      <span>{{ selectedStudent.lessonDatesFormatted.join(', ') }}</span>
                     </div>
-                    <div class="schedule-time" v-if="selectedStudent.lessonTimeFormatted">
-                      <small class="time-label">Time:</small>
-                      <div class="time-value">{{ selectedStudent.lessonTimeFormatted }}</div>
+                    <div v-if="selectedStudent.lessonTimeFormatted" class="sched-row">
+                      <i class="fas fa-clock"></i>
+                      <span>{{ selectedStudent.lessonTimeFormatted }}</span>
                     </div>
-                    <div v-if="!selectedStudent.lessonDatesFormatted && !selectedStudent.lessonTimeFormatted">
-                      <span class="detail-value">TBD</span>
-                    </div>
+                    <span v-if="!selectedStudent.lessonDatesFormatted?.length && !selectedStudent.lessonTimeFormatted" class="di-value">TBD</span>
                   </div>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Payment Status</span>
-                  <span class="detail-value" :class="{ 'status-paid': selectedStudent.paymentStatus === 'Paid', 'status-pending': selectedStudent.paymentStatus === 'Pending' }">{{ selectedStudent.paymentStatus }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Enrollment Status</span>
-                  <span class="detail-value">{{ selectedStudent.enrollmentStatus }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">Booking Reference</span>
-                  <span class="detail-value">{{ selectedStudent.bookingReference }}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
       </div>
     </main>
   </div>
@@ -422,1585 +422,694 @@ import { useNotificationStore } from '../../stores/notifications'
 
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
-const activeTab = ref('Students')
 const notifications = useNotificationStore()
-const tabs = ['Students', 'Schedule & Coaches', 'Payments']
 
 const students = ref([])
 const schedules = ref([])
-const payments = ref([])
 const loading = ref(false)
 const selectedStudent = ref(null)
-const selectedCoachIndex = ref(null)
 const selectedCalendarDate = ref(null)
 const currentCoachPage = ref(0)
 const showAddCoachModal = ref(false)
 const isEditingCoach = ref(false)
-const newCoach = ref({
-  lessonType: '',
-  coach: '',
-  email: '',
-  phone: ''
-})
-const editingCoach = ref({
-  lessonType: '',
-  coach: '',
-  email: '',
-  phone: ''
-})
+const editingIndex = ref(-1)
 
-// Computed stats
+const newCoach = ref({ lessonType: '', coach: '', email: '', phone: '' })
+
+// ── Computed Stats ──────────────────────────────────────
 const totalStudents = computed(() => students.value.length)
+const paidStudents = computed(() => students.value.filter(s => s.paymentStatus === 'Paid').length)
+const pendingStudents = computed(() => students.value.filter(s => s.enrollmentStatus === 'Pending').length)
+const inactiveStudents = computed(() => students.value.filter(s => s.enrollmentStatus === 'Inactive' || s.paymentStatus === 'Unpaid').length)
 
-const paidStudents = computed(() => 
-  students.value.filter(s => s.paymentStatus === 'Paid').length
-)
-
-const pendingStudents = computed(() => 
-  students.value.filter(s => s.enrollmentStatus === 'Pending').length
-)
-
-const inactiveStudents = computed(() => 
-  students.value.filter(s => s.enrollmentStatus === 'Inactive' || s.paymentStatus === 'Unpaid').length
-)
-
-// Calendar properties
+// ── Calendar ────────────────────────────────────────────
 const currentCalendarDate = ref(new Date())
 const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 
-const daysInCalendarMonth = computed(() => {
-  return new Date(
-    currentCalendarDate.value.getFullYear(),
-    currentCalendarDate.value.getMonth() + 1,
-    0
-  ).getDate()
-})
-
-const firstDayOfCalendarMonth = computed(() => {
-  return new Date(
-    currentCalendarDate.value.getFullYear(),
-    currentCalendarDate.value.getMonth(),
-    1
-  ).getDay()
-})
+const daysInCalendarMonth = computed(() =>
+  new Date(currentCalendarDate.value.getFullYear(), currentCalendarDate.value.getMonth() + 1, 0).getDate()
+)
+const firstDayOfCalendarMonth = computed(() =>
+  new Date(currentCalendarDate.value.getFullYear(), currentCalendarDate.value.getMonth(), 1).getDay()
+)
 
 const formatMonthYear = (date) => {
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ]
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
   return `${months[date.getMonth()]} ${date.getFullYear()}`
 }
-
+const formatSelectedDate = (date) => date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 const prevCalendarMonth = () => {
-  currentCalendarDate.value = new Date(
-    currentCalendarDate.value.getFullYear(),
-    currentCalendarDate.value.getMonth() - 1
-  )
+  currentCalendarDate.value = new Date(currentCalendarDate.value.getFullYear(), currentCalendarDate.value.getMonth() - 1)
 }
-
 const nextCalendarMonth = () => {
-  currentCalendarDate.value = new Date(
-    currentCalendarDate.value.getFullYear(),
-    currentCalendarDate.value.getMonth() + 1
-  )
+  currentCalendarDate.value = new Date(currentCalendarDate.value.getFullYear(), currentCalendarDate.value.getMonth() + 1)
 }
-
-const getDayClassSwimming = (date, selectedDate) => {
+const getDayClass = (date) => {
   const today = new Date()
-  const cellDate = new Date(
-    currentCalendarDate.value.getFullYear(),
-    currentCalendarDate.value.getMonth(),
-    date
-  )
-  
-  if (selectedDate && cellDate.toDateString() === selectedDate.toDateString()) {
-    return 'selected'
-  }
-  if (cellDate.toDateString() === today.toDateString()) {
-    return 'today'
-  }
-  if (cellDate < today) {
-    return 'past'
-  }
-  return ''
+  const cell = new Date(currentCalendarDate.value.getFullYear(), currentCalendarDate.value.getMonth(), date)
+  const classes = []
+  if (selectedCalendarDate.value && cell.toDateString() === selectedCalendarDate.value.toDateString()) classes.push('selected')
+  if (cell.toDateString() === today.toDateString()) classes.push('today')
+  if (cell < today && cell.toDateString() !== today.toDateString()) classes.push('past')
+  return classes.join(' ')
 }
-
+const hasLessonsOnDate = (date) => {
+  const y = currentCalendarDate.value.getFullYear()
+  const m = String(currentCalendarDate.value.getMonth() + 1).padStart(2, '0')
+  const d = String(date).padStart(2, '0')
+  return students.value.some(s => s.lessonDates?.includes(`${y}-${m}-${d}`))
+}
 const selectCalendarDate = (date) => {
-  selectedCalendarDate.value = new Date(
-    currentCalendarDate.value.getFullYear(),
-    currentCalendarDate.value.getMonth(),
-    date
-  )
+  selectedCalendarDate.value = new Date(currentCalendarDate.value.getFullYear(), currentCalendarDate.value.getMonth(), date)
 }
-
-const formatCalendarDate = (date) => {
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-  return date.toLocaleDateString('en-US', options)
-}
-
 const studentsForSelectedDay = computed(() => {
   if (!selectedCalendarDate.value) return []
-  
-  const year = selectedCalendarDate.value.getFullYear()
-  const month = String(selectedCalendarDate.value.getMonth() + 1).padStart(2, '0')
-  const day = String(selectedCalendarDate.value.getDate()).padStart(2, '0')
-  const formattedDate = `${year}-${month}-${day}`
-  
+  const y = selectedCalendarDate.value.getFullYear()
+  const m = String(selectedCalendarDate.value.getMonth() + 1).padStart(2, '0')
+  const d = String(selectedCalendarDate.value.getDate()).padStart(2, '0')
+  const fmt = `${y}-${m}-${d}`
   return students.value
-    .filter(student => {
-      // Filter students that have the selected date in their lesson schedule
-      if (student.lessonDates && Array.isArray(student.lessonDates)) {
-        return student.lessonDates.includes(formattedDate)
-      }
-      return false
-    })
-    .map(student => ({
-      name: student.name,
-      lessonType: student.lessonType,
-      coach: student.coach,
-      time: student.lessonTime || 'TBD',
-      phone: student.phone,
-      enrollmentStatus: student.enrollmentStatus,
-      paymentStatus: student.paymentStatus
-    }))
+    .filter(s => s.lessonDates?.includes(fmt))
+    .map(s => ({ name: s.name, lessonType: s.lessonType, coach: s.coach, time: s.lessonTime || 'TBD' }))
 })
 
-// API base URL
+// ── API ─────────────────────────────────────────────────
 const API_URL = 'http://localhost:8000/api/swimming'
 
-// Fetch all data
 const fetchStudents = async () => {
   try {
     loading.value = true
-    console.log('Fetching students from:', `${API_URL}/admin/students`)
-    
-    const response = await fetch(`${API_URL}/admin/students`)
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    console.log('API Response:', data)
-    console.log('Students count:', data.count)
-    
+    const res = await fetch(`${API_URL}/admin/students`)
+    const data = await res.json()
     if (data.success && data.students) {
-      console.log(`Processing ${data.students.length} students`)
-      
-      // Transform data to match component structure
-      students.value = data.students.map(student => {
-        console.log('Student data:', student)
-        return {
-          id: student.enrollment_id,
-          name: student.name,
-          lessonType: student.lesson_type,
-          coach: student.coach,
-          paymentStatus: student.payment_status || 'Pending',
-          email: student.email,
-          phone: student.mobile_phone,
-          enrollmentStatus: student.enrollment_status || 'Pending',
-          bookingReference: student.booking_reference,
-          lessonDates: [],
-          lessonTime: 'TBD',
-          lessonDatesFormatted: [],
-          lessonTimeFormatted: 'TBD'
-        }
-      })
-      
-      console.log('Transformed students:', students.value)
-    } else {
-      console.error('API response missing success or students:', data)
+      students.value = data.students.map(s => ({
+        id: s.enrollment_id, name: s.name, lessonType: s.lesson_type,
+        coach: s.coach, paymentStatus: s.payment_status || 'Pending',
+        email: s.email, phone: s.mobile_phone,
+        enrollmentStatus: s.enrollment_status || 'Pending',
+        bookingReference: s.booking_reference,
+        lessonDates: [], lessonTime: 'TBD',
+        lessonDatesFormatted: [], lessonTimeFormatted: 'TBD'
+      }))
     }
-  } catch (error) {
-    console.error('Error fetching students:', error)
-    console.error('Error details:', error.message)
-    alert(`Failed to load students data: ${error.message}`)
-  } finally {
-    loading.value = false
-  }
+  } catch (e) { console.error(e) } finally { loading.value = false }
 }
 
 const fetchSchedules = async () => {
   try {
-    const response = await fetch(`${API_URL}/admin/schedules`)
-    const data = await response.json()
-    
+    const res = await fetch(`${API_URL}/admin/schedules`)
+    const data = await res.json()
     if (data.success) {
-      schedules.value = data.schedules.map(schedule => ({
-        lessonType: schedule.specialization || 'All Levels',
-        coach: schedule.coach_name,
-        time: `${schedule.available_days || 'Flexible'} ${schedule.available_time || ''}`.trim(),
-        email: schedule.email,
-        phone: schedule.phone
-      }))
-      
-      // Load the first coach into editing view
-      if (schedules.value.length > 0) {
-        loadEditingCoach()
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching schedules:', error)
-    alert('Failed to load schedules data')
-  }
-}
-
-const fetchPayments = async () => {
-  try {
-    const response = await fetch(`${API_URL}/admin/payments`)
-    const data = await response.json()
-    
-    if (data.success) {
-      payments.value = data.payments.map(payment => ({
-        id: payment.booking_id,
-        student: payment.student_name || 'N/A',
-        lessonType: payment.lesson_type || 'N/A',
-        amount: parseFloat(payment.amount) || 0,
-        status: payment.status || 'Pending',
-        bookingReference: payment.booking_reference,
-        paymentMethod: payment.payment_method,
-        date: payment.booking_date
+      schedules.value = data.schedules.map(s => ({
+        lessonType: s.specialization || 'All Levels',
+        coach: s.coach_name,
+        time: `${s.available_days || 'Flexible'} ${s.available_time || ''}`.trim(),
+        email: s.email, phone: s.phone
       }))
     }
-  } catch (error) {
-    console.error('Error fetching payments:', error)
-    alert('Failed to load payments data')
-  }
+  } catch (e) { console.error(e) }
 }
 
 const fetchCalendarLessons = async () => {
   try {
-    console.log('Fetching calendar lessons...')
-    const response = await fetch(`${API_URL}/admin/calendar/lessons`)
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    console.log('Calendar lessons response:', data)
-    
+    const res = await fetch(`${API_URL}/admin/calendar/lessons`)
+    const data = await res.json()
     if (data.success && data.lessons) {
-      // Transform lessons data to include dates array for filtering
       for (const lesson of data.lessons) {
-        // Find the corresponding student
         const student = students.value.find(s => s.bookingReference === lesson.booking_reference)
         if (student && lesson.dates) {
           student.lessonDates = lesson.dates
           student.lessonTime = lesson.time
           student.coach = lesson.coach_name || student.coach
-          
-          // Store dates and time separately for better display
           student.lessonDatesFormatted = lesson.dates
           student.lessonTimeFormatted = lesson.time
         }
       }
-      console.log('Updated students with lesson dates:', students.value)
     }
-  } catch (error) {
-    console.error('Error fetching calendar lessons:', error)
-    // Don't show alert for calendar data - it's secondary
-  }
+  } catch (e) { console.error(e) }
 }
 
-// Students actions
-const selectStudent = (student) => {
-  selectedStudent.value = student
-}
-
+// ── Student Actions ─────────────────────────────────────
+const selectStudent = (s) => { selectedStudent.value = s }
 const approveStudent = async (id) => {
   try {
-    const response = await fetch(`${API_URL}/admin/students/${id}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch(`${API_URL}/admin/students/${id}/status`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'approved' })
     })
-    
-    const result = await response.json()
-    
-    if (result.success) {
-      alert('Student approved successfully!')
-      await fetchStudents()
-    } else {
-      alert(result.error || 'Failed to approve student')
-    }
-  } catch (error) {
-    console.error('Error approving student:', error)
-    alert('Failed to approve student')
-  }
+    const r = await res.json()
+    if (r.success) await fetchStudents()
+  } catch (e) { console.error(e) }
 }
-
-const markAsPaid = (id) => {
-  alert('Payment status is managed through the booking system. Please update payment status in the Bookings section.')
-}
-
-const editStudent = (id) => {
-  const student = students.value.find(s => s.id === id)
-  if (student) {
-    alert(`Edit functionality coming soon.\n\nStudent: ${student.name}\nEmail: ${student.email}\nPhone: ${student.phone}`)
-  }
-}
-
+const editStudent = (id) => { console.log('Edit student:', id) }
 const deleteStudent = async (id) => {
-  if (!confirm('Are you sure you want to delete this student enrollment?')) return
-  
+  if (!confirm('Delete this enrollment?')) return
   try {
-    const response = await fetch(`${API_URL}/admin/students/${id}`, {
-      method: 'DELETE'
-    })
-    
-    const result = await response.json()
-    
-    if (result.success) {
-      alert('Student enrollment deleted successfully')
-      await fetchStudents()
-    } else {
-      alert(result.error || 'Failed to delete student')
-    }
-  } catch (error) {
-    console.error('Error deleting student:', error)
-    alert('Failed to delete student enrollment')
-  }
+    const res = await fetch(`${API_URL}/admin/students/${id}`, { method: 'DELETE' })
+    const r = await res.json()
+    if (r.success) await fetchStudents()
+  } catch (e) { console.error(e) }
 }
 
-// Coach actions with pagination
-const prevCoach = () => {
-  if (currentCoachPage.value > 0) {
-    currentCoachPage.value--
-    loadEditingCoach()
-  }
-}
-
-const nextCoach = () => {
-  if (currentCoachPage.value < schedules.value.length - 1) {
-    currentCoachPage.value++
-    loadEditingCoach()
-  }
-}
-
-const loadEditingCoach = () => {
-  const coach = schedules.value[currentCoachPage.value]
-  if (coach) {
-    editingCoach.value = {
-      lessonType: coach.lessonType,
-      coach: coach.coach,
-      email: coach.email,
-      phone: coach.phone
-    }
-  }
-}
-
+// ── Coach Actions ───────────────────────────────────────
 const openAddCoachModal = () => {
   isEditingCoach.value = false
-  newCoach.value = {
-    lessonType: '',
-    coach: '',
-    email: '',
-    phone: ''
-  }
+  editingIndex.value = -1
+  newCoach.value = { lessonType: '', coach: '', email: '', phone: '' }
   showAddCoachModal.value = true
 }
-
 const closeAddCoachModal = () => {
   showAddCoachModal.value = false
-  newCoach.value = {
-    lessonType: '',
-    coach: '',
-    email: '',
-    phone: ''
+  newCoach.value = { lessonType: '', coach: '', email: '', phone: '' }
+}
+const editCoachByIndex = (index) => {
+  isEditingCoach.value = true
+  editingIndex.value = index
+  newCoach.value = { ...schedules.value[index] }
+  showAddCoachModal.value = true
+}
+const deleteCoachByIndex = (index) => {
+  if (!confirm('Delete this coach?')) return
+  schedules.value.splice(index, 1)
+  if (currentCoachPage.value >= schedules.value.length) {
+    currentCoachPage.value = Math.max(0, schedules.value.length - 1)
   }
 }
-
-const saveCoach = async () => {
+const saveCoach = () => {
   if (!newCoach.value.coach || !newCoach.value.lessonType) {
-    alert('Please fill in all required fields')
+    alert('Coach name and lesson type are required.')
     return
   }
-
-  // Add to local schedules for now (backend integration can be added)
-  schedules.value.push({
-    lessonType: newCoach.value.lessonType,
-    coach: newCoach.value.coach,
-    email: newCoach.value.email,
-    phone: newCoach.value.phone,
-    time: ''
-  })
-
-  alert('Coach added successfully!')
+  if (isEditingCoach.value && editingIndex.value >= 0) {
+    Object.assign(schedules.value[editingIndex.value], newCoach.value)
+  } else {
+    schedules.value.push({ ...newCoach.value, time: '' })
+  }
   closeAddCoachModal()
 }
 
-const updateCoach = async () => {
-  if (!editingCoach.value.coach || !editingCoach.value.lessonType) {
-    alert('Please fill in all required fields')
-    return
-  }
+watch(() => pendingStudents.value, (n) => notifications.setSwimmingPending(n))
 
-  // Update the current coach in the array
-  const coach = schedules.value[currentCoachPage.value]
-  if (coach) {
-    coach.lessonType = editingCoach.value.lessonType
-    coach.coach = editingCoach.value.coach
-    coach.email = editingCoach.value.email
-    coach.phone = editingCoach.value.phone
-  }
-
-  alert('Coach updated successfully!')
-}
-
-const deleteCoach = async () => {
-  if (!confirm('Are you sure you want to delete this coach?')) return
-
-  // Remove the coach from the array
-  schedules.value.splice(currentCoachPage.value, 1)
-
-  // Move to previous coach if available
-  if (currentCoachPage.value > 0) {
-    currentCoachPage.value--
-  }
-
-  if (schedules.value.length > 0) {
-    loadEditingCoach()
-  }
-
-  alert('Coach deleted successfully!')
-}
-
-// Payments actions
-const markPaymentAsPaid = (id) => {
-  alert('Payment status updates are managed through the main booking system.')
-}
-
-const deletePayment = (id) => {
-  alert('Payment deletion should be managed through the booking system.')
-}
-
-const getTabIcon = (tab) => {
-  const icons = {
-    'Students': 'fas fa-users',
-    'Schedule & Coaches': 'fas fa-calendar-alt',
-    'Payments': 'fas fa-credit-card'
-  }
-  return icons[tab] || 'fas fa-info-circle'
-}
-
-// Update notification store when pending count changes
-watch(() => pendingStudents.value, (newCount) => {
-  notifications.setSwimmingPending(newCount)
-})
-
-// Load data on mount
 onMounted(async () => {
   await fetchStudents()
   await fetchCalendarLessons()
   await fetchSchedules()
-  await fetchPayments()
 })
 </script>
 
 <style scoped>
+/* ── Base ─────────────────────────────────────────────── */
 .admin-dashboard {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #f8fafc, #f0f4f8);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.admin-dashboard > :first-child {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-}
-
-.main-content {
-  margin-left: 0;
-  padding: 2rem 1rem;
-  transition: margin-left 0.3s ease;
-  flex: 1;
-  z-index: 1;
-}
-
-@media (min-width: 768px) {
-  .main-content {
-    margin-left: 260px;
-    padding: 2rem;
-  }
-}
-
-.content-container {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-/* Stats Cards */
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.stat-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid;
-  transition: all 0.3s ease;
-}
-
-.stat-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
-.stat-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
-.total-card {
-  border-left-color: #3b82f6;
-}
-
-.total-card .stat-icon {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.paid-card {
-  border-left-color: #10b981;
-}
-
-.paid-card .stat-icon {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.pending-card {
-  border-left-color: #f59e0b;
-}
-
-.pending-card .stat-icon {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.inactive-card {
-  border-left-color: #ef4444;
-}
-
-.inactive-card .stat-icon {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.stat-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-/* Main Layout - Two Column */
-.main-layout {
-  display: grid;
-  grid-template-columns: 70% 30%;
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-@media (max-width: 1200px) {
-  .main-layout {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-}
-
-.section {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-}
-
-.section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  color: #1f2937;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0;
-}
-
-.section-title::before {
-  content: '';
-  width: 4px;
-  height: 24px;
-  background: #2B6CB0;
-  border-radius: 2px;
-}
-
-/* Clickable Row */
-.clickable-row {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.clickable-row:hover {
-  background-color: #f0f4f8 !important;
-}
-
-.clickable-row.active {
-  background-color: #dbeafe !important;
-  border-left: 4px solid #2B6CB0;
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(-50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 10;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: #1f2937;
-  font-weight: 700;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #6b7280;
-  transition: color 0.2s;
-}
-
-.close-btn:hover {
-  color: #1f2937;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.modal-footer {
-  padding: 1rem 1.5rem;
-  background: #f7fafc;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.btn-primary {
-  padding: 0.7rem 1.5rem;
-  background: #2B6CB0;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.btn-primary:hover {
-  background: #1e4d7b;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(43, 108, 176, 0.3);
-}
-
-.btn-secondary {
-  padding: 0.7rem 1.5rem;
-  background: #e2e8f0;
-  color: #2d3748;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary:hover {
-  background: #cbd5e0;
-}
-
-.modal-input {
-  width: 100%;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #cbd5e0;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  background: white;
-  color: #2d3748;
-  transition: all 0.2s ease;
-}
-
-.modal-input:focus {
-  outline: none;
-  border-color: #2B6CB0;
-  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-
-.detail-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.detail-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.detail-value {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.schedule-display {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.schedule-dates {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.dates-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.dates-list {
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #1f2937;
-  line-height: 1.4;
-  word-wrap: break-word;
-}
-
-.schedule-time {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.75rem;
-  background: #f3f4f6;
-  border-radius: 6px;
-  border-left: 3px solid #2B6CB0;
-}
-
-.time-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.time-value {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #2B6CB0;
-}
-
-.status-paid {
-  background: #d1fae5;
-  color: #065f46;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  display: inline-block;
-  width: fit-content;
-}
-
-.status-pending {
-  background: #fef3c7;
-  color: #92400e;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  display: inline-block;
-  width: fit-content;
-}
-
-/* Calendar Section */
-.calendar-section {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.calendar-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.calendar-header h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.calendar-header p {
-  margin: 0.25rem 0 0 0;
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.month-navigation {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.nav-btn {
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  color: #374151;
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  font-weight: 600;
-}
-
-.nav-btn:hover {
-  background: #e5e7eb;
-  border-color: #9ca3af;
-}
-
-.current-month {
-  font-weight: 600;
-  color: #1f2937;
-  min-width: 180px;
-  text-align: center;
-  font-size: 0.95rem;
-}
-
-.calendar-container {
-  margin-top: 1rem;
-}
-
-.weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.weekday {
-  text-align: center;
-  font-weight: 700;
-  font-size: 0.75rem;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 0.5rem;
-}
-
-.dates-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.5rem;
-}
-
-.date-cell {
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #1f2937;
-  cursor: default;
-  transition: all 0.2s;
-  position: relative;
-}
-
-.date-cell.empty {
-  background: transparent;
-  border: none;
-}
-
-.date-cell.past {
-  background: #f3f4f6;
-  color: #9ca3af;
-}
-
-.date-cell.today {
-  background: linear-gradient(135deg, #2B6CB0 0%, #1e40af 100%);
-  color: white;
-  border-color: #2B6CB0;
-  font-weight: 700;
-}
-
-.date-cell.clickable {
-  cursor: pointer;
-}
-
-.date-cell.clickable:hover {
-  background: #e6f2ff;
-  border-color: #2B6CB0;
-  transform: scale(1.05);
-}
-
-.date-cell.selected {
-  background: linear-gradient(135deg, #2B6CB0 0%, #1e40af 100%);
-  color: white;
-  border-color: #2B6CB0;
-  font-weight: 700;
-  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.2);
-}
-
-.date-cell.selected.today {
-  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.3);
-}
-
-.date-number {
-  font-size: 0.9rem;
-}
-
-/* Calendar Wrapper - 70/30 Split */
-.calendar-wrapper {
-  display: grid;
-  grid-template-columns: 70% 30%;
-  gap: 1rem;
-  align-items: start;
-}
-
-.calendar-container {
-  margin-top: 1rem;
-}
-
-/* Day Details Container */
-.day-details-container {
-  background: #f8fbff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.25rem;
-  height: fit-content;
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.day-details {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.details-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #2B6CB0;
-  margin: 0;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #2B6CB0;
-}
-
-.lessons-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.lesson-item {
-  background: white;
-  border-left: 3px solid #2B6CB0;
-  padding: 0.75rem;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-}
-
-.lesson-item:hover {
-  box-shadow: 0 2px 6px rgba(43, 108, 176, 0.15);
-  transform: translateX(4px);
-}
-
-.lesson-student {
-  margin-bottom: 0.5rem;
-}
-
-.student-name {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #2d3748;
-}
-
-.lesson-type {
-  font-size: 0.75rem;
-  color: #718096;
-  margin-top: 0.2rem;
-}
-
-.lesson-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.lesson-time,
-.lesson-coach {
-  font-size: 0.75rem;
-  color: #4a5568;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.lesson-time i,
-.lesson-coach i {
-  color: #2B6CB0;
-  width: 14px;
-}
-
-.no-lessons,
-.no-date-selected {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem 0;
-  color: #cbd5e0;
-  text-align: center;
-}
-
-.no-lessons i,
-.no-date-selected i {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  color: #cbd5e0;
-}
-
-.no-lessons p,
-.no-date-selected p {
-  font-size: 0.85rem;
-  color: #a0aec0;
-  margin: 0;
-}
-
-/* Tabs Styling */
-.tabs {
-  display: none;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #e2e8f0;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-}
-
-.tabs button {
-  padding: 0.75rem 1.25rem;
-  border-radius: 8px 8px 0 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-weight: 600;
-  color: #718096;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  position: relative;
-  border-bottom: 3px solid transparent;
-}
-
-.tabs button:hover {
-  color: #2B6CB0;
-  background: #f7fafc;
-}
-
-.tabs button.active {
-  color: #2B6CB0;
-  border-bottom-color: #2B6CB0;
   background: #f0f4f8;
-}
-
-/* Section Title */
-.section-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  color: #2D3748;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.section-title::before {
-  content: '';
-  display: inline-block;
-  width: 4px;
-  height: 1.5rem;
-  background: linear-gradient(180deg, #2B6CB0, #63B3ED);
-  border-radius: 2px;
-}
-
-/* Table Container */
-.table-container {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.08);
-  margin-bottom: 2rem;
-  border: 1px solid #e2e8f0;
-}
-
-.students-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.75rem;
-  table-layout: fixed;
-}
-
-.students-table th,
-.students-table td {
-  padding: 0.3rem 0.3rem;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.students-table th {
-  background: linear-gradient(135deg, #2B6CB0, #1e40af);
-  color: white;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-
-.students-table tbody tr {
-  transition: all 0.2s ease;
-}
-
-.students-table tbody tr:hover {
-  background: #f8fbff;
-}
-
-.students-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-/* Action Buttons */
-.btn-action {
-  border: none;
-  padding: 0.2rem 0.3rem;
-  border-radius: 3px;
-  margin-right: 0.15rem;
-  cursor: pointer;
-  color: white;
-  font-size: 0.65rem;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-body {
-  overflow-x: hidden;
-}
-
-.btn-action:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.btn-action.approve {
-  background: linear-gradient(135deg, #22C55E, #16a34a);
-}
-
-.btn-action.edit {
-  background: linear-gradient(135deg, #3B82F6, #2563eb);
-}
-
-.btn-action.save {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
-
-.btn-action.delete {
-  background: linear-gradient(135deg, #EF4444, #dc2626);
-}
-
-/* Coaches Wrapper */
-.coaches-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.schedules-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.schedules-header .section-title {
-  margin: 0;
-}
-
-.btn-add-coach {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  background: #2B6CB0;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.btn-add-coach:hover {
-  background: #1e4d7b;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(43, 108, 176, 0.3);
-}
-
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: #f7fafc;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-}
-
-.pagination-btn {
-  padding: 0.5rem 0.75rem;
-  background: #e2e8f0;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  background: #cbd5e0;
-  transform: translateY(-2px);
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-info {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #2d3748;
-  min-width: 80px;
-  text-align: center;
-}
-
-.coach-form-section {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-}
-
-.coach-card {
-  background: white;
-  width: 100%;
-  box-shadow: none;
-  border: none;
-  padding: 0;
-}
-
-.coach-card:hover {
-  box-shadow: none;
-  border-color: transparent;
-}
-
-.form-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #2B6CB0;
-  margin-bottom: 1.5rem;
-  margin-top: 0;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.coach-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.form-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #2d3748;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.form-input {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #cbd5e0;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  background: #f7fafc;
-  color: #2d3748;
-  cursor: text;
-  transition: all 0.2s ease;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #2B6CB0;
-  background: #ffffff;
-}
-
-.form-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.form-actions .btn-action {
-  flex: 1;
-  padding: 0.5rem;
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  min-width: auto;
-  height: auto;
-}
-
-.loading-message,
-.empty-message {
-  text-align: center;
-  padding: 2rem;
-  color: #718096;
-  font-size: 0.9rem;
-}
-
-.no-coach-selected {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #cbd5e0;
-}
-
-.no-coach-selected i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.no-coach-selected p {
-  font-size: 0.9rem;
-  color: #a0aec0;
-  margin: 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 .header-container {
-  padding: 1rem 2rem;
-  background-color: #ffffff;
+  background: #fff;
   border-bottom: 1px solid #e2e8f0;
+  padding: 0 2rem;
+  position: sticky;
   top: 0;
-  z-index: 50;
-  margin-bottom: 10px;
-  margin-top:  30px;
+  z-index: 40;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-/* Status Badges */
-.paid {
-  color: #22C55E;
-  font-weight: 700;
-  background: #f0fdf4;
-  padding: 0.35rem 0.75rem;
-  border-radius: 6px;
-  display: inline-block;
+.main-content {
+  padding: 2rem;
+  flex: 1;
 }
 
-.pending {
-  color: #F59E0B;
-  font-weight: 700;
-  background: #fffbeb;
-  padding: 0.35rem 0.75rem;
-  border-radius: 6px;
-  display: inline-block;
+@media (min-width: 768px) {
+  .main-content { margin-left: 260px; }
 }
 
-.text-center {
-  text-align: center;
-  color: #718096;
-  padding: 2rem !important;
+.content-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
 }
 
-/* Responsive */
+/* ── Stats ────────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid #e8edf2;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.stat-icon {
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; flex-shrink: 0;
+}
+.stat-card.total .stat-icon  { background: rgba(31,141,191,.1); color: #1F8DBF; }
+.stat-card.paid .stat-icon   { background: rgba(46,204,113,.1); color: #2ecc71; }
+.stat-card.pending .stat-icon{ background: rgba(244,196,0,.1);  color: #c49b0f; }
+.stat-card.inactive .stat-icon{ background: rgba(149,165,166,.1);color: #7f8c8d; }
+
+.stat-label {
+  font-size: 0.78rem; font-weight: 600; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.stat-value {
+  font-size: 1.9rem; font-weight: 700; color: #1e293b; line-height: 1.2;
+}
+
+/* ── Layout Rows ──────────────────────────────────────── */
+.top-row {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+/* ── Panel Base ───────────────────────────────────────── */
+.panel {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #e8edf2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafcfe;
+}
+
+.panel-header-left {
+  display: flex; align-items: center; gap: 0.9rem;
+}
+
+.panel-icon-wrap {
+  width: 42px; height: 42px;
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.students-accent { background: rgba(31,141,191,.12); color: #1F8DBF; }
+.calendar-accent  { background: rgba(99,102,241,.12); color: #6366f1; }
+.coaches-accent   { background: rgba(16,185,129,.12); color: #10b981; }
+
+.panel-title {
+  font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0;
+}
+.panel-sub {
+  font-size: 0.78rem; color: #94a3b8; margin: 0.15rem 0 0;
+}
+
+.panel-header-right {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+
+.count-badge {
+  font-size: 0.75rem; font-weight: 600;
+  background: rgba(31,141,191,.1); color: #1F8DBF;
+  padding: 0.25rem 0.75rem; border-radius: 30px;
+  border: 1px solid rgba(31,141,191,.2);
+}
+
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 9px;
+  border: 1px solid #e8edf2; background: #fff;
+  color: #94a3b8; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; transition: all 0.15s;
+}
+.icon-btn:hover { border-color: #1F8DBF; color: #1F8DBF; background: rgba(31,141,191,.05); }
+
+/* ── Students Table ───────────────────────────────────── */
+.table-wrap {
+  overflow-y: auto;
+  max-height: 520px;
+}
+
+.data-table {
+  width: 100%; border-collapse: collapse; font-size: 0.875rem;
+}
+.data-table th {
+  background: #f8fafc; color: #94a3b8;
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; padding: 0.85rem 1rem;
+  text-align: left; border-bottom: 1px solid #f1f5f9;
+  position: sticky; top: 0; z-index: 1;
+}
+.data-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f8fafc;
+  color: #334155;
+}
+
+.data-row { cursor: pointer; transition: background 0.15s; }
+.data-row:hover { background: #f8fafc; }
+.data-row.row-active { background: rgba(244,196,0,.05); border-left: 3px solid #F4C400; }
+.data-row:last-child td { border-bottom: none; }
+
+.student-cell { display: flex; align-items: center; gap: 0.7rem; }
+.avatar {
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  background: linear-gradient(135deg, #1F8DBF, #1565c0);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem;
+}
+.avatar-lg { width: 56px; height: 56px; border-radius: 14px; font-size: 1.4rem; }
+
+.s-name { font-weight: 600; color: #1e293b; display: block; }
+.s-email { font-size: 0.75rem; color: #94a3b8; }
+
+.pill {
+  display: inline-block; padding: 0.25rem 0.7rem; border-radius: 30px;
+  font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #64748b;
+}
+.pill-group   { background: rgba(31,141,191,.1); color: #1F8DBF; }
+.pill-private { background: rgba(244,196,0,.1);  color: #b45309; }
+
+.coach-cell { display: flex; align-items: center; gap: 0.4rem; color: #64748b; font-size: 0.85rem; }
+.coach-cell i { color: #1F8DBF; font-size: 0.8rem; }
+
+.status-pill {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.25rem 0.7rem; border-radius: 30px;
+  font-size: 0.75rem; font-weight: 600;
+}
+.status-pill.approved { background: rgba(46,204,113,.1); color: #16a34a; }
+.status-pill.pending  { background: rgba(244,196,0,.1);  color: #b45309; }
+.status-pill.inactive { background: rgba(100,116,139,.1);color: #64748b; }
+.status-pill i { font-size: 0.7rem; }
+
+.row-actions { display: flex; gap: 0.3rem; opacity: 0; transition: opacity 0.15s; }
+.data-row:hover .row-actions { opacity: 1; }
+.act-btn {
+  width: 28px; height: 28px; border-radius: 7px;
+  border: 1px solid #e8edf2; background: #fff; color: #94a3b8;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; transition: all 0.15s;
+}
+.act-btn:hover { transform: translateY(-1px); }
+.act-btn.approve:hover { background: #22c55e; border-color: #22c55e; color: #fff; }
+.act-btn.edit:hover    { background: #1F8DBF; border-color: #1F8DBF; color: #fff; }
+.act-btn.remove:hover  { background: #ef4444; border-color: #ef4444; color: #fff; }
+
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 0.6rem; padding: 3rem;
+  color: #94a3b8; text-align: center; font-size: 0.9rem;
+}
+.empty-state i { font-size: 2rem; color: #cbd5e1; }
+.empty-state.small { padding: 1.5rem; }
+.empty-state.small i { font-size: 1.5rem; }
+
+/* ── Calendar Panel ───────────────────────────────────── */
+.calendar-panel .panel-header { flex-wrap: wrap; gap: 0.75rem; }
+
+.month-nav { display: flex; align-items: center; gap: 0.5rem; }
+.month-btn {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid #e8edf2; background: #fff; color: #64748b;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.month-btn:hover { background: #6366f1; border-color: #6366f1; color: #fff; }
+.month-label { font-weight: 700; color: #1e293b; font-size: 0.9rem; min-width: 130px; text-align: center; }
+
+.calendar-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+.cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.wd { text-align: center; font-size: 0.7rem; font-weight: 700; color: #94a3b8; padding: 0.4rem 0; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-day {
+  aspect-ratio: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  border-radius: 9px; background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  font-size: 0.82rem; font-weight: 600; color: #334155;
+  cursor: pointer; position: relative; transition: all 0.15s; user-select: none;
+}
+.cal-day.empty { background: transparent; border: none; cursor: default; }
+.cal-day:hover:not(.empty) {
+  background: rgba(99,102,241,.08); border-color: #6366f1; color: #4f46e5;
+}
+.cal-day.today  { background: #6366f1; color: #fff; border-color: #6366f1; }
+.cal-day.selected { background: #F4C400; color: #1e293b; border-color: #F4C400; }
+.cal-day.past { color: #cbd5e1; background: #fff; }
+
+.day-num { line-height: 1; }
+.dot {
+  position: absolute; bottom: 4px;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: #F4C400;
+}
+.cal-day.today .dot { background: #fff; }
+
+/* date lessons */
+.date-lessons {
+  background: #f8fafc; border-radius: 12px;
+  border: 1px solid #f1f5f9; overflow: hidden;
+}
+.date-lessons-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem; font-weight: 700; color: #6366f1;
+  border-bottom: 1px solid #f1f5f9;
+  background: rgba(99,102,241,.04);
+}
+.lesson-count-badge {
+  margin-left: auto; font-size: 0.7rem; font-weight: 700;
+  background: #6366f1; color: #fff;
+  padding: 0.15rem 0.55rem; border-radius: 30px;
+}
+.lessons-scroll { max-height: 180px; overflow-y: auto; padding: 0.5rem; }
+
+.lesson-row {
+  padding: 0.65rem 0.75rem; background: #fff; border-radius: 9px;
+  margin-bottom: 0.4rem; border-left: 3px solid #6366f1;
+  display: flex; flex-direction: column; gap: 0.3rem;
+}
+.lesson-row:last-child { margin-bottom: 0; }
+.lesson-time-tag {
+  font-size: 0.7rem; color: #94a3b8;
+  display: flex; align-items: center; gap: 0.3rem;
+}
+.lesson-info { display: flex; justify-content: space-between; align-items: center; }
+.lesson-name { font-weight: 700; font-size: 0.83rem; color: #1e293b; }
+.lesson-type-tag {
+  font-size: 0.68rem; padding: 0.15rem 0.45rem; border-radius: 30px;
+  background: #f1f5f9; color: #64748b;
+}
+.lesson-coach-tag { font-size: 0.72rem; color: #94a3b8; display: flex; align-items: center; gap: 0.3rem; }
+.lesson-coach-tag i { color: #6366f1; font-size: 0.65rem; }
+
+.date-placeholder {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0.5rem; padding: 1.5rem; color: #94a3b8;
+  font-size: 0.85rem; text-align: center;
+  background: #f8fafc; border-radius: 12px; border: 1px dashed #e2e8f0;
+}
+.date-placeholder i { font-size: 1.4rem; color: #cbd5e1; }
+
+/* ── Coaches Panel (full-width bottom) ────────────────── */
+.coaches-panel { width: 100%; }
+
+.coaches-panel-header { padding: 1.25rem 1.5rem; }
+
+.add-coach-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: #10b981; color: #fff; border: none;
+  padding: 0.5rem 1.1rem; border-radius: 10px;
+  font-weight: 600; font-size: 0.88rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.add-coach-btn:hover { background: #059669; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,.3); }
+
+.coaches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.coach-card {
+  background: #f8fafc; border: 1.5px solid #e8edf2;
+  border-radius: 16px; padding: 1.25rem;
+  display: flex; flex-direction: column; gap: 1rem;
+  cursor: pointer; transition: all 0.2s;
+}
+.coach-card:hover {
+  border-color: #10b981; box-shadow: 0 4px 14px rgba(16,185,129,.12);
+  transform: translateY(-2px);
+}
+.coach-card--active {
+  border-color: #10b981;
+  background: rgba(16,185,129,.04);
+  box-shadow: 0 4px 14px rgba(16,185,129,.1);
+}
+
+.coach-card-top { display: flex; align-items: center; gap: 0.8rem; }
+.coach-ava {
+  width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+  background: linear-gradient(135deg, #10b981, #0d9488);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.2rem;
+}
+.coach-card-name { font-weight: 700; color: #1e293b; font-size: 0.95rem; display: block; }
+.coach-card-type {
+  font-size: 0.75rem; font-weight: 600;
+  background: rgba(16,185,129,.1); color: #059669;
+  padding: 0.15rem 0.55rem; border-radius: 30px; display: inline-block; margin-top: 0.2rem;
+}
+
+.coach-card-details { display: flex; flex-direction: column; gap: 0.45rem; }
+.coach-detail-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.8rem; color: #64748b;
+}
+.coach-detail-item i { color: #10b981; font-size: 0.75rem; width: 14px; text-align: center; }
+
+.coach-card-actions { display: flex; gap: 0.5rem; margin-top: auto; }
+.cta-edit, .cta-delete {
+  flex: 1; padding: 0.45rem; border-radius: 8px;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 0.35rem;
+  transition: all 0.15s; border: 1.5px solid;
+}
+.cta-edit   { background: rgba(31,141,191,.08); color: #1F8DBF; border-color: rgba(31,141,191,.25); }
+.cta-edit:hover { background: #1F8DBF; color: #fff; border-color: #1F8DBF; }
+.cta-delete { background: rgba(239,68,68,.08); color: #ef4444; border-color: rgba(239,68,68,.25); }
+.cta-delete:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+
+.coaches-empty { padding: 3rem; }
+
+/* ── Modals ───────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,.55); backdrop-filter: blur(5px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; animation: fadeIn 0.2s;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-box {
+  background: #fff; border-radius: 22px;
+  width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 48px rgba(0,0,0,.15);
+  animation: slideUp 0.25s ease;
+}
+.modal-box--wide { max-width: 560px; }
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.4rem 1.5rem; border-bottom: 1px solid #f1f5f9;
+}
+.modal-head h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+.close-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1px solid #e8edf2; background: #fff; color: #94a3b8;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.close-btn:hover { background: #fef2f2; color: #ef4444; border-color: #fca5a5; }
+
+.modal-body { padding: 1.5rem; }
+.modal-foot {
+  padding: 1.25rem 1.5rem; border-top: 1px solid #f1f5f9;
+  display: flex; gap: 0.75rem; justify-content: flex-end;
+}
+
+.form-group { margin-bottom: 1.1rem; }
+.form-group label {
+  display: block; font-size: 0.78rem; font-weight: 700; color: #64748b;
+  margin-bottom: 0.45rem; text-transform: uppercase; letter-spacing: 0.4px;
+}
+.req { color: #ef4444; margin-left: 2px; }
+.form-input {
+  width: 100%; padding: 0.7rem 0.95rem;
+  border: 1.5px solid #e8edf2; border-radius: 10px;
+  font-size: 0.92rem; color: #1e293b; transition: all 0.15s;
+  box-sizing: border-box;
+}
+.form-input:focus { outline: none; border-color: #1F8DBF; box-shadow: 0 0 0 3px rgba(31,141,191,.1); }
+
+.btn-pri {
+  background: #1F8DBF; color: #fff; border: none;
+  padding: 0.6rem 1.3rem; border-radius: 10px; font-weight: 600;
+  font-size: 0.9rem; cursor: pointer; transition: all 0.15s;
+}
+.btn-pri:hover { background: #1a7aa8; transform: translateY(-1px); }
+.btn-sec {
+  background: #fff; color: #64748b; border: 1.5px solid #e8edf2;
+  padding: 0.6rem 1.3rem; border-radius: 10px; font-weight: 600;
+  font-size: 0.9rem; cursor: pointer; transition: all 0.15s;
+}
+.btn-sec:hover { border-color: #94a3b8; }
+
+/* Student detail modal */
+.student-detail-header {
+  display: flex; align-items: center; gap: 1rem;
+  margin-bottom: 1.5rem; padding-bottom: 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+.sd-name { font-size: 1.2rem; font-weight: 700; color: #1e293b; margin: 0 0 0.4rem; }
+
+.detail-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem;
+}
+.detail-item { display: flex; flex-direction: column; gap: 0.35rem; }
+.detail-item--full { grid-column: span 2; }
+.di-label { font-size: 0.72rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.4px; }
+.di-value { font-size: 0.95rem; font-weight: 500; color: #1e293b; }
+.di-value.paid { color: #16a34a; }
+.di-value.pending { color: #b45309; }
+.mono { font-family: monospace; font-size: 0.85rem; color: #6366f1; }
+
+.schedule-block {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  padding: 0.85rem; background: #f8fafc; border-radius: 10px;
+}
+.sched-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; color: #475569; }
+.sched-row i { color: #1F8DBF; width: 16px; }
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .top-row { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .calendar-panel .panel-header { flex-direction: column; align-items: flex-start; }
+}
 @media (max-width: 640px) {
-  .main-content {
-    padding: 1rem;
-  }
-  
-  .content-container {
-    padding: 0;
-  }
-  
-  .section-title {
-    font-size: 1.25rem;
-  }
-  
-  .students-table th,
-  .students-table td {
-    padding: 0.4rem;
-    font-size: 0.9rem;
-  }
-  
-  .btn-action {
-    padding: 0.5rem;
-    min-width: 32px;
-    height: 32px;
-    margin-right: 0.25rem;
-  }
-  
-  .tabs {
-    gap: 0.25rem;
-  }
-  
-  .tabs button {
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
-  }
+  .main-content { padding: 1rem; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .coaches-grid { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .detail-item--full { grid-column: span 1; }
+  .row-actions { opacity: 1; }
 }
 </style>

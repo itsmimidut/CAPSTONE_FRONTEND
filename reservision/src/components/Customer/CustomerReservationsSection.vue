@@ -1,5 +1,6 @@
 <template>
   <section>
+<<<<<<< HEAD
     <!-- Header -->
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
       <div class="text-sm text-gray-500 items-left">Total: <span class="font-semibold text-gray-800">{{ bookings.length }}</span></div>
@@ -170,6 +171,55 @@
           </button>
         </div>
       </div>
+=======
+    <div class="flex flex-wrap items-center justify-end gap-3 mb-3">
+      <div class="text-sm text-gray-500">
+        Total: <span class="font-semibold text-gray-800">{{ reservations.length }}</span>
+      </div>
+    </div>
+
+    <div class="bg-white shadow-sm rounded-2xl border border-blue-100 overflow-hidden">
+      <table class="w-full text-left border-collapse">
+        <thead class="bg-blue-50 text-blue-900">
+          <tr>
+            <th class="px-4 sm:px-6 py-2.5 text-xs uppercase tracking-wide font-extrabold">Room Type</th>
+            <th class="px-4 sm:px-6 py-2.5 text-xs uppercase tracking-wide font-extrabold">Check-in</th>
+            <th class="px-4 sm:px-6 py-2.5 text-xs uppercase tracking-wide font-extrabold">Check-out</th>
+            <th class="px-4 sm:px-6 py-2.5 text-xs uppercase tracking-wide font-extrabold">Status</th>
+          </tr>
+        </thead>
+
+        <tbody class="bg-white">
+          <tr v-if="reservations.length === 0">
+            <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-400">No reservations found.</td>
+          </tr>
+
+          <tr
+            v-for="row in reservations"
+            :key="row.roomType + row.checkIn"
+            class="border-b border-blue-100/70 bg-white hover:bg-blue-50/40 transition"
+          >
+            <td class="px-4 sm:px-6 py-2.5 font-semibold text-gray-900">
+              {{ row.roomType }}
+            </td>
+            <td class="px-4 sm:px-6 py-2.5 text-gray-600 whitespace-nowrap">
+              {{ row.checkIn }}
+            </td>
+            <td class="px-4 sm:px-6 py-2.5 text-gray-600 whitespace-nowrap">
+              {{ row.checkOut }}
+            </td>
+            <td class="px-4 sm:px-6 py-2.5">
+              <span
+                class="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700"
+                :class="row.statusClass"
+              >
+                {{ row.status }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+>>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
     </div>
   </section>
 </template>
@@ -350,6 +400,7 @@ export default {
 </script>
 
 <style scoped>
+<<<<<<< HEAD
 .animate-spin {
   animation: spin 1s linear infinite;
 }
@@ -363,3 +414,17 @@ export default {
   }
 }
 </style>
+=======
+/* Apply SAME Tropical Resort Palette (Color-only)
+   - Ocean Blue (primary):    #1E88B6
+   - Ocean Blue (light):      #4AA3D0
+   - Ocean Blue (dark):       #166B8F
+   - Ocean Blue (pale):       #E3F2F9
+   - Sunflower Gold (accent): #F2C200
+   - Sunflower Gold (light):  #FFD633
+   - Sunflower Gold (dark):   #C99F00
+   - Text on dark:            #FFFFFF
+   - Text on light:           #0B2230
+*/
+</style>
+>>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0

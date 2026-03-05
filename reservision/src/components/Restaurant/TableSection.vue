@@ -18,33 +18,42 @@
       <StatCard
         label="Total Tables"
         :count="totalTables"
+        icon="fas fa-chair"
+        color="primary"
       />
       <StatCard
         label="Available"
         :count="availableCount"
+        icon="fas fa-check-circle"
+        color="success"
       />
       <StatCard
         label="Occupied"
         :count="occupiedCount"
+        icon="fas fa-user-friends"
+        color="warning"
       />
       <StatCard
         label="Reserved"
         :count="reservedCount"
+        icon="fas fa-clock"
+        color="info"
       />
     </div>
 
     <!-- Controls -->
     <div class="controls-container">
-      <div class="search-box">
-        <i class="fas fa-search"></i>
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
         <input 
           v-model="searchQuery"
           type="text"
           placeholder="Search tables by number or notes..."
+          class="search-input"
         />
       </div>
       <select v-model="filterStatus" class="filter-select">
-        <option value="">All Statuses</option>
+        <option value="">All Status</option>
         <option value="available">Available</option>
         <option value="occupied">Occupied</option>
         <option value="reserved">Reserved</option>
@@ -54,8 +63,11 @@
     <!-- Tables Grid -->
     <div class="tables-grid">
       <div v-if="filteredTables.length === 0" class="empty-state">
-        <i class="fas fa-inbox"></i>
+        <i class="fas fa-chair empty-icon"></i>
         <p>No tables found</p>
+        <button class="btn-add-empty" @click="showAddModal = true">
+          <i class="fas fa-plus"></i> Add Your First Table
+        </button>
       </div>
 
       <div 
@@ -464,9 +476,11 @@ const printTables = () => {
 
 <style scoped>
 .tables-section {
-  padding: 2rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);
+  background: white;
   border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  border: 1px solid rgba(31, 141, 191, 0.1);
   min-height: 100vh;
 }
 
@@ -476,30 +490,39 @@ const printTables = () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  gap: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid #F4C400;
 }
 
 .section-title {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #1F8DBF;
   margin: 0;
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
+.section-title i {
+  color: #F4C400;
+  font-size: 1.5rem;
+}
+
 .section-subtitle {
-  font-size: 0.95rem;
-  color: #64748b;
   margin: 0.5rem 0 0 0;
+  color: #1E88B6;
+  font-size: 0.95rem;
+  opacity: 0.8;
 }
 
 .btn-add {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
   color: white;
   border: none;
+  padding: 0.75rem 1.5rem;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
@@ -508,35 +531,17 @@ const printTables = () => {
   gap: 0.5rem;
   transition: all 0.3s ease;
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
 }
 
 .btn-add:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
 }
 
 .btn-add i {
+  color: #F4C400;
   font-size: 1rem;
-}
-
-.btn-print {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.btn-print:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(139, 92, 246, 0.4);
 }
 
 /* Stats Container */
@@ -547,59 +552,84 @@ const printTables = () => {
   margin-bottom: 2rem;
 }
 
-/* Controls */
+/* Controls Container */
 .controls-container {
   display: flex;
   gap: 1rem;
   margin-bottom: 2rem;
   flex-wrap: wrap;
+  background: white;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  border: 2px solid #F4C400;
 }
 
-.search-box {
+.search-wrapper {
   flex: 1;
   min-width: 250px;
-  position: relative;
-}
-
-.search-box i {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-  font-size: 0.95rem;
-}
-
-.search-box input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  background: #F9FAFB;
   border-radius: 8px;
-  font-size: 0.95rem;
+  border: 1px solid rgba(31, 141, 191, 0.2);
   transition: all 0.3s ease;
+  padding: 0 0.75rem;
+  height: 46px;
 }
 
-.search-box input:focus {
+.search-wrapper:focus-within {
+  border-color: #F4C400;
+  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.15);
+}
+
+.search-icon {
+  color: #F4C400;
+  font-size: 0.95rem;
+  margin-right: 0.75rem;
+  width: 16px;
+  text-align: center;
+}
+
+.search-input {
+  border: none;
+  background: transparent;
+  padding: 0.75rem 0;
+  flex: 1;
+  font-size: 0.95rem;
   outline: none;
-  border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  color: #1F8DBF;
+  font-weight: 500;
+  height: 100%;
+}
+
+.search-input::placeholder {
+  color: rgba(31, 141, 191, 0.4);
+  font-weight: normal;
 }
 
 .filter-select {
-  padding: 0.75rem 1rem;
-  border: 1px solid #cbd5e1;
+  padding: 0 1.25rem;
+  border: 1px solid rgba(31, 141, 191, 0.2);
   border-radius: 8px;
   background: white;
-  font-size: 0.95rem;
+  color: #1F8DBF;
   cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 150px;
+  font-size: 0.95rem;
+  transition: all 0.3s;
+  font-weight: 500;
+  min-width: 160px;
+  height: 46px;
+}
+
+.filter-select:hover {
+  border-color: #1F8DBF;
 }
 
 .filter-select:focus {
   outline: none;
-  border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #F4C400;
+  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.15);
 }
 
 /* Tables Grid */
@@ -609,17 +639,53 @@ const printTables = () => {
   gap: 1.5rem;
 }
 
+/* Empty State */
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
-  padding: 3rem;
-  color: #94a3b8;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 12px;
+  border: 2px dashed #F4C400;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  color: #1F8DBF;
 }
 
-.empty-state i {
+.empty-icon {
   font-size: 3rem;
   margin-bottom: 1rem;
+  color: #F4C400;
   opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  color: #1F8DBF;
+}
+
+.btn-add-empty {
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
+}
+
+.btn-add-empty:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
+}
+
+.btn-add-empty i {
+  color: #F4C400;
 }
 
 /* Table Card */
@@ -627,38 +693,41 @@ const printTables = () => {
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
   transition: all 0.3s ease;
-  border-left: 4px solid #cbd5e1;
+  border-left: 4px solid;
   display: flex;
   flex-direction: column;
+  border: 1px solid rgba(31, 141, 191, 0.1);
 }
 
 .table-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 24px rgba(31, 141, 191, 0.15);
 }
 
 .table-card.status-available {
-  border-left-color: #10B981;
+  border-left-color: #1F8DBF;
 }
 
 .table-card.status-occupied {
-  border-left-color: #F59E0B;
+  border-left-color: #F4C400;
 }
 
 .table-card.status-reserved {
-  border-left-color: #8B5CF6;
+  border-left-color: #F4C400;
+  opacity: 0.9;
 }
 
 /* Card Header */
 .card-header {
   padding: 1.25rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 2px solid rgba(244, 196, 0, 0.3);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  background: rgba(31, 141, 191, 0.02);
 }
 
 .table-info {
@@ -666,9 +735,9 @@ const printTables = () => {
 }
 
 .table-number {
-  margin: 0;
+  margin: 0 0 0.5rem 0;
   font-size: 1.4rem;
-  color: #1e293b;
+  color: #1F8DBF;
   font-weight: 700;
 }
 
@@ -676,13 +745,18 @@ const printTables = () => {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
-  color: #0c4a6e;
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
   padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border-radius: 20px;
   font-weight: 600;
   font-size: 0.9rem;
   white-space: nowrap;
+  border: 1px solid rgba(244, 196, 0, 0.2);
+}
+
+.capacity-badge i {
+  font-size: 0.85rem;
 }
 
 /* Card Body */
@@ -706,38 +780,42 @@ const printTables = () => {
 
 .detail-label {
   font-size: 0.85rem;
-  color: #64748b;
+  color: #1F8DBF;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .detail-label i {
   font-size: 0.8rem;
+  color: #F4C400;
 }
 
 .detail-value {
   font-size: 0.95rem;
-  color: #1e293b;
+  color: #1E88B6;
   font-weight: 600;
 }
 
 .notes-box {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 1px solid #fcd34d;
-  border-radius: 6px;
+  background: rgba(244, 196, 0, 0.05);
+  border: 1px solid rgba(244, 196, 0, 0.2);
+  border-radius: 8px;
   padding: 0.75rem;
   display: flex;
   gap: 0.75rem;
   font-size: 0.85rem;
-  color: #92400e;
+  color: #1F8DBF;
 }
 
 .notes-box i {
   flex-shrink: 0;
   margin-top: 0.15rem;
   font-size: 0.9rem;
+  color: #F4C400;
 }
 
 .notes-box p {
@@ -748,7 +826,8 @@ const printTables = () => {
 /* Card Footer */
 .card-footer {
   padding: 1.25rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 2px solid rgba(244, 196, 0, 0.2);
+  background: rgba(31, 141, 191, 0.02);
 }
 
 .action-buttons {
@@ -762,7 +841,7 @@ const printTables = () => {
   min-width: 90px;
   padding: 0.6rem 0.75rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -778,54 +857,30 @@ const printTables = () => {
   font-size: 0.85rem;
 }
 
-.btn-occupy {
-  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-  color: white;
-}
-
-.btn-occupy:hover {
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-  transform: translateY(-1px);
-}
-
-.btn-clear {
-  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-  color: white;
-}
-
-.btn-clear:hover {
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
-  transform: translateY(-1px);
-}
-
-.btn-release {
-  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
-  color: white;
-}
-
-.btn-release:hover {
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-  transform: translateY(-1px);
-}
-
 .btn-edit {
-  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
-  color: white;
+  background: rgba(31, 141, 191, 0.1);
+  color: #1F8DBF;
+  border: 1px solid rgba(31, 141, 191, 0.2);
 }
 
 .btn-edit:hover {
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-  transform: translateY(-1px);
+  background: #1F8DBF;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(31, 141, 191, 0.2);
 }
 
 .btn-delete {
-  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-  color: white;
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
+  border: 1px solid rgba(244, 196, 0, 0.2);
 }
 
 .btn-delete:hover {
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-  transform: translateY(-1px);
+  background: #F4C400;
+  color: #1F8DBF;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(244, 196, 0, 0.3);
 }
 
 /* Modal Styles */
@@ -835,35 +890,65 @@ const printTables = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(31, 141, 191, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
   padding: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 25px rgba(31, 141, 191, 0.15);
   width: 100%;
-  max-width: 420px;
+  max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
+  animation: slideUp 0.3s ease;
+  border: 2px solid #F4C400;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-confirm {
-  max-width: 380px;
+  max-width: 400px;
 }
 
 .modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 2px solid #f1f5f9;
+  padding: 1.5rem;
+  border-bottom: 2px solid #F4C400;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  background: linear-gradient(135deg, #f8fafc 0%, #f0f9ff 100%);
+  align-items: center;
+  background: white;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1F8DBF;
 }
 
 .modal-title-section {
@@ -875,8 +960,8 @@ const printTables = () => {
 
 .modal-title-section i {
   font-size: 1.5rem;
-  color: #3B82F6;
-  background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+  color: #F4C400;
+  background: rgba(244, 196, 0, 0.1);
   width: 2.5rem;
   height: 2.5rem;
   display: flex;
@@ -887,22 +972,23 @@ const printTables = () => {
 
 .modal-title-section h3 {
   margin: 0;
-  font-size: 1.3rem;
-  color: #1e293b;
+  font-size: 1.25rem;
+  color: #1F8DBF;
   font-weight: 700;
 }
 
 .modal-title-section p {
   margin: 0.3rem 0 0 0;
   font-size: 0.85rem;
-  color: #64748b;
+  color: #1E88B6;
+  opacity: 0.8;
 }
 
 .btn-close {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #64748b;
+  color: #1F8DBF;
   cursor: pointer;
   padding: 0;
   width: 2rem;
@@ -915,8 +1001,8 @@ const printTables = () => {
 }
 
 .btn-close:hover {
-  background: #f1f5f9;
-  color: #1e293b;
+  background: rgba(244, 196, 0, 0.1);
+  color: #F4C400;
 }
 
 .modal-body {
@@ -946,42 +1032,43 @@ const printTables = () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #1F8DBF;
   font-size: 0.95rem;
 }
 
 .form-group label i {
   font-size: 0.9rem;
-  color: #3B82F6;
+  color: #F4C400;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
   width: 100%;
-  padding: 0.8rem;
-  border: 2px solid #e2e8f0;
+  padding: 0.75rem;
+  border: 2px solid rgba(31, 141, 191, 0.2);
   border-radius: 8px;
   font-size: 0.95rem;
   font-family: inherit;
   transition: all 0.3s ease;
   background: white;
+  color: #1E88B6;
 }
 
 .form-group input::placeholder,
 .form-group textarea::placeholder {
-  color: #cbd5e1;
+  color: rgba(31, 141, 191, 0.3);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: #f8fafc;
+  border-color: #F4C400;
+  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.15);
+  background: white;
 }
 
 .form-group textarea {
@@ -991,36 +1078,16 @@ const printTables = () => {
 
 .modal-footer {
   padding: 1.25rem 1.5rem;
-  border-top: 2px solid #f1f5f9;
+  border-top: 2px solid rgba(244, 196, 0, 0.3);
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
-  background: #f8fafc;
+  background: rgba(31, 141, 191, 0.02);
 }
 
-.btn-cancel {
-  padding: 0.75rem 1.5rem;
-  background: white;
-  color: #475569;
-  border: 2px solid #cbd5e1;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn-cancel:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-}
-
+.btn-cancel,
 .btn-submit {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-  color: white;
   border: none;
   border-radius: 8px;
   font-weight: 600;
@@ -1029,25 +1096,50 @@ const printTables = () => {
   align-items: center;
   gap: 0.5rem;
   transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.btn-cancel {
+  background: rgba(31, 141, 191, 0.1);
+  color: #1F8DBF;
+  border: 1px solid rgba(31, 141, 191, 0.2);
+}
+
+.btn-cancel:hover {
+  background: #F4C400;
+  color: #1F8DBF;
+  border-color: #F4C400;
+}
+
+.btn-submit {
+  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
 }
 
 .btn-submit:hover {
-  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.4);
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
+}
+
+.btn-submit i {
+  color: #F4C400;
 }
 
 .btn-danger {
-  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  background: linear-gradient(135deg, #F4C400 0%, #F4C400 100%);
+  color: #1F8DBF;
 }
 
 .btn-danger:hover {
-  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 8px 16px rgba(244, 196, 0, 0.4);
 }
 
 .warning {
-  color: #DC2626;
+  color: #F4C400;
   font-size: 0.9rem;
   font-weight: 500;
+  margin-top: 0.5rem;
 }
 
 /* Responsive Design */
@@ -1066,11 +1158,6 @@ const printTables = () => {
     justify-content: center;
   }
 
-  .btn-print {
-    width: 100%;
-    justify-content: center;
-  }
-
   .stats-container {
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
@@ -1080,8 +1167,9 @@ const printTables = () => {
     flex-direction: column;
   }
 
-  .search-box {
+  .search-wrapper {
     min-width: auto;
+    width: 100%;
   }
 
   .filter-select {
@@ -1094,19 +1182,6 @@ const printTables = () => {
 
   .section-title {
     font-size: 1.5rem;
-  }
-
-  .card-footer {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .action-buttons {
-    width: 100%;
-  }
-
-  .btn-action {
-    flex: 1;
   }
 
   .modal-content {
@@ -1129,6 +1204,7 @@ const printTables = () => {
 
   .card-header {
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .capacity-badge {
@@ -1137,7 +1213,6 @@ const printTables = () => {
   }
 
   .action-buttons {
-    width: 100%;
     flex-direction: column;
   }
 
@@ -1157,7 +1232,7 @@ const printTables = () => {
 
   .form-grid {
     grid-template-columns: 1fr;
-    gap: 1.2rem;
+    gap: 1rem;
   }
 
   .form-group.full-width {
