@@ -17,6 +17,17 @@
         </button>
       </div>
 
+      <!-- Error Message Display -->
+      <div v-if="validationError" class="mb-4 p-4 bg-red-50 border-2 border-red-300 rounded-lg">
+        <div class="flex items-start gap-2">
+          <i class="fas fa-warning text-red-600 mt-0.5 flex-shrink-0"></i>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-red-700 mb-1">Dates Not Available</p>
+            <p class="text-xs text-red-600">{{ validationError }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Month Navigation -->
       <div class="flex justify-between items-center mb-3 px-2">
         <button
@@ -66,6 +77,22 @@
         </div>
       </div>
 
+      <!-- Legend -->
+      <div class="flex items-center gap-4 mb-4 text-xs text-gray-500">
+        <div class="flex items-center gap-1">
+          <div class="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
+          <span>Unavailable</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="w-4 h-4 rounded bg-blue-700"></div>
+          <span>Selected</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="w-4 h-4 rounded bg-blue-100"></div>
+          <span>In Range</span>
+        </div>
+      </div>
+
       <!-- Actions -->
       <div class="flex justify-between gap-3 pt-4 border-t-2 border-gray-200">
         <button
@@ -105,13 +132,33 @@ export default {
       type: Date,
       required: true
     },
+    /**
+     * occupiedDates: Array of objects from API
+     * Each entry has: { date: "YYYY-MM-DD", inventoryItemId: Number, status: String }
+     */
     occupiedDates: {
       type: Array,
       default: () => []
     },
-    roomItemIds: {
+    /**
+     * bookedItems: Items currently in the cart that require dates (perNight items)
+     * Each entry has: { item_id: Number, category: String, name: String }
+     */
+    bookedItems: {
       type: Array,
       default: () => []
+    },
+    /**
+     * allRooms: Full list of all room/cottage inventory items
+     * Used to count total rooms per category
+     */
+    allRooms: {
+      type: Array,
+      default: () => []
+    },
+    validationError: {
+      type: String,
+      default: null
     }
   },
   emits: ['close', 'select-date', 'prev-month', 'next-month', 'clear'],
@@ -142,32 +189,91 @@ export default {
     isBetweenDates(date) {
       return this.checkIn && this.checkOut && date > this.checkIn && date < this.checkOut
     },
-    isAllRoomsBooked(date) {
-      if (!this.roomItemIds || this.roomItemIds.length === 0) return false
 
-      const roomIds = new Set(this.roomItemIds.map(id => Number(id)))
-      const dateStr = date.toDateString()
-      const occupiedRoomIds = new Set()
-
-      this.occupiedDates.forEach(entry => {
-        const inventoryId = Number(entry.inventoryItemId ?? entry.inventory_item_id)
-        if (!roomIds.has(inventoryId)) return
-
-        const occupiedDate = new Date(entry.occupiedDate ?? entry.occupied_date)
-        if (occupiedDate.toDateString() === dateStr) {
-          occupiedRoomIds.add(inventoryId)
-        }
-      })
-
-      return occupiedRoomIds.size >= roomIds.size
+    /**
+     * Convert a calendar Date object to a "YYYY-MM-DD" string
+     * using LOCAL time — avoids UTC timezone offset issues
+     * e.g. new Date(2026, 2, 7) → "2026-03-07" (always correct)
+     */
+    toLocalDateStr(date) {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
     },
+
+    /**
+     * Normalize an occupied date entry's date string to "YYYY-MM-DD"
+     * Handles all possible field names from the API:
+     *   entry.date, entry.occupiedDate, entry.occupied_date
+     */
+    getOccupiedDateStr(entry) {
+      const raw = entry.date ?? entry.occupiedDate ?? entry.occupied_date ?? null
+      if (!raw) return null
+      // If it has a time component (e.g. "2026-03-07T00:00:00"), slice only date part
+      return String(raw).split('T')[0]
+    },
+
+    /**
+     * Get the inventory item ID from an occupied date entry
+     * Handles both camelCase and snake_case field names
+     */
+    getOccupiedItemId(entry) {
+      return Number(entry.inventoryItemId ?? entry.inventory_item_id ?? 0)
+    },
+
+    /**
+     * Core logic: should this calendar date be disabled?
+     *
+     * If there are booked items in cart (perNight items):
+     *   → Disable if ALL rooms of the booked item's category are occupied on this date
+     *
+     * If NO booked items in cart:
+     *   → Never disable (user is just browsing dates freely)
+     */
+    isAllRoomsBooked(date) {
+      // No booked items = no restriction
+      if (!this.bookedItems || this.bookedItems.length === 0) return false
+
+      const dateStr = this.toLocalDateStr(date)
+
+      // Check each booked item in the cart
+      for (const bookedItem of this.bookedItems) {
+        const category = bookedItem.category
+
+        // Get all rooms of this same category from inventory
+        const roomsOfCategory = this.allRooms.filter(r => r.category === category)
+        const totalRoomsOfCategory = roomsOfCategory.length
+
+        // No rooms of this category found = skip (can't determine availability)
+        if (totalRoomsOfCategory === 0) continue
+
+        // Build a set of item_ids belonging to this category for fast lookup
+        const categoryItemIds = new Set(roomsOfCategory.map(r => Number(r.item_id)))
+
+        // Count how many rooms of this category are occupied on this date
+        const occupiedCount = this.occupiedDates.filter(entry => {
+          const entryItemId = this.getOccupiedItemId(entry)
+          const entryDateStr = this.getOccupiedDateStr(entry)
+          return entryDateStr === dateStr && categoryItemIds.has(entryItemId)
+        }).length
+
+        // If ALL rooms of this category are occupied, disable this date
+        if (occupiedCount >= totalRoomsOfCategory) {
+          return true
+        }
+      }
+
+      return false
+    },
+
     isDisabled(date) {
       // Disable past dates
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       if (date < today) return true
 
-      // Disable dates only if all rooms are fully booked
+      // Disable if all rooms of the selected category are fully booked
       return this.isAllRoomsBooked(date)
     }
   }

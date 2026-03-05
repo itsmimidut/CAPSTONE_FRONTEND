@@ -295,6 +295,25 @@
         <p class="text-sm text-text-muted mb-5">
           Your booking is secured. A confirmation email has been sent to <span class="font-medium text-text-dark">{{ guest.email }}</span>.
         </p>
+
+        <!-- QR Code Section -->
+        <div v-if="bookingQRCode" class="my-5 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+          <p class="text-xs font-semibold text-blue-700 mb-3 text-center">📱 Your Booking QR Code</p>
+          <div class="flex justify-center mb-3">
+            <img :src="bookingQRCode" alt="Booking QR Code" class="w-40 h-40 border-2 border-white rounded-lg shadow-md">
+          </div>
+          <p class="text-xs text-blue-600 text-center">
+            <i class="fas fa-info-circle mr-1"></i>
+            Save or screenshot this QR code. Show it at check-in.
+          </p>
+        </div>
+
+        <!-- Booking Reference -->
+        <div class="mb-4 p-3 bg-gray-50 rounded-lg text-center">
+          <p class="text-xs text-gray-600">Booking Reference</p>
+          <p class="text-sm font-bold text-gray-800">{{ bookingReference }}</p>
+        </div>
+
         <div class="space-y-2">
           <router-link to="/confirmation" class="block w-full py-2.5 bg-primary-blue text-white rounded-lg font-medium text-sm hover:bg-accent-blue transition">
             View Booking Details
@@ -319,6 +338,7 @@
 </template>
 
 <script>
+import QRCode from 'qrcode';
 import EmailVerificationModal from './EmailVerificationModal.vue';
 
 export default {
@@ -369,10 +389,16 @@ export default {
       termsAgreed: false,
       loading: false,
       showModal: false,
+      // QR Code & Booking Reference
+      bookingQRCode: null,
+      bookingReference: null,
       // Email verification
       showVerificationModal: false,
       emailVerified: false,
-      verifiedEmail: ''
+      verifiedEmail: '',
+      // Payment blocked fallback
+      showPaymentBlocked: false,
+      paymentUrl: null
     };
   },
   computed: {
@@ -551,6 +577,34 @@ export default {
 
         const bookingResult = await bookingResponse.json();
 
+        // 🛑 Handle date conflict error (409)
+        if (bookingResponse.status === 409) {
+          console.error('❌ Date conflict detected:', bookingResult);
+          this.loading = false;
+          
+          // Normalize conflict_dates: backend may return array of date-strings or array of objects
+          let conflictDates = 'selected dates';
+          if (bookingResult.conflict_dates && Array.isArray(bookingResult.conflict_dates) && bookingResult.conflict_dates.length > 0) {
+            const first = bookingResult.conflict_dates[0];
+            if (typeof first === 'string') {
+              conflictDates = bookingResult.conflict_dates.map(d => new Date(d).toLocaleDateString()).join(', ');
+            } else if (typeof first === 'object') {
+              conflictDates = bookingResult.conflict_dates.map(d => {
+                if (d.occupied_date) return new Date(d.occupied_date).toLocaleDateString();
+                if (d.check_in && d.check_out) return `${new Date(d.check_in).toLocaleDateString()} - ${new Date(d.check_out).toLocaleDateString()}`;
+                // Fallback: try common keys
+                if (d.check_in_date && d.check_out_date) return `${new Date(d.check_in_date).toLocaleDateString()} - ${new Date(d.check_out_date).toLocaleDateString()}`;
+                return JSON.stringify(d);
+              }).join(', ');
+            }
+          }
+
+          const message = `⚠️ ${bookingResult.error}\n\nItem: ${bookingResult.item_name || bookingResult.item_name || 'Item'}\nConflict Dates: ${conflictDates}\n\nPlease select different dates and try again.`;
+
+          alert(message);
+          return;
+        }
+
         if (!bookingResponse.ok || !bookingResult.success) {
           throw new Error(bookingResult.error || 'Failed to create booking');
         }
@@ -607,7 +661,7 @@ export default {
           total: this.subtotal
         };
 
-        // Step 4: Clear all booking-related localStorage
+        // Step 3.5: Clear all booking-related localStorage
         // This prevents the booking from being resubmitted if user goes back
         localStorage.removeItem('pendingBooking');
         
@@ -623,18 +677,60 @@ export default {
         sessionStorage.setItem('paymentTracking', JSON.stringify(paymentTrackingInfo));
         console.log('💾 Saved payment tracking to sessionStorage:', paymentTrackingInfo);
 
-        // Step 5: Open PayMongo checkout in new tab/window
-        window.open(paymentData.checkout_url, '_blank');
+        // ✅ Step 5: NOW open the payment window with the checkout URL ready
+        // This prevents blank tabs and ensures browser won't block as popup
+        const paymentWindow = window.open(paymentData.checkout_url, '_blank');
+        if (!paymentWindow) {
+          console.warn('⚠️ Popup was blocked. Please allow popups and try again.');
+          // User can manually click to redirect if popup was blocked
+          this.showPaymentBlocked = true;
+          this.paymentUrl = paymentData.checkout_url;
+          this.loading = false;
+          return;
+        }
         
+        // Save booking reference for QR display
+        this.bookingReference = bookingReference;
+
+        // Generate QR code on frontend from booking reference
+        setTimeout(async () => {
+          try {
+            this.bookingQRCode = await QRCode.toDataURL(bookingReference, {
+              errorCorrectionLevel: 'H',
+              type: 'image/png',
+              width: 200,
+              margin: 1,
+              color: {
+                dark: '#2B6CB0',
+                light: '#FFFFFF'
+              }
+            });
+            console.log('✅ QR Code generated successfully on frontend');
+          } catch (qrError) {
+            console.warn('⚠️ Could not generate QR code:', qrError);
+          }
+        }, 500);
+
         // Redirect current tab to payment-return page to poll for payment status
         setTimeout(() => {
+          this.loading = false;
           this.$router.push(`/payment-return`);
-        }, 1000);
+        }, 1500);
 
       } catch (err) {
         console.error('Booking error:', err);
-        alert(err.message || 'Failed to process booking. Please try again.');
         this.loading = false;
+        
+        // Provide specific error messages based on error type
+        if (err.message.includes('date')) {
+          alert('❌ Date Conflict Error\n\nOne or more selected dates are already fully booked. Please select different dates.');
+        } else if (err.message.includes('Failed to create booking')) {
+          alert('Failed to create booking. Please check your information and try again.');
+        } else if (err.message.includes('payment')) {
+          alert('Payment processing error. Please try again.');
+        } else {
+          alert(err.message || 'An error occurred. Please try again.');
+        }
       }
     }
   },

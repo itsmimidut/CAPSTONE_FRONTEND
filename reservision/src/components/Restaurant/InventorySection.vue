@@ -1,214 +1,187 @@
 <template>
   <div class="inventory-section">
-    <!-- Header Section with Title and Add Item Button -->
+
+    <!-- Section Header -->
     <div class="section-header">
-      <div>
-        <!-- Main title and subtitle for the inventory management page -->
+      <div class="header-left">
         <h2 class="section-title">Inventory Management</h2>
-        <p class="section-subtitle">Track and manage restaurant inventory levels</p>
+        <p class="section-subtitle">Track and manage restaurant stock levels</p>
       </div>
       <div class="header-buttons">
-        <!-- Button to open modal for adding new inventory items -->
-        <button class="btn-add-item" @click="showAddItemModal = true">
+        <button class="btn-header btn-outline-blue" @click="showMenuIngredientsModal = true">
+          <i class="fas fa-link"></i> View Menu Links
+        </button>
+        <button class="btn-header btn-outline-blue" @click="showAddIngredientsModal = true">
+          <i class="fas fa-plus-circle"></i> Link Ingredients
+        </button>
+        <button class="btn-header btn-blue" @click="showAddItemModal = true">
           <i class="fas fa-plus"></i> Add New Item
         </button>
       </div>
     </div>
 
-    <!-- Stats Container: Display key inventory metrics at a glance -->
-    <div class="stats-container">
-      <!-- Card showing count of low stock items -->
-      <StatCard 
-        label="Low Stock Items"
-        :count="inventory.filter(i => i.status === 'low').length"
-        class="stat-low-stock"
-        icon="fas fa-exclamation-triangle"
-        color="danger"
-      />
-      <!-- Card showing count of items with healthy stock levels -->
-      <StatCard 
-        label="Good Stock Items"
-        :count="inventory.filter(i => i.status === 'good').length"
-        class="stat-good-stock"
-        icon="fas fa-check-circle"
-        color="success"
-      />
-      <!-- Card showing total number of inventory items in system -->
-      <StatCard 
-        label="Total Items"
-        :count="inventory.length"
-        class="stat-total"
-        icon="fas fa-boxes"
-        color="primary"
-      />
+    <!-- Stats Cards -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon icon-blue">
+          <i class="fas fa-boxes"></i>
+        </div>
+        <div class="stat-body">
+          <div class="stat-value">{{ inventory.length }}</div>
+          <div class="stat-label">Total Items</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-green">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-body">
+          <div class="stat-value">{{ inventory.filter(i => i.status === 'good').length }}</div>
+          <div class="stat-label">Well Stocked</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-amber">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-body">
+          <div class="stat-value">{{ inventory.filter(i => i.status === 'low').length }}</div>
+          <div class="stat-label">Low Stock</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon icon-red">
+          <i class="fas fa-times-circle"></i>
+        </div>
+        <div class="stat-body">
+          <div class="stat-value">{{ inventory.filter(i => i.status === 'critical').length }}</div>
+          <div class="stat-label">Critical</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Auto-Deduction Info Banner -->
-    <div class="auto-deduction-banner">
-      <button class="btn-view-links" @click="showMenuIngredientsModal = true">
-        <i class="fas fa-link"></i> View Menu Links
-      </button>
-      <button class="btn-view-links" @click="showAddIngredientsModal = true">
-        <i class="fas fa-plus-circle"></i> Link Ingredients to Menu
-      </button>
-    </div>
-
-    <!-- Search and Filter Controls -->
-    <div class="controls-container">
-      <!-- Search box for filtering items by name (case-insensitive) -->
-      <div class="search-box">
-        <i class="fas fa-search"></i>
-        <input 
+    <!-- Search and Filter -->
+    <div class="controls-row">
+      <div class="search-wrap">
+        <i class="fas fa-search search-icon"></i>
+        <input
           v-model="searchQuery"
-          type="text" 
-          placeholder="Search items..."
+          type="text"
+          placeholder="Search inventory items..."
           class="search-input"
         />
       </div>
-      <!-- Dropdown to filter items by stock status: all, low stock, or good stock -->
       <select v-model="filterStatus" class="filter-select">
         <option value="">All Status</option>
         <option value="low">Low Stock</option>
         <option value="good">Good Stock</option>
+        <option value="critical">Critical</option>
       </select>
     </div>
 
-    <!-- Inventory Table: Main data display showing all inventory items -->
-    <div class="table-container">
-      <table class="inventory-table">
+    <!-- Table -->
+    <div class="table-wrap">
+      <table class="inv-table">
         <thead>
           <tr>
-            <!-- Column Headers -->
-            <th>Item</th>              <!-- Product name -->
-            <th>Quantity</th>          <!-- Current stock quantity -->
-            <th>Unit</th>              <!-- Unit of measurement -->
-            <th>Status</th>            <!-- Stock status badge (low/good) -->
-            <th>Actions</th>           <!-- Edit and delete buttons -->
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Unit</th>
+            <th>Threshold</th>
+            <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <!-- Row for each filtered inventory item with color coding based on status -->
-          <tr v-for="item in filteredInventory" :key="item.id" :class="`status-${item.status}`">
-            <!-- Item name with icon -->
-            <td class="item-name">
-              <i class="fas fa-cubes"></i>
+          <tr v-for="item in paginatedInventory" :key="item.id">
+            <td class="td-item">
+              <div class="item-dot" :class="`dot-${item.status}`"></div>
               {{ item.item }}
             </td>
-            <!-- Current quantity with badge styling -->
-            <td class="quantity">
-              <span class="qty-value">{{ item.quantity }}</span>
+            <td class="td-center">
+              <span class="qty-badge">{{ item.quantity }}</span>
             </td>
-            <!-- Unit of measurement (kg, L, pcs, etc) -->
-            <td class="unit">{{ item.unit }}</td>
-            <!-- Status badge: displays "Low Stock" or "Good Stock" with color -->
+            <td class="td-unit">{{ item.unit }}</td>
+            <td class="td-center td-muted">{{ item.threshold }}</td>
             <td>
               <StatusBadge :status="item.status" />
             </td>
-            <!-- Action buttons: Edit and Delete -->
-            <td class="actions-cell">
-              <button 
-                class="btn-action btn-edit"
-                @click="handleEdit(item)"
-                title="Edit item"
-              >
-                <i class="fas fa-edit"></i>
-              </button>
-              <button 
-                class="btn-action btn-delete"
-                @click="handleDelete(item)"
-                title="Delete item"
-              >
-                <i class="fas fa-trash"></i>
-              </button>
+            <td>
+              <div class="action-row">
+                <button class="act-btn act-edit" @click="handleEdit(item)" title="Edit">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="act-btn act-delete" @click="handleDelete(item)" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
       </table>
-      <!-- Empty state message when no items match search/filter criteria -->
+
+      <!-- Empty State -->
       <div v-if="filteredInventory.length === 0" class="empty-state">
-        <i class="fas fa-inbox"></i>
-        <p>No inventory items found</p>
+        <div class="empty-icon">
+          <i class="fas fa-box-open"></i>
+        </div>
+        <p class="empty-title">No items found</p>
+        <p class="empty-sub">Try adjusting your search or filters</p>
       </div>
     </div>
 
-    <!-- Add Item Modal: Form for adding new inventory items -->
+    <!-- Footer with Pagination -->
+    <div class="table-footer" v-if="filteredInventory.length > 0">
+      <span class="footer-info">
+        Showing {{ (currentPage - 1) * 10 + 1 }}–{{ Math.min(currentPage * 10, filteredInventory.length) }} of {{ filteredInventory.length }} items
+      </span>
+      <div class="pagination" v-if="totalPages > 1">
+        <button class="pg-btn" :disabled="currentPage === 1" @click="currentPage--">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button
+          v-for="page in visiblePages"
+          :key="page"
+          class="pg-btn"
+          :class="{ active: currentPage === page }"
+          @click="currentPage = page"
+        >{{ page }}</button>
+        <button class="pg-btn" :disabled="currentPage === totalPages" @click="currentPage++">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── ADD ITEM MODAL ── -->
     <div v-if="showAddItemModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Add New Inventory Item</h3>
-          <!-- Close button for the modal -->
-          <button class="btn-close" @click="closeModal">
-            <i class="fas fa-times"></i>
-          </button>
+      <div class="modal-box">
+        <div class="modal-head">
+          <h3>Add New Item</h3>
+          <button class="modal-close" @click="closeModal"><i class="fas fa-times"></i></button>
         </div>
-
-        <!-- Form for entering new inventory item details -->
-        <form @submit.prevent="handleAddItem" class="modal-form">
-          <!-- Item name input field (required) -->
+        <form @submit.prevent="handleAddItem" class="modal-body">
           <div class="form-group">
-            <label for="itemName">Item Name *</label>
-            <input 
-              id="itemName"
-              v-model="newItem.item"
-              type="text" 
-              placeholder="e.g., Salmon Fillet"
-              required
-              class="form-input"
-            />
+            <label>Item Name <span class="req">*</span></label>
+            <input v-model="newItem.item" type="text" placeholder="e.g., Salmon Fillet" required class="form-input" />
           </div>
-
-          <!-- Two-column row for quantity and unit inputs -->
           <div class="form-row">
-            <!-- Quantity input field (non-negative number) -->
             <div class="form-group">
-              <label for="quantity">Quantity *</label>
-              <input 
-                id="quantity"
-                v-model.number="newItem.quantity"
-                type="number" 
-                placeholder="0"
-                required
-                min="0"
-                class="form-input"
-              />
+              <label>Quantity <span class="req">*</span></label>
+              <input v-model.number="newItem.quantity" type="number" placeholder="0" required min="0" class="form-input" />
             </div>
-
-            <!-- Unit input field: specify measurement unit (kg, L, pcs, etc) -->
             <div class="form-group">
-              <label for="unit">Unit *</label>
-              <input 
-                id="unit"
-                v-model="newItem.unit"
-                type="text" 
-                placeholder="e.g., kg, L, pcs"
-                required
-                class="form-input"
-              />
+              <label>Unit <span class="req">*</span></label>
+              <input v-model="newItem.unit" type="text" placeholder="kg, L, pcs" required class="form-input" />
             </div>
           </div>
-
-          <!-- Threshold field for low-stock alert level -->
           <div class="form-group">
-            <label for="threshold">Low Stock Threshold *</label>
-            <input 
-              id="threshold"
-              v-model.number="newItem.threshold"
-              type="number" 
-              placeholder="Alert when stock falls below this level"
-              required
-              min="0"
-              step="0.01"
-              class="form-input"
-            />
-            <small class="form-hint">You'll be alerted when stock falls below this level</small>
+            <label>Low Stock Threshold <span class="req">*</span></label>
+            <input v-model.number="newItem.threshold" type="number" placeholder="Alert level" required min="0" step="0.01" class="form-input" />
+            <small class="form-hint">Alert triggers when stock falls below this number</small>
           </div>
-
-          <!-- Form action buttons: Cancel and Submit -->
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" @click="closeModal">
-              Cancel
-            </button>
-            <button type="submit" class="btn-submit">
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="closeModal">Cancel</button>
+            <button type="submit" class="btn-blue btn-header">
               <i class="fas fa-plus"></i> Add Item
             </button>
           </div>
@@ -216,84 +189,36 @@
       </div>
     </div>
 
-    <!-- Edit Item Modal: Form for updating existing inventory items -->
+    <!-- ── EDIT ITEM MODAL ── -->
     <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Edit Inventory Item</h3>
-          <!-- Close button for the modal -->
-          <button class="btn-close" @click="closeEditModal">
-            <i class="fas fa-times"></i>
-          </button>
+      <div class="modal-box">
+        <div class="modal-head">
+          <h3>Edit Item</h3>
+          <button class="modal-close" @click="closeEditModal"><i class="fas fa-times"></i></button>
         </div>
-
-        <!-- Form for editing inventory item details -->
-        <form @submit.prevent="handleEditSubmit" class="modal-form">
-          <!-- Item name input field -->
+        <form @submit.prevent="handleEditSubmit" class="modal-body">
           <div class="form-group">
-            <label for="editItemName">Item Name *</label>
-            <input 
-              id="editItemName"
-              v-model="editingItem.item"
-              type="text" 
-              placeholder="e.g., Salmon Fillet"
-              required
-              class="form-input"
-            />
+            <label>Item Name <span class="req">*</span></label>
+            <input v-model="editingItem.item" type="text" required class="form-input" />
           </div>
-
-          <!-- Two-column row for quantity and unit -->
           <div class="form-row">
-            <!-- Updated quantity field -->
             <div class="form-group">
-              <label for="editQuantity">Quantity *</label>
-              <input 
-                id="editQuantity"
-                v-model.number="editingItem.quantity"
-                type="number" 
-                placeholder="0"
-                required
-                min="0"
-                class="form-input"
-              />
+              <label>Quantity <span class="req">*</span></label>
+              <input v-model.number="editingItem.quantity" type="number" required min="0" class="form-input" />
             </div>
-
-            <!-- Updated unit field -->
             <div class="form-group">
-              <label for="editUnit">Unit *</label>
-              <input 
-                id="editUnit"
-                v-model="editingItem.unit"
-                type="text" 
-                placeholder="e.g., kg, L, pcs"
-                required
-                class="form-input"
-              />
+              <label>Unit <span class="req">*</span></label>
+              <input v-model="editingItem.unit" type="text" required class="form-input" />
             </div>
           </div>
-
-          <!-- Threshold field for low-stock alert level -->
           <div class="form-group">
-            <label for="editThreshold">Low Stock Threshold *</label>
-            <input 
-              id="editThreshold"
-              v-model.number="editingItem.threshold"
-              type="number" 
-              placeholder="Alert when stock falls below this level"
-              required
-              min="0"
-              step="0.01"
-              class="form-input"
-            />
-            <small class="form-hint">You'll be alerted when stock falls below this level</small>
+            <label>Low Stock Threshold <span class="req">*</span></label>
+            <input v-model.number="editingItem.threshold" type="number" required min="0" step="0.01" class="form-input" />
+            <small class="form-hint">Alert triggers when stock falls below this number</small>
           </div>
-
-          <!-- Form action buttons: Cancel and Save -->
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" @click="closeEditModal">
-              Cancel
-            </button>
-            <button type="submit" class="btn-submit">
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="closeEditModal">Cancel</button>
+            <button type="submit" class="btn-blue btn-header">
               <i class="fas fa-save"></i> Save Changes
             </button>
           </div>
@@ -301,592 +226,280 @@
       </div>
     </div>
 
-    <!-- Menu Ingredients Modal: Show which menu items use inventory ingredients -->
-    <div v-if="showMenuIngredientsModal" class="modal-overlay modal-large" @click.self="showMenuIngredientsModal = false">
-      <div class="modal-content modal-wide">
-        <div class="modal-header">
-          <h3><i class="fas fa-link"></i> Menu-Inventory Links</h3>
-          <button class="btn-close" @click="showMenuIngredientsModal = false">
-            <i class="fas fa-times"></i>
-          </button>
+    <!-- ── VIEW MENU LINKS MODAL ── -->
+    <div v-if="showMenuIngredientsModal" class="modal-overlay" @click.self="showMenuIngredientsModal = false">
+      <div class="modal-box modal-wide">
+        <div class="modal-head">
+          <h3><i class="fas fa-link"></i> Menu–Inventory Links</h3>
+          <button class="modal-close" @click="showMenuIngredientsModal = false"><i class="fas fa-times"></i></button>
         </div>
-        
         <div class="modal-body">
-          <div class="info-box">
+          <div class="info-banner">
             <i class="fas fa-info-circle"></i>
-            <p>When customers order these menu items, the linked ingredients are automatically deducted from inventory.</p>
+            <span>When customers order these menu items, linked ingredients are automatically deducted from inventory.</span>
           </div>
 
-          <div v-if="loadingLinks" class="loading-state">
-            <i class="fas fa-spinner fa-spin"></i> Loading menu links...
+          <div v-if="loadingLinks" class="state-center">
+            <i class="fas fa-spinner fa-spin"></i> Loading...
           </div>
 
-          <div v-else-if="menuIngredientLinks.length === 0" class="empty-links">
-            <i class="fas fa-unlink"></i>
-            <p>No menu items are linked to inventory yet.</p>
-            <small>Contact admin to set up menu-ingredient relationships.</small>
+          <div v-else-if="menuIngredientLinks.length === 0" class="state-center">
+            <i class="fas fa-unlink" style="font-size:2rem; color:#cbd5e1; margin-bottom:.5rem;"></i>
+            <p style="color:#94a3b8;">No menu items are linked to inventory yet.</p>
           </div>
 
           <div v-else class="links-grid">
             <div v-for="menu in menuIngredientLinks" :key="menu.menu_id" class="menu-card">
-              <div class="menu-header">
-                <h4><i class="fas fa-utensils"></i> {{ menu.menu_name }}</h4>
-                <span class="menu-category">{{ menu.category }}</span>
+              <div class="menu-card-head">
+                <span class="menu-name">{{ menu.menu_name }}</span>
+                <span class="menu-cat">{{ menu.category }}</span>
               </div>
-              
-              <div class="ingredients-list">
-                <div v-for="ing in menu.ingredients" :key="ing.inventory_id" class="ingredient-item">
-                  <span class="ing-name">
-                    <i class="fas fa-cube"></i> {{ ing.item_name }}
-                  </span>
-                  <span class="ing-quantity">
-                    {{ ing.quantity_needed }} {{ ing.unit }} <small>per serving</small>
-                  </span>
-                  <span :class="`ing-status status-${ing.status}`">
-                    {{ ing.inventory_quantity }} {{ ing.unit }} available
-                  </span>
+              <div class="ing-list">
+                <div v-for="ing in menu.ingredients" :key="ing.inventory_id" class="ing-row">
+                  <span class="ing-name"><i class="fas fa-cube"></i> {{ ing.item_name }}</span>
+                  <span class="ing-qty">{{ ing.quantity_needed }} {{ ing.unit }} / serving</span>
+                  <span :class="`ing-avail status-${ing.status}`">{{ ing.inventory_quantity }} {{ ing.unit }}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        <div class="modal-footer">
+        <div class="modal-actions" style="padding: 1rem 1.5rem; border-top: 1px solid #e8edf8;">
           <button class="btn-cancel" @click="showMenuIngredientsModal = false">Close</button>
         </div>
       </div>
     </div>
 
-    <!-- Add Ingredients to Menu Modal -->
+    <!-- ── LINK INGREDIENTS MODAL ── -->
     <div v-if="showAddIngredientsModal" class="modal-overlay" @click.self="showAddIngredientsModal = false">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3><i class="fas fa-plus-circle"></i> Link Ingredients to Menu Item</h3>
-          <button class="btn-close" @click="showAddIngredientsModal = false">
-            <i class="fas fa-times"></i>
-          </button>
+      <div class="modal-box">
+        <div class="modal-head">
+          <h3><i class="fas fa-plus-circle"></i> Link Ingredients to Menu</h3>
+          <button class="modal-close" @click="showAddIngredientsModal = false"><i class="fas fa-times"></i></button>
         </div>
-
-        <form @submit.prevent="handleAddMenuIngredient" class="modal-form">
-          <!-- Select Menu Item -->
+        <form @submit.prevent="handleAddMenuIngredient" class="modal-body">
           <div class="form-group">
-            <label for="selectMenu">Select Menu Item *</label>
-            <select 
-              id="selectMenu"
-              v-model="selectedMenuId"
-              required
-              class="form-input"
-            >
+            <label>Select Menu Item <span class="req">*</span></label>
+            <select v-model="selectedMenuId" required class="form-input">
               <option value="">Choose a menu item...</option>
               <option v-for="menu in availableMenus" :key="menu.menu_id" :value="menu.menu_id">
-                {{ menu.name }} - ₱{{ menu.price }}
+                {{ menu.name }} — ₱{{ menu.price }}
               </option>
             </select>
           </div>
 
-          <!-- Display Current Ingredients for Selected Menu -->
-          <div v-if="selectedMenuCurrentIngredients.length > 0" class="ingredient-preview">
-            <h4>Current Ingredients:</h4>
-            <div class="ingredient-list-view">
-              <div v-for="ing in selectedMenuCurrentIngredients" :key="ing.id" class="ingredient-preview-item">
-                <span>{{ ing.item_name }}</span>
-                <span class="qty-badge">{{ ing.quantity_needed }} {{ ing.unit }}</span>
-                <button 
-                  type="button"
-                  class="btn-remove-ing"
-                  @click="handleRemoveIngredient(ing.id)"
-                  title="Remove ingredient"
-                >
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </div>
+          <div v-if="selectedMenuCurrentIngredients.length > 0" class="ing-preview-box">
+            <p class="ing-preview-title">Current Ingredients</p>
+            <div v-for="ing in selectedMenuCurrentIngredients" :key="ing.id" class="ing-preview-row">
+              <span>{{ ing.item_name }}</span>
+              <span class="qty-chip">{{ ing.quantity_needed }} {{ ing.unit }}</span>
+              <button type="button" class="btn-rm" @click="handleRemoveIngredient(ing.id)">
+                <i class="fas fa-trash-alt"></i>
+              </button>
             </div>
           </div>
 
-          <!-- Add New Ingredient Row -->
           <div class="form-group">
-            <label for="selectInventory">Add Ingredient *</label>
-            <div class="ingredient-input-row">
-              <select 
-                id="selectInventory"
-                v-model="newIngredient.inventory_id"
-                required
-                class="form-input"
-                style="flex: 1;"
-              >
-                <option value="">Select inventory item...</option>
+            <label>Add Ingredient <span class="req">*</span></label>
+            <div class="ing-input-row">
+              <select v-model="newIngredient.inventory_id" class="form-input" style="flex:1">
+                <option value="">Select item...</option>
                 <option v-for="inv in inventory" :key="inv.id" :value="inv.id || inv.inventory_id">
                   {{ inv.item || inv.item_name }} ({{ inv.quantity }} {{ inv.unit }})
                 </option>
               </select>
-              <input 
+              <input
                 v-model.number="newIngredient.quantity_needed"
-                type="number"
-                placeholder="Qty"
-                required
-                min="0.01"
-                step="0.01"
-                class="form-input"
-                style="flex: 0.5; width: 100px;"
+                type="number" placeholder="Qty"
+                min="0.01" step="0.01"
+                class="form-input qty-short"
               />
-              <button 
-                type="button"
-                @click="handleAddSingleIngredient"
-                class="btn-action-add"
-              >
-                <i class="fas fa-plus"></i> Add
+              <button type="button" class="btn-blue btn-header" @click="handleAddSingleIngredient">
+                <i class="fas fa-plus"></i>
               </button>
             </div>
-            <small class="form-hint">Select an inventory item and specify the quantity needed per serving</small>
+            <small class="form-hint">Quantity needed per serving</small>
           </div>
 
-          <!-- Form action buttons -->
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" @click="showAddIngredientsModal = false">
-              Cancel
-            </button>
-            <button type="submit" class="btn-submit" :disabled="!selectedMenuId">
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" @click="showAddIngredientsModal = false">Cancel</button>
+            <button type="submit" class="btn-blue btn-header" :disabled="!selectedMenuId">
               <i class="fas fa-save"></i> Save Links
             </button>
           </div>
         </form>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
-/**
- * InventorySection.vue
- * Purpose: Display and manage restaurant inventory items in a data table with CRUD operations
- * Functionality: 
- *   - Display inventory items in a sortable/filterable table
- *   - Add new inventory items via modal form
- *   - Edit existing inventory items
- *   - Delete inventory items with confirmation
- *   - Filter and search inventory by name and status
- *   - Calculate and display stock status (low/good) automatically
- *   - Show inventory statistics (low stock count, good stock count, total items)
- */
-
 import { ref, computed, watch } from 'vue'
 import StatusBadge from './StatusBadge.vue'
 import StatCard from './StatCard.vue'
 
-// Component props - receives inventory data from parent component
-const props = defineProps({
-  inventory: Array, // Array of inventory items with id, item, quantity, unit, status, etc
-})
-
-// Emits - parent component listens for these events to handle data mutations
+const props = defineProps({ inventory: Array })
 const emit = defineEmits(['update-stock', 'edit-item', 'delete-item', 'add-item', 'update-item'])
 
-// ===== State Variables =====
+const searchQuery = ref('')
+const filterStatus = ref('')
+const showAddItemModal = ref(false)
+const showEditModal = ref(false)
+const showMenuIngredientsModal = ref(false)
+const showAddIngredientsModal = ref(false)
+const menuIngredientLinks = ref([])
+const loadingLinks = ref(false)
+const availableMenus = ref([])
+const selectedMenuId = ref('')
+const newIngredient = ref({ inventory_id: '', quantity_needed: 0 })
+const addedIngredientsBuffer = ref([])
+const editingItem = ref(null)
+const imagePreview = ref('')
+const editImagePreview = ref('')
 
-// Search/Filter state
-const searchQuery = ref('') // User's search text for filtering items by name
-const filterStatus = ref('') // Filter dropdown: '' (all), 'low' (low stock), 'good' (good stock)
+const newItem = ref({ item: '', quantity: 0, unit: '', threshold: 0, image_url: '' })
 
-// Modal visibility states
-const showAddItemModal = ref(false) // Controls visibility of "Add Item" modal dialog
-const showEditModal = ref(false) // Controls visibility of "Edit Item" modal dialog
-const showMenuIngredientsModal = ref(false) // Controls visibility of "Menu Ingredients" modal
-const showAddIngredientsModal = ref(false) // Controls visibility of "Add Ingredients to Menu" modal
+const currentPage = ref(1)
+const itemsPerPage = 10
 
-// Menu ingredients state
-const menuIngredientLinks = ref([]) // Array of menu items with their linked ingredients
-const loadingLinks = ref(false) // Loading state for fetching menu links
-
-// Menu items state for linking ingredients
-const availableMenus = ref([]) // List of all menu items
-const selectedMenuId = ref('') // Currently selected menu item for linking ingredients
-const newIngredient = ref({ inventory_id: '', quantity_needed: 0 }) // New ingredient being added
-const addedIngredientsBuffer = ref([]) // Temporarily store ingredients before saving
-
-// Form data for editing
-const editingItem = ref(null) // Currently edited item object with all its fields
-
-// Image preview states (base64 strings for image preview display)
-const imagePreview = ref('') // Preview image for new item being added
-const editImagePreview = ref('') // Preview image for item being edited
-
-/**
- * Converts image file to Base64 string with optional resizing
- * Purpose: Prepare image data for storage in database as base64 encoded string
- * @param {File} file - Image file from input
- * @param {number} maxWidth - Maximum width for resizing (default: 800px)
- * @returns {Promise<string>} - Base64 encoded image string with JPEG compression
- */
-const convertImageToBase64 = (file, maxWidth = 800) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        let width = img.width
-        let height = img.height
-        
-        // Resize if image is larger than maxWidth to optimize storage
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width
-          width = maxWidth
-        }
-        
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, width, height)
-        
-        // Convert to base64 with 70% JPEG compression quality
-        resolve(canvas.toDataURL('image/jpeg', 0.7))
-      }
-      img.onerror = reject
-      img.src = e.target.result
-    }
-    reader.onerror = error => reject(error)
-    reader.readAsDataURL(file)
-  })
-}
-
-/**
- * Handles image file selection from input
- * Converts to Base64 and stores in appropriate state (add or edit mode)
- * @param {Event} event - File input change event
- * @param {boolean} isEdit - True if editing existing item, false if adding new
- */
-const handleImageUpload = async (event, isEdit = false) => {
-  const file = event.target.files?.[0]
-  if (!file) return
-  
-  try {
-    const base64 = await convertImageToBase64(file)
-    if (isEdit) {
-      editingItem.value.image_url = base64
-      editImagePreview.value = base64
-    } else {
-      newItem.value.image_url = base64
-      imagePreview.value = base64
-    }
-  } catch (error) {
-    console.error('Error converting image:', error)
-    alert('Error uploading image')
-  }
-}
-
-/**
- * Handles drag over event for drag-and-drop image upload
- * Sets proper visual feedback during drag
- */
-const handleDragOver = (e) => {
-  e.preventDefault()
-  e.dataTransfer.dropEffect = 'copy'
-}
-
-/**
- * Handles dropped files in drag-and-drop image upload
- * Converts dropped image to Base64 like file input
- * @param {DragEvent} e - Drag event containing dropped files
- * @param {boolean} isEdit - True if editing, false if adding
- */
-const handleDragDrop = async (e, isEdit = false) => {
-  e.preventDefault()
-  const file = e.dataTransfer.files?.[0]
-  if (!file) return
-  
-  try {
-    const base64 = await convertImageToBase64(file)
-    if (isEdit) {
-      editingItem.value.image_url = base64
-      editImagePreview.value = base64
-    } else {
-      newItem.value.image_url = base64
-      imagePreview.value = base64
-    }
-  } catch (error) {
-    console.error('Error converting image:', error)
-    alert('Error uploading image')
-  }
-}
-
-/**
- * Reactive object for new inventory item being added
- * Fields:
- * - item: Name/description of the inventory item (matches v-model binding)
- * - quantity: Current stock quantity (number)
- * - unit: Unit of measurement (kg, L, pcs, etc)
- * - threshold: Low stock alert level
- * - image_url: Base64 encoded image data for product preview
- */
-const newItem = ref({
-  item: '',
-  quantity: 0,
-  unit: '',
-  threshold: 0,
-  image_url: '',
-})
-
-/**
- * Computed property that filters inventory items based on search query and status filter
- * Used by template to display only relevant items
- * Matching is case-insensitive for search, and exact for status
- * @returns {Array} - Filtered array of inventory items
- */
-const filteredInventory = computed(() => {
-  return props.inventory.filter(item => {
+const filteredInventory = computed(() =>
+  props.inventory.filter(item => {
     const matchesSearch = item.item.toLowerCase().includes(searchQuery.value.toLowerCase())
     const matchesStatus = !filterStatus.value || item.status === filterStatus.value
     return matchesSearch && matchesStatus
   })
+)
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredInventory.value.length / itemsPerPage)))
+
+const paginatedInventory = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredInventory.value.slice(start, start + itemsPerPage)
 })
 
-/**
- * Computed property to get current ingredients for selected menu item
- * @returns {Array} - Ingredients linked to the currently selected menu
- */
+const visiblePages = computed(() => {
+  const pages = []
+  const max = 5
+  let start = Math.max(1, currentPage.value - Math.floor(max / 2))
+  let end = Math.min(totalPages.value, start + max - 1)
+  if (end - start < max - 1) start = Math.max(1, end - max + 1)
+  for (let i = start; i <= end; i++) pages.push(i)
+  return pages
+})
+
 const selectedMenuCurrentIngredients = computed(() => {
   if (!selectedMenuId.value) return []
   const menu = menuIngredientLinks.value.find(m => m.menu_id === Number(selectedMenuId.value))
   return menu?.ingredients || []
 })
 
-/**
- * Opens edit modal with selected item's data
- * Creates a copy of item data to avoid mutating original until save
- * @param {Object} item - Inventory item to edit
- */
-const handleEdit = (item) => {
-  editingItem.value = { ...item }
-  showEditModal.value = true
-}
+const handleEdit = (item) => { editingItem.value = { ...item }; showEditModal.value = true }
 
-/**
- * Submits edited item changes to parent component
- * Maps item data to correct field names and emits update event
- * Closes modal after submission
- */
 const handleEditSubmit = () => {
   if (editingItem.value) {
-    const itemToUpdate = {
+    emit('update-item', {
       id: editingItem.value.id || editingItem.value.inventory_id,
       item_name: editingItem.value.item || editingItem.value.item_name,
       quantity: editingItem.value.quantity,
       unit: editingItem.value.unit,
       threshold: editingItem.value.threshold
-    }
-    emit('update-item', itemToUpdate)
+    })
     closeEditModal()
   }
 }
 
-/**
- * Closes edit modal and clears editing state
- */
-const closeEditModal = () => {
-  showEditModal.value = false
-  editingItem.value = null
-  editImagePreview.value = ''
-}
+const closeEditModal = () => { showEditModal.value = false; editingItem.value = null; editImagePreview.value = '' }
 
-/**
- * Handles item deletion with user confirmation
- * Shows confirm dialog before deletion to prevent accidents
- * @param {number|string} item - Inventory item to delete
- */
 const handleDelete = (item) => {
-  const itemName = item.item || item.item_name
-  if (confirm(`Delete ${itemName}?`)) {
+  if (confirm(`Delete "${item.item || item.item_name}"?`))
     emit('delete-item', item.id || item.inventory_id)
-  }
 }
 
-/**
- * Submits new inventory item to parent component
- * Validates required fields before submission
- * Required: item name, unit, threshold and valid quantities >= 0
- * Emits add-item event with formatted data
- */
 const handleAddItem = () => {
   if (newItem.value.item && newItem.value.quantity >= 0 && newItem.value.unit && newItem.value.threshold >= 0) {
-    const itemToAdd = {
+    emit('add-item', {
       item_name: newItem.value.item,
       quantity: newItem.value.quantity,
       unit: newItem.value.unit,
       threshold: newItem.value.threshold
-    }
-    emit('add-item', itemToAdd)
+    })
     closeModal()
   }
 }
 
-/**
- * Closes add item modal and resets form to initial state
- */
 const closeModal = () => {
   showAddItemModal.value = false
-  newItem.value = {
-    item: '',
-    quantity: 0,
-    unit: '',
-    threshold: 0,
-    image_url: '',
-  }
+  newItem.value = { item: '', quantity: 0, unit: '', threshold: 0, image_url: '' }
   imagePreview.value = ''
 }
 
-/**
- * Fetches menu items with their linked ingredients
- * Shows which menu items will auto-deduct from inventory
- */
 const fetchMenuIngredientLinks = async () => {
   loadingLinks.value = true
   try {
-    const response = await fetch('http://localhost:8000/api/restaurant/menu-with-ingredients')
-    const data = await response.json()
-    
+    const res = await fetch('http://localhost:8000/api/restaurant/menu-with-ingredients')
+    const data = await res.json()
     if (data.success) {
-      // Filter out menu items that have no ingredients
-      menuIngredientLinks.value = data.data.filter(menu => {
-        return menu.ingredients && menu.ingredients.length > 0 && menu.ingredients[0]?.inventory_id
-      })
+      menuIngredientLinks.value = data.data.filter(m => m.ingredients?.length > 0 && m.ingredients[0]?.inventory_id)
     }
-  } catch (error) {
-    console.error('Error fetching menu links:', error)
-  } finally {
-    loadingLinks.value = false
-  }
+  } catch (e) { console.error(e) }
+  finally { loadingLinks.value = false }
 }
 
-/**
- * Fetches all available menu items from backend
- */
 const fetchAvailableMenus = async () => {
   try {
-    const response = await fetch('http://localhost:8000/api/restaurant/menu')
-    const data = await response.json()
-    
-    if (Array.isArray(data)) {
-      availableMenus.value = data
-    } else if (data.success && Array.isArray(data.data)) {
-      availableMenus.value = data.data
-    }
-  } catch (error) {
-    console.error('Error fetching menu items:', error)
-  }
+    const res = await fetch('http://localhost:8000/api/restaurant/menu')
+    const data = await res.json()
+    availableMenus.value = Array.isArray(data) ? data : (data.data || [])
+  } catch (e) { console.error(e) }
 }
 
-/**
- * Adds a single ingredient to the buffered ingredients list
- * Validates input before adding
- */
 const handleAddSingleIngredient = () => {
   if (!newIngredient.value.inventory_id || !newIngredient.value.quantity_needed) {
-    alert('Please select an inventory item and specify quantity')
+    alert('Please select an item and specify quantity')
     return
   }
-
-  const inventoryItem = props.inventory.find(
-    i => (i.id || i.inventory_id) === Number(newIngredient.value.inventory_id)
-  )
-
-  if (!inventoryItem) {
-    alert('Inventory item not found')
-    return
-  }
-
-  // Check if ingredient is already added
-  const alreadyAdded = selectedMenuCurrentIngredients.value.some(
-    ing => ing.inventory_id === Number(newIngredient.value.inventory_id)
-  )
-
-  if (alreadyAdded) {
-    alert('This ingredient is already linked to this menu item')
-    return
-  }
-
-  // Add to buffer
+  const invItem = props.inventory.find(i => (i.id || i.inventory_id) === Number(newIngredient.value.inventory_id))
+  if (!invItem) return
+  const already = selectedMenuCurrentIngredients.value.some(i => i.inventory_id === Number(newIngredient.value.inventory_id))
+  if (already) { alert('Already linked to this menu item'); return }
   addedIngredientsBuffer.value.push({
     inventory_id: Number(newIngredient.value.inventory_id),
     quantity_needed: newIngredient.value.quantity_needed,
-    item_name: inventoryItem.item || inventoryItem.item_name,
-    unit: inventoryItem.unit
+    item_name: invItem.item || invItem.item_name,
+    unit: invItem.unit
   })
-
-  // Reset input
   newIngredient.value = { inventory_id: '', quantity_needed: 0 }
 }
 
-/**
- * Submits all buffered ingredients to backend
- * Creates associations between menu item and inventory items
- */
 const handleAddMenuIngredient = async () => {
-  if (!selectedMenuId.value) {
-    alert('Please select a menu item')
+  if (!selectedMenuId.value || addedIngredientsBuffer.value.length === 0) {
+    alert('Please select a menu item and add at least one ingredient')
     return
   }
-
-  if (addedIngredientsBuffer.value.length === 0) {
-    alert('Please add at least one ingredient')
-    return
-  }
-
   try {
-    for (const ingredient of addedIngredientsBuffer.value) {
-      const response = await fetch(
-        `http://localhost:8000/api/restaurant/menu/${selectedMenuId.value}/ingredients`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            inventory_id: ingredient.inventory_id,
-            quantity_needed: ingredient.quantity_needed
-          })
-        }
-      )
-
-      const data = await response.json()
-      if (!data.success) {
-        console.error(`Error adding ingredient: ${data.message}`)
-      }
+    for (const ing of addedIngredientsBuffer.value) {
+      await fetch(`http://localhost:8000/api/restaurant/menu/${selectedMenuId.value}/ingredients`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inventory_id: ing.inventory_id, quantity_needed: ing.quantity_needed })
+      })
     }
-
-    // Refresh menu links and close modal
     await fetchMenuIngredientLinks()
     closeAddIngredientsModal()
     alert('Ingredients linked successfully!')
-  } catch (error) {
-    console.error('Error saving ingredients:', error)
-    alert('Error saving ingredients')
-  }
+  } catch (e) { console.error(e); alert('Error saving ingredients') }
 }
 
-/**
- * Removes an ingredient from a menu item
- */
-const handleRemoveIngredient = async (ingredientId) => {
-  if (!confirm('Remove this ingredient from the menu?')) return
-
+const handleRemoveIngredient = async (id) => {
+  if (!confirm('Remove this ingredient?')) return
   try {
-    const response = await fetch(
-      `http://localhost:8000/api/restaurant/menu-ingredients/${ingredientId}`,
-      { method: 'DELETE' }
-    )
-
-    const data = await response.json()
-    if (data.success) {
-      await fetchMenuIngredientLinks()
-      alert('Ingredient removed successfully!')
-    }
-  } catch (error) {
-    console.error('Error removing ingredient:', error)
-    alert('Error removing ingredient')
-  }
+    const res = await fetch(`http://localhost:8000/api/restaurant/menu-ingredients/${id}`, { method: 'DELETE' })
+    const data = await res.json()
+    if (data.success) { await fetchMenuIngredientLinks(); alert('Removed successfully!') }
+  } catch (e) { console.error(e) }
 }
 
-/**
- * Closes add ingredients modal and resets form
- */
 const closeAddIngredientsModal = () => {
   showAddIngredientsModal.value = false
   selectedMenuId.value = ''
@@ -894,1024 +507,663 @@ const closeAddIngredientsModal = () => {
   addedIngredientsBuffer.value = []
 }
 
-// Watch for modal open to fetch menus and links
-watch(showAddIngredientsModal, (newVal) => {
-  if (newVal) {
-    fetchAvailableMenus()
-    fetchMenuIngredientLinks()
-  }
-})
-
-// Watch for viewing menu links
-watch(showMenuIngredientsModal, (newVal) => {
-  if (newVal) {
-    fetchMenuIngredientLinks()
-  }
-})
-
-
+watch([searchQuery, filterStatus], () => { currentPage.value = 1 })
+watch(showAddIngredientsModal, v => { if (v) { fetchAvailableMenus(); fetchMenuIngredientLinks() } })
+watch(showMenuIngredientsModal, v => { if (v) fetchMenuIngredientLinks() })
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 .inventory-section {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e8edf8;
+  box-shadow: 0 1px 8px rgba(59, 103, 230, 0.06);
+  overflow: hidden;
 }
 
+/* ── Header ── */
 .section-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  justify-content: space-between;
+  padding: 1.5rem 1.75rem;
+  border-bottom: 1px solid #e8edf8;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f1b4c;
+  letter-spacing: -0.3px;
+}
+
+.section-subtitle {
+  font-size: 0.78rem;
+  color: #8b96b8;
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 .header-buttons {
   display: flex;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
-.section-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1F2937;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.section-title::before {
-  content: '';
-  display: inline-block;
-  width: 4px;
-  height: 2rem;
-  background: linear-gradient(180deg, #2B6CB0, #63B3ED);
-  border-radius: 2px;
-}
-
-.section-subtitle {
-  margin: 0.5rem 0 0 0;
-  color: #6B7280;
-  font-size: 0.95rem;
-}
-
-.btn-restock-all,
-.btn-add-item {
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-}
-
-.btn-restock-all {
-  background: linear-gradient(135deg, #2B6CB0, #1E40AF);
-}
-
-.btn-restock-all:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
-}
-
-.btn-add-item {
-  background: linear-gradient(135deg, #10B981, #059669);
-}
-
-.btn-add-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.stats-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-/* Auto-Deduction Banner Styles */
-.auto-deduction-banner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  animation: slideIn 0.5s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.banner-icon {
-  font-size: 3rem;
-  opacity: 0.9;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-}
-
-.banner-content {
-  flex: 1;
-}
-
-.banner-content h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.banner-content p {
-  margin: 0 0 1rem 0;
-  opacity: 0.95;
-  line-height: 1.5;
-}
-
-.banner-features {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.feature-badge {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  display: flex;
+/* Shared button base */
+.btn-header {
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.btn-view-links {
-  background: white;
-  color: #667eea;
-  border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1rem;
   border-radius: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
   cursor: pointer;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s;
+  border: none;
+  transition: all 0.18s;
   white-space: nowrap;
 }
 
-.btn-view-links:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+.btn-blue {
+  background: #3b67e6;
+  color: #fff;
+}
+.btn-blue:hover { background: #2d58d4; transform: translateY(-1px); }
+.btn-blue:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-outline-blue {
+  background: #eff4ff;
+  color: #3b67e6;
+  border: 1.5px solid #c7d7fd;
+}
+.btn-outline-blue:hover { background: #dde8ff; transform: translateY(-1px); }
+
+/* ── Stats Row ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: #e8edf8;
+  border-bottom: 1px solid #e8edf8;
 }
 
-.controls-container {
+.stat-card {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.1rem 1.5rem;
+  background: #fff;
+  transition: background 0.15s;
+}
+.stat-card:hover { background: #fafbff; }
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.icon-blue  { background: #eff4ff; color: #3b67e6; }
+.icon-green { background: #f0fdf4; color: #16a34a; }
+.icon-amber { background: #fffbeb; color: #d97706; }
+.icon-red   { background: #fef2f2; color: #dc2626; }
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f1b4c;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  color: #8b96b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 3px;
+}
+
+/* ── Controls ── */
+.controls-row {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.1rem 1.75rem;
+  border-bottom: 1px solid #e8edf8;
+  background: #fafbff;
   flex-wrap: wrap;
 }
 
-.search-box {
+.search-wrap {
   flex: 1;
-  min-width: 250px;
+  min-width: 200px;
+  position: relative;
   display: flex;
   align-items: center;
-  background: #F3F4F6;
-  border-radius: 8px;
-  padding: 0 1rem;
-  border: 1px solid #E5E7EB;
 }
 
-.search-box i {
-  color: #9CA3AF;
+.search-icon {
+  position: absolute;
+  left: 0.85rem;
+  color: #8b96b8;
+  font-size: 0.82rem;
 }
 
 .search-input {
-  border: none;
-  background: transparent;
-  padding: 0.75rem;
-  flex: 1;
-  font-size: 0.95rem;
+  width: 100%;
+  padding: 0.55rem 0.85rem 0.55rem 2.2rem;
+  border: 1.5px solid #e8edf8;
+  border-radius: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.87rem;
+  color: #0f1b4c;
+  background: #fff;
   outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
+.search-input:focus { border-color: #3b67e6; box-shadow: 0 0 0 3px rgba(59,103,230,0.1); }
 
 .filter-select {
-  padding: 0.75rem 1rem;
-  border: 1px solid #E5E7EB;
+  padding: 0.55rem 0.85rem;
+  border: 1.5px solid #e8edf8;
   border-radius: 8px;
-  background: white;
-  color: #374151;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.87rem;
+  color: #0f1b4c;
+  background: #fff;
   cursor: pointer;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-}
-
-.filter-select:hover {
-  border-color: #2B6CB0;
-}
-
-.filter-select:focus {
   outline: none;
-  border-color: #2B6CB0;
-  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+  transition: border-color 0.15s;
 }
+.filter-select:focus { border-color: #3b67e6; }
 
-.table-container {
+/* ── Table ── */
+.table-wrap {
   overflow-x: auto;
-  border-radius: 12px;
-  border: 1px solid #E5E7EB;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.inventory-table {
+.inv-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
 }
 
-.inventory-table thead {
-  background: linear-gradient(135deg, #2B6CB0 0%, #1E40AF 100%);
-  border-bottom: 3px solid #1E40AF;
+.inv-table thead tr {
+  background: #3b67e6;
 }
 
-.inventory-table th {
-  padding: 1.25rem 1rem;
+.inv-table th {
+  padding: 0.85rem 1.25rem;
   text-align: left;
+  font-size: 0.73rem;
   font-weight: 700;
-  color: white;
-  font-size: 0.85rem;
+  color: #fff;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
 }
 
-.inventory-table tbody tr {
-  border-bottom: 1px solid #E5E7EB;
-  transition: all 0.3s ease;
-  background: white;
+.inv-table tbody tr {
+  border-bottom: 1px solid #f0f4ff;
+  transition: background 0.15s;
+}
+.inv-table tbody tr:last-child { border-bottom: none; }
+.inv-table tbody tr:hover { background: #f5f8ff; }
+
+.inv-table td {
+  padding: 0.9rem 1.25rem;
+  font-size: 0.87rem;
+  color: #1e2a4a;
 }
 
-.inventory-table tbody tr:hover {
-  background: #F0F9FF;
-  box-shadow: inset 0 0 0 1px #DBEAFE;
-}
-
-.inventory-table tbody tr.status-low {
-  border-left: 4px solid #EF4444;
-}
-
-.inventory-table tbody tr.status-good {
-  border-left: 4px solid #10B981;
-}
-
-.inventory-table td {
-  padding: 1.25rem 1rem;
-  color: #1F2937;
-  font-size: 0.95rem;
-}
-
-.item-name {
-  font-weight: 700;
+.td-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  color: #1F2937;
+  gap: 0.6rem;
+  font-weight: 600;
+  color: #0f1b4c;
 }
 
-.item-name i {
-  color: #2B6CB0;
-  font-size: 1.1rem;
-}
-
-.quantity {
-  text-align: center;
-}
-
-.qty-value {
-  background: linear-gradient(135deg, #EEF2FF, #DBEAFE);
-  color: #1E40AF;
-  padding: 0.5rem 0.875rem;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
-}
-
-.unit {
-  text-align: center;
-  color: #6B7280;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.progress-cell {
-  width: 150px;
-}
-
-.progress-bar {
-  width: 100%;
+.item-dot {
+  width: 8px;
   height: 8px;
-  background: #E5E7EB;
-  border-radius: 4px;
-  overflow: hidden;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-good     { background: #10b981; }
+.dot-low      { background: #f59e0b; }
+.dot-critical { background: #ef4444; }
+
+.td-center { text-align: center; }
+.td-unit   { color: #8b96b8; font-weight: 500; }
+.td-muted  { color: #8b96b8; }
+
+.qty-badge {
+  display: inline-block;
+  background: #eff4ff;
+  color: #3b67e6;
+  padding: 0.25rem 0.7rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.85rem;
 }
 
-.progress-fill {
-  height: 100%;
-  transition: width 0.3s ease;
-  border-radius: 4px;
-}
-
-.actions-cell {
+.action-row {
   display: flex;
-  gap: 0.75rem;
-  justify-content: center;
+  gap: 0.4rem;
 }
 
-.btn-action {
-  width: 40px;
-  height: 40px;
+.act-btn {
+  width: 34px;
+  height: 34px;
   border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-  font-size: 0.95rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: all 0.18s;
 }
 
-.btn-restock {
-  background: linear-gradient(135deg, #DBEAFE, #BAE6FD);
-  color: #0284C7;
-}
+.act-edit   { background: #fef9ec; color: #d97706; }
+.act-edit:hover   { background: #fde68a; transform: translateY(-1px); }
+.act-delete { background: #fef2f2; color: #dc2626; }
+.act-delete:hover { background: #fecaca; transform: translateY(-1px); }
 
-.btn-restock:hover {
-  background: linear-gradient(135deg, #BAE6FD, #7DD3FC);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(2, 132, 199, 0.2);
-}
-
-.btn-edit {
-  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
-  color: #B45309;
-}
-
-.btn-edit:hover {
-  background: linear-gradient(135deg, #FDE68A, #FCD34D);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(217, 119, 6, 0.2);
-}
-
-.btn-delete {
-  background: linear-gradient(135deg, #FEE2E2, #FECACA);
-  color: #B91C1C;
-}
-
-.btn-delete:hover {
-  background: linear-gradient(135deg, #FECACA, #FCA5A5);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.2);
-}
-
+/* ── Empty State ── */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
-  color: #9CA3AF;
+  padding: 4rem 2rem;
   text-align: center;
 }
 
-.empty-state i {
-  font-size: 3rem;
+.empty-icon {
+  width: 56px;
+  height: 56px;
+  background: #f0f4ff;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b67e6;
+  font-size: 1.4rem;
   margin-bottom: 1rem;
-  opacity: 0.5;
 }
 
-/* Modal Styles */
+.empty-title { font-weight: 700; color: #0f1b4c; margin-bottom: 0.25rem; }
+.empty-sub   { font-size: 0.82rem; color: #8b96b8; }
+
+
+
+/* ── Modal ── */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(15, 27, 76, 0.35);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 1rem;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.2s ease;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
-  max-width: 500px;
+.modal-box {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(15, 27, 76, 0.15);
   width: 100%;
-  animation: slideUp 0.3s ease;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.22s ease;
 }
+
+.modal-wide { max-width: 820px; }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.modal-header {
+.modal-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #E5E7EB;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e8edf8;
 }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: #1F2937;
+.modal-head h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f1b4c;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.btn-close {
-  background: none;
+.modal-close {
+  background: #f0f4ff;
   border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  color: #3b67e6;
+  font-size: 0.85rem;
   cursor: pointer;
-  color: #6B7280;
-  font-size: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.3s;
+  transition: background 0.15s;
 }
+.modal-close:hover { background: #dde8ff; }
 
-.btn-close:hover {
-  color: #1F2937;
-}
-
-.modal-form {
+.modal-body {
   padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
+.form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.form-group label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #4b5a7a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
+
+.req { color: #ef4444; }
+
+.form-input {
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid #e8edf8;
+  border-radius: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.87rem;
+  color: #0f1b4c;
+  background: #fafbff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+.form-input:focus { border-color: #3b67e6; box-shadow: 0 0 0 3px rgba(59,103,230,0.1); background: #fff; }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: #374151;
-  font-size: 0.95rem;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-  box-sizing: border-box;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #2B6CB0;
-  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1);
+  gap: 0.85rem;
 }
 
 .form-hint {
-  display: block;
+  font-size: 0.75rem;
+  color: #8b96b8;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f0f4ff;
   margin-top: 0.5rem;
-  color: #6B7280;
-  font-size: 0.85rem;
-}
-
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #E5E7EB;
-}
-
-.btn-cancel,
-.btn-submit {
-  flex: 1;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
 }
 
 .btn-cancel {
-  background: #F3F4F6;
-  color: #374151;
-}
-
-.btn-cancel:hover {
-  background: #E5E7EB;
-}
-
-.btn-submit {
-  background: linear-gradient(135deg, #10B981, #059669);
-  color: white;
-}
-
-.btn-submit:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1rem;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  max-width: 500px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #E5E7EB;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: #1F2937;
-}
-
-.btn-close {
-  background: none;
+  padding: 0.55rem 1.1rem;
+  background: #f0f4ff;
+  color: #4b5a7a;
   border: none;
-  cursor: pointer;
-  color: #6B7280;
-  font-size: 1.5rem;
-  padding: 0;
-}
-
-.btn-close:hover {
-  color: #1F2937;
-}
-
-.form-hint {
-  display: block;
-  margin-top: 0.25rem;
-  color: #6B7280;
-  font-size: 0.85rem;
-}
-
-@media (max-width: 768px) {
-  .inventory-section {
-    padding: 1.5rem;
-  }
-
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .header-buttons {
-    width: 100%;
-    flex-direction: column;
-  }
-
-  .header-buttons button {
-    width: 100%;
-  }
-
-  .stats-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-
-  .controls-container {
-    flex-direction: column;
-  }
-
-  .search-box {
-    min-width: auto;
-  }
-
-  .filter-select {
-    width: 100%;
-  }
-
-  .inventory-table {
-    font-size: 0.9rem;
-  }
-
-  .inventory-table th,
-  .inventory-table td {
-    padding: 0.75rem;
-  }
-
-  .section-title {
-    font-size: 1.5rem;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .stats-container {
-    grid-template-columns: 1fr;
-  }
-
-  .actions-cell {
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .btn-action {
-    width: 32px;
-    height: 32px;
-    font-size: 0.75rem;
-  }
-
-  .modal-content {
-    border-radius: 8px;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-}
-
-/* Menu Ingredients Modal Styles */
-.modal-large {
-  z-index: 1001;
-}
-
-.modal-wide {
-  max-width: 900px;
-  max-height: 85vh;
-  overflow-y: auto;
-}
-
-.info-box {
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
   border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-cancel:hover { background: #e2e9f8; }
+
+/* ── Info Banner ── */
+.info-banner {
   display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: #eff4ff;
+  border: 1px solid #c7d7fd;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  font-size: 0.83rem;
+  color: #2d58d4;
+  margin-bottom: 1.25rem;
+}
+
+.state-center {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  color: #1E40AF;
+  padding: 2.5rem;
+  color: #8b96b8;
+  gap: 0.5rem;
+  font-size: 0.9rem;
 }
 
-.info-box i {
-  font-size: 1.25rem;
-}
-
-.loading-state {
-  text-align: center;
-  padding: 3rem;
-  color: #6B7280;
-  font-size: 1.1rem;
-}
-
-.loading-state i {
-  margin-right: 0.5rem;
-}
-
-.empty-links {
-  text-align: center;
-  padding: 3rem;
-  color: #9CA3AF;
-}
-
-.empty-links i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.5;
-}
-
-.empty-links p {
-  font-size: 1.1rem;
-  margin: 0.5rem 0;
-}
-
-.empty-links small {
-  color: #6B7280;
-}
-
+/* ── Links Grid ── */
 .links-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
 }
 
 .menu-card {
-  background: white;
-  border: 1px solid #E5E7EB;
-  border-radius: 12px;
-  padding: 1.25rem;
-  transition: all 0.3s;
+  border: 1px solid #e8edf8;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-.menu-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.menu-header {
+.menu-card-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #F3F4F6;
-}
-
-.menu-header h4 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #1F2937;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.menu-category {
-  background: #DBEAFE;
-  color: #1E40AF;
-  padding: 0.3rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.ingredients-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.ingredient-item {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.75rem;
-  background: #F9FAFB;
-  border-radius: 8px;
-  font-size: 0.9rem;
-}
-
-.ing-name {
-  font-weight: 600;
-  color: #374151;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.ing-name i {
-  color: #6B7280;
-}
-
-.ing-quantity {
-  color: #6B7280;
-  white-space: nowrap;
-}
-
-.ing-quantity small {
-  color: #9CA3AF;
-  font-size: 0.75rem;
-}
-
-.ing-status {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.ing-status.status-good {
-  background: #D1FAE5;
-  color: #065F46;
-}
-
-.ing-status.status-low {
-  background: #FEF3C7;
-  color: #92400E;
-}
-
-.ing-status.status-critical {
-  background: #FEE2E2;
-  color: #991B1B;
-}
-
-@media (max-width: 768px) {
-  .links-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .ingredient-item {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-  
-  .auto-deduction-banner {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .banner-icon {
-    font-size: 2rem;
-  }
-}
-
-/* Add Ingredients to Menu Modal Styles */
-.ingredient-input-row {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-
-.btn-action-add {
   padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #10B981, #059669);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
+  background: #f5f8ff;
+  border-bottom: 1px solid #e8edf8;
+}
+
+.menu-name { font-weight: 700; font-size: 0.88rem; color: #0f1b4c; }
+
+.menu-cat {
+  background: #eff4ff;
+  color: #3b67e6;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ing-list { padding: 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; }
+
+.ing-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: all 0.3s;
+  padding: 0.5rem 0.6rem;
+  background: #fafbff;
+  border-radius: 7px;
+  font-size: 0.82rem;
+}
+
+.ing-name { flex: 1; font-weight: 600; color: #1e2a4a; display: flex; align-items: center; gap: 0.4rem; }
+.ing-name i { color: #8b96b8; font-size: 0.75rem; }
+.ing-qty  { color: #8b96b8; white-space: nowrap; }
+
+.ing-avail {
+  padding: 0.15rem 0.55rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
   white-space: nowrap;
 }
+.status-good     { background: #d1fae5; color: #065f46; }
+.status-low      { background: #fef3c7; color: #92400e; }
+.status-critical { background: #fee2e2; color: #991b1b; }
 
-.btn-action-add:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-
-.ingredient-preview {
-  background: #F0FDF4;
-  border: 1px solid #BBEF63;
+/* ── Ingredient Preview ── */
+.ing-preview-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
   border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  padding: 0.85rem;
 }
 
-.ingredient-preview h4 {
-  margin: 0 0 0.75rem 0;
-  color: #16A34A;
-  font-size: 0.95rem;
+.ing-preview-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #16a34a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.6rem;
 }
 
-.ingredient-list-view {
+.ing-preview-row {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.ingredient-preview-item {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  background: white;
-  padding: 0.75rem;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  background: #fff;
   border-radius: 6px;
-  border-left: 3px solid #10B981;
-  font-size: 0.9rem;
-}
-
-.qty-badge {
-  background: #DBEAFE;
-  color: #1E40AF;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-weight: 600;
+  margin-bottom: 0.4rem;
   font-size: 0.85rem;
 }
+.ing-preview-row:last-child { margin-bottom: 0; }
+.ing-preview-row span:first-child { flex: 1; font-weight: 600; color: #0f1b4c; }
 
-.btn-remove-ing {
-  background: #FEE2E2;
-  color: #B91C1C;
+.qty-chip {
+  background: #eff4ff;
+  color: #3b67e6;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.btn-rm {
+  background: #fef2f2;
+  color: #dc2626;
   border: none;
-  padding: 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  font-size: 0.72rem;
+  transition: background 0.15s;
+}
+.btn-rm:hover { background: #fecaca; }
+
+.ing-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
-.btn-remove-ing:hover {
-  background: #FCA5A5;
+.qty-short { width: 90px; flex-shrink: 0; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .section-header { flex-direction: column; align-items: flex-start; }
+  .header-buttons { width: 100%; }
+  .btn-header { flex: 1; justify-content: center; }
+  .form-row { grid-template-columns: 1fr; }
+  .links-grid { grid-template-columns: 1fr; }
+  .ing-input-row { flex-wrap: wrap; }
+  .qty-short { width: 100%; }
 }
 
-.form-submit:disabled {
-  opacity: 0.5;
+/* ── Pagination ── */
+.table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.75rem;
+  border-top: 1px solid #e8edf8;
+  background: #fafbff;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.footer-info {
+  font-size: 0.78rem;
+  color: #8b96b8;
+  font-weight: 500;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pg-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.5rem;
+  border: 1.5px solid #e8edf8;
+  border-radius: 7px;
+  background: #fff;
+  color: #4b5a7a;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.pg-btn:hover:not(:disabled) {
+  border-color: #3b67e6;
+  color: #3b67e6;
+  background: #eff4ff;
+}
+
+.pg-btn.active {
+  background: #3b67e6;
+  border-color: #3b67e6;
+  color: #fff;
+}
+
+.pg-btn:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .ingredient-input-row {
-    flex-direction: column;
-  }
-
-  .ingredient-input-row input,
-  .ingredient-input-row select {
-    width: 100%;
-  }
-
-  .btn-action-add {
-    width: 100%;
-  }
-}
 </style>

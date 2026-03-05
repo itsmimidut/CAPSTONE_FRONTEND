@@ -128,7 +128,10 @@
       :check-out="checkOut"
       :current-month="currentMonth"
       :occupied-dates="occupiedDates"
-      :room-item-ids="roomItemIds"
+      :room-item-ids="roomItemIds"  
+      :booked-items="bookedItems"
+      :all-rooms="itemData.rooms"
+      :validation-error="calendarError"
       @close="showCalendar = false"
       @select-date="selectDate"
       @prev-month="prevMonth"
@@ -489,6 +492,7 @@ export default {
       children: 0,
       booking: [],
       occupiedDates: [],
+      calendarError: null,
       navItems: ['Home', 'Amenities', 'Rates', 'Reservation', 'Gallery', 'Contact', 'About'],
       itemData: {
         rooms: [],
@@ -540,6 +544,23 @@ export default {
     roomItemIds() {
       return this.itemData.rooms.map(room => room.item_id).filter(Boolean)
     },
+    bookedItemIds() {
+      // Return IDs of items currently in booking that require dates (perNight items)
+      return this.booking
+        .filter(b => b.item.perNight)
+        .map(b => b.item.item_id || b.item.id)
+        .filter(Boolean)
+    },
+    bookedItems() {
+      // Return full item objects (not just IDs) for items in booking with date requirements
+      return this.booking
+        .filter(b => b.item.perNight)
+        .map(b => ({
+          item_id: b.item.item_id || b.item.id,
+          category: b.item.category || b.item.name,
+          name: b.item.name
+        }))
+    },
     sortedSwimmingDates() {
       // Sort swimming dates chronologically
       return [...this.swimmingFormData.dates].sort((a, b) => new Date(a) - new Date(b))
@@ -552,14 +573,41 @@ export default {
         const response = await fetch(`${this.apiBaseUrl}/bookings/occupied-dates`)
         const data = await response.json()
         if (data.success) {
-          this.occupiedDates = data.data.map(item => ({
-            inventoryItemId: item.inventory_item_id,
-            occupiedDate: item.occupied_date
+          // Backend returns { occupiedDates: [...], totalCount, bookingsAffecting }
+          this.occupiedDates = (data.data.occupiedDates || []).map(item => ({
+            inventoryItemId: item.inventoryItemId,
+            date: item.date,
+            occupiedDate: item.date,
+            status: item.status
           }))
+          console.log(`✅ Loaded ${this.occupiedDates.length} total occupied dates`)
         }
       } catch (error) {
         console.error('Error fetching occupied dates:', error)
         this.occupiedDates = []
+      }
+    },
+    async fetchOccupiedDatesForItem(itemId) {
+      // Fetch occupied dates for a SPECIFIC item (for calendar blocking)
+      try {
+        console.log(`📅 Fetching occupied dates for item ${itemId}...`)
+        const response = await fetch(`${this.apiBaseUrl}/bookings/occupied-dates/${itemId}`)
+        const data = await response.json()
+        if (data.success) {
+          // Backend returns { itemId, occupiedDates: [...], totalCount, bookingsAffecting }
+          // Map occupiedDates array to our format
+          this.occupiedDates = (data.data.occupiedDates || []).map(dateItem => ({
+            inventoryItemId: itemId,
+            date: dateItem.date,
+            occupiedDate: dateItem.date,
+            status: dateItem.status
+          }))
+          console.log(`✅ Loaded ${this.occupiedDates.length} occupied dates for item ${itemId}`)
+          console.log('📊 Occupied dates:', this.occupiedDates)
+        }
+      } catch (error) {
+        console.error(`Error fetching occupied dates for item ${itemId}:`, error)
+        // Don't clear occupiedDates on error - keep showing all dates as safe
       }
     },
     async fetchInventoryItems() {
@@ -700,7 +748,9 @@ export default {
       }
     },
     selectDate(date) {
+      console.log(`📅 Date selected: ${date.toLocaleDateString()}`);
       if (this.isAnySelectedRoomBookedOnDate(date)) {
+        console.log(`⛔ Date ${date.toLocaleDateString()} is fully booked!`);
         this.showNotification('Room fully booked for the selected date', 'error')
         return
       }
@@ -710,6 +760,8 @@ export default {
         this.checkOut = null
       } else if (date > this.checkIn) {
         this.checkOut = date
+        // Validate immediately after checkout date is selected
+        this.validateDatesOnSelection()
       } else {
         this.checkIn = date
         this.checkOut = null
@@ -719,12 +771,18 @@ export default {
       const dateStr = new Date(date).toDateString()
       const roomId = Number(roomItemId)
 
+      console.log(`  🔎 isRoomBookedOnDate: roomId=${roomId}, dateStr=${dateStr}, checking ${this.occupiedDates.length} occupied dates`);
+
       return this.occupiedDates.some(entry => {
         const inventoryId = Number(entry.inventoryItemId ?? entry.inventory_item_id)
         if (inventoryId !== roomId) return false
 
-        const occupiedDate = new Date(entry.occupiedDate ?? entry.occupied_date)
-        return occupiedDate.toDateString() === dateStr
+        const occupiedDate = new Date(entry.occupiedDate ?? entry.occupied_date ?? entry.date)
+        const occupiedDateStr = occupiedDate.toDateString()
+        
+        console.log(`    - Occupied: inventoryId=${inventoryId}, occupiedDateStr=${occupiedDateStr}, match=${occupiedDateStr === dateStr}`);
+
+        return occupiedDateStr === dateStr
       })
     },
     isAnySelectedRoomBookedOnDate(date) {
@@ -733,9 +791,20 @@ export default {
         return categoryType === 'room' || categoryType === 'rooms'
       })
 
-      if (selectedRooms.length === 0) return false
+      console.log(`🔍 Checking ${selectedRooms.length} selected rooms for date ${date.toLocaleDateString()}`);
 
-      return selectedRooms.some(b => this.isRoomBookedOnDate(b.item.item_id, date))
+      if (selectedRooms.length === 0) {
+        console.log('  ℹ️ No rooms in booking');
+        return false
+      }
+
+      const isBooked = selectedRooms.some(b => {
+        const booked = this.isRoomBookedOnDate(b.item.item_id, date);
+        console.log(`  - Room ${b.item.item_id} (${b.item.name}): ${booked ? '❌ BOOKED' : '✓ AVAILABLE'}`);
+        return booked;
+      });
+
+      return isBooked;
     },
     prevMonth() {
       this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth() - 1)
@@ -777,6 +846,13 @@ export default {
         this.booking.push({ item, qty, guests })
         this.showNotification(`Added: ${item.name} to booking`, 'success')
       }
+
+      // Fetch occupied dates for this specific item
+      if (item.perNight && item.item_id) {
+        this.fetchOccupiedDatesForItem(item.item_id)
+        // Validate immediately after adding item
+        this.validateDatesOnSelection()
+      }
       
       // Save to localStorage with complete booking data
       const bookingData = {
@@ -798,9 +874,111 @@ export default {
         }
       }, 100)
     },
+    /**
+     * Validate dates immediately when selecting dates or adding items
+     * Shows error in calendar if conflicts found
+     */
+    validateDatesOnSelection() {
+      if (!this.checkIn || !this.checkOut) return
+      
+      const conflicts = this.validateBookingDates()
+      if (conflicts.length > 0) {
+        const itemConflicts = {}
+        conflicts.forEach(c => {
+          if (!itemConflicts[c.itemName]) {
+            itemConflicts[c.itemName] = []
+          }
+          itemConflicts[c.itemName].push(new Date(c.date).toLocaleDateString())
+        })
+        
+        const conflictMsg = Object.entries(itemConflicts)
+          .map(([item, dates]) => `${item}: ${dates.join(', ')}`)
+          .join(' | ')
+        
+        // Set error in calendar instead of showing notification
+        this.calendarError = conflictMsg
+        // Remove error after 5 seconds if not closed
+        setTimeout(() => {
+          if (this.calendarError === conflictMsg) {
+            this.calendarError = null
+          }
+        }, 5000)
+      } else {
+        // Clear error if dates are valid
+        this.calendarError = null
+      }
+    },
+    
+    /**
+     * Validate that booked dates don't conflict with occupied dates
+     * @returns {Array} Array of conflicts with {itemId, itemName, date}
+     */
+    validateBookingDates() {
+      if (!this.checkIn || !this.checkOut) return []
+      
+      const conflicts = []
+      const selectedDates = this.getDateRange(this.checkIn, this.checkOut)
+      
+      // For each booked item, check if ALL rooms of that category are occupied
+      this.booking.forEach(bookingItem => {
+        if (!bookingItem.item.perNight) return // Skip items without dates
+        
+        const itemCategory = bookingItem.item.category
+        const itemId = bookingItem.item.item_id || bookingItem.item.id
+        
+        // Get all rooms of this category
+        const roomsOfCategory = this.itemData.rooms?.filter(r => r.category === itemCategory) || []
+        const totalRoomsOfCategory = roomsOfCategory.length
+        
+        if (totalRoomsOfCategory === 0) return
+        
+        selectedDates.forEach(selectedDate => {
+          const selectedDateStr = selectedDate.toISOString().split('T')[0]
+          
+          // Count how many rooms of this category are occupied on this date
+          const occupiedCount = this.occupiedDates.filter(occ => {
+            const occupiedItemId = occ.inventoryItemId || occ.inventory_item_id
+            const occupiedDateStr = (occ.occupiedDate || occ.occupied_date || occ.date)?.split('T')[0]
+            
+            // Check if this occupied room belongs to same category
+            const roomOfCategory = roomsOfCategory.find(r => r.item_id === occupiedItemId)
+            return occupiedDateStr === selectedDateStr && roomOfCategory
+          }).length
+          
+          // Only block if ALL rooms of this category are occupied
+          if (occupiedCount >= totalRoomsOfCategory) {
+            conflicts.push({
+              itemId,
+              itemName: bookingItem.item.name,
+              date: selectedDate
+            })
+          }
+        })
+      })
+      
+      return conflicts
+    },
+
+    /**
+     * Get all dates between check-in and check-out (exclusive of check-out)
+     */
+    getDateRange(start, end) {
+      const dates = []
+      const current = new Date(start)
+      const checkOut = new Date(end)
+      
+      while (current < checkOut) {
+        dates.push(new Date(current))
+        current.setDate(current.getDate() + 1)
+      }
+      
+      return dates
+    },
+
     removeFromBooking(itemId) {
       const item = this.booking.find(b => b.item.id === itemId)
       this.booking = this.booking.filter(b => b.item.id !== itemId)
+      
       if (item) {
         this.showNotification(`Removed: ${item.item.name}`, 'info')
       }
@@ -822,17 +1000,56 @@ export default {
         console.log('💾 Updated booking in localStorage:', this.booking.length, 'items')
       }
     },
+    restoreBookingFromStorage() {
+      const savedBooking = localStorage.getItem('pendingBooking')
+      console.log('🔍 Restoring from storage, savedBooking exists:', !!savedBooking)
+      
+      if (savedBooking) {
+        try {
+          const data = JSON.parse(savedBooking)
+          console.log('📦 Parsed data:', { hasCheckIn: !!data.checkIn, hasCheckOut: !!data.checkOut, hasItems: !!data.items })
+          
+          // Restore dates and booking items from saved data
+          if (data.checkIn) {
+            const checkInDate = new Date(data.checkIn)
+            this.checkIn = checkInDate
+            console.log('📅 Restored Check-in:', checkInDate, 'Valid:', !isNaN(checkInDate))
+          }
+          if (data.checkOut) {
+            const checkOutDate = new Date(data.checkOut)
+            this.checkOut = checkOutDate
+            console.log('📅 Restored Check-out:', checkOutDate, 'Valid:', !isNaN(checkOutDate))
+          }
+          if (data.adults) this.adults = data.adults
+          if (data.children) this.children = data.children
+          if (data.items && data.items.length > 0) {
+            this.booking = data.items
+            console.log('✅ Restored booking:', this.booking.length, 'items')
+            console.log('✅ Current state: checkIn =', this.checkIn, ', checkOut =', this.checkOut)
+          } else {
+            console.warn('⚠️ No items found in saved booking')
+          }
+        } catch (e) {
+          console.error('❌ Error loading booking from storage:', e)
+          localStorage.removeItem('pendingBooking')
+        }
+      } else {
+        console.log('📝 No saved booking in localStorage')
+      }
+    },
     clearBooking() {
       this.booking = []
+      this.checkIn = null
+      this.checkOut = null
       localStorage.removeItem('pendingBooking')
       this.showNotification('Booking cleared', 'info')
-      console.log('🗑️ Cleared all bookings and localStorage')
+      console.log('🗑️ Cleared all bookings, dates, and localStorage')
     },
     openViewMore(item) {
       this.selectedItem = item
       this.showViewMore = true
     },
-    proceedToCheckout() {
+    async proceedToCheckout() {
       // Validate booking
       if (this.booking.length === 0) {
         this.showNotification('Please add items to your booking first', 'error')
@@ -843,6 +1060,24 @@ export default {
       const hasPerNightItems = this.booking.some(b => b.item.perNight)
       if (hasPerNightItems && (!this.checkIn || !this.checkOut)) {
         this.showNotification('Please select check-in and check-out dates', 'error')
+        return
+      }
+
+      // Final check: Validate no conflicts exist before proceeding to payment
+      const dateConflicts = this.validateBookingDates()
+      if (dateConflicts.length > 0) {
+        this.showNotification(
+          'Selected dates are no longer available',
+          'error'
+        )
+        return
+      }
+
+      // Prepare booking data for the confirmation page
+      // Final server-side availability check to prevent race conditions
+      const serverConflicts = await this.checkServerAvailability()
+      if (serverConflicts.length > 0) {
+        this.showNotification('Selected dates are no longer available', 'error')
         return
       }
 
@@ -863,6 +1098,42 @@ export default {
 
       // Navigate directly to booking confirmation page
       this.$router.push('/booking-confirmation')
+    },
+    /**
+     * Server-side availability check per-item using the occupied-dates endpoint
+     * Returns array of conflicts: { itemId, itemName, date }
+     */
+    async checkServerAvailability() {
+      if (!this.checkIn || !this.checkOut) return []
+
+      const selectedDates = this.getDateRange(this.checkIn, this.checkOut).map(d => d.toISOString().split('T')[0])
+      const conflicts = []
+
+      for (const bookingItem of this.booking) {
+        if (!bookingItem.item.perNight) continue
+
+        const itemId = bookingItem.item.item_id || bookingItem.item.id
+        if (!itemId) continue
+
+        try {
+          const resp = await fetch(`${this.apiBaseUrl}/bookings/occupied-dates/${itemId}`)
+          const data = await resp.json()
+          if (data.success && Array.isArray(data.data)) {
+            data.data.forEach(occ => {
+              const occDate = occ.date || occ.occupiedDate || occ.occupied_date || occ
+              const occStr = (typeof occDate === 'string') ? occDate.split('T')[0] : null
+              if (occStr && selectedDates.includes(occStr)) {
+                conflicts.push({ itemId, itemName: bookingItem.item.name, date: occStr })
+              }
+            })
+          }
+        } catch (err) {
+          console.error('Error checking server availability for item', itemId, err)
+          // don't block on errors; we will still rely on client-side checks
+        }
+      }
+
+      return conflicts
     },
     submitContactForm() {
       // Validate contact form
@@ -1187,6 +1458,19 @@ export default {
       this.swimmingFormData = { participants: 1, date: '', time: '' }
     }
   },
+  watch: {
+    // Watch for route changes to handle returning from edit/confirmation
+    $route: {
+      handler(newRoute) {
+        if (newRoute.query.activeSection === 'book') {
+          console.log('🔄 Route updated to edit mode, restoring booking...')
+          this.$nextTick(() => {
+            this.restoreBookingFromStorage()
+          })
+        }
+      }
+    }
+  },
   mounted() {
     // Check if we're coming from Swimming page
     if (this.$route.query.service === 'swimming') {
@@ -1195,30 +1479,12 @@ export default {
       console.log('🏊 Switched to Swimming tab from query parameter')
     }
     
-    // Check if we're coming from Edit mode (activeSection='book' query parameter)
-    const isEditMode = this.$route.query.activeSection === 'book';
+    // Initial load from localStorage
+    this.restoreBookingFromStorage()
     
-    // Load booking from localStorage if we're in edit mode
-    const savedBooking = localStorage.getItem('pendingBooking')
-    if (savedBooking && isEditMode) {
-      try {
-        const data = JSON.parse(savedBooking)
-        if (data.checkIn) this.checkIn = new Date(data.checkIn)
-        if (data.checkOut) this.checkOut = new Date(data.checkOut)
-        if (data.adults) this.adults = data.adults
-        if (data.children) this.children = data.children
-        if (data.items && data.items.length > 0) {
-          this.booking = data.items
-          console.log('📋 Loaded booking from localStorage (Edit mode):', this.booking.length, 'items')
-        }
-      } catch (e) {
-        console.error('Error loading booking from localStorage:', e)
-      }
-    } else if (!isEditMode) {
-      // Only clear localStorage if NOT in edit mode (fresh page load)
-      localStorage.removeItem('pendingBooking')
-      console.log('🗑️ Cleared previous booking from localStorage (Fresh load)')
-    }
+    // Fetch data from API
+    this.fetchInventoryItems()
+    this.fetchOccupiedDates()
     
     // Initialize swimming programs
     this.itemData.swimming = [

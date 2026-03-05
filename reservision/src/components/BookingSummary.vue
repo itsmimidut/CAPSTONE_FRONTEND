@@ -25,21 +25,21 @@
     <!-- Content -->
     <div class="p-5">
       <!-- Date Summary -->
-      <div v-if="checkIn || checkOut" class="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+      <div v-if="validCheckIn || validCheckOut" class="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
         <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
           <i class="fas fa-calendar-alt text-blue-600"></i>
           Stay Duration
         </div>
         <div class="text-xs text-gray-600 space-y-1">
-          <div v-if="checkIn">
+          <div v-if="validCheckIn">
             <span class="font-medium">Check-in:</span> 
-            {{ checkIn.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
+            {{ validCheckIn.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
           </div>
-          <div v-if="checkOut">
+          <div v-if="validCheckOut">
             <span class="font-medium">Check-out:</span> 
-            {{ checkOut.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
+            {{ validCheckOut.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
           </div>
-          <div v-if="checkIn && checkOut" class="pt-2 border-t border-blue-200">
+          <div v-if="validCheckIn && validCheckOut" class="pt-2 border-t border-blue-200">
             <span class="text-blue-700 font-bold text-sm">{{ nights }} night{{ nights !== 1 ? 's' : '' }}</span>
           </div>
         </div>
@@ -259,7 +259,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 // Track which swimming bookings are expanded
 const expandedSwimmingBookings = ref([])
@@ -270,11 +270,11 @@ const props = defineProps({
     default: () => []
   },
   checkIn: {
-    type: Date,
+    type: [Date, String],
     default: null
   },
   checkOut: {
-    type: Date,
+    type: [Date, String],
     default: null
   },
   subtotal: {
@@ -289,12 +289,37 @@ const props = defineProps({
 
 const emit = defineEmits(['remove', 'clear', 'checkout'])
 
+// Convert checkIn to Date if it's a string
+const validCheckIn = computed(() => {
+  if (!props.checkIn) return null
+  if (props.checkIn instanceof Date) return props.checkIn
+  return new Date(props.checkIn)
+})
+
+// Convert checkOut to Date if it's a string
+const validCheckOut = computed(() => {
+  if (!props.checkOut) return null
+  if (props.checkOut instanceof Date) return props.checkOut
+  return new Date(props.checkOut)
+})
+
 // Calculate number of nights
 const nights = computed(() => {
-  if (!props.checkIn || !props.checkOut) return 0
-  const diff = props.checkOut - props.checkIn
+  if (!validCheckIn.value || !validCheckOut.value) return 0
+  const diff = validCheckOut.value - validCheckIn.value
   return Math.ceil(diff / 86400000)
 })
+
+// Watch for date changes to help with debugging
+watch(() => [props.checkIn, props.checkOut], (newDates) => {
+  console.log('📅 BookingSummary dates updated:', {
+    checkInRaw: newDates[0],
+    checkOutRaw: newDates[1],
+    checkInValid: validCheckIn.value,
+    checkOutValid: validCheckOut.value,
+    nights: nights.value
+  })
+}, { deep: true })
 
 // Get all swimming bookings
 const swimmingBookings = computed(() => {

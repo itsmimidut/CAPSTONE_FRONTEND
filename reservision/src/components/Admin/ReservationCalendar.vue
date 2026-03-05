@@ -165,6 +165,25 @@
         </div>
       </div>
 
+      <!-- Occupancy Legend -->
+      <div class="occupancy-legend">
+        <div class="legend-title">Occupancy Status:</div>
+        <div class="legend-items">
+          <div class="legend-item">
+            <div class="legend-dot occupancy-available"></div>
+            <span>Available (0-39%)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot occupancy-partial"></div>
+            <span>Partial (40-79%)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot occupancy-full"></div>
+            <span>Full (80-100%)</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Calendar Grid -->
       <div class="calendar-container">
         <div class="weekdays">
@@ -186,6 +205,12 @@
             class="date-cell"
           >
             <div class="date-number">{{ date }}</div>
+            
+            <!-- Occupancy Indicator -->
+            <div v-if="!isDateInPast(date)" class="occupancy-indicator" :title="`${getOccupancyDisplay(date).count} items occupied`">
+              <div :class="`occupancy-dot occupancy-${getOccupancyStatus(date).status}`"></div>
+            </div>
+            
             <div v-if="getReservationsForDate(date).length > 0" class="reservation-badge">
               {{ getReservationsForDate(date).length }}
             </div>
@@ -216,6 +241,13 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['confirm', 'cancel', 'delete'])
+
+// Facility Capacity Configuration (UPDATE THESE WITH YOUR ACTUAL COUNTS)
+const facilityCapacity = {
+  rooms: 15,      // Total number of rooms
+  cottages: 8,    // Total number of cottages
+  events: 5       // Total event space slots
+}
 
 const currentDate = ref(new Date())
 const showCheckinModal = ref(false)
@@ -368,12 +400,111 @@ const getCheckInDate = (booking) => {
   return new Date(booking.check_in)
 }
 
+const isDateInPast = (date) => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  const targetDate = new Date(
+    currentDate.value.getFullYear(),
+    currentDate.value.getMonth(),
+    date
+  )
+  targetDate.setHours(0, 0, 0, 0)
+  
+  return targetDate < today
+}
+
+const getOccupancyForDate = (date) => {
+  const targetDate = new Date(
+    currentDate.value.getFullYear(),
+    currentDate.value.getMonth(),
+    date
+  )
+
+  let occupancy = {
+    rooms: 0,
+    cottages: 0,
+    events: 0
+  }
+
+  props.bookings.forEach(booking => {
+    const checkInDate = getCheckInDate(booking)
+    const checkOutDate = new Date(booking.check_out)
+    
+    // Check if booking overlaps with this date
+    if (
+      checkInDate.getFullYear() === targetDate.getFullYear() &&
+      checkInDate.getMonth() === targetDate.getMonth() &&
+      checkInDate.getDate() <= targetDate.getDate() &&
+      checkOutDate.getFullYear() === targetDate.getFullYear() &&
+      checkOutDate.getMonth() === targetDate.getMonth() &&
+      checkOutDate.getDate() >= targetDate.getDate()
+    ) {
+      // Count by item type
+      const itemsStr = String(booking.items_list || '').toLowerCase()
+      if (itemsStr.includes('room')) {
+        occupancy.rooms++
+      } else if (itemsStr.includes('cottage')) {
+        occupancy.cottages++
+      } else if (itemsStr.includes('event') || itemsStr.includes('swimming')) {
+        occupancy.events++
+      }
+    }
+  })
+
+  return occupancy
+}
+
+const getOccupancyStatus = (date) => {
+  const occupancy = getOccupancyForDate(date)
+  
+  // Calculate occupancy percentages
+  const roomPercent = (occupancy.rooms / facilityCapacity.rooms) * 100
+  const cottagePercent = (occupancy.cottages / facilityCapacity.cottages) * 100
+  const eventPercent = (occupancy.events / facilityCapacity.events) * 100
+  
+  // Determine overall status based on all facilities
+  const avgPercent = (roomPercent + cottagePercent + eventPercent) / 3
+  
+  let status = 'available'
+  if (avgPercent >= 80) {
+    status = 'full'
+  } else if (avgPercent >= 40) {
+    status = 'partial'
+  }
+  
+  return {
+    status,
+    occupancy,
+    percentages: {
+      rooms: Math.round(roomPercent),
+      cottages: Math.round(cottagePercent),
+      events: Math.round(eventPercent),
+      avg: Math.round(avgPercent)
+    }
+  }
+}
+
+const getOccupancyDisplay = (date) => {
+  const { status, occupancy } = getOccupancyStatus(date)
+  const total = occupancy.rooms + occupancy.cottages + occupancy.events
+  return {
+    status,
+    count: total
+  }
+}
+
 const getReservationsForDate = (date) => {
   const targetDate = new Date(
     currentDate.value.getFullYear(),
     currentDate.value.getMonth(),
     date
   )
+
+  // Don't show reservations for past dates
+  if (isDateInPast(date)) {
+    return []
+  }
 
   return props.bookings.filter(booking => {
     const checkInDate = getCheckInDate(booking)
@@ -394,10 +525,14 @@ const getDayClass = (date) => {
     currentDate.value.getMonth() === today.getMonth() &&
     currentDate.value.getFullYear() === today.getFullYear()
   )
+  const isPast = isDateInPast(date)
+  const { status } = getOccupancyStatus(date)
 
   return {
     today: isToday,
-    'has-reservations': reservations.length > 0
+    'has-reservations': reservations.length > 0,
+    'past-date': isPast,
+    [`occupancy-${status}`]: true
   }
 }
 
@@ -416,6 +551,11 @@ const nextMonth = () => {
 }
 
 const selectDate = (date) => {
+  // Don't allow selecting past dates
+  if (isDateInPast(date)) {
+    return
+  }
+  
   const reservations = getReservationsForDate(date)
   if (reservations.length > 0) {
     selectedCheckinDate.value = date
@@ -424,6 +564,11 @@ const selectDate = (date) => {
 }
 
 const openCheckInsList = (date) => {
+  // Don't allow opening past dates
+  if (isDateInPast(date)) {
+    return
+  }
+  
   selectedCheckinDate.value = date
   showCheckinModal.value = true
 }
@@ -624,6 +769,39 @@ const deleteBooking = async (id) => {
   text-align: center;
 }
 
+.occupancy-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+}
+
+.legend-title {
+  font-weight: 600;
+  color: #374151;
+}
+
+.legend-items {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7280;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
 .calendar-container {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -686,6 +864,26 @@ const deleteBooking = async (id) => {
   background: #ffffff;
 }
 
+.date-cell.past-date {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.date-cell.past-date .date-number {
+  color: #9ca3af;
+}
+
+.date-cell.past-date .reservation-badge {
+  opacity: 0.4;
+}
+
+.date-cell.past-date .view-button {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .date-cell.today {
   background: #eff6ff;
   border: 2px solid #0ea5e9;
@@ -701,6 +899,62 @@ const deleteBooking = async (id) => {
   align-items: center;
   justify-content: center;
   font-weight: 700;
+}
+
+/* Occupancy Indicator Styles */
+.occupancy-indicator {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.occupancy-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: all 0.2s;
+}
+
+.occupancy-available {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
+}
+
+.occupancy-partial {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.3);
+}
+
+.occupancy-full {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
+}
+
+/* Color-coded date cells based on occupancy */
+.date-cell.occupancy-available {
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.date-cell.occupancy-available:hover {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.date-cell.occupancy-partial {
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.date-cell.occupancy-partial:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.date-cell.occupancy-full {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.date-cell.occupancy-full:hover {
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .date-number {

@@ -315,12 +315,38 @@ export default {
       try {
         const response = await fetch(`${this.apiBaseUrl}/bookings/occupied-dates`)
         const data = await response.json()
-        if (data.success) {
-          this.occupiedDates = data.data.map(item => ({
-            inventoryItemId: item.inventory_item_id,
-            occupiedDate: item.occupied_date
-          }))
+
+        // Normalize different possible response shapes from backend
+        let records = []
+        if (Array.isArray(data)) {
+          records = data
+        } else if (data && Array.isArray(data.data)) {
+          records = data.data
+        } else if (data && typeof data.data === 'object' && data.data !== null) {
+          // data.data is an object, check for inner arrays
+          if (Array.isArray(data.data.rows)) {
+            records = data.data.rows
+          } else if (Array.isArray(data.data.occupied_dates)) {
+            records = data.data.occupied_dates
+          } else if (Array.isArray(data.data.dates)) {
+            records = data.data.dates
+          }
+        } else if (data && Array.isArray(data.occupied_dates)) {
+          records = data.occupied_dates
         }
+
+        if (!Array.isArray(records) || records.length === 0) {
+          console.warn('fetchOccupiedDates: No records found in response', data)
+          this.occupiedDates = []
+          return
+        }
+
+        this.occupiedDates = records
+          .filter(item => item && (item.inventory_item_id || item.inventory_id))
+          .map(item => ({
+            inventoryItemId: item.inventory_item_id ?? item.inventoryItemId ?? item.inventory_id,
+            occupiedDate: item.occupied_date ?? item.occupiedDate ?? item.date
+          }))
       } catch (error) {
         console.error('Error fetching occupied dates:', error)
         this.occupiedDates = []

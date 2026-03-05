@@ -22,7 +22,15 @@
           :pending-count="pendingCount"
           @toggle-sidebar="sidebarOpen = !sidebarOpen"
         />
+        <!-- Quick Actions -->
       </div>
+
+      <!-- QR Check-In Scanner Modal -->
+      <QRCheckInScanner
+        :is-open="isCheckinScannerOpen"
+        @close="isCheckinScannerOpen = false"
+        @check-in-success="handleCheckInSuccess"
+      />
       
 
       <!-- Stats Grid -->
@@ -254,18 +262,28 @@
         </div>
       </div>
     </main>
+
+    <!-- Toast Notification -->
+    <div 
+      v-if="toastMessage" 
+      class="fixed bottom-8 right-8 px-6 py-4 rounded-xl font-bold text-sm shadow-2xl z-50 animate-slideIn text-white"
+      :class="toastType === 'success' ? 'bg-green-500' : 'bg-red-500'"
+    >
+      {{ toastMessage }}
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
+import * as XLSX from 'xlsx'
 import AdminSidebar from '../../components/admin/AdminSidebar.vue'
 import AdminHeader from '../../components/admin/AdminHeader.vue'
 import ReservationStats from '../../components/admin/ReservationStats.vue'
 import ReservationFilters from '../../components/admin/ReservationFilters.vue'
 import ReservationCalendar from '../../components/admin/ReservationCalendar.vue'
-import { useNotificationStore } from '../../stores/notifications'
+import QRCheckInScanner from '../../components/QRCheckInScanner.vue'
 
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
@@ -277,7 +295,9 @@ const limit = 15
 const totalCount = ref(0)
 const totalPages = ref(0)
 const reservationCalendar = ref(null)
-const notifications = useNotificationStore()
+const isCheckinScannerOpen = ref(false)
+const toastMessage = ref('')
+const toastType = ref('success')
 
 const filters = ref({
   search: '',
@@ -342,6 +362,7 @@ const fetchBookings = async () => {
     
     if (result.success) {
       console.log('📦 Admin reservations data:', result.data)
+      showToast('✅ Reservations loaded successfully', 'success')
       
       // Map backend data to frontend format
       bookings.value = result.data.map(booking => {
@@ -381,7 +402,7 @@ const fetchBookings = async () => {
   } catch (error) {
     console.error('Failed to fetch bookings:', error)
     bookings.value = []
-    alert('Failed to load bookings. Please try again.')
+    showToast('❌ Failed to load bookings', 'error')
   } finally {
     loading.value = false
   }
@@ -488,6 +509,11 @@ const getItemLabel = (itemsList) => {
   
   // Check for room types
   if (itemsStr.includes('deluxe room') || itemsStr.includes('room')) {
+    // Extract room name if possible
+    const match = String(itemsList).match(/(.+?room[^,]*)/i)
+    if (match) {
+      return `🏨 ${match[1].trim()}`
+    }
     return '🏨 Room'
   }
   
@@ -539,7 +565,7 @@ const confirmBooking = async (id) => {
     const result = await response.json()
     
     if (result.success) {
-      alert('Booking confirmed successfully')
+      showToast('✅ Booking confirmed successfully', 'success')
       // Refresh data
       fetchBookings()
     } else {
@@ -547,7 +573,7 @@ const confirmBooking = async (id) => {
     }
   } catch (error) {
     console.error('Error confirming booking:', error)
-    alert('Failed to confirm booking')
+    showToast('❌ Failed to confirm booking', 'error')
   }
 }
 
@@ -567,7 +593,7 @@ const cancelBooking = async (id) => {
     const result = await response.json()
     
     if (result.success) {
-      alert('Booking cancelled successfully')
+      showToast('✅ Booking cancelled successfully', 'success')
       // Refresh data
       fetchBookings()
     } else {
@@ -575,7 +601,7 @@ const cancelBooking = async (id) => {
     }
   } catch (error) {
     console.error('Error cancelling booking:', error)
-    alert('Failed to cancel booking')
+    showToast('❌ Failed to cancel booking', 'error')
   }
 }
 
@@ -591,7 +617,7 @@ const deleteBooking = async (id) => {
     const result = await response.json()
     
     if (result.success) {
-      alert('Booking deleted successfully')
+      showToast('✅ Booking deleted successfully', 'success')
       // Refresh data
       fetchBookings()
     } else {
@@ -599,16 +625,156 @@ const deleteBooking = async (id) => {
     }
   } catch (error) {
     console.error('Error deleting booking:', error)
-    alert('Failed to delete booking')
+    showToast('❌ Failed to delete booking', 'error')
   }
 }
 
-const createNew = () => {
-  alert('Create new reservation')
+const handleCheckInSuccess = () => {
+  // Refresh bookings after successful check-in
+  isCheckinScannerOpen.value = false
+  fetchBookings()
+  // Show success toast
+  showToast('✅ Guest checked in successfully', 'success')
 }
 
-const exportData = () => {
-  alert('Export functionality coming soon')
+const createNew = () => {
+  showToast('📋 Create new reservation feature coming soon', 'info')
+}
+
+const exportData = async () => {
+  try {
+    // Prepare booking details data
+    const bookingDetails = bookings.value.map((b, index) => ({
+      'No.': index + 1,
+      'Guest Name': b.guest_name,
+      'Email': b.email,
+      'Check In': getCheckInDisplay(b),
+      'Check Out': getCheckOutDisplay(b),
+      'Booking Type': getItemLabel(b.items_list).replace(/[🏨🏠🏊🎉]/g, '').trim(),
+      'Payment Method': b.payment_method,
+      'Booking Code': b.reservation_code,
+      'Status': formatStatus(b.status),
+      'Amount': b.total
+    }))
+
+    // Calculate revenue summary by month
+    const monthlyData = {}
+    bookings.value.forEach(b => {
+      const date = new Date(b.check_in)
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = {
+          month: new Date(date.getFullYear(), date.getMonth()).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
+          total_bookings: 0,
+          total_revenue: 0,
+          confirmed: 0,
+          pending: 0,
+          cancelled: 0
+        }
+      }
+      
+      monthlyData[monthKey].total_bookings++
+      monthlyData[monthKey].total_revenue += b.total
+      if (b.status === 'confirmed' || b.status === 'checked_in') monthlyData[monthKey].confirmed++
+      else if (b.status === 'pending') monthlyData[monthKey].pending++
+      else if (b.status === 'cancelled') monthlyData[monthKey].cancelled++
+    })
+
+    const revenueSummary = [
+      { 'Metric': 'Month', 'Total Bookings': '', 'Total Revenue': '', 'Confirmed': '', 'Pending': '', 'Cancelled': '' },
+      ...Object.values(monthlyData).map(m => ({
+        'Metric': m.month,
+        'Total Bookings': m.total_bookings,
+        'Total Revenue': m.total_revenue,
+        'Confirmed': m.confirmed,
+        'Pending': m.pending,
+        'Cancelled': m.cancelled
+      }))
+    ]
+
+    // Calculate totals
+    const totalBookings = bookings.value.length
+    const confirmedBookings = bookings.value.filter(b => b.status === 'confirmed' || b.status === 'checked_in').length
+    const pendingBookings = bookings.value.filter(b => b.status === 'pending').length
+    const cancelledBookings = bookings.value.filter(b => b.status === 'cancelled').length
+    
+    const totalRevenue = bookings.value.reduce((sum, b) => sum + b.total, 0)
+    const confirmedRevenue = bookings.value
+      .filter(b => b.status === 'confirmed' || b.status === 'checked_in')
+      .reduce((sum, b) => sum + b.total, 0)
+    const pendingRevenue = bookings.value
+      .filter(b => b.status === 'pending')
+      .reduce((sum, b) => sum + b.total, 0)
+    const cancelledRevenue = bookings.value
+      .filter(b => b.status === 'cancelled')
+      .reduce((sum, b) => sum + b.total, 0)
+
+    // Profit calculations (assuming 25% operating costs)
+    const operatingCostPercentage = 0.25
+    const operatingCosts = totalRevenue * operatingCostPercentage
+    const netProfit = totalRevenue - operatingCosts
+    const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(2) : 0
+
+    const profitAnalysis = [
+      { 'FINANCIAL SUMMARY': '', 'Amount': '', 'Percentage': '' },
+      { 'FINANCIAL SUMMARY': 'Total Revenue', 'Amount': totalRevenue, 'Percentage': '100%' },
+      { 'FINANCIAL SUMMARY': 'Confirmed Payments', 'Amount': confirmedRevenue, 'Percentage': ((confirmedRevenue / totalRevenue) * 100).toFixed(2) + '%' },
+      { 'FINANCIAL SUMMARY': 'Pending Payments', 'Amount': pendingRevenue, 'Percentage': ((pendingRevenue / totalRevenue) * 100).toFixed(2) + '%' },
+      { 'FINANCIAL SUMMARY': 'Cancelled/Refunded', 'Amount': cancelledRevenue, 'Percentage': ((cancelledRevenue / totalRevenue) * 100).toFixed(2) + '%' },
+      { 'FINANCIAL SUMMARY': '', 'Amount': '', 'Percentage': '' },
+      { 'FINANCIAL SUMMARY': 'Operating Costs (25%)', 'Amount': operatingCosts.toFixed(2), 'Percentage': '25%' },
+      { 'FINANCIAL SUMMARY': 'Net Profit', 'Amount': netProfit.toFixed(2), 'Percentage': profitMargin + '%' },
+      { 'FINANCIAL SUMMARY': '', 'Amount': '', 'Percentage': '' },
+      { 'FINANCIAL SUMMARY': 'BOOKING SUMMARY', 'Amount': '', 'Percentage': '' },
+      { 'FINANCIAL SUMMARY': 'Total Bookings', 'Amount': totalBookings, 'Percentage': '100%' },
+      { 'FINANCIAL SUMMARY': 'Confirmed', 'Amount': confirmedBookings, 'Percentage': ((confirmedBookings / totalBookings) * 100).toFixed(2) + '%' },
+      { 'FINANCIAL SUMMARY': 'Pending', 'Amount': pendingBookings, 'Percentage': ((pendingBookings / totalBookings) * 100).toFixed(2) + '%' },
+      { 'FINANCIAL SUMMARY': 'Cancelled', 'Amount': cancelledBookings, 'Percentage': ((cancelledBookings / totalBookings) * 100).toFixed(2) + '%' }
+    ]
+
+    // Create Excel workbook
+    const workbook = XLSX.utils.book_new()
+    
+    // Add sheets
+    const ws1 = XLSX.utils.json_to_sheet(bookingDetails)
+    const ws2 = XLSX.utils.json_to_sheet(revenueSummary)
+    const ws3 = XLSX.utils.json_to_sheet(profitAnalysis)
+    
+    // Set column widths
+    ws1['!cols'] = [
+      { wch: 5 },
+      { wch: 20 },
+      { wch: 25 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 12 }
+    ]
+    
+    ws2['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }]
+    ws3['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 12 }]
+    
+    XLSX.utils.book_append_sheet(workbook, ws1, 'Booking Details')
+    XLSX.utils.book_append_sheet(workbook, ws2, 'Revenue Summary')
+    XLSX.utils.book_append_sheet(workbook, ws3, 'Profit Analysis')
+    
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().split('T')[0]
+    const filename = `Reservations_Report_${timestamp}.xlsx`
+    
+    // Write file
+    XLSX.writeFile(workbook, filename)
+    
+    // Show success toast
+    showToast(`✅ Export successful! File: ${filename}`, 'success')
+  } catch (error) {
+    console.error('Export error:', error)
+    showToast('❌ Failed to export data. Please try again.', 'error')
+  }
 }
 
 const applyFilters = () => {
@@ -643,8 +809,15 @@ const nextPage = () => {
 
 // Update notification store when pending count changes
 watch(() => pendingCount.value, (newCount) => {
-  notifications.setReservationPending(newCount)
+  // Notifications watch (if needed)
 })
+
+// Toast helper function
+const showToast = (msg, type = 'success') => {
+  toastMessage.value = msg
+  toastType.value = type
+  setTimeout(() => toastMessage.value = '', 4000)
+}
 
 onMounted(() => {
   fetchBookings()
@@ -653,6 +826,22 @@ onMounted(() => {
 
 <style scoped>
 @import '../../assets/admin-styles.css';
+
+.header-container {
+  margin-bottom: 1.5rem;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.quick-actions .btn {
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+}
 
 .item-badge {
   display: inline-block;

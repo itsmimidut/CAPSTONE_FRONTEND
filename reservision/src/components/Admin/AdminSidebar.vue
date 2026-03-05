@@ -210,7 +210,7 @@ const navItems = [
     icon: 'fas fa-utensils',
     roles: ['admin', 'restaurantstaff'],
     children: [
-      { path: '/admin/restaurants/tables', label: 'Tables', icon: 'fas fa-table', roles: ['admin', 'restaurantstaff'] },
+      // { path: '/admin/restaurants/tables', label: 'Tables', icon: 'fas fa-table', roles: ['admin', 'restaurantstaff'] },
       { path: '/admin/restaurants/menu', label: 'Menu', icon: 'fas fa-book-open', roles: ['admin', 'restaurantstaff'] },
       { path: '/admin/restaurants/inventory', label: 'Inventory', icon: 'fas fa-boxes', roles: ['admin', 'restaurantstaff'] }
     ]
