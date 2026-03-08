@@ -1,38 +1,10 @@
 <template>
   <div class="bg-slate-50 text-slate-800 overflow-x-hidden min-h-screen">
-    <!-- Navbar -->
-    <header class="fixed top-0 left-0 w-full z-50 bg-sky-700/95 backdrop-blur shadow-md">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
-        <div class="flex items-center justify-between h-16 sm:h-20">
-          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-yellow-400 flex items-center justify-center font-extrabold text-sky-900">
-              ER
-            </div>
-            <div class="min-w-0">
-              <h1 class="text-white font-bold text-sm sm:text-lg leading-none truncate">Eduardo's Resort</h1>
-              <p class="text-sky-100 text-[10px] sm:text-xs truncate">ReserVision</p>
-            </div>
-          </div>
-
-          <nav class="hidden lg:flex items-center gap-6 xl:gap-8 text-white font-medium">
-            <a href="#home" class="hover:text-yellow-300 transition">Home</a>
-            <a href="#amenities" class="hover:text-yellow-300 transition">Amenities</a>
-            <a href="#gallery" class="hover:text-yellow-300 transition">Gallery</a>
-            <a href="#location" class="hover:text-yellow-300 transition">Location</a>
-            <a href="#contact" class="hover:text-yellow-300 transition">Contact</a>
-          </nav>
-
-          <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-            <button class="hidden sm:inline-flex px-4 py-2 rounded-full border border-white text-white text-sm font-medium hover:bg-white hover:text-sky-700 transition">
-              Login
-            </button>
-            <button class="px-3 sm:px-5 py-2 rounded-full bg-yellow-400 text-sky-900 text-sm sm:text-base font-semibold hover:scale-105 transition whitespace-nowrap">
-              Book Now
-            </button>
-          </div>
-        </div>
-      </div>
-    </header>
+    <!-- Header -->
+    <AppHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
+    
+    <!-- Sidebar -->
+    <AppSidebar :is-open="sidebarOpen" @close="sidebarOpen = false" />
 
     <!-- Hero -->
     <section id="home" class="relative min-h-[92vh] sm:min-h-screen flex items-center justify-center overflow-hidden">
@@ -56,10 +28,16 @@
           premium and guest-friendly.
         </p>
         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
-          <button class="w-full sm:w-auto px-5 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-yellow-400 text-sky-900 text-base font-bold shadow-xl hover:-translate-y-1 transition">
+          <button 
+            @click="goToBooking"
+            class="w-full sm:w-auto px-5 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-yellow-400 text-sky-900 text-base font-bold shadow-xl hover:-translate-y-1 transition"
+          >
             Book Your Escape
           </button>
-          <button class="w-full sm:w-auto px-5 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-white/15 border border-white text-white text-base font-semibold backdrop-blur hover:bg-white/25 transition">
+          <button 
+            @click="goToAmenities"
+            class="w-full sm:w-auto px-5 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-white/15 border border-white text-white text-base font-semibold backdrop-blur hover:bg-white/25 transition"
+          >
             Explore Amenities
           </button>
         </div>
@@ -117,7 +95,10 @@
             Reserve tickets, private cottages, or special event packages with a smoother booking experience.
           </p>
         </div>
-        <button class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-yellow-400 text-sky-900 font-bold hover:scale-105 transition">
+        <button 
+          @click="goToBooking"
+          class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-yellow-400 text-sky-900 font-bold hover:scale-105 transition"
+        >
           Reserve Now
         </button>
       </div>
@@ -231,54 +212,36 @@
     </section>
 
     <!-- Footer -->
-    <footer id="contact" class="bg-slate-900 text-slate-200 py-12 sm:py-14 px-4 sm:px-6 lg:px-10">
-      <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 sm:gap-10">
-        <div>
-          <h4 class="text-lg sm:text-xl font-bold text-white mb-4">Eduardo's Resort</h4>
-          <p class="text-slate-400 text-sm sm:text-base">
-            A modern resort website sample with a cleaner homepage, better layout, and more professional guest
-            experience.
-          </p>
-        </div>
+    <AppFooter />
 
-        <div>
-          <h5 class="font-semibold text-white mb-4">Quick Links</h5>
-          <ul class="space-y-2 text-slate-400 text-sm sm:text-base">
-            <li>Home</li>
-            <li>Amenities</li>
-            <li>Gallery</li>
-            <li>Location</li>
-          </ul>
-        </div>
+    <!-- Chatbot -->
+    <ChatbotModal />
 
-        <div>
-          <h5 class="font-semibold text-white mb-4">Contact</h5>
-          <ul class="space-y-2 text-slate-400 text-sm sm:text-base break-words">
-            <li>Email: Eduardosreservation@gmail.com</li>
-            <li>Phone: +63 928 8906 708</li>
-            <li>Calapan City, Oriental Mindoro</li>
-          </ul>
-        </div>
-
-        <div>
-          <h5 class="font-semibold text-white mb-4">Connect With Us</h5>
-          <div class="flex gap-3">
-            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">f</div>
-            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">ig</div>
-            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">t</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="max-w-7xl mx-auto mt-10 pt-6 border-t border-slate-800 text-center text-slate-500 text-sm">
-        © 2026 Eduardo's Resort. All rights reserved.
-      </div>
-    </footer>
+    <!-- Menu Modal -->
+    <MenuModal :is-open="menuOpen" @close="menuOpen = false" />
   </div>
 </template>
 
 <script setup>
-// Static sample page converted from public HTML to Vue SFC.
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import AppHeader from '../../components/AppHeader.vue'
+import AppSidebar from '../../components/AppSidebar.vue'
+import AppFooter from '../../components/AppFooter.vue'
+import ChatbotModal from '../../components/ChatbotModal.vue'
+import MenuModal from '../../components/MenuModal.vue'
+
+const router = useRouter()
+const sidebarOpen = ref(false)
+const menuOpen = ref(false)
+
+const goToBooking = () => {
+  router.push('/customer')
+}
+
+const goToAmenities = () => {
+  router.push('/amenities')
+}
 </script>
 
 <style scoped>
