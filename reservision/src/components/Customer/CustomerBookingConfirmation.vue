@@ -409,6 +409,11 @@ export default {
     async payNow() {
       this.loading = true;
 
+      // IMPORTANT: open the destination tab HERE — synchronously, while still
+      // inside the click-handler call stack. After the first `await` the browser
+      // clears the "user gesture" flag and will silently block window.open().
+      const paymentTab = window.open('', '_blank');
+
       const bookingData = JSON.parse(localStorage.getItem('pendingBooking') || '{}');
       const customerName = this.guest.firstName + ' ' + this.guest.lastName;
       
@@ -492,17 +497,25 @@ export default {
           email: this.guest.email,
           timestamp: new Date().toISOString()
         };
-        sessionStorage.setItem('paymentTracking', JSON.stringify(paymentTrackingInfo));
-        console.log('💾 Saved payment tracking to sessionStorage:', paymentTrackingInfo);
+        // localStorage (not sessionStorage) so PaymentReturn can read it from
+        // whichever tab PayMongo redirects back into.
+        localStorage.setItem('paymentTracking', JSON.stringify(paymentTrackingInfo));
+        console.log('💾 Saved payment tracking to localStorage:', paymentTrackingInfo);
 
-        window.open(paymentData.checkout_url, '_blank');
-        
-        setTimeout(() => {
-          this.$router.push(`/payment-return`);
-        }, 1000);
+        // Point the already-open blank tab at the PayMongo checkout page.
+        // Because the tab was opened synchronously (before any await) the browser
+        // treats it as a user-gesture and won't block it.
+        if (paymentTab) {
+          paymentTab.location.href = paymentData.checkout_url;
+        } else {
+          // Fallback: tab was blocked — navigate the current tab instead
+          window.location.href = paymentData.checkout_url;
+        }
 
       } catch (err) {
         console.error('Booking error:', err);
+        // Close the blank tab we opened so we don't leave an empty tab on error
+        if (paymentTab && !paymentTab.closed) paymentTab.close();
         alert(err.message || 'Failed to process booking. Please try again.');
         this.loading = false;
       }

@@ -100,6 +100,16 @@ defineEmits(['update:search', 'update:status', 'update:from', 'update:to', 'appl
   border-radius: 0.625rem;
   font-size: 0.875rem;
   transition: all 0.3s;
+  
+}
+
+.filter-group i{
+  position: absolute;
+  left: 1rem;
+  top: 65%;
+  transform: translateY(-50%);
+  color: #9CA3AF;
+  pointer-events: none;
 }
 
 .filter-group input:focus,

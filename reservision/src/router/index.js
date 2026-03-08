@@ -73,7 +73,7 @@ import CottagesOnly from '../views/admin/CottagesOnly.vue'
 import EventsOnly from '../views/admin/EventsOnly.vue'
 import SwimmingManagement from '../views/admin/SwimmingManagement.vue'
 import RoomandCottageManagement from '../views/admin/RoomAndCottage.vue'
-import WebsiteReservation from '../views/website/Reservation.vue'     
+import WebsiteReservation from '../views/website/Reservation.vue'
 import SalesReport from '../views/admin/SalesReport.vue'
 // import CustomerDashboard from '../views/customer/CustomerDashboard.vue'
 
@@ -102,7 +102,7 @@ const routes = [
   { path: '/contact', name: 'Contact', component: ContactPage },
   { path: '/about', name: 'About', component: AboutPage },
   { path: '/swimming', name: 'Swimming', component: Swimming },
-  { path: '/websitereservation', name: 'WebsiteReservation', component: WebsiteReservation },
+  { path: '/websitereservation', name: 'WebsiteReservation', component: WebsiteReservation, meta: { requiresAuth: true, role: 'customer' } },
   { path: '/booking', name: 'ConfirmationBooking', component: ConfirmationBooking },
   { path: '/confirmation', name: 'Confirmation', component: ConfirmationPage },
   { path: '/booking-confirmation', name: 'BookingConfirmationModal', component: BookingConfirmationModal },
@@ -218,7 +218,7 @@ const routes = [
     path: '/admin/swimming',
     name: 'SwimmingManagement',
     component: SwimmingManagement,
-    meta: { requiresAuth: true, roles: ['admin','receptionist'] }
+    meta: { requiresAuth: true, roles: ['admin', 'receptionist'] }
   },
 
   // Reservation Management (shared with staff)
@@ -234,13 +234,13 @@ const routes = [
     path: '/admin/restaurants',
     name: 'RestaurantManagement',
     component: RestaurantManagement,
-    meta: { requiresAuth: true, roles: ['admin','restaurantstaff'] }
+    meta: { requiresAuth: true, roles: ['admin', 'restaurantstaff'] }
   },
   {
     path: '/admin/restaurants/tables',
     name: 'RestaurantTables',
     component: RestaurantTables,
-    meta: { requiresAuth: true, roles: ['admin','restaurantstaff'] }
+    meta: { requiresAuth: true, roles: ['admin', 'restaurantstaff'] }
   },
   {
     path: '/admin/restaurants/menu',

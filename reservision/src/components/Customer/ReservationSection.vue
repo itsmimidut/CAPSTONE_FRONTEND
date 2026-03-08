@@ -355,6 +355,31 @@ export default {
     }
   },
   methods: {
+    toLocalDateKey(date) {
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    },
+    normalizeDateKey(dateLike) {
+      if (!dateLike) return null
+
+      if (dateLike instanceof Date) {
+        return this.toLocalDateKey(dateLike)
+      }
+
+      const raw = String(dateLike).trim()
+      const ymdMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/)
+      if (ymdMatch) {
+        // Keep backend-provided date-only values as-is to avoid timezone shifting.
+        return ymdMatch[1]
+      }
+
+      const parsed = new Date(raw)
+      if (Number.isNaN(parsed.getTime())) return null
+      return this.toLocalDateKey(parsed)
+    },
     async fetchOccupiedDates() {
       try {
         const response = await fetch(`${this.apiBaseUrl}/bookings/occupied-dates`)
@@ -503,13 +528,15 @@ export default {
       }
     },
     isRoomBookedOnDate(roomItemId, date) {
-      const dateStr = new Date(date).toDateString()
+      const dateKey = this.normalizeDateKey(date)
+      if (!dateKey) return false
+
       const roomId = Number(roomItemId)
       return this.occupiedDates.some(entry => {
         const inventoryId = Number(entry.inventoryItemId ?? entry.inventory_item_id)
         if (inventoryId !== roomId) return false
-        const occupiedDate = new Date(entry.occupiedDate ?? entry.occupied_date)
-        return occupiedDate.toDateString() === dateStr
+        const occupiedDateKey = this.normalizeDateKey(entry.occupiedDate ?? entry.occupied_date ?? entry.date)
+        return occupiedDateKey === dateKey
       })
     },
     clearBooking() {

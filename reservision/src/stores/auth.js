@@ -313,6 +313,49 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * loginWithGoogle - Authenticate using Google ID token via backend
+   */
+  const loginWithGoogle = async (idToken) => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      if (!idToken) {
+        throw new Error('Missing Google credential token')
+      }
+
+      const response = await fetch('http://localhost:8000/api/customers/google-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: idToken })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Google login failed')
+      }
+
+      if (data.token) {
+        localStorage.setItem('authToken', data.token)
+      }
+
+      if (data.customer) {
+        localStorage.setItem('user', JSON.stringify(data.customer))
+        user.value = data.customer
+      }
+
+      isAuthenticated.value = true
+      return { success: true, role: data.customer?.role || 'customer' }
+    } catch (err) {
+      error.value = err.message || 'Google login failed'
+      return { success: false, message: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
    * initFromStorage - Initialize auth state from localStorage
    * Called on app startup to restore session
    */
@@ -366,6 +409,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearError,
     setError,
     setUser,
-    initFromStorage
+    initFromStorage,
+    loginWithGoogle
   }
 })

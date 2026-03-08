@@ -1,159 +1,79 @@
 <template>
-  <div class="order-history-container">
-    <!-- Header (only show for standalone mode) -->
-    <div v-if="showHeader" class="history-header">
-      <div class="header-left">
-        <span class="header-icon">📜</span>
-        <h2 class="header-title">My Order History</h2>
-      </div>
-      <button class="close-btn" @click="$emit('close')">✕</button>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="isLoading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading your orders...</p>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="error-state">
-      <span class="error-icon">😢</span>
-      <p>{{ error }}</p>
-      <button class="retry-btn" @click="fetchOrders">Try Again</button>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else-if="orders.length === 0" class="empty-state">
-      <span class="empty-icon">🛒</span>
-      <h3>No orders yet</h3>
-      <p>Your order history will appear here</p>
-      <button v-if="showHeader" class="browse-btn" @click="$emit('close')">Browse Menu</button>
-    </div>
-
-    <!-- Orders List -->
-    <div v-else class="orders-list">
-      <!-- Sidebar Layout: Left Actions / Right Orders -->
-      <div class="orders-layout">
-        <!-- My Orders Actions (Left, Vertical) -->
-        <div class="orders-actions" aria-label="My Orders actions">
-          <button class="action-btn action-refresh" @click="refreshOrders">
-            <span class="action-icon">⟳</span>
-            Refresh
-          </button>
-          <button class="action-btn action-delete-all" @click="deleteAllOrders">
-            <span class="action-icon">🗑️</span>
-            Delete All
-          </button>
-          <button class="action-btn action-delete-one" @click="deleteSelectedOrder">
-            <span class="action-icon">✕</span>
-            Delete Specific Order
-          </button>
-
-          <div class="orders-actions-hint">
-            <span class="hint-dot"></span>
-            <span class="hint-text">Tip: Open an order to select it before deleting.</span>
+  <div class="orders-page">
+    <!-- Filter Panel -->
+    <div class="filter-panel" v-if="!isLoading || orders.length > 0">
+      <div class="filter-grid">
+        <!-- Search by ID -->
+        <div class="filter-group">
+          <label class="filter-label">Receipt / Order ID</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              v-model="filters.search"
+              type="text"
+              placeholder="Search receipt number..."
+              class="filter-input"
+            />
+            <button v-if="filters.search" class="clear-input" @click="filters.search = ''">×</button>
           </div>
         </div>
 
-        <!-- Orders (Right) -->
-        <div class="orders-feed">
-          <div 
-            v-for="order in orders" 
-            :key="order.id"
-            class="order-card"
-            :class="{ expanded: expandedOrder === order.id }"
-          >
-            <!-- Order Header -->
-            <div class="order-header" @click="toggleOrder(order.id)">
-              <div class="order-info">
-                <div class="receipt-badge">
-                  <span class="receipt-icon">🧾</span>
-                  <span class="receipt-no">{{ order.receipt_no }}</span>
-
-                  <!-- Restored Date (same line as Order ID) -->
-                  <span class="order-date-inline">{{ formatDate(order.transaction_date) }}</span>
-                </div>
-
-                <!-- Keep existing meta in DOM (for responsiveness / future use) -->
-                <div class="order-meta">
-                  <span class="order-date">{{ formatDate(order.transaction_date) }}</span>
-                  <span class="order-time">{{ formatTime(order.transaction_time) }}</span>
-                </div>
-              </div>
-
-              <div class="order-summary">
-                <div class="order-total">₱{{ order.total_amount }}</div>
-
-                <!-- Keep status in DOM (can be shown on wider layouts if needed) -->
-                <div class="order-status" :class="getStatusClass(order.type)">
-                  {{ order.type }}
-                </div>
-
-                <button class="expand-icon">
-                  {{ expandedOrder === order.id ? '▼' : '▶' }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Order Details (Expandable) -->
-            <div v-if="expandedOrder === order.id" class="order-details">
-              <!-- Delivery Location -->
-              <div v-if="order.location_type" class="detail-section">
-                <h4 class="section-title">
-                  <span class="section-icon">📍</span>
-                  Delivery Location
-                </h4>
-                <div class="location-info">
-                  <span class="location-type">{{ order.location_type }}</span>
-                  <span v-if="order.location_number" class="location-number">
-                    #{{ order.location_number }}
-                  </span>
-                </div>
-                <p v-if="order.delivery_notes" class="delivery-notes">
-                  <em>"{{ order.delivery_notes }}"</em>
-                </p>
-              </div>
-
-              <!-- Items Ordered -->
-              <div class="detail-section">
-                <h4 class="section-title">
-                  <span class="section-icon">🍽️</span>
-                  Items Ordered
-                </h4>
-                <div class="items-list">
-                  <div 
-                    v-for="(item, idx) in parseItems(order.items)"
-                    :key="idx"
-                    class="order-item"
-                  >
-                    <div class="item-info">
-                      <span class="item-name">{{ item.name }}</span>
-                      <span class="item-qty">× {{ item.quantity }}</span>
-                    </div>
-                    <span class="item-price">₱{{ item.subtotal }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Payment Info -->
-              <div class="detail-section payment-section">
-                <div class="payment-row">
-                  <span>Payment Method:</span>
-                  <span class="payment-value">{{ order.payment_method }}</span>
-                </div>
-                <div class="payment-row total-row">
-                  <span>Total Amount:</span>
-                  <span class="total-value">₱{{ order.total_amount }}</span>
-                </div>
-              </div>
-
-              <!-- Reorder Button -->
-              <button class="reorder-btn" @click="reorder(order)">
-                <span class="btn-icon">🔄</span>
-                Order Again
-              </button>
-            </div>
+        <!-- Date From -->
+        <div class="filter-group">
+          <label class="filter-label">Date From</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            <input v-model="filters.dateFrom" type="date" class="filter-input date-input" />
           </div>
+        </div>
+
+        <!-- Date To -->
+        <div class="filter-group">
+          <label class="filter-label">Date To</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            <input v-model="filters.dateTo" type="date" class="filter-input date-input" />
+          </div>
+        </div>
+
+        <!-- Amount Range -->
+        <div class="filter-group">
+          <label class="filter-label">Amount Range</label>
+          <div class="amount-range">
+            <input v-model.number="filters.amountMin" type="number" placeholder="Min ₱" class="filter-input amount-input" min="0" />
+            <span class="range-sep">–</span>
+            <input v-model.number="filters.amountMax" type="number" placeholder="Max ₱" class="filter-input amount-input" min="0" />
+          </div>
+        </div>
+
+        <!-- Sort -->
+        <div class="filter-group">
+          <label class="filter-label">Sort By</label>
+          <div class="input-wrapper">
+            <select v-model="filters.sortBy" class="filter-input filter-select">
+              <option value="date_desc">Newest First</option>
+              <option value="date_asc">Oldest First</option>
+              <option value="amount_desc">Highest Amount</option>
+              <option value="amount_asc">Lowest Amount</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Filters + Clear -->
+      <div class="filter-footer" v-if="hasActiveFilters">
+        <div class="active-filter-tags">
+          <span class="filter-count">{{ filteredOrders.length }} result{{ filteredOrders.length !== 1 ? 's' : '' }}</span>
+          <button class="clear-all-btn" @click="clearFilters">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            Clear Filters
+          </button>
         </div>
       </div>
     </div>
@@ -451,33 +371,15 @@ const fetchOrders = async (silent = false) => {
   }
 }
 
-const refreshOrders = () => {
-  fetchOrders()
+// Polling for real-time updates (every 10 seconds)
+const startPolling = () => {
+  isPolling.value = true
+  pollingInterval = setInterval(() => fetchOrders(true), 10000)
 }
 
-const deleteAllOrders = () => {
-  const ok = window.confirm('Delete all orders from the list? This will clear the current view.')
-  if (!ok) return
-
-  orders.value = []
-  expandedOrder.value = null
-}
-
-const deleteSelectedOrder = () => {
-  if (!expandedOrder.value) {
-    alert('Please open an order first to select it, then try again.')
-    return
-  }
-
-  const selectedId = expandedOrder.value
-  const selected = orders.value.find(o => o.id === selectedId)
-  const label = selected?.receipt_no ? `Receipt ${selected.receipt_no}` : 'this order'
-
-  const ok = window.confirm(`Delete ${label} from the list?`)
-  if (!ok) return
-
-  orders.value = orders.value.filter(o => o.id !== selectedId)
-  expandedOrder.value = null
+const stopPolling = () => {
+  isPolling.value = false
+  clearInterval(pollingInterval)
 }
 
 const toggleOrder = (id) => {
@@ -575,24 +477,20 @@ onMounted(() => {
 onUnmounted(() => {
   stopPolling()
 })
+
+// Expose fetchOrders so parent (CustomerDashboard) can trigger a refetch
+// when the user clicks the "My Orders" tab
+defineExpose({ fetchOrders })
 </script>
 
 <style scoped>
-/* ========================================
-   Apply SAME Tropical Resort Palette (Color-only)
-   - Ocean Blue (primary):    #1E88B6
-   - Ocean Blue (light):      #4AA3D0
-   - Ocean Blue (dark):       #166B8F
-   - Ocean Blue (pale):       #E3F2F9
-   - Sunflower Gold (accent): #F2C200
-   - Sunflower Gold (light):  #FFD633
-   - Sunflower Gold (dark):   #C99F00
-   - Text on dark:            #FFFFFF
-   - Text on light:           #0B2230 (deep teal-ish)
-   ======================================== */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap');
 
-.order-history-container {
-  background: #E3F2F9; /* pale ocean surface */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+.orders-page {
+  font-family: 'Outfit', sans-serif;
+  background: #f5f6fa;
   min-height: 100vh;
   color: #1a1d27;
 }
@@ -730,174 +628,92 @@ onUnmounted(() => {
 .state-container {
   display: flex;
   flex-direction: column;
-  color: #0B2230; /* readable on pale bg */
+  align-items: center;
+  justify-content: center;
+  padding: 5rem 2rem;
+  text-align: center;
 }
 
-/* Header */
-.history-header {
-  background: #166B8F; /* ocean dark */
-  padding: 1.05rem 1.2rem;
+.state-icon {
+  width: 64px;
+  height: 64px;
+  background: #f0f1f5;
+  border-radius: 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  border-bottom: 1px solid rgba(242, 194, 0, 0.35); /* gold hint */
-  box-shadow: 0 10px 18px rgba(22, 107, 143, 0.18);
+  justify-content: center;
+  color: #8b92a9;
+  margin-bottom: 1.25rem;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
+.state-icon.error-icon { background: #fef2f2; color: #ef4444; }
 
-.header-icon {
-  font-size: 1.65rem;
-}
-
-.header-title {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #ffffff; /* white text on dark header */
-  margin: 0;
-}
-
-.close-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+.state-title {
   font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a1d27;
+  margin-bottom: 0.4rem;
+}
+
+.state-text {
+  font-size: 0.88rem;
+  color: #8b92a9;
+  max-width: 280px;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+/* Loader */
+.loader {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1.25rem;
+}
+
+.loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  animation: loader-spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.loader-ring:nth-child(1) { border-top-color: #3d6bfd; animation-delay: -0.45s; }
+.loader-ring:nth-child(2) { border-top-color: #a5b4fc; animation-delay: -0.3s; }
+.loader-ring:nth-child(3) { border-top-color: #e0e7ff; animation-delay: -0.15s; }
+
+@keyframes loader-spin { to { transform: rotate(360deg); } }
+
+/* Buttons */
+.action-btn {
+  padding: 0.65rem 1.5rem;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
   border: none;
   transition: all 0.2s;
 }
 
-.close-btn:hover {
-  background: rgba(242, 194, 0, 0.20);
-  border-color: rgba(242, 194, 0, 0.55);
-  color: #ffffff;
-  transform: scale(1.06);
-}
+.primary-btn { background: #3d6bfd; color: #fff; }
+.primary-btn:hover { background: #2d5bf0; }
+.secondary-btn { background: #f0f1f5; color: #1a1d27; }
+.secondary-btn:hover { background: #e5e7ef; }
 
 /* ── Orders List ── */
 .list-summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding: 2.5rem 1.1rem;
-  color: #0B2230;
+  margin-bottom: 1rem;
+  font-size: 0.83rem;
+  color: #8b92a9;
+  font-weight: 500;
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(30, 136, 182, 0.18); /* ocean ring */
-  border-top: 4px solid #F2C200; /* gold */
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 0.8rem;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Error State */
-.error-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2.5rem 1.1rem;
-  text-align: center;
-  color: #0B2230;
-}
-
-.error-icon {
-  font-size: 3rem;
-  margin-bottom: 0.9rem;
-}
-
-.retry-btn {
-  background: #1E88B6; /* ocean primary */
-  color: #ffffff;
-  border: 1px solid #1E88B6;
-  padding: 0.62rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 900;
-  cursor: pointer;
-  margin-top: 0.8rem;
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s, border-color 0.2s;
-  box-shadow: 0 10px 16px rgba(22, 107, 143, 0.18);
-}
-
-.retry-btn:hover {
-  background: #4AA3D0; /* ocean light */
-  border-color: #4AA3D0;
-  transform: translateY(-1px);
-  box-shadow: 0 14px 22px rgba(22, 107, 143, 0.22);
-}
-
-/* Empty State */
-.empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2.5rem 1.1rem;
-  text-align: center;
-  color: #0B2230;
-}
-
-.empty-icon {
-  font-size: 3.5rem;
-  margin-bottom: 0.8rem;
-}
-
-.empty-state h3 {
-  font-size: 1.35rem;
-  color: #0B2230;
-  margin-bottom: 0.35rem;
-}
-
-.empty-state p {
-  color: rgba(11, 34, 48, 0.75);
-  margin-bottom: 1.5rem;
-}
-
-.browse-btn {
-  background: #F2C200;
-  color: #0B2230;
-  border: 1px solid #F2C200;
-  padding: 0.62rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 900;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s, border-color 0.2s;
-  box-shadow: 0 12px 18px rgba(242, 194, 0, 0.22);
-}
-
-.browse-btn:hover {
-  background: #FFD633;
-  border-color: #FFD633;
-  transform: translateY(-1px);
-  box-shadow: 0 16px 22px rgba(242, 194, 0, 0.26);
-}
-
-/* Orders List */
-.orders-list {
-  flex: 1;
-  padding: 0.85rem 1.05rem;
-}
+.summary-total strong { color: #1a1d27; }
 
 /* Layout */
 .orders-layout {
@@ -1028,30 +844,28 @@ onUnmounted(() => {
 
 /* Order Cards */
 .order-card {
-  background: rgba(255, 255, 255, 0.92);
+  background: #fff;
+  border: 1.5px solid #eaedf3;
   border-radius: 12px;
-  margin-bottom: 0.6rem;
-  border: 1px solid rgba(22, 107, 143, 0.16);
-  box-shadow: 0 10px 18px rgba(22, 107, 143, 0.10);
+  margin-bottom: 0.65rem;
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.order-card:hover {
-  border-color: rgba(30, 136, 182, 0.26);
-  box-shadow: 0 14px 24px rgba(22, 107, 143, 0.14);
-  transform: translateY(-1px);
+.order-card:hover { border-color: #c7d2fe; box-shadow: 0 2px 12px rgba(61, 107, 253, 0.06); }
+.order-card.is-expanded { border-color: #3d6bfd; box-shadow: 0 4px 20px rgba(61, 107, 253, 0.1); }
+
+.order-card.is-new {
+  animation: new-order-flash 3s ease;
 }
 
-.order-card.expanded {
-  border-color: rgba(242, 194, 0, 0.55);
-  box-shadow: 0 16px 26px rgba(22, 107, 143, 0.16);
-  background: #ffffff;
+@keyframes new-order-flash {
+  0% { background: #eff6ff; border-color: #3d6bfd; }
+  100% { background: #fff; border-color: #eaedf3; }
 }
 
-/* Order Header */
-.order-header {
-  padding: 0.58rem 0.9rem;
+/* Card Header */
+.card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1061,14 +875,9 @@ onUnmounted(() => {
   transition: background 0.15s;
 }
 
-.order-header:hover {
-  background: rgba(30, 136, 182, 0.08);
-}
+.card-header:hover { background: #fafbfc; }
 
-.order-info {
-  flex: 1;
-  min-width: 0;
-}
+.card-left { display: flex; align-items: center; gap: 0.85rem; }
 
 .receipt-icon-wrap {
   width: 38px;
@@ -1077,361 +886,222 @@ onUnmounted(() => {
   border-radius: 9px;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  margin-bottom: 0;
-  min-width: 0;
+  justify-content: center;
+  color: #3d6bfd;
+  flex-shrink: 0;
 }
 
-.receipt-icon {
-  font-size: 1.05rem;
-  flex: 0 0 auto;
+.receipt-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #1a1d27;
 }
 
-.receipt-no {
-  font-weight: 900;
-  color: #0B2230;
-  font-size: 0.92rem;
-  line-height: 1.1;
-  flex: 0 0 auto;
+.order-datetime {
+  font-size: 0.78rem;
+  color: #8b92a9;
+  margin-top: 0.2rem;
 }
 
-.order-date-inline {
-  font-size: 0.86rem;
-  font-weight: 800;
-  color: rgba(11, 34, 48, 0.65);
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-
-.order-meta {
-  display: none;
-}
+.dot-sep { margin: 0 0.3rem; }
 
 .card-right {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  flex: 0 0 auto;
+  gap: 0.85rem;
 }
 
-.order-total {
-  font-size: 1.02rem;
-  font-weight: 900;
-  color: #166B8F;
-  line-height: 1.1;
+.order-amount {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1a1d27;
+  letter-spacing: -0.3px;
 }
 
-.order-status {
-  display: none;
+.type-badge {
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
-.expand-icon {
-  background: rgba(30, 136, 182, 0.10);
-  border: 1px solid rgba(30, 136, 182, 0.18);
-  color: #166B8F;
-  font-size: 0.82rem;
-  cursor: pointer;
-  padding: 0.34rem 0.46rem;
-  border-radius: 10px;
-  transition: background 0.2s, border-color 0.2s, transform 0.15s, color 0.2s;
+.badge-eshop { background: #eff6ff; color: #2563eb; }
+.badge-walkin { background: #fdf4ff; color: #7c3aed; }
+.badge-delivery { background: #f0fdf4; color: #16a34a; }
+
+.expand-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b92a9;
+  transition: transform 0.25s;
 }
 
-.expand-icon:hover {
-  background: rgba(242, 194, 0, 0.20);
-  border-color: rgba(242, 194, 0, 0.55);
-  color: #0B2230;
-  transform: translateY(-1px);
-}
+.expand-btn.rotated { transform: rotate(180deg); }
 
-/* Order Details */
-.order-details {
-  padding: 0 0.9rem 0.9rem;
-  border-top: 1px solid rgba(22, 107, 143, 0.12);
-  animation: slideDown 0.3s ease;
+/* Card Body */
+.card-body {
+  border-top: 1.5px solid #eaedf3;
+  padding: 1.25rem;
+  animation: slideDown 0.2s ease;
 }
 
 @keyframes slideDown {
-  from { opacity: 0; max-height: 0; }
-  to { opacity: 1; max-height: 1000px; }
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.detail-section {
-  margin-top: 0.85rem;
-}
+.detail-block { margin-bottom: 1.25rem; }
+.detail-block:last-of-type { margin-bottom: 0; }
 
 .detail-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.96rem;
-  font-weight: 900;
-  color: #0B2230;
-  margin-bottom: 0.6rem;
+  gap: 0.4rem;
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #8b92a9;
+  margin-bottom: 0.65rem;
 }
 
-.section-icon {
-  font-size: 1.2rem;
-}
-
-/* Location */
-.location-info {
-  background: rgba(30, 136, 182, 0.08);
-  padding: 0.6rem 0.85rem;
-  border-radius: 10px;
+.location-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   border: 1px solid rgba(30, 136, 182, 0.16);
 }
 
-.location-type {
-  font-weight: 900;
-  color: #0B2230;
+.location-label { font-weight: 600; color: #1a1d27; font-size: 0.9rem; }
+
+.location-num {
+  background: #3d6bfd;
+  color: #fff;
+  padding: 0.15rem 0.55rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
-.location-number {
-  background: #F2C200;
-  color: #0B2230;
-  padding: 0.18rem 0.7rem;
-  border-radius: 999px;
-  font-weight: 900;
-  font-size: 0.9rem;
-  border: 1px solid rgba(242, 194, 0, 0.75);
-}
-
-.delivery-notes {
+.delivery-note {
   margin-top: 0.4rem;
-  color: rgba(11, 34, 48, 0.70);
-  font-size: 0.9rem;
+  color: #8b92a9;
+  font-size: 0.83rem;
   font-style: italic;
 }
 
-/* Items */
-.items-list {
-  background: rgba(30, 136, 182, 0.08);
-  padding: 0.6rem;
-  border-radius: 10px;
-  border: 1px solid rgba(30, 136, 182, 0.16);
+/* Items Table */
+.items-table {
+  background: #fafbfc;
+  border: 1px solid #eaedf3;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .item-row {
   display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0.65rem;
-  background: #ffffff;
-  border: 1px solid rgba(22, 107, 143, 0.10);
-  border-radius: 8px;
-  margin-bottom: 0.45rem;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid #eaedf3;
+  font-size: 0.87rem;
 }
 
-.order-item:last-child {
-  margin-bottom: 0;
-}
+.item-row:last-child { border-bottom: none; }
 
 .item-name { flex: 1; font-weight: 600; color: #1a1d27; }
 .item-qty { color: #8b92a9; margin-right: 1.5rem; font-size: 0.82rem; }
 .item-price { font-weight: 700; color: #3d6bfd; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
 
-.item-name {
-  font-weight: 900;
-  color: #0B2230;
-}
-
-.item-qty {
-  color: rgba(11, 34, 48, 0.65);
-  font-size: 0.9rem;
-  font-weight: 800;
-}
-
-.item-price {
-  font-weight: 900;
-  color: #166B8F;
-}
-
-/* Payment */
-.payment-section {
-  background: rgba(30, 136, 182, 0.08);
-  padding: 0.8rem;
-  border-radius: 10px;
-  border: 1px solid rgba(30, 136, 182, 0.18);
+/* Payment Block */
+.payment-block {
+  background: #fafbfc;
+  border: 1px solid #eaedf3;
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
 }
 
 .payment-row {
   display: flex;
   justify-content: space-between;
-  padding: 0.4rem 0;
-  color: rgba(11, 34, 48, 0.80);
-  font-weight: 800;
+  align-items: center;
+  padding: 0.35rem 0;
+  font-size: 0.87rem;
+  color: #4b5168;
 }
 
-.payment-value {
-  font-weight: 900;
-  color: #0B2230;
-}
+.pay-value { font-weight: 600; color: #1a1d27; }
 
 .total-row {
-  border-top: 2px solid rgba(242, 194, 0, 0.55);
-  margin-top: 0.4rem;
+  border-top: 1px solid #eaedf3;
+  margin-top: 0.35rem;
   padding-top: 0.6rem;
-  font-weight: 900;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1a1d27;
+}
+
+.pay-total {
+  color: #3d6bfd;
+  font-family: 'JetBrains Mono', monospace;
   font-size: 1.05rem;
+  font-weight: 700;
 }
 
-.total-value {
-  color: #166B8F;
-  font-size: 1.2rem;
+/* Card Actions */
+.card-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
 }
 
-/* Order Again */
-.reorder-btn {
-  width: 100%;
-  background: #F2C200;
-  color: #0B2230;
-  border: 1px solid #F2C200;
-  padding: 0.72rem;
-  border-radius: 12px;
-  font-weight: 900;
-  cursor: pointer;
-  margin-top: 0.95rem;
+.card-btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: transform 0.15s, box-shadow 0.2s, background 0.2s, border-color 0.2s;
-  box-shadow: 0 14px 20px rgba(242, 194, 0, 0.22);
-}
-
-.reorder-btn:hover {
-  background: #FFD633;
-  border-color: #FFD633;
-  transform: translateY(-1px);
-  box-shadow: 0 18px 26px rgba(242, 194, 0, 0.26);
-}
-
-.btn-icon {
-  font-size: 1.05rem;
-}
-
-/* Pagination */
-.pagination {
-  background: rgba(255, 255, 255, 0.92);
-  padding: 0.9rem 1.05rem;
-  border-top: 1px solid rgba(22, 107, 143, 0.14);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pagination-info {
-  color: rgba(11, 34, 48, 0.70);
-  font-size: 0.9rem;
-  font-weight: 800;
-}
-
-.load-more-btn {
-  background: #1E88B6;
-  color: #ffffff;
-  border: 1px solid #1E88B6;
-  padding: 0.55rem 1.0rem;
-  border-radius: 10px;
-  font-weight: 900;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.2s, background 0.2s, border-color 0.2s;
-  box-shadow: 0 10px 16px rgba(22, 107, 143, 0.18);
+  transition: all 0.2s;
 }
 
-.load-more-btn:hover {
-  background: #4AA3D0;
-  border-color: #4AA3D0;
-  transform: translateY(-1px);
-  box-shadow: 0 14px 22px rgba(22, 107, 143, 0.22);
+.reorder-btn {
+  background: #3d6bfd;
+  color: #fff;
 }
+.reorder-btn:hover { background: #2d5bf0; transform: translateY(-1px); }
 
-/* Status chips (kept for responsive/wider layouts) */
-.status-eshop {
-  background: rgba(242, 194, 0, 0.20);
-  border-color: rgba(242, 194, 0, 0.45);
-  color: #0B2230;
+.delete-btn {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1.5px solid #fee2e2;
 }
+.delete-btn:hover { background: #ef4444; color: #fff; transform: translateY(-1px); }
 
-.status-walkin,
-.status-delivery {
-  background: rgba(30, 136, 182, 0.12);
-  border-color: rgba(30, 136, 182, 0.22);
-  color: #0B2230;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .orders-list {
-    padding: 0.8rem 0.95rem;
-  }
-
-  .orders-layout {
-    grid-template-columns: 1fr;
-    gap: 0.65rem;
-  }
-
-  .orders-actions {
-    position: static;
-    top: auto;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.55rem;
-  }
-
-  .action-btn {
-    width: auto;
-    max-width: none;
-    flex: 1 1 180px;
-    min-width: 180px;
-  }
-
-  .orders-actions-hint {
-    width: 100%;
-    max-width: none;
-    border-top: none;
-    padding-top: 0;
-    margin-top: 0.1rem;
-  }
-
-  .order-status {
-    display: inline-flex;
-    padding: 0.3rem 0.7rem;
-    border-radius: 999px;
-    font-weight: 900;
-    font-size: 0.76rem;
-    border: 1px solid transparent;
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .filter-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
-@media (max-width: 480px) {
-  .orders-list {
-    padding: 0.75rem;
-  }
-
-  .order-header {
-    padding: 0.55rem 0.8rem;
-    gap: 0.6rem;
-  }
-
-  .order-summary {
-    gap: 0.5rem;
-  }
-
-  .expand-icon {
-    padding: 0.32rem 0.44rem;
-  }
-
-  .order-status {
-    display: none;
-  }
-
-  .order-date-inline {
-    font-size: 0.83rem;
-  }
+@media (max-width: 640px) {
+  .page-header, .filter-panel { padding: 1rem; }
+  .content-area { padding: 1rem; }
+  .filter-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+  .header-content { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .card-actions { flex-direction: column; }
+  .card-right { gap: 0.5rem; }
+  .order-amount { font-size: 0.95rem; }
 }
 </style>

@@ -168,6 +168,16 @@ const router = useRouter()
 const auth = useAuthStore()
 const notifications = useNotificationStore()
 
+const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}')
+  } catch {
+    return {}
+  }
+}
+
+const resolvedUser = computed(() => auth.user || getStoredUser())
+
 // Logout handler
 const handleLogout = () => {
   auth.logout()
@@ -175,17 +185,24 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-const userDisplayName = computed(() => auth.user?.name || 'User')
+const userDisplayName = computed(() => {
+  const u = resolvedUser.value || {}
+  const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim()
+  return fullName || u.name || u.email || 'Guest'
+})
+
 const userRoleLabel = computed(() => {
-  const role = auth.user?.role
+  const role = resolvedUser.value?.role
   const roleLabels = {
     admin: 'Admin',
     restaurantstaff: 'Restaurant Staff',
-    receptionist: 'Receptionist'
+    restaurant_staff: 'Restaurant Staff',
+    receptionist: 'Receptionist',
+    customer: 'Customer'
   }
   return roleLabels[role] || 'User'
 })
-const userInitial = computed(() => userDisplayName.value.charAt(0).toUpperCase())
+const userInitial = computed(() => (userDisplayName.value?.charAt(0) || 'G').toUpperCase())
 
 // Use actual route path or fallback to prop
 const activePath = computed(() => props.currentPath || route.path)
@@ -235,7 +252,9 @@ const isRoleAllowed = (item, role) => {
 }
 
 const filteredNavItems = computed(() => {
-  const role = auth.role || ''
+  const rawRole = resolvedUser.value?.role || auth.role || ''
+  const role = rawRole === 'restaurant_staff' ? 'restaurantstaff' : rawRole
+
   return navItems
     .filter(item => isRoleAllowed(item, role))
     .map(item => {
@@ -266,6 +285,7 @@ watch(() => activePath.value, () => {
 })
 
 onMounted(() => {
+  auth.initFromStorage()
   autoOpenDropdown()
 })
 </script>
