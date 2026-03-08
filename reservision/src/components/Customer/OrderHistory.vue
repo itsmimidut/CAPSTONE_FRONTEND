@@ -372,10 +372,10 @@ const fetchOrders = async (silent = false) => {
 }
 
 // Polling for real-time updates (every 10 seconds)
-const startPolling = () => {
-  isPolling.value = true
-  pollingInterval = setInterval(() => fetchOrders(true), 10000)
-}
+// const startPolling = () => {
+//   isPolling.value = true
+//   pollingInterval = setInterval(() => fetchOrders(true), 10000)
+// }
 
 const stopPolling = () => {
   isPolling.value = false
@@ -460,14 +460,14 @@ const startPolling = () => {
   }, 10000)
 }
 
-const stopPolling = () => {
-  isPolling.value = false
+// const stopPolling = () => {
+//   isPolling.value = false
 
-  if (pollingInterval) {
-    clearInterval(pollingInterval)
-    pollingInterval = null
-  }
-}
+//   if (pollingInterval) {
+//     clearInterval(pollingInterval)
+//     pollingInterval = null
+//   }
+// }
 
 onMounted(() => {
   fetchOrders()
