@@ -1,13 +1,44 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-blue-50 via-white to-yellow-50/30">
+  <div class="min-h-screen bg-gradient-to-b from-blue-50 via-white to-yellow-50/30 overflow-x-hidden">
     <!-- Header -->
     <AppHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
-    
+
     <!-- Sidebar -->
     <AppSidebar :is-open="sidebarOpen" @close="sidebarOpen = false" />
 
     <!-- Hero -->
-    <AmenitiesHero />
+    <section
+      class="relative flex items-center justify-center min-h-[450px] sm:min-h-[550px] hero-amenities text-center px-4 overflow-hidden pt-[78px]"
+    >
+      <!-- Animated background elements -->
+      <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute top-10 left-10 w-32 h-32 bg-[#1F8DBF]/20 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute bottom-10 right-10 w-40 h-40 bg-[#F4C400]/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <!-- Gradient overlay -->
+      <div class="absolute inset-0 bg-gradient-to-br from-[#1F8DBF]/20 via-[#F4C400]/10 to-[#F4C400]/20"></div>
+
+      <!-- Glass card -->
+      <div class="relative z-10 max-w-4xl w-full backdrop-blur-md bg-white/50 rounded-2xl p-8 sm:p-10 md:p-12 shadow-2xl mx-4 flex flex-col justify-center border border-white/40 my-12">
+        <div class="absolute inset-0 bg-gradient-to-br from-white/20 via-[#F4C400]/5 to-[#1F8DBF]/10 rounded-2xl pointer-events-none"></div>
+
+        <div class="relative z-20 flex flex-col items-center justify-center">
+          <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 w-32 h-32 bg-[#F4C400]/30 rounded-full blur-2xl animate-pulse-slow-hero"></div>
+
+          <h1 class="text-[32px] sm:text-[40px] md:text-[48px] font-bold leading-tight relative mb-2">
+            <span class="text-[#0C3B5E] drop-shadow-lg">World-Class Amenities</span>
+          </h1>
+
+          <div class="mt-4 mb-2">
+            <p class="text-xs sm:text-sm text-[#0C3B5E]/80 leading-relaxed drop-shadow-md font-medium max-w-2xl mx-auto">
+              From Olympic-sized pools to elegant dining and air-conditioned cottages — every detail is crafted
+              for your ultimate relaxation, joy, and unforgettable memories.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Animated Background Elements -->
     <div class="absolute inset-0 pointer-events-none overflow-hidden">
@@ -19,10 +50,9 @@
     <!-- Amenities Grid -->
     <section id="amenity-grid" class="relative py-20">
       <div class="container mx-auto px-4 max-w-7xl relative z-10">
-        
+
         <!-- Category 1: Pools -->
         <div class="mb-16 relative">
-          <!-- Decorative divider -->
           <div class="flex justify-center items-center mb-10">
             <div class="h-1 w-16 bg-gradient-to-r from-blue-400 to-transparent rounded-full"></div>
             <div class="mx-4">
@@ -30,12 +60,13 @@
             </div>
             <div class="h-1 w-16 bg-gradient-to-l from-blue-400 to-transparent rounded-full"></div>
           </div>
-          
+
           <h2 class="category-header reveal text-center">
             <span class="inline-block bg-gradient-to-r from-blue-800 via-blue-700 to-yellow-600 bg-clip-text text-transparent">
               Aquatic Paradise
             </span>
           </h2>
+
           <p class="amenity-list reveal text-center">
             <span class="inline-block px-4 py-2 bg-gradient-to-r from-blue-50 to-yellow-50/50 rounded-full border border-blue-100 shadow-sm">
               MINI-OLYMPIC SIZE SWIMMING POOL • KIDDIE POOL w/ SLIDE • SWIMMING CLUB
@@ -43,15 +74,63 @@
           </p>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mt-12">
-            <AmenityCard
+            <article
               v-for="(amenity, index) in poolAmenities"
               :key="amenity.title"
-              :title="amenity.title"
-              :description="amenity.description"
-              :images="amenity.images"
-              class="reveal group hover:transform hover:-translate-y-2 transition-all duration-500"
+              class="amenity-card reveal group"
               :style="`transition-delay: ${index * 100}ms`"
-            />
+            >
+              <div class="carousel-container">
+                <div
+                  class="carousel-track"
+                  :style="{ transform: `translateX(-${currentSlides[amenity.title] * 100}%)` }"
+                >
+                  <div
+                    v-for="(image, imageIndex) in amenity.images"
+                    :key="imageIndex"
+                    class="carousel-slide"
+                  >
+                    <img :src="image" :alt="`${amenity.title} ${imageIndex + 1}`" />
+                  </div>
+                </div>
+
+                <button
+                  class="carousel-arrow prev"
+                  @click="prevSlide(amenity.title)"
+                  aria-label="Previous image"
+                  type="button"
+                >
+                  &lt;
+                </button>
+
+                <button
+                  class="carousel-arrow next"
+                  @click="nextSlide(amenity.title, amenity.images.length)"
+                  aria-label="Next image"
+                  type="button"
+                >
+                  &gt;
+                </button>
+
+                <button
+                  class="see-more-btn"
+                  @click="toggleInfo(amenity.title)"
+                  type="button"
+                >
+                  {{ showInfo[amenity.title] ? 'See Less' : 'See More' }}
+                </button>
+
+                <div class="info-overlay" :class="{ show: showInfo[amenity.title] }">
+                  <div class="info-title">{{ amenity.title }}</div>
+                  <div class="info-desc">{{ amenity.description }}</div>
+                </div>
+              </div>
+
+              <div class="p-6 bg-white">
+                <h3 class="text-xl font-bold text-[#0C3B5E] mb-3">{{ amenity.title }}</h3>
+                <p class="text-gray-600 mb-5">{{ amenity.description }}</p>
+              </div>
+            </article>
           </div>
         </div>
 
@@ -62,7 +141,6 @@
 
         <!-- Category 2: Dining & Events -->
         <div class="relative">
-          <!-- Decorative divider -->
           <div class="flex justify-center items-center mb-10">
             <div class="h-1 w-16 bg-gradient-to-r from-yellow-400 to-transparent rounded-full"></div>
             <div class="mx-4">
@@ -70,12 +148,13 @@
             </div>
             <div class="h-1 w-16 bg-gradient-to-l from-yellow-400 to-transparent rounded-full"></div>
           </div>
-          
+
           <h2 class="category-header reveal text-center">
             <span class="inline-block bg-gradient-to-r from-yellow-600 via-blue-700 to-blue-800 bg-clip-text text-transparent">
               Luxury Comfort & Dining
             </span>
           </h2>
+
           <p class="amenity-list reveal text-center">
             <span class="inline-block px-4 py-2 bg-gradient-to-r from-yellow-50 to-blue-50/50 rounded-full border border-yellow-100 shadow-sm">
               BAR and RESTAURANT • FUNCTION HALL • AIR CONDITIONED ROOMS
@@ -83,16 +162,78 @@
           </p>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mt-12">
-            <AmenityCard
+            <article
               v-for="(amenity, index) in eventAmenities"
               :key="amenity.title"
-              :title="amenity.title"
-              :description="amenity.description"
-              :images="amenity.images"
-              :bookable="amenity.bookable"
-              class="reveal group hover:transform hover:-translate-y-2 transition-all duration-500"
+              class="amenity-card reveal group"
               :style="`transition-delay: ${index * 100 + 300}ms`"
-            />
+            >
+              <div class="carousel-container">
+                <div
+                  class="carousel-track"
+                  :style="{ transform: `translateX(-${currentSlides[amenity.title] * 100}%)` }"
+                >
+                  <div
+                    v-for="(image, imageIndex) in amenity.images"
+                    :key="imageIndex"
+                    class="carousel-slide"
+                  >
+                    <img :src="image" :alt="`${amenity.title} ${imageIndex + 1}`" />
+                  </div>
+                </div>
+
+                <button
+                  class="carousel-arrow prev"
+                  @click="prevSlide(amenity.title, amenity.images.length)"
+                  aria-label="Previous image"
+                  type="button"
+                >
+                  &lt;
+                </button>
+
+                <button
+                  class="carousel-arrow next"
+                  @click="nextSlide(amenity.title, amenity.images.length)"
+                  aria-label="Next image"
+                  type="button"
+                >
+                  &gt;
+                </button>
+
+                <button
+                  class="see-more-btn"
+                  @click="toggleInfo(amenity.title)"
+                  type="button"
+                >
+                  {{ showInfo[amenity.title] ? 'See Less' : 'See More' }}
+                </button>
+
+                <div class="info-overlay" :class="{ show: showInfo[amenity.title] }">
+                  <div class="info-title">{{ amenity.title }}</div>
+                  <div class="info-desc">{{ amenity.description }}</div>
+                  <router-link
+                    v-if="amenity.bookable"
+                    to="/reservation"
+                    class="add-btn"
+                  >
+                    Book {{ amenity.title }}
+                  </router-link>
+                </div>
+              </div>
+
+              <div class="p-6 bg-white">
+                <h3 class="text-xl font-bold text-[#0C3B5E] mb-3">{{ amenity.title }}</h3>
+                <p class="text-gray-600 mb-5">{{ amenity.description }}</p>
+
+                <router-link
+                  v-if="amenity.bookable"
+                  to="/reservation"
+                  class="hidden sm:inline-flex add-btn"
+                >
+                  Book {{ amenity.title }}
+                </router-link>
+              </div>
+            </article>
           </div>
         </div>
 
@@ -124,13 +265,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import AppHeader from '../../components/AppHeader.vue'
 import AppSidebar from '../../components/AppSidebar.vue'
 import AppFooter from '../../components/AppFooter.vue'
 import ChatbotModal from '../../components/ChatbotModal.vue'
-import AmenitiesHero from '../../components/AmenitiesHero.vue'
-import AmenityCard from '../../components/AmenityCard.vue'
 
 const sidebarOpen = ref(false)
 
@@ -148,16 +287,16 @@ const poolAmenities = [
     title: 'Kiddie Pool w/ Slide',
     description: 'A colorful, shallow splash zone with a twisting slide designed just for little ones. Safe, supervised, and endlessly entertaining.',
     images: [
-      'images/img1.jpg',
-      'images/img2.jpg'
+      '/images/img1.jpg',
+      '/images/img2.jpg'
     ]
   },
   {
     title: 'Swimming Club',
     description: 'Join exclusive aqua-aerobics, swim lessons, or friendly competitions. Certified coaches ensure fun and fitness for all ages.',
     images: [
-      'images/img7.jpg',
-      'images/img1.jpg'
+      '/images/img7.jpg',
+      '/images/img1.jpg'
     ]
   }
 ]
@@ -167,7 +306,7 @@ const eventAmenities = [
     title: 'Bar and Restaurant',
     description: 'Savor tropical cocktails and gourmet Filipino-international fusion dishes while overlooking the pools. Open from sunrise to midnight.',
     images: [
-      'images/img8.jpg',
+      '/images/img8.jpg',
       'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80'
     ]
   },
@@ -184,14 +323,52 @@ const eventAmenities = [
     description: 'Private, stylish cottages with plush beds, en-suite bathrooms, and scenic views. Your serene home-away-from-home.',
     images: [
       'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-      'images/img10.jpg'
+      '/images/img10.jpg'
     ],
     bookable: true
   }
 ]
 
-// Intersection Observer for scroll reveal
+const currentSlides = ref({})
+const showInfo = ref({})
+let autoplayIntervals = []
+
+const allAmenities = [...poolAmenities, ...eventAmenities]
+
+allAmenities.forEach((amenity) => {
+  currentSlides.value[amenity.title] = 0
+  showInfo.value[amenity.title] = false
+})
+
+const nextSlide = (title, length) => {
+  currentSlides.value[title] = (currentSlides.value[title] + 1) % length
+}
+
+const prevSlide = (title, length) => {
+  currentSlides.value[title] = (currentSlides.value[title] - 1 + length) % length
+}
+
+const toggleInfo = (title) => {
+  showInfo.value[title] = !showInfo.value[title]
+}
+
+const startAutoplay = () => {
+  stopAutoplay()
+  autoplayIntervals = allAmenities.map((amenity) =>
+    setInterval(() => {
+      nextSlide(amenity.title, amenity.images.length)
+    }, 4000)
+  )
+}
+
+const stopAutoplay = () => {
+  autoplayIntervals.forEach((interval) => clearInterval(interval))
+  autoplayIntervals = []
+}
+
 onMounted(() => {
+  startAutoplay()
+
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -202,26 +379,53 @@ onMounted(() => {
   }, { threshold: 0.1 })
 
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
-  
-  // Add mouse move effect for amenity cards
+
   const cards = document.querySelectorAll('.group')
   cards.forEach(card => {
     card.addEventListener('mousemove', (e) => {
       const rect = card.getBoundingClientRect()
       const x = ((e.clientX - rect.left) / rect.width - 0.5) * 10
       const y = ((e.clientY - rect.top) / rect.height - 0.5) * 10
-      
       card.style.transform = `perspective(1000px) rotateY(${x}deg) rotateX(${-y}deg) translateY(-8px)`
     })
-    
+
     card.addEventListener('mouseleave', () => {
       card.style.transform = 'perspective(1000px) rotateY(0) rotateX(0) translateY(0)'
     })
   })
 })
+
+onUnmounted(() => {
+  stopAutoplay()
+})
 </script>
 
 <style scoped>
+.hero-amenities {
+  background-image:
+    radial-gradient(circle at 30% 40%, rgba(31, 141, 191, 0.25) 0%, transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(244, 196, 0, 0.2) 0%, transparent 40%),
+    linear-gradient(125deg, rgba(31, 141, 191, 0.4) 0%, rgba(244, 196, 0, 0.3) 100%),
+    url('https://www.eduardosresort.com/images/IMG_4224.JPG');
+  background-position: center;
+  background-size: cover;
+  background-blend-mode: overlay;
+  position: relative;
+}
+
+.hero-amenities::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.2) 100%);
+  pointer-events: none;
+}
+
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
 .category-header {
   font-weight: 900;
   font-size: 2.5rem;
@@ -241,13 +445,173 @@ onMounted(() => {
 .reveal {
   opacity: 0;
   transform: translateY(40px) scale(0.95);
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
               transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .reveal.visible {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+.amenity-card {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(2, 8, 20, 0.08);
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.amenity-card:hover {
+  transform: translateY(-12px);
+  box-shadow: 0 10px 30px rgba(2, 8, 20, 0.12);
+}
+
+.carousel-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  height: 220px;
+}
+
+@media (min-width: 641px) {
+  .carousel-container {
+    height: 260px;
+  }
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.5s ease;
+  height: 100%;
+}
+
+.carousel-slide {
+  min-width: 100%;
+  position: relative;
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s ease;
+}
+
+.amenity-card:hover .carousel-slide img {
+  transform: scale(1.12);
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  background: rgba(255,255,255,.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: #2B6CB0;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  cursor: pointer;
+  z-index: 20;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.carousel-arrow:hover {
+  background: white;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 18px rgba(0,0,0,.15);
+}
+
+.carousel-arrow.prev {
+  left: 1rem;
+}
+
+.carousel-arrow.next {
+  right: 1rem;
+}
+
+.see-more-btn {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,.25);
+  backdrop-filter: blur(10px);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 1.2rem;
+  border-radius: 50px;
+  border: 1.5px solid rgba(255,255,255,.4);
+  transition: all 0.3s ease;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  cursor: pointer;
+}
+
+.see-more-btn:hover {
+  background: rgba(255,255,255,.4);
+  transform: translateX(-50%) translateY(-3px);
+}
+
+.info-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 2rem 1.5rem 1.5rem;
+  background: linear-gradient(to top, rgba(139,94,60,.98), rgba(139,94,60,.9) 70%, transparent);
+  color: white;
+  transform: translateY(100%);
+  transition: transform 0.4s ease;
+  z-index: 15;
+  border-radius: 0 0 16px 16px;
+}
+
+.info-overlay.show {
+  transform: translateY(0);
+}
+
+.info-title {
+  font-weight: 700;
+  font-size: 1.35rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,.7);
+  margin-bottom: 0.5rem;
+}
+
+.info-desc {
+  font-size: 0.92rem;
+  margin-bottom: 1rem;
+  opacity: 0.95;
+  line-height: 1.5;
+}
+
+.add-btn {
+  background: #C19A6B;
+  color: white;
+  padding: 0.65rem 1.4rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(193,154,107,.3);
+  display: inline-block;
+  text-decoration: none;
+}
+
+.add-btn:hover {
+  background: #8B5E3C;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139,94,60,.4);
 }
 
 /* Animations */
@@ -284,12 +648,34 @@ onMounted(() => {
   }
 }
 
-@keyframes pulse {
+@keyframes pulse-soft {
   0%, 100% {
     opacity: 0.7;
   }
   50% {
     opacity: 1;
+  }
+}
+
+@keyframes pulse-hero {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes pulse-slow-hero {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(1) translateX(-50%);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.2) translateX(-50%);
   }
 }
 
@@ -307,10 +693,22 @@ onMounted(() => {
 }
 
 .animate-pulse-slow {
-  animation: pulse 3s ease-in-out infinite;
+  animation: pulse-soft 3s ease-in-out infinite;
 }
 
-/* Hover effects for cards */
+.animate-pulse {
+  animation: pulse-hero 4s ease-in-out infinite;
+}
+
+.animate-pulse-slow-hero {
+  animation: pulse-slow-hero 6s ease-in-out infinite;
+  left: 50% !important;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
+}
+
 .group {
   transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -325,28 +723,73 @@ onMounted(() => {
   .category-header {
     font-size: 1.8rem;
   }
-  
+
   .amenity-list {
     font-size: 0.95rem;
   }
-  
+
   .grid {
     gap: 1.5rem;
   }
 }
 
 @media (max-width: 640px) {
+  .hero-amenities {
+    min-height: 450px;
+  }
+
+  .text-\[32px\] {
+    font-size: 28px;
+  }
+
+  .max-w-2xl {
+    max-width: 100%;
+  }
+
   .category-header {
     font-size: 1.5rem;
   }
-  
+
   .amenity-list {
     font-size: 0.85rem;
   }
-  
+
   .py-20 {
     padding-top: 3rem;
     padding-bottom: 3rem;
+  }
+
+  .carousel-container {
+    height: 220px;
+  }
+
+  .info-title {
+    font-size: 1.25rem;
+  }
+
+  .info-desc {
+    font-size: 0.9rem;
+  }
+
+  .see-more-btn {
+    font-size: 0.8rem;
+    padding: 0.45rem 1rem;
+  }
+
+  .add-btn {
+    padding: 0.6rem 1.3rem;
+    font-size: 0.85rem;
+  }
+
+  .amenity-card:hover {
+    transform: translateY(-6px);
+  }
+}
+
+@media (min-width: 641px) {
+  .see-more-btn,
+  .info-overlay {
+    display: none !important;
   }
 }
 </style>

@@ -1,90 +1,104 @@
-<template> 
-  <header 
-    :class="[
-      'sticky top-0 z-[100] bg-gradient-to-r from-[#1E88B6]/95 to-[#1F8DBF]/95 backdrop-blur-lg shadow-lg transition-all duration-300', 
-      isVisible ? 'translate-y-0' : '-translate-y-full'
-    ]"
+<template>
+  <header
+    class="fixed top-0 left-0 w-full z-[100] backdrop-blur-lg shadow-lg bg-sky-700/95"
   >
-    <div class="container mx-auto px-4 py-4">
-      <div class="flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-[72px] sm:h-[78px]">
         <!-- Logo -->
-        <a href="#" class="flex items-center space-x-3 group">
+        <router-link to="/" class="flex items-center gap-3 min-w-0 group">
           <img
             src="/Eduardos Resort Logo.jpg"
             alt="Eduardos Resort"
-            class="h-12 w-auto max-w-[200px] drop-shadow-md group-hover:scale-105 transition-transform duration-300"
+            class="h-10 sm:h-11 md:h-12 w-auto max-w-[160px] sm:max-w-[190px] object-contain drop-shadow-md group-hover:scale-[1.03] transition-transform duration-300"
           />
-        </a>
+        </router-link>
 
         <!-- Desktop Navigation -->
-        <nav class="hidden md:flex space-x-10 items-center">
+        <nav class="hidden lg:flex items-center gap-7 xl:gap-9">
           <router-link
             v-for="link in mainNavLinks"
             :key="link.name"
             :to="link.path"
-            class="font-semibold text-white hover:text-[#F4C400] transition-all duration-300 relative
-                  after:content-[''] after:absolute after:bottom-[-8px] after:left-0
-                  after:w-0 after:h-[2px] after:bg-[#F2C200] after:transition-all
-                  after:duration-300 hover:after:w-full"
+            class="relative font-semibold text-white hover:text-[#F4C400] transition-all duration-300
+                   after:content-[''] after:absolute after:left-0 after:-bottom-2
+                   after:h-[2px] after:w-0 after:bg-[#F2C200] after:transition-all after:duration-300
+                   hover:after:w-full"
             active-class="text-[#F4C400] after:w-full"
           >
             {{ link.name }}
           </router-link>
 
-          <!-- Dropdown Menu -->
-          <div class="relative dropdown-menu">
-            <button 
-              @click="dropdownOpen = !dropdownOpen"
-              @mouseenter="dropdownOpen = true"
-              class="font-semibold text-white hover:text-[#F4C400] transition-colors duration-300 flex items-center gap-2 group"
+          <!-- Dropdown -->
+          <div
+            class="relative"
+            @mouseenter="dropdownOpen = true"
+            @mouseleave="dropdownOpen = false"
+          >
+            <button
+              class="flex items-center gap-2 font-semibold text-white hover:text-[#F4C400] transition-colors duration-300"
+              type="button"
             >
               About Us
-              <i :class="['fas fa-chevron-down text-xs transition-transform duration-300', 
-                         dropdownOpen ? 'rotate-180 text-[#F4C400]' : 'text-white group-hover:text-[#F4C400]']"></i>
+              <i
+                :class="[
+                  'fas fa-chevron-down text-xs transition-transform duration-300',
+                  dropdownOpen ? 'rotate-180 text-[#F4C400]' : 'text-white'
+                ]"
+              ></i>
             </button>
-            
-            <div 
-              v-if="dropdownOpen"
-              class="absolute top-full mt-3 w-56 bg-gradient-to-b from-[#1F8DBF] to-[#1E88B6] rounded-xl shadow-2xl border border-[#1E88B6]/50 py-3 z-50"
-              @mouseleave="dropdownOpen = false"
+
+            <transition
+              enter-active-class="transition duration-200 ease-out"
+              enter-from-class="opacity-0 translate-y-2"
+              enter-to-class="opacity-100 translate-y-0"
+              leave-active-class="transition duration-150 ease-in"
+              leave-from-class="opacity-100 translate-y-0"
+              leave-to-class="opacity-0 translate-y-2"
             >
-              <router-link
-                v-for="link in dropdownLinks"
-                :key="link.name"
-                :to="link.path"
-                class="block px-5 py-3 hover:bg-[#1E88B6]/50 hover:text-[#F4C400] transition-all duration-300 font-medium text-white border-b border-[#1E88B6]/30 last:border-b-0"
-                @click="dropdownOpen = false"
+              <div
+                v-if="dropdownOpen"
+                class="absolute right-0 top-full mt-3 w-56 rounded-2xl border border-white/20 bg-gradient-to-b from-[#1F8DBF] to-[#1E88B6] shadow-2xl py-2 overflow-hidden"
               >
-                <i class="fas fa-caret-right text-[#F2C200]/70 mr-3 text-xs"></i>
-                {{ link.name }}
-              </router-link>
-            </div>
+                <router-link
+                  v-for="link in dropdownLinks"
+                  :key="link.name"
+                  :to="link.path"
+                  class="flex items-center px-5 py-3 text-white font-medium hover:bg-white/10 hover:text-[#F4C400] transition-all duration-300"
+                  @click="dropdownOpen = false"
+                >
+                  <i class="fas fa-caret-right text-[#F2C200]/70 mr-3 text-xs"></i>
+                  {{ link.name }}
+                </router-link>
+              </div>
+            </transition>
           </div>
         </nav>
 
-        <!-- Desktop Auth Buttons -->
-        <div class="flex items-center space-x-5">
-          <!-- Login Button - Now with ReserVision dark blue text (#0C3B5E) -->
+        <!-- Right Side -->
+        <div class="flex items-center gap-2 sm:gap-3">
           <router-link
             to="/login"
-            class="hidden md:flex items-center gap-2 px-5 py-2.5 border-2 border-[#F2C200] text-[#0C3B5E] rounded-xl hover:bg-[#F4C400]/10 hover:border-[#F4C400] hover:text-[#0C3B5E]/80 transition-all duration-300 font-semibold group"
+            class="hidden md:inline-flex items-center gap-2 px-4 lg:px-5 py-2.5 rounded-xl border border-[#F2C200] text-white hover:bg-[#F4C400]/10 hover:border-[#F4C400] hover:text-[#F4C400] transition-all duration-300 font-semibold"
           >
             <i class="fas fa-sign-in-alt text-sm"></i>
             Login
           </router-link>
 
-          <!-- Sign Up Button -->
           <router-link
             to="/signup"
-            class="hidden md:flex items-center gap-2 px-6 py-2.5 bg-[#F4C400] text-[#1E88B6] rounded-xl hover:bg-[#F2C200] hover:shadow-lg hover:shadow-[#F4C400]/30 transition-all duration-300 font-bold group"
+            class="hidden md:inline-flex items-center gap-2 px-5 lg:px-6 py-2.5 rounded-xl bg-[#F4C400] text-[#0C3B5E] hover:bg-[#F2C200] hover:shadow-lg hover:shadow-[#F4C400]/30 transition-all duration-300 font-bold"
           >
             <i class="fas fa-user-plus text-sm"></i>
             Sign Up
           </router-link>
-                    
-          <!-- Mobile Menu Button -->
-          <button @click="$emit('toggle-sidebar')" class="md:hidden text-2xl text-[#F4C400] hover:text-[#F2C200] hover:scale-110 transition-all duration-300">
-            <i class="fas fa-bars"></i>
+
+          <button
+            @click="$emit('toggle-sidebar')"
+            class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl text-[#F4C400] hover:bg-white/10 hover:text-[#F2C200] transition-all duration-300"
+            aria-label="Open menu"
+            type="button"
+          >
+            <i class="fas fa-bars text-xl"></i>
           </button>
         </div>
       </div>
@@ -93,18 +107,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 
-const emit = defineEmits(['toggle-sidebar'])
+defineEmits(['toggle-sidebar'])
 
-const navLinks = [
+const mainNavLinks = [
   { name: 'Home', path: '/' },
   { name: 'Amenities', path: '/amenities' },
   { name: 'Rates', path: '/rates' },
   { name: 'Swimming', path: '/swimming' }
 ]
-
-const mainNavLinks = navLinks
 
 const dropdownLinks = [
   { name: 'Gallery', path: '/gallery' },
@@ -113,148 +125,10 @@ const dropdownLinks = [
 ]
 
 const dropdownOpen = ref(false)
-
-const isVisible = ref(true)
-let lastScrollY = 0
-
-const handleScroll = () => {
-  const currentScrollY = window.scrollY
-  
-  if (currentScrollY > lastScrollY && currentScrollY > 100) {
-    isVisible.value = false
-  } else {
-    isVisible.value = true
-  }
-  
-  lastScrollY = currentScrollY
-}
-
-onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
-})
 </script>
 
 <style scoped>
-/* Enhanced shadow for better visibility */
-.shadow-lg {
+header {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-/* Smooth transitions */
-.transition-all {
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 300ms;
-}
-
-/* ======================================================
-   APPLIED POSTER PALETTE
-   🔵 Blue #1: #1E88B6 (slightly deeper cerulean)
-   🔵 Blue #2: #1F8DBF (brighter cerulean)
-   🔵 ReserVision Blue: #0C3B5E (dark blue)
-   🟡 Yellow #1: #F2C200 (rich golden yellow)
-   🟡 Yellow #2: #F4C400 (brighter golden yellow)
-   ====================================================== */
-
-/* Text yellows */
-.text-\[\#F4C400\] {
-  color: #F4C400;
-}
-.text-\[\#F2C200\] {
-  color: #F2C200;
-}
-.hover\:text-\[\#F4C400\]:hover {
-  color: #F4C400;
-}
-.hover\:text-\[\#F2C200\]:hover {
-  color: #F2C200;
-}
-
-/* Text blues */
-.text-\[\#0C3B5E\] {
-  color: #0C3B5E;
-}
-.text-\[\#1E88B6\] {
-  color: #1E88B6;
-}
-.text-\[\#1F8DBF\] {
-  color: #1F8DBF;
-}
-.hover\:text-\[\#0C3B5E\]\/80:hover {
-  color: rgba(12, 59, 94, 0.8);
-}
-
-/* Button backgrounds */
-.bg-\[\#F4C400\] {
-  background-color: #F4C400;
-}
-.bg-\[\#F2C200\] {
-  background-color: #F2C200;
-}
-.bg-\[\#1F8DBF\] {
-  background-color: #1F8DBF;
-}
-.bg-\[\#1E88B6\] {
-  background-color: #1E88B6;
-}
-.hover\:bg-\[\#F4C400\]\/10:hover {
-  background-color: rgba(244, 196, 0, 0.1);
-}
-.hover\:bg-\[\#F2C200\]:hover {
-  background-color: #F2C200;
-}
-
-/* Borders */
-.border-\[\#F2C200\] {
-  border-color: #F2C200;
-}
-.hover\:border-\[\#F4C400\]:hover {
-  border-color: #F4C400;
-}
-
-/* Header gradient blues */
-.from-\[\#1E88B6\]\/95 {
-  --tw-gradient-from: rgba(30, 136, 182, 0.95);
-}
-.to-\[\#1F8DBF\]\/95 {
-  --tw-gradient-to: rgba(31, 141, 191, 0.95);
-}
-
-/* Dropdown backgrounds */
-.from-\[\#1F8DBF\] {
-  --tw-gradient-from: #1F8DBF;
-}
-.to-\[\#1E88B6\] {
-  --tw-gradient-to: #1E88B6;
-}
-
-/* Border / hover blues used in dropdown */
-.border-\[\#1E88B6\]\/50 {
-  border-color: rgba(30, 136, 182, 0.5);
-}
-.border-\[\#1E88B6\]\/30 {
-  border-color: rgba(30, 136, 182, 0.3);
-}
-.hover\:bg-\[\#1E88B6\]\/50:hover {
-  background-color: rgba(30, 136, 182, 0.5);
-}
-
-/* Underline color for nav */
-.after\:bg-\[\#F2C200\]::after {
-  background-color: #F2C200;
-}
-
-/* Caret highlight */
-.text-\[\#F2C200\]\/70 {
-  color: rgba(242, 194, 0, 0.7);
-}
-
-/* Shadow effects */
-.hover\:shadow-\[\#F4C400\]\/30:hover {
-  --tw-shadow-color: rgba(244, 196, 0, 0.3);
 }
 </style>
