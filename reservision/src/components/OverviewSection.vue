@@ -1,5 +1,5 @@
 <template>
-  <section class="py-12 bg-neutral-gray text-center">
+  <section class="py-12 bg-transparent text-center">
     <h2 class="text-3xl font-bold mb-4 gradient-border section-head-center">Welcome to Eduardo's Resort Website</h2>
     <div class="max-w-5xl mx-auto px-4">
       <h3 class="text-xl font-bold mb-4 text-left">The Company</h3>

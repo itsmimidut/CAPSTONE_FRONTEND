@@ -1,5 +1,5 @@
 <template>
-  <section class="py-16 bg-neutral-gray">
+  <section class="py-16 bg-transparent">
     <div class="container mx-auto px-4">
       <div class="text-center mb-12">
         <h2 class="text-3xl font-bold mb-4 gradient-border section-head-center">Moments at ReserVision</h2>

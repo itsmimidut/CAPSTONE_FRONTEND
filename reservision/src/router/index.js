@@ -75,6 +75,7 @@ import SwimmingManagement from '../views/admin/SwimmingManagement.vue'
 import RoomandCottageManagement from '../views/admin/RoomAndCottage.vue'
 import WebsiteReservation from '../views/website/Reservation.vue'
 import SalesReport from '../views/admin/SalesReport.vue'
+import LandingPage from '../views/website/ResortHomepageSample2.vue'
 // import CustomerDashboard from '../views/customer/CustomerDashboard.vue'
 
 // ============================================================

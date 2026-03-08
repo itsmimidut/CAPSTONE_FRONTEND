@@ -1,0 +1,288 @@
+<template>
+  <div class="bg-slate-50 text-slate-800 overflow-x-hidden min-h-screen">
+    <!-- Navbar -->
+    <header class="fixed top-0 left-0 w-full z-50 bg-sky-700/95 backdrop-blur shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
+        <div class="flex items-center justify-between h-16 sm:h-20">
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div class="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-yellow-400 flex items-center justify-center font-extrabold text-sky-900">
+              ER
+            </div>
+            <div class="min-w-0">
+              <h1 class="text-white font-bold text-sm sm:text-lg leading-none truncate">Eduardo's Resort</h1>
+              <p class="text-sky-100 text-[10px] sm:text-xs truncate">ReserVision</p>
+            </div>
+          </div>
+
+          <nav class="hidden lg:flex items-center gap-6 xl:gap-8 text-white font-medium">
+            <a href="#home" class="hover:text-yellow-300 transition">Home</a>
+            <a href="#amenities" class="hover:text-yellow-300 transition">Amenities</a>
+            <a href="#gallery" class="hover:text-yellow-300 transition">Gallery</a>
+            <a href="#location" class="hover:text-yellow-300 transition">Location</a>
+            <a href="#contact" class="hover:text-yellow-300 transition">Contact</a>
+          </nav>
+
+          <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+            <button class="hidden sm:inline-flex px-4 py-2 rounded-full border border-white text-white text-sm font-medium hover:bg-white hover:text-sky-700 transition">
+              Login
+            </button>
+            <button class="px-3 sm:px-5 py-2 rounded-full bg-yellow-400 text-sky-900 text-sm sm:text-base font-semibold hover:scale-105 transition whitespace-nowrap">
+              Book Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section id="home" class="relative min-h-[92vh] sm:min-h-screen flex items-center justify-center overflow-hidden">
+      <img
+        src="https://www.eduardosresort.com/images/IMG_0635.JPG"
+        alt="Resort background"
+        class="absolute inset-0 w-full h-full object-cover"
+      />
+      <div class="absolute inset-0 bg-slate-900/45"></div>
+
+      <div class="relative max-w-4xl mx-auto px-4 sm:px-6 text-center pt-24 sm:pt-28 pb-12">
+        <div class="inline-block px-4 py-2 rounded-full bg-white/20 backdrop-blur text-white text-sm font-medium mb-5 sm:mb-6">
+          Waterpark & Wellness Resort
+        </div>
+        <h2 class="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-[1.15] sm:leading-tight mb-4 sm:mb-6 max-w-[320px] sm:max-w-2xl lg:max-w-3xl mx-auto">
+          Experience a More
+          <span class="text-yellow-300 block sm:inline">Professional Resort Booking</span>
+        </h2>
+        <p class="text-slate-100 text-[15px] sm:text-base md:text-lg leading-8 sm:leading-relaxed max-w-[310px] sm:max-w-xl md:max-w-2xl mx-auto mb-6 sm:mb-8 px-1 sm:px-2">
+          Relax, swim, celebrate, and reserve with ease. A cleaner, modern homepage design that feels more
+          premium and guest-friendly.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
+          <button class="w-full sm:w-auto px-5 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-yellow-400 text-sky-900 text-base font-bold shadow-xl hover:-translate-y-1 transition">
+            Book Your Escape
+          </button>
+          <button class="w-full sm:w-auto px-5 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-white/15 border border-white text-white text-base font-semibold backdrop-blur hover:bg-white/25 transition">
+            Explore Amenities
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="amenities" class="py-14 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-10 bg-white">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-10 sm:mb-12 lg:mb-14">
+          <p class="text-sky-700 font-semibold mb-2 text-sm sm:text-base">Why Guests Choose Us</p>
+          <h3 class="text-2xl sm:text-3xl md:text-4xl font-bold">Welcome to Eduardo's Resort</h3>
+          <p class="text-slate-600 mt-4 max-w-2xl mx-auto text-sm sm:text-base">
+            Instead of a long paragraph, use feature cards so visitors can understand your resort faster.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
+          <div class="bg-slate-50 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-lg transition">
+            <div class="text-4xl mb-4">🏊</div>
+            <h4 class="text-lg sm:text-xl font-bold mb-3">Olympic-Size Pool</h4>
+            <p class="text-slate-600 text-sm sm:text-base">
+              Enjoy swimming lessons, training sessions, and family-friendly water activities in a clean and
+              spacious environment.
+            </p>
+          </div>
+
+          <div class="bg-slate-50 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-lg transition">
+            <div class="text-4xl mb-4">🌴</div>
+            <h4 class="text-lg sm:text-xl font-bold mb-3">Relaxing Atmosphere</h4>
+            <p class="text-slate-600 text-sm sm:text-base">
+              A refreshing escape with open spaces, fresh air, and a peaceful setting ideal for family bonding and
+              rest.
+            </p>
+          </div>
+
+          <div class="bg-slate-50 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-lg transition md:col-span-2 xl:col-span-1">
+            <div class="text-4xl mb-4">🎉</div>
+            <h4 class="text-lg sm:text-xl font-bold mb-3">Events & Celebrations</h4>
+            <p class="text-slate-600 text-sm sm:text-base">
+              Perfect for birthdays, team building, reunions, and private gatherings with booking options made
+              simple.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Strip -->
+    <section class="px-4 sm:px-6 lg:px-10 py-5 sm:py-6 bg-sky-100">
+      <div class="max-w-7xl mx-auto bg-gradient-to-r from-sky-700 to-sky-500 rounded-3xl px-5 sm:px-8 py-6 sm:py-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6 shadow-lg">
+        <div>
+          <h4 class="text-xl sm:text-2xl font-bold text-white mb-2">Plan Your Perfect Getaway</h4>
+          <p class="text-sky-100 text-sm sm:text-base">
+            Reserve tickets, private cottages, or special event packages with a smoother booking experience.
+          </p>
+        </div>
+        <button class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-yellow-400 text-sky-900 font-bold hover:scale-105 transition">
+          Reserve Now
+        </button>
+      </div>
+    </section>
+
+    <!-- Gallery -->
+    <section id="gallery" class="py-14 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-10 bg-slate-50">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-10 sm:mb-12 lg:mb-14">
+          <p class="text-sky-700 font-semibold mb-2 text-sm sm:text-base">Gallery</p>
+          <h3 class="text-2xl sm:text-3xl md:text-4xl font-bold">Moments at ReserVision</h3>
+          <p class="text-slate-600 mt-4 text-sm sm:text-base">
+            Use a clean photo grid instead of images floating on top of the page.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+          <img
+            class="w-full h-64 sm:h-72 object-cover rounded-3xl shadow-md hover:scale-[1.02] transition"
+            src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=80"
+            alt="Poolside view"
+          />
+          <img
+            class="w-full h-64 sm:h-72 object-cover rounded-3xl shadow-md hover:scale-[1.02] transition"
+            src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=900&q=80"
+            alt="Resort room"
+          />
+          <img
+            class="w-full h-64 sm:h-72 object-cover rounded-3xl shadow-md hover:scale-[1.02] transition sm:col-span-2 xl:col-span-1"
+            src="https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=900&q=80"
+            alt="Swimming pool"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- Reviews -->
+    <section class="py-14 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-10 bg-white">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-10 sm:mb-12 lg:mb-14">
+          <p class="text-sky-700 font-semibold mb-2 text-sm sm:text-base">Guest Reviews</p>
+          <h3 class="text-2xl sm:text-3xl md:text-4xl font-bold">What Visitors Say</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
+          <div class="p-6 sm:p-8 rounded-3xl bg-slate-50 shadow-sm">
+            <p class="text-yellow-500 text-xl mb-4">★★★★★</p>
+            <p class="text-slate-600 mb-4 text-sm sm:text-base">
+              "The place is clean, family-friendly, and the booking process feels easy and modern."
+            </p>
+            <h5 class="font-bold">Maria S.</h5>
+          </div>
+          <div class="p-6 sm:p-8 rounded-3xl bg-slate-50 shadow-sm">
+            <p class="text-yellow-500 text-xl mb-4">★★★★★</p>
+            <p class="text-slate-600 mb-4 text-sm sm:text-base">
+              "Perfect for swimming events and weekend relaxation. The website design feels more professional."
+            </p>
+            <h5 class="font-bold">John R.</h5>
+          </div>
+          <div class="p-6 sm:p-8 rounded-3xl bg-slate-50 shadow-sm md:col-span-2 xl:col-span-1">
+            <p class="text-yellow-500 text-xl mb-4">★★★★★</p>
+            <p class="text-slate-600 mb-4 text-sm sm:text-base">
+              "A great place for celebrations. I like how clear the sections and buttons are."
+            </p>
+            <h5 class="font-bold">Angela D.</h5>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Location -->
+    <section id="location" class="py-14 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-10 bg-sky-50">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-10 sm:mb-12 lg:mb-14">
+          <p class="text-sky-700 font-semibold mb-2 text-sm sm:text-base">Find Us</p>
+          <h3 class="text-[20px] sm:text-3xl md:text-4xl font-bold leading-tight px-2">Visit Eduardo's Resort</h3>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 lg:gap-8 mb-8">
+          <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm">
+            <h4 class="font-bold text-lg mb-2">📍 Location</h4>
+            <p class="text-slate-600 text-[15px] sm:text-base leading-8 sm:leading-relaxed">
+              Barangay Masipit, Calapan City, Oriental Mindoro
+            </p>
+          </div>
+          <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm">
+            <h4 class="font-bold text-lg mb-2">🕐 Opening Hours</h4>
+            <p class="text-slate-600 text-[15px] sm:text-base leading-8 sm:leading-relaxed">8:00 AM - 8:00 PM</p>
+          </div>
+          <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm md:col-span-2 xl:col-span-1">
+            <h4 class="font-bold text-lg mb-2">📞 Contact</h4>
+            <p class="text-slate-600 text-[15px] sm:text-base leading-8 sm:leading-relaxed break-words">
+              +63 928 8906 708 / Eduardosreservation@gmail.com
+            </p>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-3xl shadow-lg border border-slate-200">
+          <iframe
+            src="https://www.google.com/maps?q=Eduardo%27s%20Resort%20Calapan%20City&t=&z=15&ie=UTF8&iwloc=&output=embed"
+            width="100%"
+            height="320"
+            class="sm:h-[380px] lg:h-[420px]"
+            style="border: 0"
+            allowfullscreen
+            loading="lazy"
+            title="Eduardo's Resort Location Map"
+          ></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-slate-900 text-slate-200 py-12 sm:py-14 px-4 sm:px-6 lg:px-10">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 sm:gap-10">
+        <div>
+          <h4 class="text-lg sm:text-xl font-bold text-white mb-4">Eduardo's Resort</h4>
+          <p class="text-slate-400 text-sm sm:text-base">
+            A modern resort website sample with a cleaner homepage, better layout, and more professional guest
+            experience.
+          </p>
+        </div>
+
+        <div>
+          <h5 class="font-semibold text-white mb-4">Quick Links</h5>
+          <ul class="space-y-2 text-slate-400 text-sm sm:text-base">
+            <li>Home</li>
+            <li>Amenities</li>
+            <li>Gallery</li>
+            <li>Location</li>
+          </ul>
+        </div>
+
+        <div>
+          <h5 class="font-semibold text-white mb-4">Contact</h5>
+          <ul class="space-y-2 text-slate-400 text-sm sm:text-base break-words">
+            <li>Email: Eduardosreservation@gmail.com</li>
+            <li>Phone: +63 928 8906 708</li>
+            <li>Calapan City, Oriental Mindoro</li>
+          </ul>
+        </div>
+
+        <div>
+          <h5 class="font-semibold text-white mb-4">Connect With Us</h5>
+          <div class="flex gap-3">
+            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">f</div>
+            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">ig</div>
+            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">t</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="max-w-7xl mx-auto mt-10 pt-6 border-t border-slate-800 text-center text-slate-500 text-sm">
+        © 2026 Eduardo's Resort. All rights reserved.
+      </div>
+    </footer>
+  </div>
+</template>
+
+<script setup>
+// Static sample page converted from public HTML to Vue SFC.
+</script>
+
+<style scoped>
+:global(body) {
+  font-family: 'Poppins', sans-serif;
+}
+</style>

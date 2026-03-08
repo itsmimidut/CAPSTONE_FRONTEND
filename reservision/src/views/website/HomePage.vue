@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-white">
+  <div class="homepage-bg min-h-screen">
     <!-- Header -->
     <AppHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
     
@@ -46,3 +46,12 @@ import MapSection from '../../components/MapSection.vue'
 const sidebarOpen = ref(false)
 const menuOpen = ref(false)
 </script>
+
+<style scoped>
+.homepage-bg {
+  background-image: url('/images/hero_bg.jpg');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+</style>
