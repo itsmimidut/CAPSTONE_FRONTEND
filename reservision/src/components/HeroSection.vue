@@ -70,7 +70,7 @@
 </template>
 
 <style scoped>
-.hero-bg {
+/* .hero-bg {
   background-image: 
     radial-gradient(circle at 30% 40%, rgba(31, 141, 191, 0.25) 0%, transparent 40%),
     radial-gradient(circle at 70% 60%, rgba(244, 196, 0, 0.2) 0%, transparent 40%),
@@ -80,6 +80,10 @@
   background-size: cover;
   background-blend-mode: overlay;
   position: relative;
+} */
+
+.hero-bg{
+  background-color: transparent;
 }
 
 .hero-bg::before {
