@@ -1,81 +1,4 @@
 <template>
-<<<<<<< HEAD
-  <div class="orders-page">
-    <!-- Filter Panel -->
-    <div class="filter-panel" v-if="!isLoading || orders.length > 0">
-      <div class="filter-grid">
-        <!-- Search by ID -->
-        <div class="filter-group">
-          <label class="filter-label">Receipt / Order ID</label>
-          <div class="input-wrapper">
-            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-            <input
-              v-model="filters.search"
-              type="text"
-              placeholder="Search receipt number..."
-              class="filter-input"
-            />
-            <button v-if="filters.search" class="clear-input" @click="filters.search = ''">×</button>
-          </div>
-        </div>
-
-        <!-- Date From -->
-        <div class="filter-group">
-          <label class="filter-label">Date From</label>
-          <div class="input-wrapper">
-            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-            </svg>
-            <input v-model="filters.dateFrom" type="date" class="filter-input date-input" />
-          </div>
-        </div>
-
-        <!-- Date To -->
-        <div class="filter-group">
-          <label class="filter-label">Date To</label>
-          <div class="input-wrapper">
-            <svg class="input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-            </svg>
-            <input v-model="filters.dateTo" type="date" class="filter-input date-input" />
-          </div>
-        </div>
-
-        <!-- Amount Range -->
-        <div class="filter-group">
-          <label class="filter-label">Amount Range</label>
-          <div class="amount-range">
-            <input v-model.number="filters.amountMin" type="number" placeholder="Min ₱" class="filter-input amount-input" min="0" />
-            <span class="range-sep">–</span>
-            <input v-model.number="filters.amountMax" type="number" placeholder="Max ₱" class="filter-input amount-input" min="0" />
-          </div>
-        </div>
-
-        <!-- Sort -->
-        <div class="filter-group">
-          <label class="filter-label">Sort By</label>
-          <div class="input-wrapper">
-            <select v-model="filters.sortBy" class="filter-input filter-select">
-              <option value="date_desc">Newest First</option>
-              <option value="date_asc">Oldest First</option>
-              <option value="amount_desc">Highest Amount</option>
-              <option value="amount_asc">Lowest Amount</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active Filters + Clear -->
-      <div class="filter-footer" v-if="hasActiveFilters">
-        <div class="active-filter-tags">
-          <span class="filter-count">{{ filteredOrders.length }} result{{ filteredOrders.length !== 1 ? 's' : '' }}</span>
-          <button class="clear-all-btn" @click="clearFilters">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            Clear Filters
-          </button>
-=======
   <div class="order-history-container">
     <!-- Header (only show for standalone mode) -->
     <div v-if="showHeader" class="history-header">
@@ -231,7 +154,6 @@
               </button>
             </div>
           </div>
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
         </div>
       </div>
     </div>
@@ -395,13 +317,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const API_BASE = 'http://localhost:8000/api/pos'
 
 const props = defineProps({
   showHeader: { type: Boolean, default: true }
 })
+
 const emit = defineEmits(['close', 'reorder'])
 
 // State
@@ -425,8 +348,11 @@ const filters = ref({
 
 // Computed
 const hasActiveFilters = computed(() =>
-  filters.value.search || filters.value.dateFrom || filters.value.dateTo ||
-  filters.value.amountMin || filters.value.amountMax
+  filters.value.search ||
+  filters.value.dateFrom ||
+  filters.value.dateTo ||
+  filters.value.amountMin ||
+  filters.value.amountMax
 )
 
 const filteredOrders = computed(() => {
@@ -438,25 +364,34 @@ const filteredOrders = computed(() => {
   }
 
   if (filters.value.dateFrom) {
-    result = result.filter(o => new Date(o.transaction_date) >= new Date(filters.value.dateFrom))
+    result = result.filter(
+      o => new Date(o.transaction_date) >= new Date(filters.value.dateFrom)
+    )
   }
 
   if (filters.value.dateTo) {
-    result = result.filter(o => new Date(o.transaction_date) <= new Date(filters.value.dateTo))
+    result = result.filter(
+      o => new Date(o.transaction_date) <= new Date(filters.value.dateTo)
+    )
   }
 
   if (filters.value.amountMin != null && filters.value.amountMin !== '') {
-    result = result.filter(o => parseFloat(o.total_amount) >= filters.value.amountMin)
+    result = result.filter(
+      o => parseFloat(o.total_amount) >= filters.value.amountMin
+    )
   }
 
   if (filters.value.amountMax != null && filters.value.amountMax !== '') {
-    result = result.filter(o => parseFloat(o.total_amount) <= filters.value.amountMax)
+    result = result.filter(
+      o => parseFloat(o.total_amount) <= filters.value.amountMax
+    )
   }
 
-  // Sort
   const [sortField, sortDir] = filters.value.sortBy.split('_')
+
   result.sort((a, b) => {
     let va, vb
+
     if (sortField === 'date') {
       va = new Date(`${a.transaction_date} ${a.transaction_time}`)
       vb = new Date(`${b.transaction_date} ${b.transaction_time}`)
@@ -464,6 +399,7 @@ const filteredOrders = computed(() => {
       va = parseFloat(a.total_amount)
       vb = parseFloat(b.total_amount)
     }
+
     return sortDir === 'desc' ? vb - va : va - vb
   })
 
@@ -484,35 +420,37 @@ const fetchOrders = async (silent = false) => {
     if (!response.ok) throw new Error('Failed to fetch orders')
 
     const all = await response.json()
+
     const filtered = all
       .filter(t => t.type === 'E-Shop')
-      .sort((a, b) => new Date(`${b.transaction_date} ${b.transaction_time}`) - new Date(`${a.transaction_date} ${a.transaction_time}`))
+      .sort(
+        (a, b) =>
+          new Date(`${b.transaction_date} ${b.transaction_time}`) -
+          new Date(`${a.transaction_date} ${a.transaction_time}`)
+      )
 
-    // Detect new orders for animation
     const existingIds = orders.value.map(o => o.id)
-    const incoming = filtered.map(o => o.id)
-    const newIds = incoming.filter(id => !existingIds.includes(id))
+    const incomingIds = filtered.map(o => o.id)
+    const newIds = incomingIds.filter(id => !existingIds.includes(id))
+
     if (newIds.length > 0 && orders.value.length > 0) {
       newOrderIds.value = newIds
-      setTimeout(() => { newOrderIds.value = [] }, 3000)
+      setTimeout(() => {
+        newOrderIds.value = []
+      }, 3000)
     }
 
     orders.value = filtered
-
   } catch (err) {
-    if (!silent) error.value = 'Failed to load order history. Please try again.'
+    if (!silent) {
+      error.value = 'Failed to load order history. Please try again.'
+    }
     console.error('Error fetching orders:', err)
   } finally {
     isLoading.value = false
   }
 }
 
-<<<<<<< HEAD
-// Polling for real-time updates (every 10 seconds)
-const startPolling = () => {
-  isPolling.value = true
-  pollingInterval = setInterval(() => fetchOrders(true), 10000)
-=======
 const refreshOrders = () => {
   fetchOrders()
 }
@@ -523,39 +461,23 @@ const deleteAllOrders = () => {
 
   orders.value = []
   expandedOrder.value = null
-  totalOrders.value = 0
-  hasMore.value = false
 }
 
 const deleteSelectedOrder = () => {
   if (!expandedOrder.value) {
-    return alert('Please open an order first to select it, then try again.')
+    alert('Please open an order first to select it, then try again.')
+    return
   }
 
   const selectedId = expandedOrder.value
   const selected = orders.value.find(o => o.id === selectedId)
-
   const label = selected?.receipt_no ? `Receipt ${selected.receipt_no}` : 'this order'
+
   const ok = window.confirm(`Delete ${label} from the list?`)
   if (!ok) return
 
-  const idx = orders.value.findIndex(o => o.id === selectedId)
-  if (idx >= 0) {
-    orders.value.splice(idx, 1)
-    totalOrders.value = orders.value.length
-  }
-
+  orders.value = orders.value.filter(o => o.id !== selectedId)
   expandedOrder.value = null
-}
-
-const toggleOrder = (orderId) => {
-  expandedOrder.value = expandedOrder.value === orderId ? null : orderId
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
-}
-
-const stopPolling = () => {
-  isPolling.value = false
-  clearInterval(pollingInterval)
 }
 
 const toggleOrder = (id) => {
@@ -564,12 +486,21 @@ const toggleOrder = (id) => {
 
 const parseItems = (items) => {
   if (Array.isArray(items)) return items
-  try { return JSON.parse(items) } catch { return [] }
+
+  try {
+    return JSON.parse(items)
+  } catch {
+    return []
+  }
 }
 
 const formatDate = (d) => {
   if (!d) return ''
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(d).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
 }
 
 const formatTime = (t) => {
@@ -578,17 +509,24 @@ const formatTime = (t) => {
 }
 
 const clearFilters = () => {
-  filters.value = { search: '', dateFrom: '', dateTo: '', amountMin: null, amountMax: null, sortBy: 'date_desc' }
+  filters.value = {
+    search: '',
+    dateFrom: '',
+    dateTo: '',
+    amountMin: null,
+    amountMax: null,
+    sortBy: 'date_desc'
+  }
 }
 
-/* Send selected order items back to Cart via existing emit pathway */
 const reorder = (order) => {
   emit('reorder', parseItems(order.items))
   emit('close')
 }
 
 const confirmDelete = (id) => {
-  if (confirm('Delete this order? This action cannot be undone.')) deleteOrder(id)
+  const ok = window.confirm('Delete this order? This action cannot be undone.')
+  if (ok) deleteOrder(id)
 }
 
 const deleteOrder = async (id) => {
@@ -597,11 +535,35 @@ const deleteOrder = async (id) => {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     })
-    if (!res.ok) throw new Error()
+
+    if (!res.ok) throw new Error('Delete failed')
+
     orders.value = orders.value.filter(o => o.id !== id)
-    if (expandedOrder.value === id) expandedOrder.value = null
-  } catch {
+
+    if (expandedOrder.value === id) {
+      expandedOrder.value = null
+    }
+  } catch (err) {
+    console.error('Delete error:', err)
     alert('Failed to delete order. Please try again.')
+  }
+}
+
+const startPolling = () => {
+  stopPolling()
+  isPolling.value = true
+
+  pollingInterval = setInterval(() => {
+    fetchOrders(true)
+  }, 10000)
+}
+
+const stopPolling = () => {
+  isPolling.value = false
+
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+    pollingInterval = null
   }
 }
 
@@ -616,15 +578,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-<<<<<<< HEAD
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap');
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-.orders-page {
-  font-family: 'Outfit', sans-serif;
-  background: #f5f6fa;
-=======
 /* ========================================
    Apply SAME Tropical Resort Palette (Color-only)
    - Ocean Blue (primary):    #1E88B6
@@ -640,7 +593,6 @@ onUnmounted(() => {
 
 .order-history-container {
   background: #E3F2F9; /* pale ocean surface */
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
   min-height: 100vh;
   color: #1a1d27;
 }
@@ -778,72 +730,6 @@ onUnmounted(() => {
 .state-container {
   display: flex;
   flex-direction: column;
-<<<<<<< HEAD
-  align-items: center;
-  justify-content: center;
-  padding: 5rem 2rem;
-  text-align: center;
-}
-
-.state-icon {
-  width: 64px;
-  height: 64px;
-  background: #f0f1f5;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #8b92a9;
-  margin-bottom: 1.25rem;
-}
-
-.state-icon.error-icon { background: #fef2f2; color: #ef4444; }
-
-.state-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #1a1d27;
-  margin-bottom: 0.4rem;
-}
-
-.state-text {
-  font-size: 0.88rem;
-  color: #8b92a9;
-  max-width: 280px;
-  line-height: 1.5;
-  margin-bottom: 1.5rem;
-}
-
-/* Loader */
-.loader {
-  position: relative;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 1.25rem;
-}
-
-.loader-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 3px solid transparent;
-  animation: loader-spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-}
-
-.loader-ring:nth-child(1) { border-top-color: #3d6bfd; animation-delay: -0.45s; }
-.loader-ring:nth-child(2) { border-top-color: #a5b4fc; animation-delay: -0.3s; }
-.loader-ring:nth-child(3) { border-top-color: #e0e7ff; animation-delay: -0.15s; }
-
-@keyframes loader-spin { to { transform: rotate(360deg); } }
-
-/* Buttons */
-.action-btn {
-  padding: 0.65rem 1.5rem;
-  border-radius: 8px;
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.88rem;
-  font-weight: 600;
-=======
   color: #0B2230; /* readable on pale bg */
 }
 
@@ -886,40 +772,23 @@ onUnmounted(() => {
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: #ffffff;
   font-size: 1.15rem;
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
   cursor: pointer;
   border: none;
   transition: all 0.2s;
 }
 
-<<<<<<< HEAD
-.primary-btn { background: #3d6bfd; color: #fff; }
-.primary-btn:hover { background: #2d5bf0; }
-.secondary-btn { background: #f0f1f5; color: #1a1d27; }
-.secondary-btn:hover { background: #e5e7ef; }
-=======
 .close-btn:hover {
   background: rgba(242, 194, 0, 0.20);
   border-color: rgba(242, 194, 0, 0.55);
   color: #ffffff;
   transform: scale(1.06);
 }
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
 
 /* ── Orders List ── */
 .list-summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
-<<<<<<< HEAD
-  margin-bottom: 1rem;
-  font-size: 0.83rem;
-  color: #8b92a9;
-  font-weight: 500;
-}
-
-.summary-total strong { color: #1a1d27; }
-=======
   justify-content: center;
   padding: 2.5rem 1.1rem;
   color: #0B2230;
@@ -1029,7 +898,6 @@ onUnmounted(() => {
   flex: 1;
   padding: 0.85rem 1.05rem;
 }
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
 
 /* Layout */
 .orders-layout {
@@ -1160,30 +1028,6 @@ onUnmounted(() => {
 
 /* Order Cards */
 .order-card {
-<<<<<<< HEAD
-  background: #fff;
-  border: 1.5px solid #eaedf3;
-  border-radius: 12px;
-  margin-bottom: 0.65rem;
-  overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.order-card:hover { border-color: #c7d2fe; box-shadow: 0 2px 12px rgba(61, 107, 253, 0.06); }
-.order-card.is-expanded { border-color: #3d6bfd; box-shadow: 0 4px 20px rgba(61, 107, 253, 0.1); }
-
-.order-card.is-new {
-  animation: new-order-flash 3s ease;
-}
-
-@keyframes new-order-flash {
-  0% { background: #eff6ff; border-color: #3d6bfd; }
-  100% { background: #fff; border-color: #eaedf3; }
-}
-
-/* Card Header */
-.card-header {
-=======
   background: rgba(255, 255, 255, 0.92);
   border-radius: 12px;
   margin-bottom: 0.6rem;
@@ -1208,7 +1052,6 @@ onUnmounted(() => {
 /* Order Header */
 .order-header {
   padding: 0.58rem 0.9rem;
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1218,11 +1061,6 @@ onUnmounted(() => {
   transition: background 0.15s;
 }
 
-<<<<<<< HEAD
-.card-header:hover { background: #fafbfc; }
-
-.card-left { display: flex; align-items: center; gap: 0.85rem; }
-=======
 .order-header:hover {
   background: rgba(30, 136, 182, 0.08);
 }
@@ -1231,7 +1069,6 @@ onUnmounted(() => {
   flex: 1;
   min-width: 0;
 }
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
 
 .receipt-icon-wrap {
   width: 38px;
@@ -1240,27 +1077,6 @@ onUnmounted(() => {
   border-radius: 9px;
   display: flex;
   align-items: center;
-<<<<<<< HEAD
-  justify-content: center;
-  color: #3d6bfd;
-  flex-shrink: 0;
-}
-
-.receipt-number {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.88rem;
-  font-weight: 500;
-  color: #1a1d27;
-}
-
-.order-datetime {
-  font-size: 0.78rem;
-  color: #8b92a9;
-  margin-top: 0.2rem;
-}
-
-.dot-sep { margin: 0 0.3rem; }
-=======
   gap: 0.55rem;
   margin-bottom: 0;
   min-width: 0;
@@ -1293,61 +1109,10 @@ onUnmounted(() => {
 .order-meta {
   display: none;
 }
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
 
 .card-right {
   display: flex;
   align-items: center;
-<<<<<<< HEAD
-  gap: 0.85rem;
-}
-
-.order-amount {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #1a1d27;
-  letter-spacing: -0.3px;
-}
-
-.type-badge {
-  padding: 0.25rem 0.65rem;
-  border-radius: 20px;
-  font-size: 0.73rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.badge-eshop { background: #eff6ff; color: #2563eb; }
-.badge-walkin { background: #fdf4ff; color: #7c3aed; }
-.badge-delivery { background: #f0fdf4; color: #16a34a; }
-
-.expand-btn {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #8b92a9;
-  transition: transform 0.25s;
-}
-
-.expand-btn.rotated { transform: rotate(180deg); }
-
-/* Card Body */
-.card-body {
-  border-top: 1.5px solid #eaedf3;
-  padding: 1.25rem;
-  animation: slideDown 0.2s ease;
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.detail-block { margin-bottom: 1.25rem; }
-.detail-block:last-of-type { margin-bottom: 0; }
-=======
   gap: 0.55rem;
   flex: 0 0 auto;
 }
@@ -1396,23 +1161,10 @@ onUnmounted(() => {
 .detail-section {
   margin-top: 0.85rem;
 }
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
 
 .detail-label {
   display: flex;
   align-items: center;
-<<<<<<< HEAD
-  gap: 0.4rem;
-  font-size: 0.73rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #8b92a9;
-  margin-bottom: 0.65rem;
-}
-
-.location-row {
-=======
   gap: 0.5rem;
   font-size: 0.96rem;
   font-weight: 900;
@@ -1429,39 +1181,12 @@ onUnmounted(() => {
   background: rgba(30, 136, 182, 0.08);
   padding: 0.6rem 0.85rem;
   border-radius: 10px;
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
   display: flex;
   align-items: center;
   gap: 0.5rem;
   border: 1px solid rgba(30, 136, 182, 0.16);
 }
 
-<<<<<<< HEAD
-.location-label { font-weight: 600; color: #1a1d27; font-size: 0.9rem; }
-
-.location-num {
-  background: #3d6bfd;
-  color: #fff;
-  padding: 0.15rem 0.55rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.delivery-note {
-  margin-top: 0.4rem;
-  color: #8b92a9;
-  font-size: 0.83rem;
-  font-style: italic;
-}
-
-/* Items Table */
-.items-table {
-  background: #fafbfc;
-  border: 1px solid #eaedf3;
-  border-radius: 8px;
-  overflow: hidden;
-=======
 .location-type {
   font-weight: 900;
   color: #0B2230;
@@ -1490,20 +1215,10 @@ onUnmounted(() => {
   padding: 0.6rem;
   border-radius: 10px;
   border: 1px solid rgba(30, 136, 182, 0.16);
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
 }
 
 .item-row {
   display: flex;
-<<<<<<< HEAD
-  align-items: center;
-  padding: 0.6rem 0.9rem;
-  border-bottom: 1px solid #eaedf3;
-  font-size: 0.87rem;
-}
-
-.item-row:last-child { border-bottom: none; }
-=======
   justify-content: space-between;
   padding: 0.5rem 0.65rem;
   background: #ffffff;
@@ -1515,20 +1230,11 @@ onUnmounted(() => {
 .order-item:last-child {
   margin-bottom: 0;
 }
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
 
 .item-name { flex: 1; font-weight: 600; color: #1a1d27; }
 .item-qty { color: #8b92a9; margin-right: 1.5rem; font-size: 0.82rem; }
 .item-price { font-weight: 700; color: #3d6bfd; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
 
-<<<<<<< HEAD
-/* Payment Block */
-.payment-block {
-  background: #fafbfc;
-  border: 1px solid #eaedf3;
-  border-radius: 8px;
-  padding: 0.75rem 0.9rem;
-=======
 .item-name {
   font-weight: 900;
   color: #0B2230;
@@ -1551,47 +1257,11 @@ onUnmounted(() => {
   padding: 0.8rem;
   border-radius: 10px;
   border: 1px solid rgba(30, 136, 182, 0.18);
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
 }
 
 .payment-row {
   display: flex;
   justify-content: space-between;
-<<<<<<< HEAD
-  align-items: center;
-  padding: 0.35rem 0;
-  font-size: 0.87rem;
-  color: #4b5168;
-}
-
-.pay-value { font-weight: 600; color: #1a1d27; }
-
-.total-row {
-  border-top: 1px solid #eaedf3;
-  margin-top: 0.35rem;
-  padding-top: 0.6rem;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #1a1d27;
-}
-
-.pay-total {
-  color: #3d6bfd;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1.05rem;
-  font-weight: 700;
-}
-
-/* Card Actions */
-.card-actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
-}
-
-.card-btn {
-  flex: 1;
-=======
   padding: 0.4rem 0;
   color: rgba(11, 34, 48, 0.80);
   font-weight: 800;
@@ -1626,52 +1296,10 @@ onUnmounted(() => {
   font-weight: 900;
   cursor: pointer;
   margin-top: 0.95rem;
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-<<<<<<< HEAD
-  padding: 0.7rem;
-  border: none;
-  border-radius: 8px;
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.88rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.reorder-btn {
-  background: #3d6bfd;
-  color: #fff;
-}
-.reorder-btn:hover { background: #2d5bf0; transform: translateY(-1px); }
-
-.delete-btn {
-  background: #fef2f2;
-  color: #ef4444;
-  border: 1.5px solid #fee2e2;
-}
-.delete-btn:hover { background: #ef4444; color: #fff; transform: translateY(-1px); }
-
-/* ── Responsive ── */
-@media (max-width: 900px) {
-  .filter-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .page-header, .filter-panel { padding: 1rem; }
-  .content-area { padding: 1rem; }
-  .filter-grid { grid-template-columns: 1fr; gap: 0.75rem; }
-  .header-content { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-  .card-actions { flex-direction: column; }
-  .card-right { gap: 0.5rem; }
-  .order-amount { font-size: 0.95rem; }
-}
-=======
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s, border-color 0.2s;
   box-shadow: 0 14px 20px rgba(242, 194, 0, 0.22);
 }
@@ -1806,5 +1434,4 @@ onUnmounted(() => {
     font-size: 0.83rem;
   }
 }
->>>>>>> 2829b61470aabef8517c64e175c13455e10fbeb0
 </style>
