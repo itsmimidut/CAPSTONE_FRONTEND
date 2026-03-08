@@ -282,7 +282,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import axios from 'axios'
 import * as XLSX from 'xlsx'
 import AdminSidebar from '../../components/admin/AdminSidebar.vue'
@@ -348,21 +348,77 @@ const visiblePages = computed(() => {
   return pages
 })
 
+const buildReservationParams = (page, pageLimit) => {
+  const params = new URLSearchParams()
+  params.append('page', page)
+  params.append('limit', pageLimit)
+
+  if (filters.value.search) params.append('search', filters.value.search)
+  if (filters.value.status && filters.value.status !== 'all') params.append('status', filters.value.status)
+  if (filters.value.from) params.append('startDate', filters.value.from)
+  if (filters.value.to) params.append('endDate', filters.value.to)
+
+  return params
+}
+
+const mapBookingData = (booking) => {
+  const guestName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim()
+
+  return {
+    id: booking.booking_id,
+    guest_name: guestName || booking.email || 'Guest',
+    email: booking.email || 'N/A',
+    reservation_code: booking.booking_reference,
+    check_in: booking.check_in_date,
+    check_out: booking.check_out_date,
+    adults: parseInt(booking.adults) || 0,
+    children: parseInt(booking.children) || 0,
+    status: booking.booking_status?.toLowerCase() || 'pending',
+    payment_status: booking.payment_status,
+    payment_method: booking.payment_method || 'N/A',
+    payment_reference: booking.payment_reference || 'N/A',
+    total: parseFloat(booking.total) || 0,
+    item_count: booking.item_count || 0,
+    items_list: booking.items_summary || 'N/A',
+    items_descriptions: booking.items_descriptions || null
+  }
+}
+
+const fetchAllBookingsForExport = async () => {
+  const exportLimit = 200
+  let page = 1
+  let totalPageCount = 1
+  const allBookings = []
+
+  do {
+    const params = buildReservationParams(page, exportLimit)
+    const response = await fetch(`http://localhost:8000/api/bookings/admin/reservations?${params}`)
+    const result = await response.json()
+
+    if (!result.success) {
+      throw new Error(result.message || 'Failed to fetch all bookings for export')
+    }
+
+    const currentPageData = Array.isArray(result.data) ? result.data : []
+    allBookings.push(...currentPageData.map(mapBookingData))
+
+    totalPageCount = Math.max(1, Number(result.pagination?.totalPages) || 1)
+    page += 1
+  } while (page <= totalPageCount)
+
+  return allBookings
+}
+
+const toPercent = (value, total) => {
+  if (!total) return '0.00%'
+  return `${((value / total) * 100).toFixed(2)}%`
+}
+
 const fetchBookings = async () => {
   loading.value = true
   
   try {
-    const params = new URLSearchParams()
-    
-    // Add pagination
-    params.append('page', currentPage.value)
-    params.append('limit', limit)
-    
-    // Map filters to backend params
-    if (filters.value.search) params.append('search', filters.value.search)
-    if (filters.value.status && filters.value.status !== 'all') params.append('status', filters.value.status)
-    if (filters.value.from) params.append('startDate', filters.value.from)
-    if (filters.value.to) params.append('endDate', filters.value.to)
+    const params = buildReservationParams(currentPage.value, limit)
 
     const response = await fetch(`http://localhost:8000/api/bookings/admin/reservations?${params}`)
     const result = await response.json()
@@ -372,28 +428,7 @@ const fetchBookings = async () => {
       showToast('✅ Reservations loaded successfully', 'success')
       
       // Map backend data to frontend format
-      bookings.value = result.data.map(booking => {
-        const guestName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim()
-        
-        return {
-          id: booking.booking_id,
-          guest_name: guestName || booking.email || 'Guest',
-          email: booking.email || 'N/A',
-          reservation_code: booking.booking_reference,
-          check_in: booking.check_in_date,
-          check_out: booking.check_out_date,
-          adults: parseInt(booking.adults) || 0,
-          children: parseInt(booking.children) || 0,
-          status: booking.booking_status?.toLowerCase() || 'pending',
-          payment_status: booking.payment_status,
-          payment_method: booking.payment_method || 'N/A',
-          payment_reference: booking.payment_reference || 'N/A',
-          total: parseFloat(booking.total) || 0,
-          item_count: booking.item_count || 0,
-          items_list: booking.items_summary || 'N/A',
-          items_descriptions: booking.items_descriptions || null
-        }
-      })
+      bookings.value = (Array.isArray(result.data) ? result.data : []).map(mapBookingData)
       
       // Update pagination info
       if (result.pagination) {
@@ -650,8 +685,10 @@ const createNew = () => {
 
 const exportData = async () => {
   try {
+    const exportBookings = await fetchAllBookingsForExport()
+
     // Prepare booking details data
-    const bookingDetails = bookings.value.map((b, index) => ({
+    const bookingDetails = exportBookings.map((b, index) => ({
       'No.': index + 1,
       'Guest Name': b.guest_name,
       'Email': b.email,
@@ -666,8 +703,10 @@ const exportData = async () => {
 
     // Calculate revenue summary by month
     const monthlyData = {}
-    bookings.value.forEach(b => {
+    exportBookings.forEach(b => {
       const date = new Date(b.check_in)
+      if (Number.isNaN(date.getTime()) || date.getFullYear() === 1970) return
+
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
       
       if (!monthlyData[monthKey]) {
@@ -688,32 +727,29 @@ const exportData = async () => {
       else if (b.status === 'cancelled') monthlyData[monthKey].cancelled++
     })
 
-    const revenueSummary = [
-      { 'Metric': 'Month', 'Total Bookings': '', 'Total Revenue': '', 'Confirmed': '', 'Pending': '', 'Cancelled': '' },
-      ...Object.values(monthlyData).map(m => ({
-        'Metric': m.month,
-        'Total Bookings': m.total_bookings,
-        'Total Revenue': m.total_revenue,
-        'Confirmed': m.confirmed,
-        'Pending': m.pending,
-        'Cancelled': m.cancelled
-      }))
-    ]
+    const revenueSummary = Object.values(monthlyData).map(m => ({
+      'Month': m.month,
+      'Total Bookings': m.total_bookings,
+      'Total Revenue': m.total_revenue,
+      'Confirmed': m.confirmed,
+      'Pending': m.pending,
+      'Cancelled': m.cancelled
+    }))
 
     // Calculate totals
-    const totalBookings = bookings.value.length
-    const confirmedBookings = bookings.value.filter(b => b.status === 'confirmed' || b.status === 'checked_in').length
-    const pendingBookings = bookings.value.filter(b => b.status === 'pending').length
-    const cancelledBookings = bookings.value.filter(b => b.status === 'cancelled').length
+    const totalBookings = exportBookings.length
+    const confirmedBookings = exportBookings.filter(b => b.status === 'confirmed' || b.status === 'checked_in').length
+    const pendingBookings = exportBookings.filter(b => b.status === 'pending').length
+    const cancelledBookings = exportBookings.filter(b => b.status === 'cancelled').length
     
-    const totalRevenue = bookings.value.reduce((sum, b) => sum + b.total, 0)
-    const confirmedRevenue = bookings.value
+    const totalRevenue = exportBookings.reduce((sum, b) => sum + b.total, 0)
+    const confirmedRevenue = exportBookings
       .filter(b => b.status === 'confirmed' || b.status === 'checked_in')
       .reduce((sum, b) => sum + b.total, 0)
-    const pendingRevenue = bookings.value
+    const pendingRevenue = exportBookings
       .filter(b => b.status === 'pending')
       .reduce((sum, b) => sum + b.total, 0)
-    const cancelledRevenue = bookings.value
+    const cancelledRevenue = exportBookings
       .filter(b => b.status === 'cancelled')
       .reduce((sum, b) => sum + b.total, 0)
 
@@ -726,18 +762,18 @@ const exportData = async () => {
     const profitAnalysis = [
       { 'FINANCIAL SUMMARY': '', 'Amount': '', 'Percentage': '' },
       { 'FINANCIAL SUMMARY': 'Total Revenue', 'Amount': totalRevenue, 'Percentage': '100%' },
-      { 'FINANCIAL SUMMARY': 'Confirmed Payments', 'Amount': confirmedRevenue, 'Percentage': ((confirmedRevenue / totalRevenue) * 100).toFixed(2) + '%' },
-      { 'FINANCIAL SUMMARY': 'Pending Payments', 'Amount': pendingRevenue, 'Percentage': ((pendingRevenue / totalRevenue) * 100).toFixed(2) + '%' },
-      { 'FINANCIAL SUMMARY': 'Cancelled/Refunded', 'Amount': cancelledRevenue, 'Percentage': ((cancelledRevenue / totalRevenue) * 100).toFixed(2) + '%' },
+      { 'FINANCIAL SUMMARY': 'Confirmed Payments', 'Amount': confirmedRevenue, 'Percentage': toPercent(confirmedRevenue, totalRevenue) },
+      { 'FINANCIAL SUMMARY': 'Pending Payments', 'Amount': pendingRevenue, 'Percentage': toPercent(pendingRevenue, totalRevenue) },
+      { 'FINANCIAL SUMMARY': 'Cancelled/Refunded', 'Amount': cancelledRevenue, 'Percentage': toPercent(cancelledRevenue, totalRevenue) },
       { 'FINANCIAL SUMMARY': '', 'Amount': '', 'Percentage': '' },
       { 'FINANCIAL SUMMARY': 'Operating Costs (25%)', 'Amount': operatingCosts.toFixed(2), 'Percentage': '25%' },
       { 'FINANCIAL SUMMARY': 'Net Profit', 'Amount': netProfit.toFixed(2), 'Percentage': profitMargin + '%' },
       { 'FINANCIAL SUMMARY': '', 'Amount': '', 'Percentage': '' },
       { 'FINANCIAL SUMMARY': 'BOOKING SUMMARY', 'Amount': '', 'Percentage': '' },
       { 'FINANCIAL SUMMARY': 'Total Bookings', 'Amount': totalBookings, 'Percentage': '100%' },
-      { 'FINANCIAL SUMMARY': 'Confirmed', 'Amount': confirmedBookings, 'Percentage': ((confirmedBookings / totalBookings) * 100).toFixed(2) + '%' },
-      { 'FINANCIAL SUMMARY': 'Pending', 'Amount': pendingBookings, 'Percentage': ((pendingBookings / totalBookings) * 100).toFixed(2) + '%' },
-      { 'FINANCIAL SUMMARY': 'Cancelled', 'Amount': cancelledBookings, 'Percentage': ((cancelledBookings / totalBookings) * 100).toFixed(2) + '%' }
+      { 'FINANCIAL SUMMARY': 'Confirmed', 'Amount': confirmedBookings, 'Percentage': toPercent(confirmedBookings, totalBookings) },
+      { 'FINANCIAL SUMMARY': 'Pending', 'Amount': pendingBookings, 'Percentage': toPercent(pendingBookings, totalBookings) },
+      { 'FINANCIAL SUMMARY': 'Cancelled', 'Amount': cancelledBookings, 'Percentage': toPercent(cancelledBookings, totalBookings) }
     ]
 
     // Create Excel workbook
@@ -826,8 +862,25 @@ const showToast = (msg, type = 'success') => {
   setTimeout(() => toastMessage.value = '', 4000)
 }
 
+let pollInterval = null
+let visibilityHandler = null
+
 onMounted(() => {
   fetchBookings()
+
+  // Auto-poll every 30 seconds so the list stays real-time
+  pollInterval = setInterval(() => fetchBookings(), 30000)
+
+  // Refetch immediately when the user switches back to this browser tab
+  visibilityHandler = () => {
+    if (document.visibilityState === 'visible') fetchBookings()
+  }
+  document.addEventListener('visibilitychange', visibilityHandler)
+})
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval)
+  if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler)
 })
 </script>
 

@@ -75,9 +75,9 @@
               </button>
             </div>
             
-            <button @click="downloadAnalyticsData" class="btn-download">
+            <button @click="downloadAnalyticsData" class="btn-download" :disabled="isDownloadingReport">
               <i class="fas fa-download"></i>
-              Download Report
+              {{ isDownloadingReport ? 'Downloading...' : 'Download Report' }}
             </button>
           </div>
         </div>
@@ -239,6 +239,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import * as XLSX from 'xlsx'
 import AdminSidebar from '../../components/admin/AdminSidebar.vue'
 import AdminHeader from '../../components/admin/AdminHeader.vue'
 import StatsGrid from '../../components/admin/StatsGrid.vue'
@@ -252,6 +253,7 @@ const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const isLoading = ref(false)
 const error = ref('')
+const isDownloadingReport = ref(false)
 
 // User role
 const userRole = ref('')
@@ -368,6 +370,21 @@ const filteredBookingsChartData = computed(() => {
 const today = computed(() => {
   return new Date().toISOString().split('T')[0]
 })
+
+const toFiniteNumber = (value, fallback = 0) => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const safeCurrency = (value) => {
+  return `₱${toFiniteNumber(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+const safeDateLabel = (dateValue) => {
+  const date = new Date(dateValue)
+  if (Number.isNaN(date.getTime()) || date.getFullYear() === 1970) return null
+  return date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
+}
 
 // Analytics Data
 const statsData = ref([
@@ -908,11 +925,9 @@ const fetchCategoryCharts = async () => {
     if (Array.isArray(bookings) && bookings.length > 0) {
       bookings.forEach(booking => {
         if (!booking.check_in_date) return
-        
-        const date = new Date(booking.check_in_date).toLocaleDateString('en-PH', { 
-          month: 'short', 
-          day: 'numeric' 
-        })
+
+        const date = safeDateLabel(booking.check_in_date)
+        if (!date) return
         
         if (booking.booking_items && booking.booking_items.length > 0) {
           booking.booking_items.forEach(item => {
@@ -1007,13 +1022,14 @@ const fetchRestaurantPOSData = async () => {
     const response = await fetch(`${API_BASE}/pos/transactions?${params}`)
     
     if (response.ok) {
-      const transactions = await response.json()
+      const rawTransactions = await response.json()
+      const transactions = Array.isArray(rawTransactions) ? rawTransactions : []
       
       // Calculate Restaurant stats
       const restaurantTrans = transactions.filter(t => t.type === 'Restaurant' || !t.type)
       const restaurantTotal = restaurantTrans.reduce((sum, t) => sum + parseFloat(t.total_amount || 0), 0)
       restaurantStats.value = {
-        sales: `₱${restaurantTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+        sales: safeCurrency(restaurantTotal),
         orders: restaurantTrans.length,
         trend: 0 // Would calculate from previous period
       }
@@ -1022,7 +1038,7 @@ const fetchRestaurantPOSData = async () => {
       const posTrans = transactions.filter(t => t.type === 'POS')
       const posTotal = posTrans.reduce((sum, t) => sum + parseFloat(t.total_amount || 0), 0)
       posStats.value = {
-        sales: `₱${posTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+        sales: safeCurrency(posTotal),
         transactions: posTrans.length,
         trend: 0
       }
@@ -1031,7 +1047,7 @@ const fetchRestaurantPOSData = async () => {
       const eshopTrans = transactions.filter(t => t.type === 'E-Shop')
       const eshopTotal = eshopTrans.reduce((sum, t) => sum + parseFloat(t.total_amount || 0), 0)
       eshopStats.value = {
-        sales: `₱${eshopTotal.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`,
+        sales: safeCurrency(eshopTotal),
         orders: eshopTrans.length,
         trend: 0
       }
@@ -1045,7 +1061,7 @@ const fetchRestaurantPOSData = async () => {
             if (name) {
               const current = itemCounts.get(name) || { name, quantity: 0, sales: 0 }
               current.quantity += item.quantity || 1
-              current.sales += parseFloat(item.subtotal || item.total_price || 0)
+              current.sales += toFiniteNumber(item.subtotal || item.total_price || 0)
               itemCounts.set(name, current)
             }
           })
@@ -1057,7 +1073,7 @@ const fetchRestaurantPOSData = async () => {
         .slice(0, 5)
         .map(item => ({
           name: item.name,
-          sales: `₱${item.sales.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+          sales: safeCurrency(item.sales)
         }))
 
       topMenuItems.value = sortedItems
@@ -1230,158 +1246,131 @@ const handleQuickAction = (actionKey) => {
 
 const downloadAnalyticsData = () => {
   try {
-    // Prepare professional CSV with proper formatting
-    const csvData = []
-    const separator = ','
-    
-    // Header with styling info
-    csvData.push(['================================================='])
-    csvData.push(['EDUARDO\'S RESORT - ANALYTICS REPORT'])
-    csvData.push(['================================================='])
-    csvData.push([''])
-    csvData.push(['Report Period', currentPeriod.value.period.toUpperCase()])
-    csvData.push(['Generated Date', new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })])
-    csvData.push(['Generated Time', new Date().toLocaleTimeString('en-PH')])
-    csvData.push(['Generated By', userRole.value.toUpperCase().replace('_', ' ')])
-    csvData.push([''])
-    csvData.push(['================================================='])
-    csvData.push([''])
-    
-    // Stats Summary (for admin and receptionist)
+    isDownloadingReport.value = true
+
+    const workbook = XLSX.utils.book_new()
+    const generatedAt = new Date()
+
+    const summaryRows = [
+      {
+        'Metric': 'Report Period',
+        'Value': currentPeriod.value.period.toUpperCase(),
+        'Trend': ''
+      },
+      {
+        'Metric': 'Generated Date',
+        'Value': generatedAt.toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }),
+        'Trend': ''
+      },
+      {
+        'Metric': 'Generated Time',
+        'Value': generatedAt.toLocaleTimeString('en-PH'),
+        'Trend': ''
+      },
+      {
+        'Metric': 'Generated By',
+        'Value': userRole.value.toUpperCase().replace('_', ' '),
+        'Trend': ''
+      }
+    ]
+
     if (canViewBookings.value) {
-      csvData.push(['SUMMARY STATISTICS'])
-      csvData.push(['================================================='])
-      csvData.push(['Metric', 'Value', 'Trend (vs. previous period)'])
-      csvData.push(['-------------------------------------------------'])
       statsData.value.forEach(stat => {
-        const trendText = stat.trend > 0 ? `↑ +${stat.trend}%` : stat.trend < 0 ? `↓ ${stat.trend}%` : '— 0%'
-        csvData.push([stat.label, stat.value, trendText])
+        const trendText = stat.trend > 0 ? `+${stat.trend}%` : stat.trend < 0 ? `${stat.trend}%` : '0%'
+        summaryRows.push({
+          'Metric': stat.label,
+          'Value': stat.value,
+          'Trend': trendText
+        })
       })
-      csvData.push([''])
-      csvData.push([''])
     }
-    
-    // Restaurant & POS Analytics (for admin and restaurant staff)
+
+    const summarySheet = XLSX.utils.json_to_sheet(summaryRows)
+    summarySheet['!cols'] = [{ wch: 28 }, { wch: 28 }, { wch: 20 }]
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary Statistics')
+
+    const revenueRows = (revenueChartData.value.labels || []).map((label, index) => ({
+      'Period': label,
+      'Revenue Amount': toFiniteNumber(revenueChartData.value.datasets?.[0]?.data?.[index])
+    }))
+
+    const revenueSheet = XLSX.utils.json_to_sheet(
+      revenueRows.length > 0 ? revenueRows : [{ 'Period': 'No Data', 'Revenue Amount': 0 }]
+    )
+    revenueSheet['!cols'] = [{ wch: 24 }, { wch: 20 }]
+    XLSX.utils.book_append_sheet(workbook, revenueSheet, 'Revenue Trend')
+
+    const bookingsByTypeRows = (bookingsChartData.value.labels || []).map((label, index) => ({
+      'Booking Type': label,
+      'Number of Bookings': toFiniteNumber(bookingsChartData.value.datasets?.[0]?.data?.[index])
+    }))
+
+    const bookingsByTypeSheet = XLSX.utils.json_to_sheet(
+      bookingsByTypeRows.length > 0 ? bookingsByTypeRows : [{ 'Booking Type': 'No Data', 'Number of Bookings': 0 }]
+    )
+    bookingsByTypeSheet['!cols'] = [{ wch: 24 }, { wch: 20 }]
+    XLSX.utils.book_append_sheet(workbook, bookingsByTypeSheet, 'Bookings By Type')
+
     if (canViewRestaurant.value) {
-      csvData.push(['RESTAURANT & POS ANALYTICS'])
-      csvData.push(['================================================='])
-      csvData.push(['Category', 'Total Sales', 'Transaction Count', 'Trend'])
-      csvData.push(['-------------------------------------------------'])
-      csvData.push([
-        'Restaurant', 
-        restaurantStats.value.sales, 
-        `${restaurantStats.value.orders} orders`,
-        `${restaurantStats.value.trend > 0 ? '↑' : restaurantStats.value.trend < 0 ? '↓' : '—'} ${Math.abs(restaurantStats.value.trend)}%`
-      ])
-      csvData.push([
-        'POS', 
-        posStats.value.sales, 
-        `${posStats.value.transactions} transactions`,
-        `${posStats.value.trend > 0 ? '↑' : posStats.value.trend < 0 ? '↓' : '—'} ${Math.abs(posStats.value.trend)}%`
-      ])
-      csvData.push([
-        'E-Shop', 
-        eshopStats.value.sales, 
-        `${eshopStats.value.orders} orders`,
-        `${eshopStats.value.trend > 0 ? '↑' : eshopStats.value.trend < 0 ? '↓' : '—'} ${Math.abs(eshopStats.value.trend)}%`
-      ])
-      csvData.push([''])
-      csvData.push([''])
-      
-      // Top Menu Items
-      if (topMenuItems.value.length > 0) {
-        csvData.push(['TOP SELLING MENU ITEMS'])
-        csvData.push(['================================================='])
-        csvData.push(['Rank', 'Item Name', 'Total Sales'])
-        csvData.push(['-------------------------------------------------'])
-        topMenuItems.value.forEach((item, index) => {
-          csvData.push([`#${index + 1}`, item.name, item.sales])
-        })
-        csvData.push([''])
-        csvData.push([''])
-      }
-      
-      // Top POS Items
-      if (topPOSItems.value.length > 0) {
-        csvData.push(['TOP POS ITEMS'])
-        csvData.push(['================================================='])
-        csvData.push(['Rank', 'Item Name', 'Total Sales'])
-        csvData.push(['-------------------------------------------------'])
-        topPOSItems.value.forEach((item, index) => {
-          csvData.push([`#${index + 1}`, item.name, item.sales])
-        })
-        csvData.push([''])
-        csvData.push([''])
-      }
-    }
-    
-    // Revenue Chart Data (for admin and receptionist)
-    if (canViewBookings.value && revenueChartData.value.labels && revenueChartData.value.labels.length > 0) {
-      csvData.push(['REVENUE TREND ANALYSIS'])
-      csvData.push(['================================================='])
-      csvData.push(['Period', 'Revenue Amount'])
-      csvData.push(['-------------------------------------------------'])
-      revenueChartData.value.labels.forEach((label, index) => {
-        const value = revenueChartData.value.datasets[0].data[index]
-        csvData.push([label, `₱${value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`])
-      })
-      csvData.push([''])
-      csvData.push([''])
-    }
-    
-    // Bookings Chart Data (for admin and receptionist)
-    if (canViewBookings.value && bookingsChartData.value.labels && bookingsChartData.value.labels.length > 0) {
-      csvData.push(['BOOKINGS BY TYPE'])
-      csvData.push(['================================================='])
-      csvData.push(['Booking Type', 'Number of Bookings'])
-      csvData.push(['-------------------------------------------------'])
-      bookingsChartData.value.labels.forEach((label, index) => {
-        const value = bookingsChartData.value.datasets[0].data[index]
-        csvData.push([label, value])
-      })
-      csvData.push([''])
-      csvData.push([''])
-    }
-    
-    // Footer
-    csvData.push(['================================================='])
-    csvData.push(['End of Report'])
-    csvData.push(['© Eduardo\'s Resort ' + new Date().getFullYear()])
-    csvData.push(['================================================='])
-    
-    // Convert to CSV string
-    const csvString = csvData.map(row => 
-      row.map(cell => {
-        // Escape quotes and wrap in quotes if contains comma or newline
-        const cellStr = String(cell || '')
-        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
-          return `"${cellStr.replace(/"/g, '""')}"`
+      const restaurantRows = [
+        {
+          'Category': 'Restaurant',
+          'Total Sales': restaurantStats.value.sales,
+          'Transaction Count': restaurantStats.value.orders,
+          'Trend': `${restaurantStats.value.trend}%`
+        },
+        {
+          'Category': 'POS',
+          'Total Sales': posStats.value.sales,
+          'Transaction Count': posStats.value.transactions,
+          'Trend': `${posStats.value.trend}%`
+        },
+        {
+          'Category': 'E-Shop',
+          'Total Sales': eshopStats.value.sales,
+          'Transaction Count': eshopStats.value.orders,
+          'Trend': `${eshopStats.value.trend}%`
         }
-        return cellStr
-      }).join(',')
-    ).join('\n')
-    
-    // Create download link
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    
-    const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0]
-    const filename = `Eduardos-Resort-Analytics-${currentPeriod.value.period}-${timestamp}.csv`
-    
-    link.setAttribute('href', url)
-    link.setAttribute('download', filename)
-    link.style.visibility = 'hidden'
-    
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+      ]
+
+      const restaurantSheet = XLSX.utils.json_to_sheet(restaurantRows)
+      restaurantSheet['!cols'] = [{ wch: 18 }, { wch: 20 }, { wch: 20 }, { wch: 12 }]
+      XLSX.utils.book_append_sheet(workbook, restaurantSheet, 'Restaurant POS')
+
+      const topItemsRows = [
+        ...topMenuItems.value.map((item, index) => ({
+          'List Type': 'Top Menu Items',
+          'Rank': index + 1,
+          'Item Name': item.name,
+          'Total Sales': item.sales
+        })),
+        ...topPOSItems.value.map((item, index) => ({
+          'List Type': 'Top POS Items',
+          'Rank': index + 1,
+          'Item Name': item.name,
+          'Total Sales': item.sales
+        }))
+      ]
+
+      const topItemsSheet = XLSX.utils.json_to_sheet(
+        topItemsRows.length > 0
+          ? topItemsRows
+          : [{ 'List Type': 'No Data', 'Rank': '', 'Item Name': '', 'Total Sales': '' }]
+      )
+      topItemsSheet['!cols'] = [{ wch: 18 }, { wch: 8 }, { wch: 30 }, { wch: 18 }]
+      XLSX.utils.book_append_sheet(workbook, topItemsSheet, 'Top Items')
+    }
+
+    const timestamp = generatedAt.toISOString().replace(/:/g, '-').split('.')[0]
+    const filename = `Eduardos-Resort-Analytics-${currentPeriod.value.period}-${timestamp}.xlsx`
+    XLSX.writeFile(workbook, filename)
     
     console.log('Analytics report downloaded successfully')
   } catch (err) {
     console.error('Error downloading analytics data:', err)
     alert('Failed to download report. Please try again.')
+  } finally {
+    isDownloadingReport.value = false
   }
 }
 
@@ -1514,6 +1503,13 @@ onMounted(() => {
 
 .btn-download:active {
   transform: translateY(0);
+}
+
+.btn-download:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 4px rgba(43, 108, 176, 0.2);
 }
 
 .btn-download i {

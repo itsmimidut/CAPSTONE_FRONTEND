@@ -1,5 +1,5 @@
 <template>
-  <div class="admin-layout">
+  <div class="admin-layout" :class="{ 'pos-fullscreen': isFullscreen }">
     <!-- Sidebar -->
     <AdminSidebar 
       :is-open="sidebarOpen"
@@ -10,16 +10,23 @@
     <!-- Main Content -->
     <main class="main-content" :class="{ shifted: sidebarCollapsed }">
 
-      <!-- Header -->
-      <div class="header-container">
-        <AdminHeader
-          title="Point of Sale"
-          subtitle="Walk-in Payments"
-          :has-notifications="eshopPendingCount > 0"
-          :pending-count="eshopPendingCount"
-          @toggle-sidebar="sidebarOpen = !sidebarOpen"
-        />
-      </div>
+      <!-- POS Header -->
+      <AdminHeader
+        :pos-mode="true"
+        :categories="visibleCategories"
+        :current-category="currentCategory"
+        v-model:searchQuery="searchQuery"
+        :eshop-pending-count="eshopPendingCount"
+        :show-transaction="showTransaction"
+        :is-fullscreen="isFullscreen"
+        :user-name="auth.user?.name || 'Admin'"
+        @toggle-sidebar="sidebarOpen = !sidebarOpen"
+        @search="filterItems"
+        @scan="openScanner"
+        @category-change="showCategory"
+        @toggle-transaction="toggleTransaction"
+        @toggle-fullscreen="toggleFullscreen"
+      />
 
       <!-- QR Check-In Scanner Modal -->
       <QRCheckInScanner
@@ -28,73 +35,16 @@
         @check-in-success="handleCheckInSuccess"
       />
 
-      <!-- ── BOOKMARK TABS ── -->
-      <div class="side-bookmarks">
-        <!-- Scanner Tab -->
-        <button
-          class="bookmark-tab"
-          :style="getTabStyle('scanner')"
-          @mouseenter="hoveredTab = 'scanner'"
-          @mouseleave="hoveredTab = null"
-          @click="openScanner"
-          title="Check-in Scanner"
-        >
-          <i class="fas fa-qrcode tab-icon"></i>
-          <span v-show="isTabExpanded('scanner')" class="tab-label">Check-in Scanner</span>
-        </button>
-
-        <!-- Transaction Tab -->
-        <button
-          class="bookmark-tab"
-          :style="getTabStyle('transaction')"
-          @mouseenter="hoveredTab = 'transaction'"
-          @mouseleave="hoveredTab = null"
-          @click="toggleTransaction"
-          title="Transaction History"
-        >
-          <i class="fas fa-history tab-icon"></i>
-          <span v-show="isTabExpanded('transaction')" class="tab-label">Transaction</span>
-          <span v-if="eshopPendingCount > 0 && isTabExpanded('transaction')" class="tab-badge">{{ eshopPendingCount }}</span>
-        </button>
-      </div>
-
       <div class="pos-container">
 
         <!-- POS GRID (hidden when transaction is open) -->
         <div v-show="!showTransaction" class="pos-section">
 
           <!-- Items + Cart Grid -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 pos-grid">
+          <div class="pos-grid">
 
             <!-- ITEMS -->
-            <div class="lg:col-span-2 card p-5 items-card">
-              <div class="items-topbar mb-3">
-                <h2 class="font-bold text-gray-800 section-title"><i class="fas fa-shopping-cart mr-2"></i>Services / Items</h2>
-                <div class="category-switch">
-                  <button 
-                    v-for="category in visibleCategories" 
-                    :key="category.id"
-                    @click="showCategory(category.id)" 
-                    :class="['category-btn rounded-lg', currentCategory === category.id ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700']"
-                  >
-                    <i :class="`fas fa-${category.icon} mr-2`"></i>{{ category.name }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Search Bar -->
-              <div class="mb-4">
-                <div class="relative">
-                  <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                  <input 
-                    type="text" 
-                    v-model="searchQuery" 
-                    @input="filterItems"
-                    placeholder="Search items..." 
-                    class="border-2 p-3 pl-10 rounded-lg w-full"
-                  >
-                </div>
-              </div>
+            <div class="card p-8 items-card">
 
               <!-- Restaurant Type Filters -->
               <div
@@ -102,15 +52,38 @@
                 class="mb-4 menu-filter-wrap"
               >
                 <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Filter Menu</div>
-                <div class="flex flex-wrap gap-2">
-                  <button type="button" @click="restaurantTypeFilter = 'all'"
-                    :class="['px-3 py-1.5 rounded-full text-sm font-semibold border transition-all chip-btn', restaurantTypeFilter === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-700']"
+                <div class="flex flex-wrap gap-2 items-center">
+                  <!-- All chip -->
+                  <button type="button" @click="restaurantTypeFilter = 'all'; showMoreFilters = false"
+                    :class="['chip-btn', restaurantTypeFilter === 'all' ? 'chip-active' : 'chip-idle']"
                   >All</button>
+
+                  <!-- First 5 visible chips -->
                   <button
-                    v-for="filter in restaurantTypeFilters" :key="filter"
-                    type="button" @click="restaurantTypeFilter = filter"
-                    :class="['px-3 py-1.5 rounded-full text-sm font-semibold border transition-all chip-btn', restaurantTypeFilter === filter ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-700']"
+                    v-for="filter in visibleFilters" :key="filter"
+                    type="button" @click="restaurantTypeFilter = filter; showMoreFilters = false"
+                    :class="['chip-btn', restaurantTypeFilter === filter ? 'chip-active' : 'chip-idle']"
                   >{{ filter }}</button>
+
+                  <!-- More dropdown -->
+                  <div v-if="overflowFilters.length > 0" class="filter-more-wrap">
+                    <button
+                      type="button"
+                      :class="['chip-btn chip-more', (showMoreFilters || overflowFilters.includes(restaurantTypeFilter)) ? 'chip-active' : 'chip-idle']"
+                      @click.stop="showMoreFilters = !showMoreFilters"
+                    >
+                      {{ overflowFilters.includes(restaurantTypeFilter) ? restaurantTypeFilter : 'More' }}
+                      <i :class="showMoreFilters ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" style="font-size:0.65rem;margin-left:3px;"></i>
+                    </button>
+                    <div v-if="showMoreFilters" class="filter-dropdown" @click.stop>
+                      <button
+                        v-for="filter in overflowFilters" :key="filter"
+                        type="button"
+                        :class="['filter-dropdown-item', restaurantTypeFilter === filter ? 'filter-dropdown-item--active' : '']"
+                        @click="restaurantTypeFilter = filter; showMoreFilters = false"
+                      >{{ filter }}</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -136,76 +109,90 @@
             </div>
 
             <!-- CART -->
-            <div class="card p-5 cart-card">
+            <div class="cart-card">
+              <!-- Cart Header -->
               <div class="cart-header">
-                <h2 class="font-bold text-lg text-gray-800"><i class="fas fa-receipt mr-2"></i>Current Transaction</h2>
-                <button @click="clearCart" class="text-red-600 hover:text-red-800 text-sm font-medium transition-all">
-                  <i class="fas fa-trash mr-1"></i>Clear All
+                <div class="cart-title">
+                  <i class="fas fa-receipt"></i>
+                  <span>Current Transaction</span>
+                </div>
+                <button @click="clearCart" class="cart-clear-btn" title="Clear all">
+                  <i class="fas fa-trash-alt"></i> Clear
                 </button>
               </div>
 
+              <!-- Cart Items -->
               <div class="cart-content">
-                <div class="cart-items-area space-y-2 text-sm">
+                <div class="cart-items-area">
+                  <!-- Empty State -->
                   <div v-if="cart.length === 0" class="cart-empty-state">
-                    <i class="fas fa-shopping-basket text-5xl mb-3 block"></i>
+                    <div class="cart-empty-icon"><i class="fas fa-shopping-basket"></i></div>
                     <p>No items added yet</p>
+                    <span>Tap an item to add it here</span>
                   </div>
-                  <div 
+
+                  <!-- Items List -->
+                  <div
                     v-else
-                    v-for="(item, index) in cart" 
+                    v-for="(item, index) in cart"
                     :key="index"
-                    class="cart-item flex justify-between items-start gap-2"
+                    class="cart-item"
                   >
-                    <div class="flex-1">
-                      <span class="text-gray-700 font-medium">{{ item.name }}</span>
-                      <div v-if="item.isBooking" class="text-xs text-gray-500 mt-1">
-                        <div><i class="fas fa-user mr-1"></i>{{ item.firstName }} {{ item.lastName }}</div>
-                        <div><i class="fas fa-calendar mr-1"></i>{{ item.checkIn }} to {{ item.checkOut }}</div>
-                        <div><i class="fas fa-users mr-1"></i>{{ item.adults }} adult{{ item.adults > 1 ? 's' : '' }}{{ item.children > 0 ? `, ${item.children} child(ren)` : '' }}</div>
-                        <div v-if="item.nights"><i class="fas fa-moon mr-1"></i>{{ item.nights }} night{{ item.nights > 1 ? 's' : '' }}</div>
+                    <div class="cart-item-left">
+                      <div class="cart-item-name">{{ item.name }}</div>
+                      <div v-if="item.isBooking" class="cart-item-meta">
+                        <span><i class="fas fa-user"></i> {{ item.firstName }} {{ item.lastName }}</span>
+                        <span><i class="fas fa-calendar"></i> {{ item.checkIn }} – {{ item.checkOut }}</span>
+                        <span v-if="item.nights"><i class="fas fa-moon"></i> {{ item.nights }} night{{ item.nights > 1 ? 's' : '' }}</span>
                       </div>
+                      <div v-else class="cart-item-qty">× {{ item.qty }}</div>
                     </div>
-                    <div class="flex items-center gap-3 flex-shrink-0">
-                      <span class="font-semibold text-gray-800 whitespace-nowrap">₱{{ item.price.toLocaleString() }}</span>
-                      <button @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition-colors">
-                        <i class="fas fa-times-circle"></i>
+                    <div class="cart-item-right">
+                      <span class="cart-item-price">₱{{ item.price.toLocaleString() }}</span>
+                      <button @click="removeItem(index)" class="cart-remove-btn">
+                        <i class="fas fa-times"></i>
                       </button>
                     </div>
                   </div>
                 </div>
 
-                <div class="cart-bottom">
-                  <div class="total-panel">
-                    <span class="text-lg font-semibold text-gray-700">Total</span>
-                    <span class="text-4xl font-bold text-blue-600">₱{{ total.toLocaleString() }}</span>
+                <!-- Cart Footer -->
+                <div class="cart-footer">
+                  <!-- Total -->
+                  <div class="cart-total">
+                    <span class="cart-total-label">Total</span>
+                    <span class="cart-total-amount">₱{{ total.toLocaleString() }}</span>
                   </div>
 
-                  <div class="payment-wrap">
-                    <label class="text-sm font-semibold text-gray-700 mb-2 block">
-                      <i class="fas fa-credit-card mr-2"></i>Payment Method
-                    </label>
-                    <div class="flex gap-3 mb-3">
-                      <button type="button"
-                        class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
-                        :class="paymentMethod === 'GCash' ? 'bg-green-50 border-green-600 text-green-700 ring-2 ring-green-200' : 'bg-white border-gray-300 text-gray-700'"
+                  <!-- Divider -->
+                  <div class="cart-divider"></div>
+
+                  <!-- Payment Method -->
+                  <div class="cart-payment">
+                    <div class="cart-payment-label"><i class="fas fa-credit-card"></i> Payment Method</div>
+                    <div class="cart-payment-btns">
+                      <button
+                        type="button"
+                        :class="['cart-pay-btn', paymentMethod === 'GCash' ? 'active-gcash' : '']"
                         @click="paymentMethod = 'GCash'"
                       >
-                        <i class="fas fa-wallet text-green-600 text-lg mr-2"></i> GCash
-                        <span v-if="paymentMethod === 'GCash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+                        <i class="fas fa-wallet"></i> GCash
+                        <i v-if="paymentMethod === 'GCash'" class="fas fa-check-circle cart-pay-check"></i>
                       </button>
-                      <button type="button"
-                        class="payment-btn flex-1 py-3 rounded-lg border text-base font-semibold flex items-center justify-center"
-                        :class="paymentMethod === 'Cash' ? 'bg-yellow-50 border-yellow-600 text-yellow-700 ring-2 ring-yellow-200' : 'bg-white border-gray-300 text-gray-700'"
+                      <button
+                        type="button"
+                        :class="['cart-pay-btn', paymentMethod === 'Cash' ? 'active-cash' : '']"
                         @click="paymentMethod = 'Cash'"
                       >
-                        <i class="fas fa-money-bill-wave text-yellow-600 text-lg mr-2"></i> Cash
-                        <span v-if="paymentMethod === 'Cash'" class="ml-2"><i class="fas fa-check-circle text-primary-blue"></i></span>
+                        <i class="fas fa-money-bill-wave"></i> Cash
+                        <i v-if="paymentMethod === 'Cash'" class="fas fa-check-circle cart-pay-check"></i>
                       </button>
                     </div>
                   </div>
 
-                  <button @click="checkout" class="btn-success w-full bg-green-600 text-white py-4 rounded-lg font-semibold text-lg pay-btn">
-                    <i class="fas fa-check-circle mr-2"></i>Pay & Complete
+                  <!-- Checkout Button -->
+                  <button @click="checkout" class="cart-checkout-btn">
+                    <i class="fas fa-check-circle"></i> Pay & Complete
                   </button>
                 </div>
               </div>
@@ -467,7 +454,7 @@
 
 <script>
 import AdminSidebar from '../../components/Admin/AdminSidebar.vue';
-import AdminHeader from '../../components/admin/AdminHeader.vue';
+import AdminHeader from '../../components/Admin/AdminHeader.vue';
 import QRCheckInScanner from '../../components/QRCheckInScanner.vue';
 import POSRoomBookingModal from '../../components/POSRoomBookingModal.vue';
 import QRCode from 'qrcode';
@@ -487,6 +474,7 @@ export default {
       sidebarCollapsed: false,
       isCheckinScannerOpen: false,
       showTransaction: false,       // ← controls POS/Transaction toggle
+      isFullscreen: false,
       auth: useAuthStore(),
       notifications: useNotificationStore(),
       cart: [],
@@ -496,6 +484,7 @@ export default {
       paymentMethod: 'Cash',
       searchQuery: '',
       restaurantTypeFilter: 'all',
+      showMoreFilters: false,
       transactionHistory: [],
       showReceiptCustomizer: false,
       selectedReceipt: null,
@@ -544,6 +533,8 @@ export default {
       if (!cat) return [];
       return [...new Set(cat.items.map(i => (i.description || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     },
+    visibleFilters() { return this.restaurantTypeFilters.slice(0, 5); },
+    overflowFilters() { return this.restaurantTypeFilters.slice(5); },
     filteredTransactionHistory() {
       if (this.userRole === 'admin') return this.transactionHistory;
       return this.transactionHistory.filter(trans => {
@@ -570,10 +561,42 @@ export default {
       this.notifications.setEshopPending(newCount);
     }
   },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this._fsKeyHandler);
+    document.removeEventListener('fullscreenchange', this._fsChangeHandler);
+    document.removeEventListener('click', this._outsideClick);
+    // Clear polling interval
+    if (this._pollInterval) {
+      clearInterval(this._pollInterval);
+      this._pollInterval = null;
+    }
+    if (this._visibilityHandler) {
+      document.removeEventListener('visibilitychange', this._visibilityHandler);
+    }
+  },
   async mounted() {
     await this.fetchItems();
     await this.fetchTransactions();
     this.updateReceiptNumber();
+    // Auto-poll transactions every 30 seconds so the list stays real-time
+    this._pollInterval = setInterval(() => {
+      this.fetchTransactions();
+    }, 30000);
+    // Refetch immediately when user switches back to this browser tab
+    this._visibilityHandler = () => {
+      if (document.visibilityState === 'visible') this.fetchTransactions();
+    };
+    document.addEventListener('visibilitychange', this._visibilityHandler);
+    this._fsKeyHandler = (e) => {
+      if (e.ctrlKey && e.key === 'F12') { e.preventDefault(); this.toggleFullscreen(); }
+    };
+    this._fsChangeHandler = () => {
+      this.isFullscreen = !!document.fullscreenElement;
+    };
+    this._outsideClick = () => { this.showMoreFilters = false; };
+    document.addEventListener('keydown', this._fsKeyHandler);
+    document.addEventListener('fullscreenchange', this._fsChangeHandler);
+    document.addEventListener('click', this._outsideClick);
     const savedStyle = localStorage.getItem('receiptStyle');
     if (savedStyle) {
       try { this.receiptStyle = { ...this.receiptStyle, ...JSON.parse(savedStyle) }; }
@@ -581,6 +604,14 @@ export default {
     }
   },
   methods: {
+    // ── Fullscreen ──
+    toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    },
     // ── Bookmark Tab Actions ──
     openScanner() {
       this.isCheckinScannerOpen = true;
@@ -780,8 +811,23 @@ export default {
         this.showToast(error.message || '❌ Failed to create booking', 'error');
       }
     },
-    addItem(name, price) { this.cart.push({ name, price }); this.total += price; },
-    removeItem(index) { this.total -= this.cart[index].price; this.cart.splice(index, 1); },
+    addItem(name, price) {
+      const existing = this.cart.find(i => i.name === name && !i.isBooking);
+      if (existing) {
+        existing.qty++;
+        existing.price = existing.unitPrice * existing.qty;
+      } else {
+        this.cart.push({ name, price, unitPrice: price, qty: 1 });
+      }
+      this.total += price;
+    },
+    incrementItem(index) {},
+    decrementItem(index) {},
+    removeItem(index) {
+      const item = this.cart[index];
+      this.total -= item.isBooking ? item.price : item.unitPrice * item.qty;
+      this.cart.splice(index, 1);
+    },
     clearCart() {
       if (this.cart.length > 0 && confirm('Clear all items from the current transaction?')) {
         this.cart = []; this.total = 0;
@@ -1067,20 +1113,13 @@ export default {
 .main-content {
   flex: 1;
   margin-left: 260px;
+  padding-top: 56px;
   transition: margin-left 0.3s ease;
 }
 
 .main-content.shifted { margin-left: 70px; }
 
-.header-container {
-  padding: 1rem 2rem;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  top: 0;
-  z-index: 50;
-  margin-bottom: 10px;
-  margin-top: 20px;
-}
+/* header-container removed — POSHeader is self-contained fixed element */
 
 .pos-container {
   padding: 1.5rem;
@@ -1091,58 +1130,51 @@ export default {
 }
 
 /* ── BOOKMARK TABS ── */
-.side-bookmarks {
-  position: fixed;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  z-index: 400;
-}
-
-.bookmark-tab {
+/* ── Search Row (search + scanner inline) ── */
+.search-row {
   display: flex;
   align-items: center;
-  padding: 0.85rem 0.9rem;
+  gap: 0.6rem;
+}
+
+.scanner-inline-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 1rem;
+  height: 48px;
+  background: #1F8DBF;
   color: #fff;
-  font-family: inherit;
+  border: none;
+  border-radius: 10px;
   font-size: 0.82rem;
   font-weight: 700;
-  border: none;
-  border-radius: 10px 0 0 10px;
   cursor: pointer;
-  box-shadow: -3px 3px 14px rgba(59, 103, 230, 0.28);
-  overflow: hidden;
   white-space: nowrap;
-  /* width, gap, background all controlled by Vue :style binding */
-}
-
-.tab-icon {
-  font-size: 1rem;
   flex-shrink: 0;
-  min-width: 16px;
+  transition: background 0.15s;
 }
+.scanner-inline-btn:hover { background: #1677a3; }
+.scanner-inline-btn i { font-size: 1rem; }
 
-.tab-label {
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.tab-badge {
+.topbar-badge {
   background: #ef4444;
   color: #fff;
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 800;
-  padding: 0.1rem 0.42rem;
+  padding: 0.1rem 0.35rem;
   border-radius: 20px;
-  min-width: 18px;
+  min-width: 16px;
   text-align: center;
   line-height: 1.5;
-  flex-shrink: 0;
-  margin-left: auto;
+  position: absolute;
+  top: -4px;
+  right: -4px;
 }
+
+.fs-toggle-btn { position: relative; }
+.fs-toggle-btn--active { background: #1F8DBF; color: #fff; border-color: #1F8DBF; }
+.fs-toggle-btn--active:hover { background: #1677a3; }
 
 /* ── POS / Transaction sections ── */
 .pos-section { animation: fadeIn 0.22s ease; }
@@ -1154,66 +1186,279 @@ export default {
 }
 
 /* ── POS Grid ── */
-.pos-grid { align-items: stretch; }
-
-.items-card, .cart-card {
-  min-height: 680px;
-  max-height: 680px;
+.pos-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 0;
+  align-items: stretch;
 }
 
-.items-card { display: flex; flex-direction: column; }
-.cart-card  { display: flex; flex-direction: column; }
+.items-card, .cart-card {
+  min-height: 0;
+  height: 100%;
+}
+
+.items-card { display: flex; flex-direction: column; border-radius: 12px 0 0 12px !important; border-right: none !important; }
+/* ══════════════════════════════════════
+   CART CARD
+══════════════════════════════════════ */
+.cart-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 0 12px 12px 0 !important;
+  border-left: 1px solid #e5e7eb;
+  height: 100%;
+}
 
 .cart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.9rem;
+  padding: 1.1rem 1.25rem 0.85rem;
+  border-bottom: 1px solid #f0f0f0;
 }
+
+.cart-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.cart-title i { color: #1F8DBF; font-size: 1rem; }
+
+.cart-clear-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: 1px solid #fee2e2;
+  color: #ef4444;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cart-clear-btn:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
 
 .cart-content {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 .cart-items-area {
-  flex: 1;
-  min-height: 280px;
+  flex: 0 0 auto;
   overflow-y: auto;
-  padding-right: 2px;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 0.9rem;
+  height: 450px;
+  padding: 0.5rem 1.25rem;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+.cart-items-area::-webkit-scrollbar { display: none; }
 
-.cart-items-area::-webkit-scrollbar { width: 0; height: 0; }
-
+/* Empty State */
 .cart-empty-state {
-  min-height: 250px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  padding: 10rem 0;
+  color: #94a3b8;
+  text-align: center;
+  gap: 0.4rem;
 }
+.cart-empty-icon {
+  width: 56px;
+  height: 56px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+.cart-empty-icon i { font-size: 1.4rem; color: #cbd5e1; }
+.cart-empty-state p { font-size: 0.875rem; font-weight: 600; color: #64748b; margin: 0; }
+.cart-empty-state span { font-size: 0.75rem; color: #94a3b8; }
 
-.cart-bottom { margin-top: auto; }
-
-.total-panel {
+/* Cart Item Row */
+.cart-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f3f4f6;
-  border-radius: 10px;
-  padding: 0.9rem 1rem;
-  margin-bottom: 0.85rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 0.5rem;
+}
+.cart-item:last-child { border-bottom: none; }
+
+.cart-item-left { flex: 1; min-width: 0; }
+
+.cart-item-name {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.payment-wrap { margin-bottom: 0.2rem; }
-.pay-btn { min-height: 52px; }
+.cart-item-qty {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+
+.cart-item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 2px;
+}
+.cart-item-meta span {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cart-item-meta i { color: #cbd5e1; width: 10px; text-align: center; }
+
+.cart-item-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.cart-item-price {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+}
+
+.cart-remove-btn {
+  width: 22px;
+  height: 22px;
+  background: #fee2e2;
+  border: none;
+  border-radius: 50%;
+  color: #ef4444;
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.cart-remove-btn:hover { background: #ef4444; color: #fff; }
+
+/* Cart Footer */
+.cart-footer {
+  padding: 0.85rem 1.25rem 1.1rem;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cart-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cart-total-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cart-total-amount {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1F8DBF;
+  line-height: 1;
+}
+
+.cart-divider { height: 1px; background: #f0f0f0; }
+
+.cart-payment-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.cart-payment-btns { display: flex; gap: 0.5rem; }
+
+.cart-pay-btn {
+  flex: 1;
+  padding: 0.55rem 0.5rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fafafa;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  transition: all 0.15s;
+}
+.cart-pay-btn:hover { border-color: #1F8DBF; color: #1F8DBF; background: #f0f9ff; }
+
+.active-gcash {
+  background: #f0fdf4;
+  border-color: #22c55e;
+  color: #16a34a;
+}
+.active-cash {
+  background: #fefce8;
+  border-color: #eab308;
+  color: #854d0e;
+}
+.cart-pay-check { font-size: 0.75rem; margin-left: 2px; }
+
+.cart-checkout-btn {
+  width: 100%;
+  padding: 0.8rem;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(22,163,74,0.25);
+}
+.cart-checkout-btn:hover {
+  background: #15803d;
+  box-shadow: 0 4px 14px rgba(22,163,74,0.35);
+  transform: translateY(-1px);
+}
 
 .items-topbar {
   display: flex;
@@ -1222,6 +1467,29 @@ export default {
   gap: 0.9rem;
   min-height: 30px;
 }
+
+.items-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.fs-toggle-btn {
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.fs-toggle-btn:hover { background: #1F8DBF; color: #fff; border-color: #1F8DBF; }
 
 .section-title {
   font-size: 1.5rem;
@@ -1245,6 +1513,65 @@ export default {
   padding-bottom: 0.65rem;
 }
 
+/* ── Filter Chips ───────────────────────────────────── */
+.chip-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1.5px solid;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+.chip-idle  { background: #fff; color: #374151; border-color: #d1d5db; }
+.chip-idle:hover { border-color: #93c5fd; color: #1d4ed8; }
+.chip-active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+/* More dropdown wrapper */
+.filter-more-wrap {
+  position: relative;
+  display: inline-block;
+}
+.chip-more { gap: 2px; }
+
+.filter-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 500;
+  min-width: 170px;
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: dropIn 0.15s ease;
+}
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.filter-dropdown-item {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.filter-dropdown-item:hover { background: #eff6ff; color: #1d4ed8; }
+.filter-dropdown-item--active { background: #dbeafe; color: #1d4ed8; }
+
 .items-scroll {
   flex: 1;
   overflow-y: auto;
@@ -1258,7 +1585,7 @@ export default {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: all 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
 .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
 
@@ -1292,27 +1619,14 @@ export default {
 
 .cart-item {
   transition: all 0.2s ease;
-  padding: 0.55rem;
+  padding: 0.35rem 0.4rem;
   border-radius: 6px;
+  border-bottom: 1px solid #f1f5f9;
 }
+.cart-item:last-child { border-bottom: none; }
 .cart-item:hover { background: #f9fafb; }
 
-.pos-container {
-  padding: 1.75rem;
-  max-width: 1360px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
 
-/* ── POS Grid ──────────────────────────────────────────── */
-.pos-grid {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 1.5rem;
-  align-items: start;
-}
 
 /* ── Card Base ─────────────────────────────────────────── */
 .pos-card {
@@ -1414,7 +1728,7 @@ export default {
 
 /* ── Items Grid ────────────────────────────────────────── */
 .items-scroll {
-  max-height: 440px; overflow-y: auto; scrollbar-width: none;
+  max-height: 560px; overflow-y: auto; scrollbar-width: none;
 }
 .items-scroll::-webkit-scrollbar { display: none; }
 
@@ -1450,12 +1764,7 @@ export default {
 
 .cart-body { display: flex; flex-direction: column; flex: 1; padding: 1.1rem 1.4rem; }
 
-.cart-items-area {
-  flex: 1; min-height: 240px; max-height: 240px;
-  overflow-y: auto; scrollbar-width: none;
-  border-bottom: 1px solid #f1f5f9; margin-bottom: 1rem;
-}
-.cart-items-area::-webkit-scrollbar { display: none; }
+
 
 .cart-empty {
   min-height: 220px; display: flex; flex-direction: column;
@@ -1465,14 +1774,6 @@ export default {
 .cart-empty i { font-size: 2.2rem; color: #d1d5db; }
 .cart-empty p  { font-size: 0.88rem; margin: 0; }
 
-.cart-item {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0.55rem 0.5rem; border-radius: 8px; transition: background 0.15s;
-}
-.cart-item:hover { background: #f8fafc; }
-.cart-item-name  { font-size: 0.88rem; color: #334155; font-weight: 500; }
-.cart-item-right { display: flex; align-items: center; gap: 0.6rem; }
-.cart-item-price { font-size: 0.9rem; font-weight: 700; color: #1e293b; }
 .remove-item-btn { background: none; border: none; cursor: pointer; color: #fca5a5; font-size: 1rem; transition: color 0.15s; }
 .remove-item-btn:hover { color: #ef4444; }
 
@@ -1737,11 +2038,33 @@ export default {
 .modal-btn--save     { background: #1F8DBF; color: #fff; }
 .modal-btn--save:hover { background: #1E88B6; }
 
-/* ── Responsive ────────────────────────────────────────── */
-@media (max-width: 1024px) {
-  .pos-grid { grid-template-columns: 1fr; }
+/* ── Fullscreen Mode ────────────────────────────────────── */
+.pos-fullscreen .main-content {
+  margin-left: 0 !important;
+  padding: 0 !important;
 }
+.pos-fullscreen :deep(.page-header) {
+  display: none !important;
+}
+/* hide the AdminSidebar root element in fullscreen */
+.pos-fullscreen > aside,
+.pos-fullscreen > nav {
+  display: none !important;
+}
+.pos-fullscreen .pos-container {
+  padding: 0.75rem !important;
+}
+.pos-fullscreen .pos-grid {
+  height: calc(100vh - 1.5rem);
+}
+.pos-fullscreen .items-card,
+.pos-fullscreen .cart-card {
+  height: 100% !important;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
 @media (max-width: 768px) {
+  .pos-grid { grid-template-columns: 1fr; }
   .main-content { margin-left: 0; }
   .items-topbar { flex-direction: column; align-items: flex-start; }
   .category-switch { width: 100%; justify-content: flex-start; }

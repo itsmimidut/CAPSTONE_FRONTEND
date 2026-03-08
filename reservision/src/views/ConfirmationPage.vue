@@ -29,7 +29,7 @@
 
       <div class="space-y-3">
         <router-link
-          to="/"
+          to="/customer"
           class="block w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition shadow-md"
         >
           <i class="fas fa-home mr-2"></i>Back to Home
@@ -104,7 +104,7 @@ const getNextBookingLink = () => {
   if (service.value === 'swimming') {
     return '/swimming'
   }
-  return '/websitereservation'
+  return '/customer?section=book'
 }
 
 onMounted(async () => {

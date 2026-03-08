@@ -229,14 +229,14 @@ onMounted(() => {
 
 .main-content {
   margin-left: 0;
-  padding-top: 3.5rem;
+  padding: 2rem;
   transition: margin-left 0.3s ease;
 }
 
 @media (min-width: 768px) {
   .main-content {
-    margin-left: 260px;
-    padding-top: 4.5rem;
+    margin-left: 220px;
+    padding-top: 2rem;
   }
 }
 

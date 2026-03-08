@@ -66,6 +66,7 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 const props = defineProps({
   title: {
@@ -87,10 +88,15 @@ const props = defineProps({
   roomId: {
     type: [String, Number],
     default: null
+  },
+  redirectOnBook: {
+    type: Boolean,
+    default: true
   }
 });
 
 const emit = defineEmits(['book']);
+const router = useRouter();
 
 const isPreviewOpen = ref(false);
 
@@ -104,7 +110,7 @@ function closePreview() {
   document.body.style.overflow = '';
 }
 
-function handleBookNow() {
+async function handleBookNow() {
   // Emit book event with room details
   emit('book', {
     id: props.roomId,
@@ -119,6 +125,13 @@ function handleBookNow() {
   // Optionally close preview if open
   if (isPreviewOpen.value) {
     closePreview();
+  }
+
+  if (props.redirectOnBook) {
+    await router.push({
+      path: '/customer',
+      query: { activeSection: 'book' }
+    });
   }
 }
 </script>

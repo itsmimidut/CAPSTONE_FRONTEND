@@ -638,8 +638,9 @@ onMounted(async () => {
 }
 
 .main-content {
-  padding: 2rem;
+  padding: 1rem;
   flex: 1;
+  margin-top: 80px;
 }
 
 @media (min-width: 768px) {

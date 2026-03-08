@@ -28,8 +28,8 @@
         <div class="avatar-glow"></div>
       </div>
       <div class="user-details">
-        <div class="font-medium text-white">{{ userName }}</div>
-        <div class="text-xs text-white/80">{{ userRole }}</div>
+        <div class="font-medium text-white">{{ resolvedUserName }}</div>
+        <div class="text-xs text-white/80">{{ resolvedUserRole }}</div>
       </div>
     </div>
 
@@ -67,7 +67,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 
@@ -106,7 +106,35 @@ const emit = defineEmits(['select', 'close']);
 const router = useRouter()
 const auth = useAuthStore()
 
-const userInitial = computed(() => props.userName.charAt(0).toUpperCase());
+const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}')
+  } catch {
+    return {}
+  }
+}
+
+const resolvedUser = computed(() => auth.user || getStoredUser())
+
+const resolvedUserName = computed(() => {
+  const u = resolvedUser.value || {}
+  const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim()
+  return fullName || u.name || props.userName || 'Guest'
+})
+
+const resolvedUserRole = computed(() => {
+  const role = resolvedUser.value?.role
+  const roleLabels = {
+    admin: 'Admin',
+    restaurantstaff: 'Restaurant Staff',
+    restaurant_staff: 'Restaurant Staff',
+    receptionist: 'Receptionist',
+    customer: 'Customer'
+  }
+  return roleLabels[role] || props.userRole || 'Customer'
+})
+
+const userInitial = computed(() => (resolvedUserName.value?.charAt(0) || 'G').toUpperCase());
 
 const handleSelect = (sectionId) => {
   emit('select', sectionId);
@@ -118,6 +146,10 @@ const handleLogout = () => {
   localStorage.clear()
   router.push('/login')
 }
+
+onMounted(() => {
+  auth.initFromStorage()
+})
 </script>
 
 <style scoped>

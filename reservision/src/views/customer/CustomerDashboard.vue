@@ -25,6 +25,7 @@
       <div style="margin:0; padding:0; position:relative;">
         <ReservationSection
           v-show="activeSection === 'book'"
+          @view-reservations="setActiveSection('reservations')"
         />
       </div>
 
@@ -42,6 +43,7 @@
         />
 
         <CustomerReservationsSection
+          ref="reservationsRef"
           v-show="activeSection === 'reservations'" class=""
           :reservations="reservations"
         />
@@ -51,6 +53,7 @@
         />
 
         <OrderHistory
+          ref="ordersRef"
           v-show="activeSection === 'orders'"
           :show-header="false"
           @close="() => {}"
@@ -70,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import AdminHeader from '../../components/admin/AdminHeader.vue';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar.vue';
@@ -86,6 +89,18 @@ const apiBase = 'http://localhost:8000/api';
 const auth = useAuthStore();
 
 const activeSection = ref('dashboard');
+const reservationsRef = ref(null);
+const ordersRef = ref(null);
+
+// Refetch data immediately when the user switches to a section
+watch(activeSection, (newSection) => {
+  if (newSection === 'reservations' && reservationsRef.value) {
+    reservationsRef.value.fetchBookingHistory();
+  }
+  if (newSection === 'orders' && ordersRef.value) {
+    ordersRef.value.fetchOrders();
+  }
+});
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'fa-home' },
