@@ -237,13 +237,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const API_BASE = 'http://localhost:8000/api/pos'
 
 const props = defineProps({
   showHeader: { type: Boolean, default: true }
 })
+
 const emit = defineEmits(['close', 'reorder'])
 
 // State
@@ -267,8 +268,11 @@ const filters = ref({
 
 // Computed
 const hasActiveFilters = computed(() =>
-  filters.value.search || filters.value.dateFrom || filters.value.dateTo ||
-  filters.value.amountMin || filters.value.amountMax
+  filters.value.search ||
+  filters.value.dateFrom ||
+  filters.value.dateTo ||
+  filters.value.amountMin ||
+  filters.value.amountMax
 )
 
 const filteredOrders = computed(() => {
@@ -280,25 +284,34 @@ const filteredOrders = computed(() => {
   }
 
   if (filters.value.dateFrom) {
-    result = result.filter(o => new Date(o.transaction_date) >= new Date(filters.value.dateFrom))
+    result = result.filter(
+      o => new Date(o.transaction_date) >= new Date(filters.value.dateFrom)
+    )
   }
 
   if (filters.value.dateTo) {
-    result = result.filter(o => new Date(o.transaction_date) <= new Date(filters.value.dateTo))
+    result = result.filter(
+      o => new Date(o.transaction_date) <= new Date(filters.value.dateTo)
+    )
   }
 
   if (filters.value.amountMin != null && filters.value.amountMin !== '') {
-    result = result.filter(o => parseFloat(o.total_amount) >= filters.value.amountMin)
+    result = result.filter(
+      o => parseFloat(o.total_amount) >= filters.value.amountMin
+    )
   }
 
   if (filters.value.amountMax != null && filters.value.amountMax !== '') {
-    result = result.filter(o => parseFloat(o.total_amount) <= filters.value.amountMax)
+    result = result.filter(
+      o => parseFloat(o.total_amount) <= filters.value.amountMax
+    )
   }
 
-  // Sort
   const [sortField, sortDir] = filters.value.sortBy.split('_')
+
   result.sort((a, b) => {
     let va, vb
+
     if (sortField === 'date') {
       va = new Date(`${a.transaction_date} ${a.transaction_time}`)
       vb = new Date(`${b.transaction_date} ${b.transaction_time}`)
@@ -306,6 +319,7 @@ const filteredOrders = computed(() => {
       va = parseFloat(a.total_amount)
       vb = parseFloat(b.total_amount)
     }
+
     return sortDir === 'desc' ? vb - va : va - vb
   })
 
@@ -326,23 +340,31 @@ const fetchOrders = async (silent = false) => {
     if (!response.ok) throw new Error('Failed to fetch orders')
 
     const all = await response.json()
+
     const filtered = all
       .filter(t => t.type === 'E-Shop')
-      .sort((a, b) => new Date(`${b.transaction_date} ${b.transaction_time}`) - new Date(`${a.transaction_date} ${a.transaction_time}`))
+      .sort(
+        (a, b) =>
+          new Date(`${b.transaction_date} ${b.transaction_time}`) -
+          new Date(`${a.transaction_date} ${a.transaction_time}`)
+      )
 
-    // Detect new orders for animation
     const existingIds = orders.value.map(o => o.id)
-    const incoming = filtered.map(o => o.id)
-    const newIds = incoming.filter(id => !existingIds.includes(id))
+    const incomingIds = filtered.map(o => o.id)
+    const newIds = incomingIds.filter(id => !existingIds.includes(id))
+
     if (newIds.length > 0 && orders.value.length > 0) {
       newOrderIds.value = newIds
-      setTimeout(() => { newOrderIds.value = [] }, 3000)
+      setTimeout(() => {
+        newOrderIds.value = []
+      }, 3000)
     }
 
     orders.value = filtered
-
   } catch (err) {
-    if (!silent) error.value = 'Failed to load order history. Please try again.'
+    if (!silent) {
+      error.value = 'Failed to load order history. Please try again.'
+    }
     console.error('Error fetching orders:', err)
   } finally {
     isLoading.value = false
@@ -350,10 +372,10 @@ const fetchOrders = async (silent = false) => {
 }
 
 // Polling for real-time updates (every 10 seconds)
-const startPolling = () => {
-  isPolling.value = true
-  pollingInterval = setInterval(() => fetchOrders(true), 10000)
-}
+// const startPolling = () => {
+//   isPolling.value = true
+//   pollingInterval = setInterval(() => fetchOrders(true), 10000)
+// }
 
 const stopPolling = () => {
   isPolling.value = false
@@ -366,12 +388,21 @@ const toggleOrder = (id) => {
 
 const parseItems = (items) => {
   if (Array.isArray(items)) return items
-  try { return JSON.parse(items) } catch { return [] }
+
+  try {
+    return JSON.parse(items)
+  } catch {
+    return []
+  }
 }
 
 const formatDate = (d) => {
   if (!d) return ''
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(d).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
 }
 
 const formatTime = (t) => {
@@ -380,17 +411,24 @@ const formatTime = (t) => {
 }
 
 const clearFilters = () => {
-  filters.value = { search: '', dateFrom: '', dateTo: '', amountMin: null, amountMax: null, sortBy: 'date_desc' }
+  filters.value = {
+    search: '',
+    dateFrom: '',
+    dateTo: '',
+    amountMin: null,
+    amountMax: null,
+    sortBy: 'date_desc'
+  }
 }
 
-/* Send selected order items back to Cart via existing emit pathway */
 const reorder = (order) => {
   emit('reorder', parseItems(order.items))
   emit('close')
 }
 
 const confirmDelete = (id) => {
-  if (confirm('Delete this order? This action cannot be undone.')) deleteOrder(id)
+  const ok = window.confirm('Delete this order? This action cannot be undone.')
+  if (ok) deleteOrder(id)
 }
 
 const deleteOrder = async (id) => {
@@ -399,13 +437,37 @@ const deleteOrder = async (id) => {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     })
-    if (!res.ok) throw new Error()
+
+    if (!res.ok) throw new Error('Delete failed')
+
     orders.value = orders.value.filter(o => o.id !== id)
-    if (expandedOrder.value === id) expandedOrder.value = null
-  } catch {
+
+    if (expandedOrder.value === id) {
+      expandedOrder.value = null
+    }
+  } catch (err) {
+    console.error('Delete error:', err)
     alert('Failed to delete order. Please try again.')
   }
 }
+
+const startPolling = () => {
+  stopPolling()
+  isPolling.value = true
+
+  pollingInterval = setInterval(() => {
+    fetchOrders(true)
+  }, 10000)
+}
+
+// const stopPolling = () => {
+//   isPolling.value = false
+
+//   if (pollingInterval) {
+//     clearInterval(pollingInterval)
+//     pollingInterval = null
+//   }
+// }
 
 onMounted(() => {
   fetchOrders()

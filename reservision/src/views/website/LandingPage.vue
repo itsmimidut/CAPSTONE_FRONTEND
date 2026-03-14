@@ -9,7 +9,7 @@
     <!-- Hero -->
     <section id="home" class="relative min-h-[92vh] sm:min-h-screen flex items-center justify-center overflow-hidden">
       <img
-        src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80"
+        src="https://www.eduardosresort.com/images/IMG_0635.JPG"
         alt="Resort background"
         class="absolute inset-0 w-full h-full object-cover"
       />

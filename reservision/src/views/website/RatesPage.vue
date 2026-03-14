@@ -7,45 +7,20 @@
     <AppSidebar :is-open="sidebarOpen" @close="sidebarOpen = false" />
 
     <!-- Hero -->
-    <section
-      class="relative flex items-center justify-center min-h-[450px] sm:min-h-[550px] rates-hero text-center px-4 overflow-hidden pt-[78px]"
-    >
-      <!-- Animated background elements -->
-      <div class="absolute inset-0 overflow-hidden">
-        <div class="absolute top-10 left-10 w-32 h-32 bg-[#1F8DBF]/20 rounded-full blur-3xl animate-pulse-hero"></div>
-        <div class="absolute bottom-10 right-10 w-40 h-40 bg-[#F4C400]/20 rounded-full blur-3xl animate-pulse-hero delay-1000"></div>
-      </div>
-
-      <!-- Gradient overlay -->
-      <div class="absolute inset-0 bg-gradient-to-br from-[#1F8DBF]/20 via-[#F4C400]/10 to-[#F4C400]/20"></div>
-
-      <!-- Glass card -->
-      <div class="relative z-10 max-w-4xl w-full backdrop-blur-md bg-white/50 rounded-2xl p-8 sm:p-10 md:p-12 shadow-2xl mx-4 flex flex-col justify-center border border-white/40 my-12">
-        <div class="absolute inset-0 bg-gradient-to-br from-white/20 via-[#F4C400]/5 to-[#1F8DBF]/10 rounded-2xl pointer-events-none"></div>
-
-        <div class="relative z-20 flex flex-col items-center justify-center">
-          <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 w-32 h-32 bg-[#F4C400]/30 rounded-full blur-2xl animate-pulse-slow-hero"></div>
-
-          <h1 class="text-[32px] sm:text-[40px] md:text-[48px] font-bold leading-tight relative mb-2">
-            <span class="text-[#0C3B5E] drop-shadow-lg">Rates &amp; Packages</span>
-          </h1>
-
-          <div class="mt-4 mb-2">
-            <p class="text-xs sm:text-sm text-[#0C3B5E]/80 leading-relaxed drop-shadow-md font-medium max-w-2xl mx-auto">
-              Enjoy, relax, and have fun in our cool and therapeutic waters. Explore entrance fees,
-              room rates, and exclusive packages tailored for a memorable getaway.
-            </p>
-          </div>
-        </div>
+    <section class="rates-hero">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-badge">Eduardo's Resort</div>
+        <h1 class="hero-heading">
+          <span class="heading-white">Rates &</span>
+          <span class="heading-gold">Packages</span>
+        </h1>
+        <p class="hero-subtext">
+          Enjoy, relax, and have fun in our cool and therapeutic waters.<br/>
+          Explore entrance fees, room rates, and exclusive packages tailored for a memorable getaway.
+        </p>
       </div>
     </section>
-
-    <!-- Decorative background -->
-    <div class="absolute inset-0 pointer-events-none overflow-hidden">
-      <div class="absolute top-1/4 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/5 to-yellow-400/10 rounded-full blur-3xl animate-float-1"></div>
-      <div class="absolute bottom-1/3 right-10 w-40 h-40 bg-gradient-to-tr from-blue-300/5 to-yellow-300/10 rounded-full blur-3xl animate-float-2"></div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-gradient-to-r from-blue-200/5 to-yellow-200/5 rounded-full blur-3xl animate-pulse-soft"></div>
-    </div>
 
     <!-- Section intro -->
     <section class="relative py-10 sm:py-12">
@@ -88,7 +63,6 @@
               class="rate-image"
               loading="lazy"
             />
-
             <button
               class="preview-btn"
               @click="openPreview(slide.src)"
@@ -102,7 +76,7 @@
       </div>
     </section>
 
-    <!-- Lightbox Preview -->
+    <!-- Lightbox -->
     <div v-if="previewSrc" class="lightbox" @click="closePreview">
       <button class="lightbox-close" @click.stop="closePreview" type="button">
         <i class="fas fa-times"></i>
@@ -112,8 +86,6 @@
 
     <!-- Footer -->
     <AppFooter />
-
-    <!-- Chatbot -->
     <ChatbotModal />
   </div>
 </template>
@@ -146,67 +118,155 @@ const closePreview = () => {
 </script>
 
 <style scoped>
+/* ── Variables ── */
+.rates-hero,
+.rate-card,
+.lightbox {
+  --color-primary: #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark: #1E88B6;
+  --color-gold: #F4C400;
+  --color-gold-dark: #F2C200;
+  --color-navy: #0C3B5E;
+  --color-white: #FFFFFF;
+  --color-white-soft: rgba(255, 255, 255, 0.1);
+  --color-gray-bg: #f9fafb;
+  --color-gray-border: #e5e7eb;
+  --color-text-dark: #1f2937;
+  --color-text-light: #6b7280;
+}
+
+/* ── Page Background ── */
 .bg-rates-gradient {
-  background: linear-gradient(135deg, rgba(30, 64, 175, 0.12), rgba(212, 175, 55, 0.08));
+  background: #f9fafb;
   min-height: 100vh;
 }
 
+/* ── Hero ── */
 .rates-hero {
-  background-image:
-    radial-gradient(circle at 30% 40%, rgba(31, 141, 191, 0.25) 0%, transparent 40%),
-    radial-gradient(circle at 70% 60%, rgba(244, 196, 0, 0.2) 0%, transparent 40%),
-    linear-gradient(125deg, rgba(31, 141, 191, 0.4) 0%, rgba(244, 196, 0, 0.3) 100%),
-    url('https://www.eduardosresort.com/images/IMG_4224.JPG');
-  background-position: center;
-  background-size: cover;
-  background-blend-mode: overlay;
   position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+
+  background-image: url('https://www.eduardosresort.com/images/IMG_4224.JPG');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  flex-grow: 0;
 }
 
-.rates-hero::before {
-  content: '';
+.hero-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.2) 100%);
-  pointer-events: none;
+  background: rgba(10, 30, 50, 0.52);
+  z-index: 1;
 }
 
-.backdrop-blur-md {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 24px;
+  max-width: 780px;
+  width: 100%;
 }
 
+.hero-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: var(--color-white);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 6px 18px;
+  border-radius: 999px;
+}
+
+.hero-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.15;
+}
+
+.heading-white {
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-weight: 800;
+  color: var(--color-white);
+  display: block;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.heading-gold {
+  font-size: clamp(2rem, 4.5vw, 3.8rem);
+  font-weight: 800;
+  color: var(--color-gold);
+  display: block;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.hero-subtext {
+  font-size: clamp(0.88rem, 1.3vw, 1rem);
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.75;
+  font-weight: 400;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.3);
+}
+
+/* ── Section Headers ── */
 .section-header {
   font-weight: 900;
   font-size: 2.5rem;
   letter-spacing: 0.5px;
   margin-bottom: 1.5rem;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .section-subtitle {
-  color: rgb(30, 64, 175);
+  color: var(--color-primary);
   font-weight: 600;
   font-size: 1.1rem;
   margin-bottom: 0;
   letter-spacing: 0.3px;
 }
 
+/* ── Rate Card ── */
 .rate-card {
   position: relative;
-  border-radius: 24px;
+  border-radius: 22px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(239,246,255,0.85));
-  backdrop-filter: blur(15px);
-  box-shadow: 0 25px 50px rgba(0,0,0,0.18);
-  padding: 8px;
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 6px 32px rgba(3, 105, 161, 0.12),
+    0 2px 8px rgba(12, 59, 94, 0.07);
+  padding: 10px;
   transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
 .rate-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 28px 60px rgba(0,0,0,0.22);
+  box-shadow:
+    0 16px 48px rgba(3, 105, 161, 0.18),
+    0 4px 12px rgba(12, 59, 94, 0.10);
 }
 
 .rate-image {
@@ -214,17 +274,18 @@ const closePreview = () => {
   width: 100%;
   height: auto;
   object-fit: contain;
-  border-radius: 18px;
+  border-radius: 16px;
 }
 
+/* ── Preview Button ── */
 .preview-btn {
   position: absolute;
-  right: 14px;
-  bottom: 14px;
-  background: rgba(30, 64, 175, 0.88);
-  color: #facc15;
-  width: 40px;
-  height: 40px;
+  right: 18px;
+  bottom: 18px;
+  background: var(--color-primary);
+  color: var(--color-gold);
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
   display: flex;
   align-items: center;
@@ -233,18 +294,21 @@ const closePreview = () => {
   font-size: 16px;
   transition: all 0.25s ease;
   border: none;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 16px rgba(3, 105, 161, 0.3);
 }
 
 .preview-btn:hover {
-  background: rgba(30, 64, 175, 1);
-  transform: scale(1.08);
+  background: var(--color-gold);
+  color: var(--color-navy);
+  transform: scale(1.1);
+  box-shadow: 0 8px 20px rgba(244, 196, 0, 0.4);
 }
 
+/* ── Lightbox ── */
 .lightbox {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.88);
+  background: rgba(12, 59, 94, 0.88);
   backdrop-filter: blur(6px);
   display: flex;
   justify-content: center;
@@ -261,14 +325,20 @@ const closePreview = () => {
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  border: 2px solid #facc15;
-  background: white;
-  color: #1e40af;
+  border: 2px solid var(--color-gold);
+  background: var(--color-white);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1rem;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lightbox-close:hover {
+  background: var(--color-gold);
+  color: var(--color-navy);
 }
 
 .lightbox-img {
@@ -279,105 +349,32 @@ const closePreview = () => {
   background: white;
 }
 
-@keyframes pulseHero {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.1); }
-}
-
-@keyframes pulseSlowHero {
-  0%, 100% { opacity: 0.2; transform: scale(1) translateX(-50%); }
-  50% { opacity: 0.4; transform: scale(1.2) translateX(-50%); }
-}
-
-@keyframes float-1 {
-  0%, 100% { transform: translateY(0) translateX(0); }
-  33% { transform: translateY(-15px) translateX(10px); }
-  66% { transform: translateY(10px) translateX(-10px); }
-}
-
-@keyframes float-2 {
-  0%, 100% { transform: translateY(0) translateX(0); }
-  33% { transform: translateY(10px) translateX(-15px); }
-  66% { transform: translateY(-10px) translateX(10px); }
-}
-
+/* ── Animations ── */
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-}
-
-@keyframes pulse-soft {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
-}
-
-.animate-pulse-hero {
-  animation: pulseHero 4s ease-in-out infinite;
-}
-
-.animate-pulse-slow-hero {
-  animation: pulseSlowHero 6s ease-in-out infinite;
-  left: 50% !important;
-}
-
-.animate-float-1 {
-  animation: float-1 12s ease-in-out infinite;
-}
-
-.animate-float-2 {
-  animation: float-2 15s ease-in-out infinite;
-  animation-delay: 2s;
 }
 
 .animate-spin-slow {
   animation: spin-slow 10s linear infinite;
 }
 
-.animate-pulse-soft {
-  animation: pulse-soft 3s ease-in-out infinite;
-}
-
-.delay-1000 {
-  animation-delay: 1s;
-}
-
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .section-header {
-    font-size: 1.8rem;
-  }
-
-  .section-subtitle {
-    font-size: 0.95rem;
-  }
+  .section-header { font-size: 1.8rem; }
+  .section-subtitle { font-size: 0.95rem; }
 }
 
 @media (max-width: 640px) {
   .rates-hero {
-    min-height: 450px;
+    height: 100svh;
+    min-height: 100svh;
+    max-height: 100svh;
   }
-
-  .text-\[32px\] {
-    font-size: 28px;
-  }
-
-  .max-w-2xl {
-    max-width: 100%;
-  }
-
-  .section-header {
-    font-size: 1.5rem;
-  }
-
-  .section-subtitle {
-    font-size: 0.85rem;
-  }
-
-  .preview-btn {
-    width: 36px;
-    height: 36px;
-    right: 10px;
-    bottom: 10px;
-    font-size: 14px;
-  }
+  .hero-content { padding: 32px 16px; }
+  .hero-subtext br { display: none; }
+  .section-header { font-size: 1.5rem; }
+  .section-subtitle { font-size: 0.85rem; }
+  .preview-btn { width: 36px; height: 36px; right: 12px; bottom: 12px; font-size: 14px; }
 }
 </style>

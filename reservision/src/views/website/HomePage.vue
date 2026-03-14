@@ -1,5 +1,5 @@
 <template>
-  <div class="homepage-bg min-h-screen">
+  <div class="min-h-screen">
     <!-- Header -->
     <AppHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
     
@@ -8,8 +8,13 @@
 
     <!-- Main Content -->
     <main>
-      <HeroSection />
-       <OverviewSection />
+
+      <!-- Hero + Overview share one background -->
+      <div class="shared-bg">
+        <HeroSection />
+        <OverviewSection />
+      </div>
+
       <!-- <ExperiencesSection /> -->
       <!-- <RestaurantSection @open-menu="menuOpen = true" /> -->
       <!-- <SuitesSection /> -->
@@ -48,10 +53,11 @@ const menuOpen = ref(false)
 </script>
 
 <style scoped>
-.homepage-bg {
-  background-image: url('/images/hero_bg.jpg');
+.shared-bg {
+  background-image: url('https://www.eduardosresort.com/images/IMG_0635.JPG');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+  background-attachment: fixed;
 }
 </style>

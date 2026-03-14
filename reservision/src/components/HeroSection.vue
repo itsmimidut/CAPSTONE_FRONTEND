@@ -1,156 +1,171 @@
 <template>
-<section class="relative flex items-center justify-center min-h-[450px] sm:min-h-[550px] hero-bg text-center px-4 overflow-hidden">
-  <!-- Animated background elements -->
-  <div class="absolute inset-0 overflow-hidden">
-    <div class="absolute top-10 left-10 w-32 h-32 bg-[#1F8DBF]/20 rounded-full blur-3xl animate-pulse"></div>
-    <div class="absolute bottom-10 right-10 w-40 h-40 bg-[#F4C400]/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-  </div>
-  
-  <!-- Gradient overlay with more yellow presence -->
-  <div class="absolute inset-0 bg-gradient-to-br from-[#1F8DBF]/20 via-[#F4C400]/10 to-[#F4C400]/20"></div>
-  
-  <!-- Glass card - vertically elongated with ~50% opacity -->
-  <div class="relative z-10 max-w-md w-full backdrop-blur-md bg-white/50 rounded-2xl p-8 sm:p-10 shadow-2xl mx-4 flex flex-col justify-center border border-white/40 my-12">
-    
-    <!-- Inner glass layer for depth with yellow undertone -->
-    <div class="absolute inset-0 bg-gradient-to-br from-white/20 via-[#F4C400]/5 to-[#1F8DBF]/10 rounded-2xl pointer-events-none"></div>
-    
-    <!-- Content with relative positioning -->
-    <div class="relative z-20 space-y-5">
-      <!-- Yellow glow effect -->
-      <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 w-32 h-32 bg-[#F4C400]/30 rounded-full blur-2xl animate-pulse-slow"></div>
-      
-      <!-- Titles - ReserVision in dark blue, waterpark & Wellness Resort in matching darker blue -->
-      <h1 class="text-[32px] sm:text-[40px] md:text-[48px] font-bold leading-tight relative">
-        <span class="text-[#0C3B5E] drop-shadow-lg block">ReserVision</span> 
-        <span class="text-[#0C3B5E]/90 text-[24px] sm:text-[28px] md:text-[32px] block mt-1 drop-shadow-md">Waterpark &</span>
-        <span class="text-[#0C3B5E]/90 text-[24px] sm:text-[28px] md:text-[32px] block drop-shadow-md">Wellness Resort</span>
-      </h1>
-
-      <!-- Body text - slightly smaller for balance, in dark blue -->
-      <p class="text-xs sm:text-sm text-[#0C3B5E]/80 leading-relaxed drop-shadow-md font-medium max-w-sm mx-auto">
-        Where elegant relaxation meets family fun. Enjoy<br />
-        thrilling slides, serene pools, curated dining, and a<br />
-        personal smart assistant to plan your stay.
-      </p>
-
-      <!-- CTA Button - yellow with darker blue hover and yellow outline -->
-      <div class="flex flex-wrap justify-center gap-3 sm:gap-4 pt-2">
-        <!-- Login prompt toast -->
-        <div v-if="showLoginPrompt" class="w-full text-center text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-1">
-          <i class="fas fa-lock mr-1"></i>Only customers can book. Please log in as a customer.
-        </div>
-        <button 
-          @click="handleBook"
-          class="px-10 sm:px-12 md:px-14 
-                 py-3 sm:py-4 
-                 bg-[#F4C400]
-                 text-[#0C3B5E] font-extrabold 
-                 rounded-xl 
-                 transition-all duration-300 
-                 shadow-lg hover:shadow-2xl hover:scale-105 
-                 text-sm sm:text-base md:text-lg 
-                 relative overflow-hidden group
-                 border-2 border-[#F4C400] hover:border-[#F4C400]"
-        >
-          <span class="relative z-10 group-hover:text-white transition-colors duration-300">
-            Book Your Escape
-          </span>
-          <div class="absolute inset-0 
-                      bg-[#0A2F4A]
-                      opacity-0 
-                      group-hover:opacity-100 
-                      transition-opacity duration-300">
-          </div>
-        </button>
+<section class="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="hero-badge">Waterpark & Wellness Resort</div>
+    <h1 class="hero-heading">
+      <span class="heading-white">ReserVision</span>
+      <span class="heading-gold">Waterpark &<br/>Wellness Resort</span>
+    </h1>
+    <p class="hero-subtext">
+      Where elegant relaxation meets family fun. Enjoy<br/>
+      thrilling slides, serene pools, curated dining, and a<br/>
+      personal smart assistant to plan your stay.
+    </p>
+    <div class="hero-buttons">
+      <div v-if="showLoginPrompt" class="login-prompt">
+        <i class="fas fa-lock mr-1"></i>Only customers can book. Please log in as a customer.
       </div>
+      <button @click="handleBook" class="btn-primary">Book Your Escape</button>
     </div>
   </div>
 </section>
 </template>
 
 <style scoped>
-/* .hero-bg {
-  background-image: 
-    radial-gradient(circle at 30% 40%, rgba(31, 141, 191, 0.25) 0%, transparent 40%),
-    radial-gradient(circle at 70% 60%, rgba(244, 196, 0, 0.2) 0%, transparent 40%),
-    linear-gradient(125deg, rgba(31, 141, 191, 0.4) 0%, rgba(244, 196, 0, 0.3) 100%),
-    url('https://www.eduardosresort.com/images/IMG_4224.JPG');
-  background-position: center;
-  background-size: cover;
-  background-blend-mode: overlay;
-  position: relative;
-} */
+.hero-section {
+  --color-primary: #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark: #1E88B6;
+  --color-gold: #F4C400;
+  --color-gold-dark: #F2C200;
+  --color-navy: #0C3B5E;
+  --color-white: #FFFFFF;
 
-.hero-bg{
-  background-color: transparent;
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  flex-grow: 0;
 }
 
-.hero-bg::before {
-  content: '';
+.hero-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.2) 100%);
-  pointer-events: none;
+  background: rgba(10, 30, 50, 0.52);
+  z-index: 1;
 }
 
-/* Enhanced glass morphism effect with ~50% opacity */
-.backdrop-blur-md {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 24px;
+  max-width: 780px;
+  width: 100%;
 }
 
-/* Animation for background elements */
-@keyframes pulse {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.1); }
+.hero-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: var(--color-white);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 6px 18px;
+  border-radius: 999px;
 }
 
-@keyframes pulse-slow {
-  0%, 100% { opacity: 0.2; transform: scale(1) translateX(-50%); }
-  50% { opacity: 0.4; transform: scale(1.2) translateX(-50%); }
+.hero-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.15;
 }
 
-.animate-pulse {
-  animation: pulse 4s ease-in-out infinite;
+.heading-white {
+  font-size: clamp(3rem, 7vw, 5.5rem);  /* was clamp(2.2rem, 5vw, 3.8rem) */
+  font-weight: 800;
+  color: var(--color-white);
+  display: block;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
-.animate-pulse-slow {
-  animation: pulse-slow 6s ease-in-out infinite;
-  left: 50% !important;
+.heading-gold {
+  font-size: clamp(2rem, 4.5vw, 3.8rem);  /* was clamp(1.6rem, 3.2vw, 2.6rem) */
+  font-weight: 800;
+  color: var(--color-gold);
+  display: block;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
-.delay-1000 {
-  animation-delay: 1s;
+.hero-subtext {
+  font-size: clamp(0.88rem, 1.3vw, 1rem);
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.75;
+  font-weight: 400;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.3);
 }
 
-/* Custom spacing for vertical elongation */
-.p-8 {
-  padding: 2.5rem 2rem;
+.hero-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 8px;
 }
 
-@media (min-width: 640px) {
-  .sm\:p-10 {
-    padding: 3rem 2.5rem;
+.btn-primary {
+  padding: 14px 36px;
+  background: var(--color-gold);
+  color: var(--color-navy);
+  font-weight: 800;
+  font-size: 0.97rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 18px rgba(244, 196, 0, 0.4);
+}
+
+.btn-primary:hover {
+  background: var(--color-gold-dark);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 24px rgba(244, 196, 0, 0.5);
+}
+
+.login-prompt {
+  width: 100%;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 8px 14px;
+}
+
+@media (max-width: 640px) {
+  .hero-section {
+    height: 100svh;
+    min-height: 100svh;
+    max-height: 100svh;
   }
-}
 
-/* Ensure container is tall enough */
-.min-h-\[450px\] {
-  min-height: 450px;
-}
-
-@media (min-width: 640px) {
-  .sm\:min-h-\[550px\] {
-    min-height: 550px;
+  .hero-content {
+    padding: 32px 16px;
   }
-}
 
-/* Color palette */
-:root {
-  --reservision-blue: #0C3B5E;
-  --darker-blue: #0A2F4A;
-  --yellow: #F4C400;
+  .btn-primary {
+    width: 100%;
+    max-width: 280px;
+  }
 }
 </style>
 
@@ -165,14 +180,11 @@ const showLoginPrompt = ref(false)
 
 const handleBook = () => {
   if (auth.isAuthenticated && auth.user?.role === 'customer') {
-    // Already logged in as customer — go to customer dashboard, book tab
     router.push('/customer?section=book')
   } else if (auth.isAuthenticated) {
-    // Logged in but not as a customer (e.g. admin)
     showLoginPrompt.value = true
     setTimeout(() => { showLoginPrompt.value = false }, 4000)
   } else {
-    // Not logged in — redirect to login, then bounce back to book tab
     router.push('/login?redirect=/customer?section=book')
   }
 }

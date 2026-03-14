@@ -96,7 +96,7 @@ const routes = [
   // PUBLIC ROUTES - No authentication required
   // ────────────────────────────────────────────────────────
   // 🌍 Public
-  { path: '/', name: 'Home', component: LandingPage },
+  { path: '/', name: 'Home', component: HomePage },
   { path: '/amenities', name: 'Amenities', component: AmenitiesPage },
   { path: '/rates', name: 'Rates', component: RatesPage },
   { path: '/gallery', name: 'Gallery', component: GalleryPage },

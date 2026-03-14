@@ -7,45 +7,20 @@
     <AppSidebar :is-open="sidebarOpen" @close="sidebarOpen = false" />
 
     <!-- Hero -->
-    <section
-      class="relative flex items-center justify-center min-h-[450px] sm:min-h-[550px] hero-amenities text-center px-4 overflow-hidden pt-[78px]"
-    >
-      <!-- Animated background elements -->
-      <div class="absolute inset-0 overflow-hidden">
-        <div class="absolute top-10 left-10 w-32 h-32 bg-[#1F8DBF]/20 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute bottom-10 right-10 w-40 h-40 bg-[#F4C400]/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
-
-      <!-- Gradient overlay -->
-      <div class="absolute inset-0 bg-gradient-to-br from-[#1F8DBF]/20 via-[#F4C400]/10 to-[#F4C400]/20"></div>
-
-      <!-- Glass card -->
-      <div class="relative z-10 max-w-4xl w-full backdrop-blur-md bg-white/50 rounded-2xl p-8 sm:p-10 md:p-12 shadow-2xl mx-4 flex flex-col justify-center border border-white/40 my-12">
-        <div class="absolute inset-0 bg-gradient-to-br from-white/20 via-[#F4C400]/5 to-[#1F8DBF]/10 rounded-2xl pointer-events-none"></div>
-
-        <div class="relative z-20 flex flex-col items-center justify-center">
-          <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 w-32 h-32 bg-[#F4C400]/30 rounded-full blur-2xl animate-pulse-slow-hero"></div>
-
-          <h1 class="text-[32px] sm:text-[40px] md:text-[48px] font-bold leading-tight relative mb-2">
-            <span class="text-[#0C3B5E] drop-shadow-lg">World-Class Amenities</span>
-          </h1>
-
-          <div class="mt-4 mb-2">
-            <p class="text-xs sm:text-sm text-[#0C3B5E]/80 leading-relaxed drop-shadow-md font-medium max-w-2xl mx-auto">
-              From Olympic-sized pools to elegant dining and air-conditioned cottages — every detail is crafted
-              for your ultimate relaxation, joy, and unforgettable memories.
-            </p>
-          </div>
-        </div>
+    <section class="amenities-hero">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-badge">Eduardo's Resort</div>
+        <h1 class="hero-heading">
+          <span class="heading-white">World-Class</span>
+          <span class="heading-gold">Amenities</span>
+        </h1>
+        <p class="hero-subtext">
+          From Olympic-sized pools to elegant dining and air-conditioned cottages —<br/>
+          every detail is crafted for your ultimate relaxation, joy, and unforgettable memories.
+        </p>
       </div>
     </section>
-
-    <!-- Animated Background Elements -->
-    <div class="absolute inset-0 pointer-events-none overflow-hidden">
-      <div class="absolute top-1/4 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/5 to-yellow-400/10 rounded-full blur-3xl animate-float-1"></div>
-      <div class="absolute bottom-1/3 right-10 w-40 h-40 bg-gradient-to-tr from-blue-300/5 to-yellow-300/10 rounded-full blur-3xl animate-float-2"></div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-gradient-to-r from-blue-200/5 to-yellow-200/5 rounded-full blur-3xl animate-pulse-slow"></div>
-    </div>
 
     <!-- Amenities Grid -->
     <section id="amenity-grid" class="relative py-20">
@@ -94,29 +69,9 @@
                   </div>
                 </div>
 
-                <button
-                  class="carousel-arrow prev"
-                  @click="prevSlide(amenity.title)"
-                  aria-label="Previous image"
-                  type="button"
-                >
-                  &lt;
-                </button>
-
-                <button
-                  class="carousel-arrow next"
-                  @click="nextSlide(amenity.title, amenity.images.length)"
-                  aria-label="Next image"
-                  type="button"
-                >
-                  &gt;
-                </button>
-
-                <button
-                  class="see-more-btn"
-                  @click="toggleInfo(amenity.title)"
-                  type="button"
-                >
+                <button class="carousel-arrow prev" @click="prevSlide(amenity.title)" aria-label="Previous image" type="button">&lt;</button>
+                <button class="carousel-arrow next" @click="nextSlide(amenity.title, amenity.images.length)" aria-label="Next image" type="button">&gt;</button>
+                <button class="see-more-btn" @click="toggleInfo(amenity.title)" type="button">
                   {{ showInfo[amenity.title] ? 'See Less' : 'See More' }}
                 </button>
 
@@ -126,9 +81,9 @@
                 </div>
               </div>
 
-              <div class="p-6 bg-white">
-                <h3 class="text-xl font-bold text-[#0C3B5E] mb-3">{{ amenity.title }}</h3>
-                <p class="text-gray-600 mb-5">{{ amenity.description }}</p>
+              <div class="card-body">
+                <h3 class="card-title">{{ amenity.title }}</h3>
+                <p class="card-desc">{{ amenity.description }}</p>
               </div>
             </article>
           </div>
@@ -182,54 +137,25 @@
                   </div>
                 </div>
 
-                <button
-                  class="carousel-arrow prev"
-                  @click="prevSlide(amenity.title, amenity.images.length)"
-                  aria-label="Previous image"
-                  type="button"
-                >
-                  &lt;
-                </button>
-
-                <button
-                  class="carousel-arrow next"
-                  @click="nextSlide(amenity.title, amenity.images.length)"
-                  aria-label="Next image"
-                  type="button"
-                >
-                  &gt;
-                </button>
-
-                <button
-                  class="see-more-btn"
-                  @click="toggleInfo(amenity.title)"
-                  type="button"
-                >
+                <button class="carousel-arrow prev" @click="prevSlide(amenity.title, amenity.images.length)" aria-label="Previous image" type="button">&lt;</button>
+                <button class="carousel-arrow next" @click="nextSlide(amenity.title, amenity.images.length)" aria-label="Next image" type="button">&gt;</button>
+                <button class="see-more-btn" @click="toggleInfo(amenity.title)" type="button">
                   {{ showInfo[amenity.title] ? 'See Less' : 'See More' }}
                 </button>
 
                 <div class="info-overlay" :class="{ show: showInfo[amenity.title] }">
                   <div class="info-title">{{ amenity.title }}</div>
                   <div class="info-desc">{{ amenity.description }}</div>
-                  <router-link
-                    v-if="amenity.bookable"
-                    to="/reservation"
-                    class="add-btn"
-                  >
+                  <router-link v-if="amenity.bookable" to="/reservation" class="add-btn">
                     Book {{ amenity.title }}
                   </router-link>
                 </div>
               </div>
 
-              <div class="p-6 bg-white">
-                <h3 class="text-xl font-bold text-[#0C3B5E] mb-3">{{ amenity.title }}</h3>
-                <p class="text-gray-600 mb-5">{{ amenity.description }}</p>
-
-                <router-link
-                  v-if="amenity.bookable"
-                  to="/reservation"
-                  class="hidden sm:inline-flex add-btn"
-                >
+              <div class="card-body">
+                <h3 class="card-title">{{ amenity.title }}</h3>
+                <p class="card-desc">{{ amenity.description }}</p>
+                <router-link v-if="amenity.bookable" to="/reservation" class="hidden sm:inline-flex add-btn">
                   Book {{ amenity.title }}
                 </router-link>
               </div>
@@ -237,13 +163,12 @@
           </div>
         </div>
 
-        <!-- Call to Action Section -->
+        <!-- Call to Action -->
         <div class="mt-20 text-center reveal">
           <div class="inline-block relative group">
-            <div class="absolute -inset-4 bg-gradient-to-r from-blue-400/20 via-yellow-400/20 to-blue-400/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
             <router-link
               to="/reservation"
-              class="relative px-10 py-4 bg-gradient-to-r from-blue-600 to-yellow-500 text-white font-bold rounded-xl hover:shadow-2xl transform transition-all duration-300 hover:scale-105 text-lg shadow-lg flex items-center justify-center gap-3"
+              class="cta-btn"
             >
               <i class="fas fa-calendar-check text-lg"></i>
               Book Your Experience Today
@@ -258,8 +183,6 @@
 
     <!-- Footer -->
     <AppFooter />
-
-    <!-- Chatbot -->
     <ChatbotModal />
   </div>
 </template>
@@ -277,27 +200,17 @@ const poolAmenities = [
   {
     title: 'Mini-Olympic Size Swimming Pool',
     description: 'Dive into our expansive pool with crystal-clear, temperature-controlled water. Perfect for laps, family swims, or floating under the tropical sun.',
-    images: [
-      '/images/img1.jpg',
-      '/images/img3.jpg',
-      '/images/img5.jpg'
-    ]
+    images: ['/images/img1.jpg', '/images/img3.jpg', '/images/img5.jpg']
   },
   {
     title: 'Kiddie Pool w/ Slide',
     description: 'A colorful, shallow splash zone with a twisting slide designed just for little ones. Safe, supervised, and endlessly entertaining.',
-    images: [
-      '/images/img1.jpg',
-      '/images/img2.jpg'
-    ]
+    images: ['/images/img1.jpg', '/images/img2.jpg']
   },
   {
     title: 'Swimming Club',
     description: 'Join exclusive aqua-aerobics, swim lessons, or friendly competitions. Certified coaches ensure fun and fitness for all ages.',
-    images: [
-      '/images/img7.jpg',
-      '/images/img1.jpg'
-    ]
+    images: ['/images/img7.jpg', '/images/img1.jpg']
   }
 ]
 
@@ -305,26 +218,17 @@ const eventAmenities = [
   {
     title: 'Bar and Restaurant',
     description: 'Savor tropical cocktails and gourmet Filipino-international fusion dishes while overlooking the pools. Open from sunrise to midnight.',
-    images: [
-      '/images/img8.jpg',
-      'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80'
-    ]
+    images: ['/images/img8.jpg', 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80']
   },
   {
     title: 'Function Hall',
     description: 'Elegant, air-conditioned venue for weddings, corporate events, or birthdays. State-of-the-art AV and catering services included.',
-    images: [
-      'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=800&q=80'
-    ]
+    images: ['https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=800&q=80']
   },
   {
     title: 'Air-Conditioned Cottages',
     description: 'Private, stylish cottages with plush beds, en-suite bathrooms, and scenic views. Your serene home-away-from-home.',
-    images: [
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80',
-      '/images/img10.jpg'
-    ],
+    images: ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80', '/images/img10.jpg'],
     bookable: true
   }
 ]
@@ -332,7 +236,6 @@ const eventAmenities = [
 const currentSlides = ref({})
 const showInfo = ref({})
 let autoplayIntervals = []
-
 const allAmenities = [...poolAmenities, ...eventAmenities]
 
 allAmenities.forEach((amenity) => {
@@ -340,24 +243,14 @@ allAmenities.forEach((amenity) => {
   showInfo.value[amenity.title] = false
 })
 
-const nextSlide = (title, length) => {
-  currentSlides.value[title] = (currentSlides.value[title] + 1) % length
-}
-
-const prevSlide = (title, length) => {
-  currentSlides.value[title] = (currentSlides.value[title] - 1 + length) % length
-}
-
-const toggleInfo = (title) => {
-  showInfo.value[title] = !showInfo.value[title]
-}
+const nextSlide = (title, length) => { currentSlides.value[title] = (currentSlides.value[title] + 1) % length }
+const prevSlide = (title, length) => { currentSlides.value[title] = (currentSlides.value[title] - 1 + length) % length }
+const toggleInfo = (title) => { showInfo.value[title] = !showInfo.value[title] }
 
 const startAutoplay = () => {
   stopAutoplay()
   autoplayIntervals = allAmenities.map((amenity) =>
-    setInterval(() => {
-      nextSlide(amenity.title, amenity.images.length)
-    }, 4000)
+    setInterval(() => nextSlide(amenity.title, amenity.images.length), 4000)
   )
 }
 
@@ -388,65 +281,138 @@ onMounted(() => {
       const y = ((e.clientY - rect.top) / rect.height - 0.5) * 10
       card.style.transform = `perspective(1000px) rotateY(${x}deg) rotateX(${-y}deg) translateY(-8px)`
     })
-
     card.addEventListener('mouseleave', () => {
       card.style.transform = 'perspective(1000px) rotateY(0) rotateX(0) translateY(0)'
     })
   })
 })
 
-onUnmounted(() => {
-  stopAutoplay()
-})
+onUnmounted(() => stopAutoplay())
 </script>
 
 <style scoped>
-.hero-amenities {
-  background-image:
-    radial-gradient(circle at 30% 40%, rgba(31, 141, 191, 0.25) 0%, transparent 40%),
-    radial-gradient(circle at 70% 60%, rgba(244, 196, 0, 0.2) 0%, transparent 40%),
-    linear-gradient(125deg, rgba(31, 141, 191, 0.4) 0%, rgba(244, 196, 0, 0.3) 100%),
-    url('https://www.eduardosresort.com/images/IMG_4224.JPG');
-  background-position: center;
-  background-size: cover;
-  background-blend-mode: overlay;
-  position: relative;
+/* ── Variables ── */
+* {
+  --color-primary: #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark: #1E88B6;
+  --color-gold: #F4C400;
+  --color-gold-dark: #F2C200;
+  --color-navy: #0C3B5E;
+  --color-white: #FFFFFF;
+  --color-gray-bg: #f9fafb;
+  --color-gray-border: #e5e7eb;
+  --color-text-dark: #1f2937;
+  --color-text-light: #6b7280;
 }
 
-.hero-amenities::before {
-  content: '';
+/* ── Hero ── */
+.amenities-hero {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+  background-image: url('https://www.eduardosresort.com/images/IMG_4224.JPG');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+.hero-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.2) 100%);
-  pointer-events: none;
+  background: rgba(10, 30, 50, 0.52);
+  z-index: 1;
 }
 
-.backdrop-blur-md {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 24px;
+  max-width: 780px;
+  width: 100%;
 }
 
+.hero-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #FFFFFF;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 6px 18px;
+  border-radius: 999px;
+}
+
+.hero-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.15;
+}
+
+.heading-white {
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-weight: 800;
+  color: #FFFFFF;
+  display: block;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.heading-gold {
+  font-size: clamp(2rem, 4.5vw, 3.8rem);
+  font-weight: 800;
+  color: #F4C400;
+  display: block;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.hero-subtext {
+  font-size: clamp(0.88rem, 1.3vw, 1rem);
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.75;
+  font-weight: 400;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.3);
+}
+
+/* ── Category Headers ── */
 .category-header {
   font-weight: 900;
   font-size: 2.5rem;
   letter-spacing: 0.5px;
   margin-bottom: 1.5rem;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .amenity-list {
-  color: rgb(30, 64, 175);
+  color: #0369a1;
   font-weight: 600;
   font-size: 1.1rem;
   margin-bottom: 2rem;
   letter-spacing: 0.3px;
 }
 
+/* ── Reveal animation ── */
 .reveal {
   opacity: 0;
   transform: translateY(40px) scale(0.95);
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .reveal.visible {
@@ -454,32 +420,33 @@ onUnmounted(() => {
   transform: translateY(0) scale(1);
 }
 
+/* ── Amenity Card ── */
 .amenity-card {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(2, 8, 20, 0.08);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.10);
   display: flex;
   flex-direction: column;
   background: white;
+  border: 1px solid #e5e7eb;
 }
 
 .amenity-card:hover {
-  transform: translateY(-12px);
-  box-shadow: 0 10px 30px rgba(2, 8, 20, 0.12);
+  transform: translateY(-10px);
+  box-shadow: 0 16px 40px rgba(3, 105, 161, 0.18);
 }
 
+/* ── Carousel ── */
 .carousel-container {
   position: relative;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 16px 16px 0 0;
   height: 220px;
 }
 
 @media (min-width: 641px) {
-  .carousel-container {
-    height: 260px;
-  }
+  .carousel-container { height: 260px; }
 }
 
 .carousel-track {
@@ -501,74 +468,75 @@ onUnmounted(() => {
 }
 
 .amenity-card:hover .carousel-slide img {
-  transform: scale(1.12);
+  transform: scale(1.08);
 }
 
+/* ── Arrows ── */
 .carousel-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 38px;
-  height: 38px;
-  background: rgba(255,255,255,.9);
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.92);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  color: #2B6CB0;
-  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  font-size: 0.9rem;
+  color: #0369a1;
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.15);
   cursor: pointer;
   z-index: 20;
   transition: all 0.3s ease;
   border: none;
+  font-weight: 700;
 }
 
 .carousel-arrow:hover {
-  background: white;
+  background: #F4C400;
+  color: #0C3B5E;
   transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 6px 18px rgba(0,0,0,.15);
+  box-shadow: 0 6px 18px rgba(244, 196, 0, 0.35);
 }
 
-.carousel-arrow.prev {
-  left: 1rem;
-}
+.carousel-arrow.prev { left: 1rem; }
+.carousel-arrow.next { right: 1rem; }
 
-.carousel-arrow.next {
-  right: 1rem;
-}
-
+/* ── See More (mobile) ── */
 .see-more-btn {
   position: absolute;
   bottom: 1rem;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255,255,255,.25);
+  background: rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(10px);
   color: white;
   font-size: 0.85rem;
   font-weight: 600;
   padding: 0.5rem 1.2rem;
   border-radius: 50px;
-  border: 1.5px solid rgba(255,255,255,.4);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
   transition: all 0.3s ease;
   z-index: 20;
-  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   cursor: pointer;
 }
 
 .see-more-btn:hover {
-  background: rgba(255,255,255,.4);
+  background: rgba(244, 196, 0, 0.35);
+  border-color: #F4C400;
   transform: translateX(-50%) translateY(-3px);
 }
 
+/* ── Info Overlay (mobile) ── */
 .info-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   padding: 2rem 1.5rem 1.5rem;
-  background: linear-gradient(to top, rgba(139,94,60,.98), rgba(139,94,60,.9) 70%, transparent);
+  background: linear-gradient(to top, rgba(12, 59, 94, 0.97), rgba(12, 59, 94, 0.88) 70%, transparent);
   color: white;
   transform: translateY(100%);
   transition: transform 0.4s ease;
@@ -576,220 +544,115 @@ onUnmounted(() => {
   border-radius: 0 0 16px 16px;
 }
 
-.info-overlay.show {
-  transform: translateY(0);
-}
+.info-overlay.show { transform: translateY(0); }
 
 .info-title {
   font-weight: 700;
-  font-size: 1.35rem;
-  text-shadow: 0 1px 3px rgba(0,0,0,.7);
+  font-size: 1.2rem;
   margin-bottom: 0.5rem;
+  color: white;
 }
 
 .info-desc {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   margin-bottom: 1rem;
-  opacity: 0.95;
-  line-height: 1.5;
+  opacity: 0.9;
+  line-height: 1.55;
 }
 
-.add-btn {
-  background: #C19A6B;
-  color: white;
-  padding: 0.65rem 1.4rem;
-  border-radius: 50px;
-  font-weight: 600;
+/* ── Card Body ── */
+.card-body {
+  padding: 20px 22px;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0C3B5E;
+}
+
+.card-desc {
   font-size: 0.9rem;
-  letter-spacing: 0.5px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(193,154,107,.3);
+  color: #6b7280;
+  line-height: 1.7;
+  flex: 1;
+}
+
+/* ── Buttons ── */
+.add-btn {
+  background: #F4C400;
+  color: #0C3B5E;
+  padding: 0.6rem 1.4rem;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(244, 196, 0, 0.3);
   display: inline-block;
   text-decoration: none;
+  text-align: center;
 }
 
 .add-btn:hover {
-  background: #8B5E3C;
+  background: #F2C200;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(139,94,60,.4);
+  box-shadow: 0 8px 20px rgba(244, 196, 0, 0.45);
 }
 
-/* Animations */
-@keyframes float-1 {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
-  }
-  33% {
-    transform: translateY(-15px) translateX(10px);
-  }
-  66% {
-    transform: translateY(10px) translateX(-10px);
-  }
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 36px;
+  background: #F4C400;
+  color: #0C3B5E;
+  font-weight: 800;
+  font-size: 1rem;
+  border-radius: 14px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(244, 196, 0, 0.35);
 }
 
-@keyframes float-2 {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
-  }
-  33% {
-    transform: translateY(10px) translateX(-15px);
-  }
-  66% {
-    transform: translateY(-10px) translateX(10px);
-  }
+.cta-btn:hover {
+  background: #F2C200;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 10px 28px rgba(244, 196, 0, 0.5);
 }
 
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* ── Animations ── */
+@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes pulse-soft { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
 
-@keyframes pulse-soft {
-  0%, 100% {
-    opacity: 0.7;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes pulse-hero {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(1.1);
-  }
-}
-
-@keyframes pulse-slow-hero {
-  0%, 100% {
-    opacity: 0.2;
-    transform: scale(1) translateX(-50%);
-  }
-  50% {
-    opacity: 0.4;
-    transform: scale(1.2) translateX(-50%);
-  }
-}
-
-.animate-float-1 {
-  animation: float-1 12s ease-in-out infinite;
-}
-
-.animate-float-2 {
-  animation: float-2 15s ease-in-out infinite;
-  animation-delay: 2s;
-}
-
-.animate-spin-slow {
-  animation: spin-slow 10s linear infinite;
-}
-
-.animate-pulse-slow {
-  animation: pulse-soft 3s ease-in-out infinite;
-}
-
-.animate-pulse {
-  animation: pulse-hero 4s ease-in-out infinite;
-}
-
-.animate-pulse-slow-hero {
-  animation: pulse-slow-hero 6s ease-in-out infinite;
-  left: 50% !important;
-}
-
-.delay-1000 {
-  animation-delay: 1s;
-}
+.animate-spin-slow { animation: spin-slow 10s linear infinite; }
+.animate-pulse-slow { animation: pulse-soft 3s ease-in-out infinite; }
 
 .group {
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.group:hover {
-  box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.15),
-              0 15px 30px -10px rgba(251, 191, 36, 0.15);
-}
-
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .category-header {
-    font-size: 1.8rem;
-  }
-
-  .amenity-list {
-    font-size: 0.95rem;
-  }
-
-  .grid {
-    gap: 1.5rem;
-  }
+  .category-header { font-size: 1.8rem; }
+  .amenity-list { font-size: 0.95rem; }
 }
 
 @media (max-width: 640px) {
-  .hero-amenities {
-    min-height: 450px;
-  }
-
-  .text-\[32px\] {
-    font-size: 28px;
-  }
-
-  .max-w-2xl {
-    max-width: 100%;
-  }
-
-  .category-header {
-    font-size: 1.5rem;
-  }
-
-  .amenity-list {
-    font-size: 0.85rem;
-  }
-
-  .py-20 {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-  }
-
-  .carousel-container {
-    height: 220px;
-  }
-
-  .info-title {
-    font-size: 1.25rem;
-  }
-
-  .info-desc {
-    font-size: 0.9rem;
-  }
-
-  .see-more-btn {
-    font-size: 0.8rem;
-    padding: 0.45rem 1rem;
-  }
-
-  .add-btn {
-    padding: 0.6rem 1.3rem;
-    font-size: 0.85rem;
-  }
-
-  .amenity-card:hover {
-    transform: translateY(-6px);
-  }
+  .amenities-hero { height: 100svh; min-height: 100svh; max-height: 100svh; }
+  .hero-content { padding: 32px 16px; }
+  .hero-subtext br { display: none; }
+  .category-header { font-size: 1.5rem; }
+  .amenity-list { font-size: 0.85rem; }
+  .carousel-container { height: 220px; }
+  .amenity-card:hover { transform: translateY(-6px); }
 }
 
 @media (min-width: 641px) {
-  .see-more-btn,
-  .info-overlay {
-    display: none !important;
-  }
+  .see-more-btn, .info-overlay { display: none !important; }
 }
 </style>
