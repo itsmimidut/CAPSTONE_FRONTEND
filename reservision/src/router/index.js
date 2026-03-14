@@ -103,6 +103,7 @@ const routes = [
   { path: '/contact', name: 'Contact', component: ContactPage },
   { path: '/about', name: 'About', component: AboutPage },
   { path: '/swimming', name: 'Swimming', component: Swimming },
+  { path: '/reservation', name: 'ReservationLegacy', redirect: '/websitereservation' },
   { path: '/websitereservation', name: 'WebsiteReservation', component: WebsiteReservation, meta: { requiresAuth: true, role: 'customer' } },
   { path: '/booking', name: 'ConfirmationBooking', component: ConfirmationBooking },
   { path: '/confirmation', name: 'Confirmation', component: ConfirmationPage },

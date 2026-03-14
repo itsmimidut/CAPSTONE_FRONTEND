@@ -27,7 +27,8 @@ export const useSwimmingEnrollmentStore = defineStore('swimmingEnrollment', {
                 if (!response.ok) {
                     throw new Error('Failed to fetch coaches')
                 }
-                this.coaches = await response.json()
+                const data = await response.json()
+                this.coaches = data.data || data
             } catch (err) {
                 this.error = err.message || 'Failed to fetch coaches'
             } finally {

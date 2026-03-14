@@ -77,15 +77,15 @@
             <div class="info-grid">
               <div class="info-item">
                 <label>Name</label>
-                <p>{{ scannedBooking.guest_name }}</p>
+                <p>{{ scannedBooking.first_name }} {{ scannedBooking.last_name }}</p>
               </div>
               <div class="info-item">
                 <label>Email</label>
-                <p>{{ scannedBooking.booking_email }}</p>
+                <p>{{ scannedBooking.email }}</p>
               </div>
               <div class="info-item">
                 <label>Phone</label>
-                <p>{{ scannedBooking.guest_phone || 'N/A' }}</p>
+                <p>{{ scannedBooking.phone || 'N/A' }}</p>
               </div>
             </div>
           </div>
@@ -141,7 +141,7 @@
               <i class="fas fa-check-circle"></i>
             </div>
             <h3>✅ Check-In Successful!</h3>
-            <p>Guest {{ scannedBooking.guest_name }} has been checked in.</p>
+            <p>Guest {{ scannedBooking.first_name }} {{ scannedBooking.last_name }} has been checked in.</p>
             <small>Redirecting in 3 seconds...</small>
           </div>
         </div>

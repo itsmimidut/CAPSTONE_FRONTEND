@@ -141,17 +141,67 @@
 
       </form>
     </div>
+
+    <!-- Google Sign-In Help Modal -->
+    <div
+      v-if="showGoogleHelpModal"
+      class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+      @click="showGoogleHelpModal = false"
+    >
+      <div
+        class="w-full max-w-sm bg-white rounded-2xl border border-[#1F8DBF]/20 shadow-2xl p-5"
+        @click.stop
+      >
+        <div class="flex items-start gap-3 mb-3">
+          <div class="w-9 h-9 rounded-full bg-[#F4C400]/20 text-[#1F8DBF] flex items-center justify-center">
+            <i class="fas fa-info-circle"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-[#1F8DBF] text-base">Google Sign-In Needs Attention</h3>
+            <p class="text-xs text-[#1F8DBF]/70 mt-1">{{ googleHelpMessage }}</p>
+          </div>
+        </div>
+
+        <ul class="text-xs text-gray-600 space-y-1.5 mb-4 list-disc pl-5">
+          <li>Allow popups for this site.</li>
+          <li>Turn off strict tracking/ad blockers for this page.</li>
+          <li>Try opening in Chrome or an incognito window.</li>
+        </ul>
+
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="flex-1 py-2 rounded-lg border border-[#1F8DBF]/20 text-[#1F8DBF] font-semibold text-sm hover:bg-[#1F8DBF]/5 transition"
+            @click="showGoogleHelpModal = false"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            class="flex-1 py-2 rounded-lg bg-[#1F8DBF] text-white font-semibold text-sm hover:bg-[#1E88B6] transition"
+            @click="retryGoogleLogin"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const showPassword = ref(false)
+const googleReady = ref(false)
+const showGoogleHelpModal = ref(false)
+const googleHelpMessage = ref('The Google popup was blocked, closed, or skipped.')
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 const formData = reactive({
   fullName: '',
   email: '',
@@ -211,19 +261,106 @@ const handleSubmit = async () => {
   }
 }
 
-const handleGoogleLogin = async () => {
-  const result = await authStore.loginWithGoogle()
-  
-  if (result.success) {
-    // Handle successful Google sign-up
-    if (result.role === 'customer') {
-      router.push('/customer')
-    } else if (result.role === 'admin' || result.role === 'restaurantstaff' || result.role === 'receptionist') {
-      router.push('/dashboard')
-    } else {
-      router.push('/')
+const loadGoogleScript = () => {
+  return new Promise((resolve, reject) => {
+    if (window.google?.accounts?.id) {
+      resolve()
+      return
     }
+
+    const existingScript = document.getElementById('google-identity-script')
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve())
+      existingScript.addEventListener('error', () => reject(new Error('Failed to load Google script')))
+      return
+    }
+
+    const script = document.createElement('script')
+    script.id = 'google-identity-script'
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('Failed to load Google script'))
+    document.head.appendChild(script)
+  })
+}
+
+const redirectByRole = (role) => {
+  const redirectPath = route.query.redirect
+  if (role === 'customer') {
+    if (redirectPath && redirectPath.startsWith('/')) {
+      return router.push(redirectPath)
+    }
+    return router.push('/customer')
   }
+  if (role === 'admin' || role === 'restaurantstaff' || role === 'receptionist') {
+    return router.push('/dashboard')
+  }
+  return router.push('/')
+}
+
+const initGoogleSignIn = async () => {
+  if (!GOOGLE_CLIENT_ID) {
+    return
+  }
+
+  try {
+    await loadGoogleScript()
+
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        if (!response?.credential) {
+          authStore.setError('Google signup failed. No credential returned.')
+          return
+        }
+
+        const result = await authStore.loginWithGoogle(response.credential)
+        if (result.success) {
+          await redirectByRole(result.role)
+        }
+      }
+    })
+
+    googleReady.value = true
+  } catch (error) {
+    console.error('Google initialization error:', error)
+    authStore.setError('Unable to initialize Google Sign-In. Please try again.')
+  }
+}
+
+const handleGoogleLogin = async () => {
+  authStore.clearError()
+  showGoogleHelpModal.value = false
+
+  if (!GOOGLE_CLIENT_ID) {
+    authStore.setError('Google Sign-In is not configured yet. Add VITE_GOOGLE_CLIENT_ID to frontend .env.')
+    return
+  }
+
+  if (!googleReady.value) {
+    await initGoogleSignIn()
+  }
+
+  if (!window.google?.accounts?.id) {
+    authStore.setError('Google Sign-In is currently unavailable. Please try again later.')
+    return
+  }
+
+  window.google.accounts.id.prompt((notification) => {
+    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+      const reason = notification.getNotDisplayedReason?.() || notification.getSkippedReason?.() || 'unknown'
+      googleHelpMessage.value = `Google prompt was blocked or skipped (reason: ${reason}).`
+      authStore.setError('Google prompt was closed or blocked. Please allow popups and try again.')
+      showGoogleHelpModal.value = true
+    }
+  })
+}
+
+const retryGoogleLogin = async () => {
+  showGoogleHelpModal.value = false
+  await handleGoogleLogin()
 }
 
 const createRipple = (e) => {
@@ -250,6 +387,12 @@ const createRipple = (e) => {
     if (ripple.parentNode) ripple.remove()
   }, 600)
 }
+
+onMounted(async () => {
+  if (GOOGLE_CLIENT_ID) {
+    await initGoogleSignIn()
+  }
+})
 </script>
 
 <style scoped>

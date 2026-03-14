@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen bg-gradient-to-br from-[#0C3B5E]/5 via-white/95 to-[#F4C400]/10 overflow-hidden">
+  <div class="h-screen bg-gradient-to-br from-[#0C3B5E]/5 via-white/95 to-[#F4C400]/10 overflow-hidden pt-20 relative">
     <!-- Header -->
     <AppHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 

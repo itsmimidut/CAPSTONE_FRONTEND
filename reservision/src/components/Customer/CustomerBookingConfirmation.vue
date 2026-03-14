@@ -1,7 +1,7 @@
 <template>
   <div class="customer-booking-page">
     <!-- Main -->
-    <main class="container mx-auto px-4 py-5 max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <main class="container mx-auto px-2 py-1 max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-4">
 
       <!-- Left: Forms -->
       <div class="space-y-5">
@@ -21,7 +21,7 @@
               <input type="text" class="form-input" v-model="guest.lastName" placeholder="Dela Cruz">
             </div>
           </div>
-          <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+          <div v-if="!isSwimmingOnly" class="mt-4 grid grid-cols-3 gap-3 text-center">
             <div>
               <label class="block text-xs font-medium text-text-muted mb-1.5">Adults</label>
               <div class="flex items-center justify-center gap-2 bg-neutral-gray rounded-xl p-2">
@@ -111,8 +111,8 @@
             </a>
           </div>
           
-          <!-- Dates Section -->
-          <div v-if="checkIn && checkOut" class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-3 mb-3 border border-blue-200">
+          <!-- Dates Section – hidden for swimming-only bookings -->
+          <div v-if="!isSwimmingOnly && checkIn && checkOut" class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-3 mb-3 border border-blue-200">
             <div class="flex items-center justify-between text-sm">
               <div class="flex-1">
                 <div class="text-xs text-text-muted mb-1">Check-in</div>
@@ -141,18 +141,66 @@
           
           <!-- Items List -->
           <div class="space-y-2 text-sm">
-            <div v-for="(item, index) in items" :key="index" class="flex justify-between items-start p-2 bg-blue-50 rounded-lg text-xs">
-              <div class="flex-1">
-                <div class="font-medium">{{ item.item.name }}</div>
-                <div class="text-text-muted text-xs">
-                  ×{{ item.qty }} • {{ item.guests }} Guest{{ item.guests > 1 ? 's' : '' }}
-                  <span v-if="item.item.perNight"> • {{ item.nights }} night{{ item.nights > 1 ? 's' : '' }}</span>
+            <div v-for="(item, index) in items" :key="index" class="p-2 bg-blue-50 rounded-lg text-xs">
+
+              <!-- Swimming item -->
+              <div v-if="item.swimmingDetails" class="space-y-2">
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <div class="font-medium flex items-center gap-2">
+                      <i class="fas fa-swimmer text-blue-600"></i>
+                      {{ item.item.name }}
+                    </div>
+                    <div class="text-text-muted mt-1">
+                      {{ item.swimmingDetails.participants }} participant{{ item.swimmingDetails.participants > 1 ? 's' : '' }} •
+                      {{ item.swimmingDetails.totalSessions }} sessions package
+                    </div>
+                  </div>
+                  <div class="text-right ml-2">
+                    <div class="font-medium">₱{{ item.lineTotal.toLocaleString() }}</div>
+                  </div>
+                </div>
+                <div class="bg-white rounded px-2 py-1.5 space-y-1">
+                  <div class="flex items-center gap-2 text-xs text-gray-600">
+                    <i class="fas fa-clock text-blue-500"></i>
+                    <span class="font-medium">Time:</span>
+                    <span>{{ item.swimmingDetails.time }}</span>
+                  </div>
+                  <div class="flex items-start gap-2 text-xs text-gray-600">
+                    <i class="fas fa-calendar-alt text-blue-500 mt-0.5"></i>
+                    <div class="flex-1">
+                      <span class="font-medium">Scheduled Dates:</span>
+                      <div class="mt-1 flex flex-wrap gap-1">
+                        <span
+                          v-for="(date, dateIdx) in item.swimmingDetails.dates.slice(0, 3)"
+                          :key="dateIdx"
+                          class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs"
+                        >{{ formatCompactSwimmingDate(date) }}</span>
+                        <span
+                          v-if="item.swimmingDetails.dates.length > 3"
+                          class="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs"
+                        >+{{ item.swimmingDetails.dates.length - 3 }} more</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="text-right ml-2">
-                <div class="font-medium">₱{{ item.lineTotal.toLocaleString() }}</div>
-                <div v-if="item.item.perNight" class="text-text-muted text-xs">₱{{ item.item.price.toLocaleString() }}/night</div>
+
+              <!-- Regular item -->
+              <div v-else class="flex justify-between items-start">
+                <div class="flex-1">
+                  <div class="font-medium">{{ item.item.name }}</div>
+                  <div class="text-text-muted text-xs">
+                    ×{{ item.qty }} • {{ item.guests }} Guest{{ item.guests > 1 ? 's' : '' }}
+                    <span v-if="item.item.perNight"> • {{ item.nights }} night{{ item.nights > 1 ? 's' : '' }}</span>
+                  </div>
+                </div>
+                <div class="text-right ml-2">
+                  <div class="font-medium">₱{{ item.lineTotal.toLocaleString() }}</div>
+                  <div v-if="item.item.perNight" class="text-text-muted text-xs">₱{{ item.item.price.toLocaleString() }}/night</div>
+                </div>
               </div>
+
             </div>
           </div>
           <div class="border-t pt-3 mt-4 space-y-1.5 text-sm">
@@ -268,11 +316,11 @@ export default {
       const nights = b.item.perNight && bookingData.checkIn && bookingData.checkOut
         ? Math.ceil((new Date(bookingData.checkOut) - new Date(bookingData.checkIn)) / 86400000)
         : 1;
-      return {
-        ...b,
-        nights,
-        lineTotal: b.item.price * b.qty * (b.item.perNight ? nights : 1)
-      };
+      // Swimming items already carry the full price (packagePrice × participants)
+      const lineTotal = b.swimmingDetails
+        ? b.item.price
+        : b.item.price * b.qty * (b.item.perNight ? nights : 1);
+      return { ...b, nights, lineTotal };
     }) || [];
     const subtotal = items.reduce((sum, i) => sum + i.lineTotal, 0);
 
@@ -310,6 +358,14 @@ export default {
       verifiedEmail: ''
     };
   },
+  computed: {
+    hasSwimmingItems() {
+      return this.items.some(item => item.swimmingDetails);
+    },
+    isSwimmingOnly() {
+      return this.items.length > 0 && this.items.every(item => item.swimmingDetails);
+    }
+  },
   methods: {
     increment(type) { this.guest[type]++; },
     decrement(type) {
@@ -323,6 +379,11 @@ export default {
       const date = new Date(dateString);
       const options = { month: 'short', day: 'numeric', year: 'numeric' };
       return date.toLocaleDateString('en-US', options);
+    },
+    formatCompactSwimmingDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr + 'T00:00:00');
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     },
     
     editBooking() {
@@ -343,7 +404,8 @@ export default {
           qty: item.qty,
           guests: item.guests,
           nights: item.nights,
-          lineTotal: item.lineTotal
+          lineTotal: item.lineTotal,
+          ...(item.swimmingDetails && { swimmingDetails: item.swimmingDetails })
         })),
         checkIn: this.checkIn,
         checkOut: this.checkOut,
@@ -374,6 +436,12 @@ export default {
       }
       if (!this.termsAgreed) {
         alert('Please agree to the Terms & Conditions');
+        return;
+      }
+
+      // Only require dates for non-swimming bookings
+      if (!this.isSwimmingOnly && (!this.checkIn || !this.checkOut)) {
+        alert('Please select check-in and check-out dates for your booking');
         return;
       }
       
@@ -414,6 +482,11 @@ export default {
       // clears the "user gesture" flag and will silently block window.open().
       const paymentTab = window.open('', '_blank');
 
+      // Navigate current tab to PaymentReturn immediately so the user sees the
+      // waiting screen right away. The async operations below continue running
+      // in the background (Promises persist after component unmount).
+      this.$router.push({ name: 'PaymentReturn' });
+
       const bookingData = JSON.parse(localStorage.getItem('pendingBooking') || '{}');
       const customerName = this.guest.firstName + ' ' + this.guest.lastName;
       
@@ -432,8 +505,9 @@ export default {
               ...this.guest,
               phone: '+63' + this.guest.phone
             },
-            checkIn: bookingData.checkIn,
-            checkOut: bookingData.checkOut,
+            checkIn: this.isSwimmingOnly ? null : bookingData.checkIn,
+            checkOut: this.isSwimmingOnly ? null : bookingData.checkOut,
+            isSwimmingOnly: this.isSwimmingOnly,
             items: this.items.map(item => ({
               item_id: item.item.item_id || item.item.id,
               name: item.item.name,
@@ -441,7 +515,8 @@ export default {
               qty: item.qty,
               guests: item.guests,
               price: item.item.price,
-              perNight: item.item.perNight
+              perNight: item.item.perNight,
+              ...(item.swimmingDetails && { swimmingDetails: item.swimmingDetails })
             })),
             paymentMethod: this.selectedPayment,
             total: this.subtotal
@@ -604,7 +679,7 @@ export default {
 
 .form-input {
   width: 100%;
-  padding: 0.65rem 0.85rem;
+  padding: 0.65rem 0.65rem;
   border: 1.5px solid #E2E8F0;
   border-radius: 12px;
   font-size: 0.96rem;

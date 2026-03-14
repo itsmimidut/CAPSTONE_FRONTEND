@@ -107,6 +107,7 @@ import { computed, reactive, ref } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 
 const apiBase = 'http://localhost:8000/api';
+const serviceRequestsEnabled = import.meta.env.VITE_ENABLE_SERVICE_REQUESTS === 'true';
 const auth = useAuthStore();
 
 const form = reactive({
@@ -156,6 +157,11 @@ const statusBadge = (status) => {
 };
 
 const loadRequests = async () => {
+  if (!serviceRequestsEnabled) {
+    requests.value = [];
+    return;
+  }
+
   if (!customerEmail.value) {
     return;
   }
@@ -170,6 +176,12 @@ const loadRequests = async () => {
 const submitRequest = async () => {
   submitMessage.value = '';
   submitError.value = '';
+
+  if (!serviceRequestsEnabled) {
+    submitError.value = 'Service requests are temporarily unavailable. Set VITE_ENABLE_SERVICE_REQUESTS=true when backend endpoint is ready.';
+    return;
+  }
+
   if (!form.category || !form.subject || !form.message) {
     submitError.value = 'Please fill out category, subject, and details.';
     return;

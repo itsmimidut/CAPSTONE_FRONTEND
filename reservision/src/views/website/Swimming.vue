@@ -183,7 +183,7 @@
           </table>
         </div>
 
-        <div class="mt-8 text-center">
+        <!-- <div class="mt-8 text-center">
           <button @click="openClassBookingModal()" class="hero-btn hero-btn-primary" type="button">
             <span class="relative z-10 group-hover:text-white transition-colors duration-300">
               <i class="fas fa-calendar-plus mr-2"></i>
@@ -191,7 +191,7 @@
             </span>
             <div class="hero-btn-overlay"></div>
           </button>
-        </div>
+        </div> -->
       </div>
     </section>
 
@@ -649,6 +649,7 @@
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSwimmingEnrollmentStore } from '../../stores/swimmingEnrollment'
+import { useAuthStore } from '../../stores/auth'
 import AppHeader from '../../components/AppHeader.vue'
 import AppSidebar from '../../components/AppSidebar.vue'
 import AppFooter from '../../components/AppFooter.vue'
@@ -656,6 +657,7 @@ import AppFooter from '../../components/AppFooter.vue'
 const sidebarOpen = ref(false)
 const router = useRouter()
 const enrollmentStore = useSwimmingEnrollmentStore()
+const authStore = useAuthStore()
 
 const showEnrollmentForm = ref(false)
 const showClassBookingModal = ref(false)
@@ -784,10 +786,11 @@ const closeEnrollmentForm = () => {
 }
 
 const openClassBookingModal = (lessonType = '') => {
-  classBookingForm.lessonType = lessonType || ''
-  classBookingError.value = ''
-  showClassBookingModal.value = true
-  document.body.style.overflow = 'hidden'
+  if (!authStore.isAuthenticated) {
+    router.push({ name: 'Login', query: { redirect: '/customer?activeSection=book&service=swimming' } })
+    return
+  }
+  router.push({ name: 'WebsiteReservation', query: { activeSection: 'book', service: 'swimming' } })
 }
 
 const closeClassBookingModal = () => {

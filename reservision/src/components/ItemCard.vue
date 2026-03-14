@@ -82,7 +82,7 @@
               v-model.number="qty"
               class="border-2 border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-700 transition"
             >
-              <option v-for="n in 5" :key="n" :value="n">{{ n }}</option>
+              <option v-for="n in qtyOptions" :key="n" :value="n">{{ n }}</option>
             </select>
 
             <label class="text-sm text-gray-600 font-semibold whitespace-nowrap ml-2">Guests:</label>
@@ -125,6 +125,11 @@ export default {
       guests: 1
     }
   },
+  computed: {
+    qtyOptions() {
+      return this.item.perNight ? [1] : [1, 2, 3, 4, 5]
+    }
+  },
   methods: {
     nextImage() {
       this.currentImgIdx = (this.currentImgIdx + 1) % this.item.imgs.length
@@ -133,7 +138,8 @@ export default {
       this.currentImgIdx = (this.currentImgIdx - 1 + this.item.imgs.length) % this.item.imgs.length
     },
     handleBook() {
-      this.$emit('book', this.item, this.qty, this.guests)
+      const safeQty = this.item.perNight ? 1 : this.qty
+      this.$emit('book', this.item, safeQty, this.guests)
       this.qty = 1
       this.guests = 1
     }

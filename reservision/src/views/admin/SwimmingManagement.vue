@@ -122,17 +122,30 @@
                         <i class="fas" :class="{
                           'fa-check-circle': student.enrollmentStatus === 'Approved',
                           'fa-clock': student.enrollmentStatus === 'Pending',
-                          'fa-times-circle': student.enrollmentStatus === 'Inactive'
+                          'fa-times-circle': student.enrollmentStatus === 'Inactive',
+                          'fa-flag-checkered': student.enrollmentStatus?.toLowerCase() === 'completed'
                         }"></i>
-                        {{ student.enrollmentStatus }}
+                        {{ student.enrollmentStatus?.toLowerCase() === 'completed' ? 'Completed' : student.enrollmentStatus }}
                       </span>
                     </td>
                     <td>
                       <div class="row-actions">
-                        <button @click.stop="approveStudent(student.id)" class="act-btn approve" title="Approve">
+                        <button
+                          @click.stop="approveStudent(student.id)"
+                          class="act-btn approve"
+                          title="Approve"
+                          :disabled="student.enrollmentStatus?.toLowerCase() === 'completed'"
+                          :class="{ 'act-btn--disabled': student.enrollmentStatus?.toLowerCase() === 'completed' }"
+                        >
                           <i class="fas fa-check"></i>
                         </button>
-                        <button @click.stop="editStudent(student.id)" class="act-btn edit" title="Edit">
+                        <button
+                          @click.stop="editStudent(student.id)"
+                          class="act-btn edit"
+                          title="Schedule Training"
+                          :disabled="student.enrollmentStatus?.toLowerCase() === 'completed'"
+                          :class="{ 'act-btn--disabled': student.enrollmentStatus?.toLowerCase() === 'completed' }"
+                        >
                           <i class="fas fa-edit"></i>
                         </button>
                         <button @click.stop="deleteStudent(student.id)" class="act-btn remove" title="Delete">
@@ -311,6 +324,102 @@
             <span>No coaches available. Add one to get started.</span>
           </div>
         </section>
+
+        <!-- ───── Schedule Training Modal ───── -->
+        <div v-if="showScheduleModal" class="modal-overlay" @click.self="showScheduleModal = false">
+          <div class="modal-box modal-box--schedule" @click.stop>
+            <div class="modal-head">
+              <h3>
+                <i class="fas fa-calendar-alt" style="color:#1F8DBF;margin-right:6px"></i>
+                Schedule Training
+                <span v-if="scheduleModalStudent" class="sched-modal-student-name"> — {{ scheduleModalStudent.name }}</span>
+              </h3>
+              <button class="close-btn" @click="showScheduleModal = false"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="modal-body sched-modal-body">
+              <!-- Session counter -->
+              <div class="sched-counter">
+                <span class="sched-counter-label"><i class="fas fa-layer-group"></i> Sessions selected</span>
+                <span class="sched-counter-value" :class="{ 'sched-counter-max': scheduleForm.dates.length >= 10 }">
+                  {{ scheduleForm.dates.length }} / 10
+                </span>
+              </div>
+
+              <!-- Mini calendar -->
+              <div class="sched-cal">
+                <div class="sched-cal-header">
+                  <button type="button" @click="prevScheduleMonth" class="month-btn"><i class="fas fa-chevron-left"></i></button>
+                  <span class="month-label">{{ formatMonthYear(scheduleCalendarDate) }}</span>
+                  <button type="button" @click="nextScheduleMonth" class="month-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="cal-weekdays">
+                  <span v-for="d in weekDays" :key="d" class="wd">{{ d }}</span>
+                </div>
+                <div class="cal-grid">
+                  <div v-for="i in scheduleFirstDay" :key="`sched-empty-${i}`" class="cal-day empty"></div>
+                  <div
+                    v-for="day in scheduleMonthDays"
+                    :key="`sched-day-${day}`"
+                    class="cal-day"
+                    :class="{
+                      'sched-day--selected': isSchedDateSelected(day),
+                      'sched-day--past': isSchedDatePast(day),
+                      'sched-day--maxed': !isSchedDateSelected(day) && scheduleForm.dates.length >= 10
+                    }"
+                    @click="toggleSchedDate(day)"
+                  >
+                    <span class="day-num">{{ day }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Selected date chips -->
+              <div v-if="sortedScheduleDates.length" class="sched-chips">
+                <span
+                  v-for="dateStr in sortedScheduleDates"
+                  :key="dateStr"
+                  class="sched-chip"
+                  @click="scheduleForm.dates.splice(scheduleForm.dates.indexOf(dateStr), 1)"
+                  title="Click to remove"
+                >
+                  {{ formatSchedDate(dateStr) }} <i class="fas fa-times"></i>
+                </span>
+              </div>
+              <p v-else class="sched-hint">Click dates on the calendar above to add training sessions (max 10)</p>
+
+              <!-- Time slot -->
+              <div class="form-group" style="margin-top:0.5rem">
+                <label>Time Slot <span class="req">*</span></label>
+                <select v-model="scheduleForm.time" class="form-input">
+                  <option value="">Select time slot</option>
+                  <option value="6:00 AM - 7:00 AM">6:00 AM – 7:00 AM</option>
+                  <option value="8:00 AM - 9:00 AM">8:00 AM – 9:00 AM</option>
+                  <option value="10:00 AM - 11:00 AM">10:00 AM – 11:00 AM</option>
+                  <option value="2:00 PM - 3:00 PM">2:00 PM – 3:00 PM</option>
+                  <option value="4:00 PM - 5:00 PM">4:00 PM – 5:00 PM</option>
+                </select>
+              </div>
+
+              <!-- Coach assignment -->
+              <div class="form-group">
+                <label>Assign Coach</label>
+                <select v-model="scheduleForm.coach" class="form-input">
+                  <option value="">Keep current ({{ scheduleModalStudent?.coach || 'Unassigned' }})</option>
+                  <option v-for="c in schedules" :key="c.coach" :value="c.coach">{{ c.coach }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="modal-foot">
+              <button @click="showScheduleModal = false" class="btn-sec">Cancel</button>
+              <button @click="saveSchedule" class="btn-pri" :disabled="savingSchedule">
+                <i :class="savingSchedule ? 'fas fa-spinner fa-spin' : 'fas fa-save'" style="margin-right:5px"></i>
+                {{ savingSchedule ? 'Saving…' : 'Save Schedule' }}
+              </button>
+            </div>
+          </div>
+        </div>
 
         <!-- ───── Add / Edit Coach Modal ───── -->
         <div v-if="showAddCoachModal" class="modal-overlay" @click="closeAddCoachModal">
@@ -493,6 +602,30 @@ const studentsForSelectedDay = computed(() => {
     .map(s => ({ name: s.name, lessonType: s.lessonType, coach: s.coach, time: s.lessonTime || 'TBD' }))
 })
 
+// ── Helpers ────────────────────────────────────────────
+// Returns true when all scheduled dates have already passed
+const isScheduleFinished = (student) => {
+  if (!student.lessonDates || student.lessonDates.length === 0) return false
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  return student.lessonDates.every(d => new Date(d + 'T00:00:00') < today)
+}
+
+// Marks every student whose schedule has fully passed as Completed (both locally + backend)
+const autoMarkCompleted = async () => {
+  const toMark = students.value.filter(
+    s => isScheduleFinished(s) && s.enrollmentStatus?.toLowerCase() !== 'completed' && s.enrollmentStatus?.toLowerCase() !== 'cancelled'
+  )
+  for (const student of toMark) {
+    try {
+      await fetch(`${API_URL}/admin/students/${student.id}/status`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'completed' })
+      })
+      student.enrollmentStatus = 'Completed'
+    } catch (e) { console.error('autoMarkCompleted error:', e) }
+  }
+}
+
 // ── API ─────────────────────────────────────────────────
 const API_URL = 'http://localhost:8000/api/swimming'
 
@@ -502,15 +635,27 @@ const fetchStudents = async () => {
     const res = await fetch(`${API_URL}/admin/students`)
     const data = await res.json()
     if (data.success && data.students) {
-      students.value = data.students.map(s => ({
-        id: s.enrollment_id, name: s.name, lessonType: s.lesson_type,
-        coach: s.coach, paymentStatus: s.payment_status || 'Pending',
-        email: s.email, phone: s.mobile_phone,
-        enrollmentStatus: s.enrollment_status || 'Pending',
-        bookingReference: s.booking_reference,
-        lessonDates: [], lessonTime: 'TBD',
-        lessonDatesFormatted: [], lessonTimeFormatted: 'TBD'
-      }))
+      students.value = data.students.map(s => {
+        let lessonDates = []
+        try {
+          if (s.lesson_dates) {
+            lessonDates = typeof s.lesson_dates === 'string'
+              ? JSON.parse(s.lesson_dates)
+              : (Array.isArray(s.lesson_dates) ? s.lesson_dates : [])
+          }
+        } catch (_) {}
+        return {
+          id: s.enrollment_id, name: s.name, lessonType: s.lesson_type,
+          coach: s.coach, paymentStatus: s.payment_status || 'Pending',
+          email: s.email, phone: s.mobile_phone,
+          enrollmentStatus: s.enrollment_status || 'Pending',
+          bookingReference: s.booking_reference,
+          lessonDates,
+          lessonTime: s.lesson_time || 'TBD',
+          lessonDatesFormatted: lessonDates,
+          lessonTimeFormatted: s.lesson_time || 'TBD'
+        }
+      })
     }
   } catch (e) { console.error(e) } finally { loading.value = false }
 }
@@ -561,7 +706,18 @@ const approveStudent = async (id) => {
     if (r.success) await fetchStudents()
   } catch (e) { console.error(e) }
 }
-const editStudent = (id) => { console.log('Edit student:', id) }
+const editStudent = (id) => {
+  const student = students.value.find(s => s.id === id)
+  if (!student) return
+  scheduleModalStudent.value = student
+  scheduleForm.value = {
+    dates: [...(student.lessonDates || [])],
+    time: student.lessonTime && student.lessonTime !== 'TBD' ? student.lessonTime : '',
+    coach: student.coach || ''
+  }
+  scheduleCalendarDate.value = new Date()
+  showScheduleModal.value = true
+}
 const deleteStudent = async (id) => {
   if (!confirm('Delete this enrollment?')) return
   try {
@@ -569,6 +725,86 @@ const deleteStudent = async (id) => {
     const r = await res.json()
     if (r.success) await fetchStudents()
   } catch (e) { console.error(e) }
+}
+
+// ── Schedule Modal ──────────────────────────────────────
+const showScheduleModal = ref(false)
+const scheduleModalStudent = ref(null)
+const scheduleForm = ref({ dates: [], time: '', coach: '' })
+const scheduleCalendarDate = ref(new Date())
+const savingSchedule = ref(false)
+
+const scheduleMonthDays = computed(() =>
+  new Date(scheduleCalendarDate.value.getFullYear(), scheduleCalendarDate.value.getMonth() + 1, 0).getDate()
+)
+const scheduleFirstDay = computed(() =>
+  new Date(scheduleCalendarDate.value.getFullYear(), scheduleCalendarDate.value.getMonth(), 1).getDay()
+)
+const sortedScheduleDates = computed(() => [...scheduleForm.value.dates].sort())
+
+const prevScheduleMonth = () => {
+  scheduleCalendarDate.value = new Date(scheduleCalendarDate.value.getFullYear(), scheduleCalendarDate.value.getMonth() - 1)
+}
+const nextScheduleMonth = () => {
+  scheduleCalendarDate.value = new Date(scheduleCalendarDate.value.getFullYear(), scheduleCalendarDate.value.getMonth() + 1)
+}
+const getSchedDateStr = (day) => {
+  const y = scheduleCalendarDate.value.getFullYear()
+  const m = String(scheduleCalendarDate.value.getMonth() + 1).padStart(2, '0')
+  const d = String(day).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+const isSchedDateSelected = (day) => scheduleForm.value.dates.includes(getSchedDateStr(day))
+const isSchedDatePast = (day) => {
+  const cell = new Date(scheduleCalendarDate.value.getFullYear(), scheduleCalendarDate.value.getMonth(), day)
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  return cell < today
+}
+const toggleSchedDate = (day) => {
+  if (isSchedDatePast(day)) return
+  const dateStr = getSchedDateStr(day)
+  const idx = scheduleForm.value.dates.indexOf(dateStr)
+  if (idx >= 0) {
+    scheduleForm.value.dates.splice(idx, 1)
+  } else {
+    if (scheduleForm.value.dates.length >= 10) return
+    scheduleForm.value.dates.push(dateStr)
+  }
+}
+const formatSchedDate = (dateStr) =>
+  new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+const saveSchedule = async () => {
+  if (!scheduleForm.value.dates.length) { alert('Please select at least one training date.'); return }
+  if (!scheduleForm.value.time) { alert('Please select a time slot.'); return }
+  savingSchedule.value = true
+  try {
+    const res = await fetch(`${API_URL}/admin/students/${scheduleModalStudent.value.id}/schedule`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lesson_dates: scheduleForm.value.dates,
+        lesson_time: scheduleForm.value.time,
+        assigned_coach: scheduleForm.value.coach || null
+      })
+    })
+    const r = await res.json()
+    if (!r.success) throw new Error(r.error)
+    // Update local state immediately so calendar reflects change
+    const student = students.value.find(s => s.id === scheduleModalStudent.value.id)
+    if (student) {
+      student.lessonDates = [...scheduleForm.value.dates]
+      student.lessonDatesFormatted = [...scheduleForm.value.dates]
+      student.lessonTime = scheduleForm.value.time
+      student.lessonTimeFormatted = scheduleForm.value.time
+      if (scheduleForm.value.coach) student.coach = scheduleForm.value.coach
+      // immediately reflect completed status if all selected dates are already past
+      if (isScheduleFinished(student) && student.enrollmentStatus?.toLowerCase() !== 'completed') {
+        student.enrollmentStatus = 'Completed'
+      }
+    }
+    showScheduleModal.value = false
+  } catch (e) { alert('Error saving schedule: ' + e.message) } finally { savingSchedule.value = false }
 }
 
 // ── Coach Actions ───────────────────────────────────────
@@ -613,6 +849,7 @@ watch(() => pendingStudents.value, (n) => notifications.setSwimmingPending(n))
 onMounted(async () => {
   await fetchStudents()
   await fetchCalendarLessons()
+  await autoMarkCompleted()
   await fetchSchedules()
 })
 </script>
@@ -694,7 +931,7 @@ onMounted(async () => {
   text-transform: uppercase; letter-spacing: 0.4px;
 }
 .stat-value {
-  font-size: 1.9rem; font-weight: 700; color: #1e293b; line-height: 1.2;
+  font-size: 1.9rem; font-weight: 700; text-align: left; color: #1e293b; line-height: 1.2;
 }
 
 /* ── Layout Rows ──────────────────────────────────────── */
@@ -818,10 +1055,14 @@ onMounted(async () => {
   padding: 0.25rem 0.7rem; border-radius: 30px;
   font-size: 0.75rem; font-weight: 600;
 }
-.status-pill.approved { background: rgba(46,204,113,.1); color: #16a34a; }
-.status-pill.pending  { background: rgba(244,196,0,.1);  color: #b45309; }
-.status-pill.inactive { background: rgba(100,116,139,.1);color: #64748b; }
+.status-pill.approved   { background: rgba(46,204,113,.1); color: #16a34a; }
+.status-pill.pending    { background: rgba(244,196,0,.1);  color: #b45309; }
+.status-pill.inactive   { background: rgba(100,116,139,.1);color: #64748b; }
+.status-pill.completed  { background: rgba(99,102,241,.1); color: #6366f1; }
+.status-pill.cancelled  { background: rgba(239,68,68,.1);  color: #ef4444; }
 .status-pill i { font-size: 0.7rem; }
+
+.act-btn--disabled { opacity: 0.3 !important; cursor: not-allowed !important; pointer-events: none; }
 
 .row-actions { display: flex; gap: 0.3rem; opacity: 0; transition: opacity 0.15s; }
 .data-row:hover .row-actions { opacity: 1; }
@@ -1098,6 +1339,72 @@ onMounted(async () => {
 }
 .sched-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; color: #475569; }
 .sched-row i { color: #1F8DBF; width: 16px; }
+
+/* ── Schedule Training Modal ─────────────────────────── */
+.modal-box--schedule { max-width: 500px; }
+
+.sched-modal-body {
+  padding: 1.25rem 1.5rem;
+  display: flex; flex-direction: column; gap: 0.85rem;
+}
+.sched-modal-student-name {
+  font-weight: 400; color: #64748b; font-size: 0.88rem;
+}
+
+.sched-counter {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.6rem 1rem;
+  background: rgba(31,141,191,.06); border-radius: 10px;
+  border: 1px solid rgba(31,141,191,.15);
+}
+.sched-counter-label { font-size: 0.8rem; font-weight: 600; color: #64748b; display: flex; align-items: center; gap: 0.4rem; }
+.sched-counter-value { font-size: 1rem; font-weight: 700; color: #1F8DBF; }
+.sched-counter-max { color: #F4C400 !important; }
+
+.sched-cal {
+  background: #f8fafc; border-radius: 12px;
+  padding: 0.85rem 1rem; border: 1px solid #f1f5f9;
+}
+.sched-cal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.sched-day--selected {
+  background: #1F8DBF !important;
+  color: #fff !important;
+  border-color: #1F8DBF !important;
+}
+.sched-day--past {
+  opacity: 0.3;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+.sched-day--maxed {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+}
+
+.sched-chips {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+  padding: 0.5rem 0;
+}
+.sched-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: rgba(31,141,191,.1); color: #1F8DBF;
+  border: 1px solid rgba(31,141,191,.25);
+  padding: 0.25rem 0.65rem; border-radius: 30px;
+  font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.sched-chip:hover { background: rgba(239,68,68,.1); color: #ef4444; border-color: rgba(239,68,68,.3); }
+.sched-chip i { font-size: 0.62rem; }
+
+.sched-hint {
+  font-size: 0.78rem; color: #94a3b8;
+  text-align: center; padding: 0.4rem;
+  border: 1px dashed #e2e8f0; border-radius: 8px;
+}
 
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 1100px) {

@@ -198,12 +198,12 @@
             <p class="text-xs font-semibold text-blue-700 mb-3">📱 QR Code</p>
             
             <!-- QR Code Display -->
-            <div v-if="booking.qrCode" class="mb-3">
+            <div v-if="getQRCode(booking.booking_reference)" class="mb-3">
               <img 
                 :src="getQRCode(booking.booking_reference)"
                 :alt="`QR Code for ${booking.booking_reference}`"
                 class="w-32 h-32 border-2 border-white rounded-lg shadow-sm"
-                @error="onQRError"
+                @error="onQRError($event, booking.booking_reference)"
               >
             </div>
             <p class="text-xs text-blue-600 text-center mb-3">Show at check-in</p>
@@ -418,11 +418,9 @@ export default {
         if (userId) {
           // Best path: query directly by user_id — no email ambiguity
           url = `http://localhost:8000/api/bookings/user/${userId}/history`;
-          console.log(`🔑 Fetching bookings for user_id: ${userId}`);
         } else if (email) {
           // Fallback: query by email
           url = `http://localhost:8000/api/bookings/email/${encodeURIComponent(email)}/history`;
-          console.log(`📧 Fetching bookings for email: ${email}`);
         } else {
           this.error = 'Please log in to view your reservations.';
           this.loading = false;
@@ -437,7 +435,7 @@ export default {
         }
 
         this.bookings = data.data.bookings || [];
-        console.log('✅ Loaded bookings:', this.bookings);
+        await this.preloadQRCodes(this.bookings);
 
       } catch (error) {
         console.error('Error fetching bookings:', error);
@@ -447,15 +445,10 @@ export default {
       }
     },
 
-    async getQRCode(bookingReference) {
-      // Check cache first
-      if (this.qrCodeCache[bookingReference]) {
-        return this.qrCodeCache[bookingReference];
-      }
-
+    async generateQRCode(bookingReference) {
       try {
         // Generate QR code on frontend from booking reference
-        const qrCodeData = await QRCode.toDataURL(bookingReference, {
+        return await QRCode.toDataURL(bookingReference, {
           errorCorrectionLevel: 'H',
           type: 'image/png',
           width: 200,
@@ -465,29 +458,62 @@ export default {
             light: '#FFFFFF'
           }
         });
-        this.qrCodeCache[bookingReference] = qrCodeData;
-        return qrCodeData;
       } catch (error) {
         console.warn('Failed to generate QR code for', bookingReference, error);
+        return null;
       }
-
-      return null;
     },
 
-    onQRError(event) {
-      console.warn('Failed to load QR code image');
+    async preloadQRCodes(bookings = []) {
+      const tasks = bookings
+        .map(b => b?.booking_reference)
+        .filter(Boolean)
+        .filter(ref => !this.qrCodeCache[ref])
+        .map(async (ref) => {
+          const qr = await this.generateQRCode(ref);
+          if (qr) {
+            this.qrCodeCache[ref] = qr;
+          }
+        });
+
+      if (tasks.length > 0) {
+        await Promise.all(tasks);
+      }
+    },
+
+    getQRCode(bookingReference) {
+      return this.qrCodeCache[bookingReference] || null;
+    },
+
+    onQRError(event, bookingReference) {
+      if (bookingReference && this.qrCodeCache[bookingReference]) {
+        delete this.qrCodeCache[bookingReference];
+      }
       event.target.style.display = 'none';
     },
 
     async viewQRCode(bookingReference) {
       this.currentQRReference = bookingReference;
-      this.currentQRCode = await this.getQRCode(bookingReference);
+      let qr = this.getQRCode(bookingReference);
+      if (!qr) {
+        qr = await this.generateQRCode(bookingReference);
+        if (qr) {
+          this.qrCodeCache[bookingReference] = qr;
+        }
+      }
+      this.currentQRCode = qr;
       this.showQRViewer = true;
     },
 
     async downloadQRCode(bookingReference) {
       try {
-        const qrCodeData = await this.getQRCode(bookingReference);
+        let qrCodeData = this.getQRCode(bookingReference);
+        if (!qrCodeData) {
+          qrCodeData = await this.generateQRCode(bookingReference);
+          if (qrCodeData) {
+            this.qrCodeCache[bookingReference] = qrCodeData;
+          }
+        }
         
         if (!qrCodeData) {
           alert('QR code not available');
@@ -546,10 +572,15 @@ export default {
 
   mounted() {
     this.fetchBookingHistory();
-    // Auto-poll every 30 seconds so data stays fresh
+    // Auto-poll every 60 seconds while tab is visible.
+    if (this._pollInterval) {
+      clearInterval(this._pollInterval);
+    }
     this._pollInterval = setInterval(() => {
-      this.fetchBookingHistory();
-    }, 30000);
+      if (!document.hidden) {
+        this.fetchBookingHistory();
+      }
+    }, 60000);
   },
   beforeUnmount() {
     if (this._pollInterval) {

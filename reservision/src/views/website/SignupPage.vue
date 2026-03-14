@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen bg-gradient-to-br from-[#0C3B5E]/5 via-white/95 to-[#F4C400]/10 overflow-hidden">
+  <div class="min-h-screen lg:h-screen bg-gradient-to-br from-[#0C3B5E]/5 via-white/95 to-[#F4C400]/10 overflow-x-hidden pt-20 relative">
     <!-- Header -->
     <AppHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
     
@@ -37,7 +37,7 @@
       </section>
 
       <!-- Visual Section - 70% -->
-      <section class="w-[70%] relative overflow-hidden cursor-none"
+      <section class="w-[70%] relative overflow-hidden cursor-none group"
                @mousemove="handleMouseMove"
                :style="visualBgStyle">
         
@@ -119,8 +119,11 @@ const handleMouseMove = (e) => {
   mousePosition.x = (e.clientX - rect.left) / rect.width
   mousePosition.y = (e.clientY - rect.top) / rect.height
   
-  createParticle(e.clientX, e.clientY)
-  createRipple(e.clientX - rect.left, e.clientY - rect.top)
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+
+  createParticle(x, y)
+  createRipple(x, y)
 }
 
 const createParticle = (x, y) => {
@@ -266,5 +269,41 @@ onUnmounted(() => {
 
 *::-webkit-scrollbar {
   display: none;
+}
+
+/* Responsive Design - Mobile stacking */
+@media (max-width: 1200px) {
+  .flex.h-\[calc\(100vh-80px\)\] {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 80px);
+  }
+
+  .w-\[70\%\] {
+    width: 100%;
+    height: 300px;
+  }
+
+  .w-\[30\%\] {
+    width: 100%;
+    min-height: 500px;
+  }
+
+  .min-w-\[380px\] {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .w-\[70\%\] { height: 250px; }
+  .w-\[30\%\] { min-height: 460px; }
+  .text-5xl { font-size: 2.2rem; }
+  .text-xl { font-size: 1rem; }
+}
+
+@media (max-width: 480px) {
+  .w-\[70\%\] { height: 220px; }
+  .w-\[30\%\] { min-height: 430px; }
+  .text-5xl { font-size: 1.8rem; }
 }
 </style>

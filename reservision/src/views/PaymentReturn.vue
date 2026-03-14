@@ -11,12 +11,12 @@
         </div>
         <h2 class="state-title">Verifying Payment</h2>
         <p class="state-sub">Please keep this page open. We're confirming your payment securely.</p>
-        <p class="state-msg">{{ message }}</p>
+        <!-- <p class="state-msg">{{ message }}</p>
         <div v-if="hasBookingMeta" class="meta-box">
           <div v-if="bookingReference" class="meta-row"><span>Reference:</span> <strong>{{ bookingReference }}</strong></div>
           <div v-if="bookingId" class="meta-row"><span>Booking ID:</span> <strong>{{ bookingId }}</strong></div>
           <div v-if="email" class="meta-row"><span>Email:</span> <strong>{{ email }}</strong></div>
-        </div>
+        </div> -->
       </div>
 
       <!-- Success -->
@@ -78,6 +78,18 @@ const checkPaymentStatus = async () => {
     const paymentTrackingData = localStorage.getItem('paymentTracking') || sessionStorage.getItem('paymentTracking')
     let resolvedBookingId, resolvedPaymentLinkId, resolvedEmail
     
+    // If no tracking data yet, wait up to 15s for CustomerBookingConfirmation
+    // to finish its async operations and write it (happens when router.push
+    // fires before the await chain completes).
+    if (!paymentTrackingData) {
+      let waited = 0
+      while (!localStorage.getItem('paymentTracking') && waited < 15000) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        waited += 500
+      }
+      paymentTrackingData = localStorage.getItem('paymentTracking') || sessionStorage.getItem('paymentTracking')
+    }
+
     if (paymentTrackingData) {
       const tracking = JSON.parse(paymentTrackingData)
       resolvedBookingId = tracking.bookingId
@@ -149,8 +161,6 @@ const checkPaymentStatus = async () => {
     const maxAttempts = 60  // Increased from 30 to 60 (2 minutes total)
 
     while (attempts < maxAttempts) {
-      message.value = `Checking payment status... (attempt ${attempts + 1})`
-      
       try {
         // First, check booking database directly (this is updated by webhook)
         if (bookingId.value) {
