@@ -1,54 +1,54 @@
-<!-- src/components/RoomFormModal.vue -->
 <template>
-  <!-- Debug: Add data-state to check if show prop is working -->
   <div class="modal" :class="{ show: show }" @click.self="close" :data-show="show">
-    <div class="modal-content" :style="{ borderColor: '#1E88B6' }">
-      <!-- Header with Gradient -->
-      <div class="modal-header" :style="{ background: 'linear-gradient(135deg, #1E88B6, #1F8DBF)' }">
-        <h3>
-          <i class="fas fa-bed" :style="{ color: '#F2C200' }"></i>
-          <span class="text-white">{{ editing ? `Edit ${entityLabel}` : `Add New ${entityLabel}` }}</span>
-        </h3>
-        <button class="close-modal" @click="close" :style="{ color: '#FFFFFF' }">
-          ×
-        </button>
+    <div class="modal-content">
+
+      <!-- Header: navy + gold border — matches all other modals in the system -->
+      <div class="modal-header">
+        <div class="modal-head-left">
+          <div class="modal-head-icon">
+            <i class="fas fa-bed"></i>
+          </div>
+          <div>
+            <h3 class="modal-title">{{ editing ? `Edit ${entityLabel}` : `Add New ${entityLabel}` }}</h3>
+            <p class="modal-sub">Fill in the details below</p>
+          </div>
+        </div>
+        <button class="close-modal" @click="close">×</button>
       </div>
 
       <div class="modal-body">
-        <!-- Basic Information -->
+
+        <!-- ── Basic Information ── -->
         <div class="form-section">
           <div class="form-section-header">
-            <div class="section-icon" :style="{ backgroundColor: '#E3F2FD' }">
-              <i class="fas fa-info-circle" :style="{ color: '#1E88B6' }"></i>
+            <div class="section-icon">
+              <i class="fas fa-info-circle"></i>
             </div>
             <div>
-              <h4 :style="{ color: '#1E88B6' }">Basic Information</h4>
-              <p :style="{ color: '#999' }">Enter room details and specifications</p>
+              <h4 class="section-heading">Basic Information</h4>
+              <p class="section-sub">Enter room details and specifications</p>
             </div>
           </div>
 
           <div class="input-group">
             <div class="form-group">
-              <label for="roomNumber" :style="{ color: '#1E88B6' }">
-                <i class="fas fa-hashtag" :style="{ color: '#F2C200' }"></i>
+              <label class="form-label">
+                <i class="fas fa-hashtag label-icon"></i>
                 {{ form.category_type === 'event' ? `${entityLabel} Location` : `${entityLabel} Number` }}
               </label>
               <input
                 id="roomNumber"
                 v-model="form.room_number"
                 type="text"
-                class="form-control roomid"
+                class="form-control"
                 :placeholder="form.category_type === 'event' ? 'Main Hall' : 'e.g., 101'"
                 required
-                :style="{ borderColor: '#E0E0E0' }"
-                @focus="e => e.target.style.borderColor = '#1E88B6'"
-                @blur="e => e.target.style.borderColor = '#E0E0E0'"
               />
             </div>
 
             <div class="form-group">
-              <label for="roomName" :style="{ color: '#1E88B6' }">
-                <i class="fas fa-signature" :style="{ color: '#F2C200' }"></i> {{ entityLabel }} Name
+              <label class="form-label">
+                <i class="fas fa-signature label-icon"></i> {{ entityLabel }} Name
               </label>
               <input
                 id="roomName"
@@ -57,54 +57,40 @@
                 class="form-control"
                 placeholder="e.g., Ocean View Suite"
                 required
-                :style="{ borderColor: '#E0E0E0' }"
-                @focus="e => e.target.style.borderColor = '#1E88B6'"
-                @blur="e => e.target.style.borderColor = '#E0E0E0'"
               />
             </div>
 
             <div class="form-group">
-              <label for="categoryType" :style="{ color: '#1E88B6' }">
-                <i class="fas fa-layer-group" :style="{ color: '#F2C200' }"></i> Category Type
+              <label class="form-label">
+                <i class="fas fa-layer-group label-icon"></i> Category Type
               </label>
               <div class="select-wrapper">
-                <select 
-                  id="categoryType" 
-                  v-model="form.category_type" 
-                  class="form-control"
-                  :style="{ borderColor: '#E0E0E0' }"
-                  @focus="e => e.target.style.borderColor = '#1E88B6'"
-                  @blur="e => e.target.style.borderColor = '#E0E0E0'"
-                >
+                <select id="categoryType" v-model="form.category_type" class="form-control">
                   <option value="room">Room</option>
                   <option value="cottage">Cottage</option>
                   <option value="event">Event</option>
                 </select>
-                <i class="fas fa-chevron-down select-arrow" :style="{ color: '#F2C200' }"></i>
+                <i class="fas fa-chevron-down select-arrow"></i>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Images Upload -->
+        <!-- ── Images Upload ── -->
         <div class="form-section">
           <div class="form-section-header">
-            <div class="section-icon" :style="{ backgroundColor: '#E3F2FD' }">
-              <i class="fas fa-images" :style="{ color: '#1E88B6' }"></i>
+            <div class="section-icon">
+              <i class="fas fa-images"></i>
             </div>
             <div>
-              <h4 :style="{ color: '#1E88B6' }">{{ entityLabel }} Images</h4>
-              <p :style="{ color: '#999' }">Upload high-quality photos of the {{ entityLabel.toLowerCase() }}</p>
+              <h4 class="section-heading">{{ entityLabel }} Images</h4>
+              <p class="section-sub">Upload high-quality photos of the {{ entityLabel.toLowerCase() }}</p>
             </div>
           </div>
 
           <div
             ref="uploadArea"
             class="image-upload-area"
-            :style="{ 
-              borderColor: '#1E88B6',
-              background: 'linear-gradient(135deg, #E3F2FD 0%, #F0F9FF 100%)'
-            }"
             @dragover.prevent="onDragOver"
             @dragleave="onDragLeave"
             @drop.prevent="onDrop"
@@ -117,9 +103,9 @@
               class="hidden"
               @change="handleFileChange"
             />
-            <i class="fas fa-cloud-upload-alt" :style="{ color: '#1E88B6' }"></i>
-            <p :style="{ color: '#1E88B6' }">Drag & drop images here or click to browse</p>
-            <small :style="{ color: '#999' }">Recommended: 5-8 high-quality images (JPEG, PNG, WebP)</small>
+            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+            <p class="upload-text">Drag & drop images here or click to browse</p>
+            <small class="upload-hint">Recommended: 5–8 high-quality images (JPEG, PNG, WebP)</small>
           </div>
 
           <div class="image-preview-container" v-if="imagePreviews.length">
@@ -127,102 +113,83 @@
               v-for="(preview, index) in imagePreviews"
               :key="index"
               class="image-preview"
-              :style="{ borderColor: index === primaryImageIndex ? '#F2C200' : '#E0E0E0' }"
+              :class="{ 'image-preview--primary': index === primaryImageIndex }"
             >
               <img :src="preview" :alt="`Room preview ${index + 1}`" />
-              <div v-if="index === primaryImageIndex" class="primary-badge" :style="{ backgroundColor: '#F2C200' }">Primary</div>
-
+              <div v-if="index === primaryImageIndex" class="primary-badge">Primary</div>
               <div class="image-preview-actions">
                 <button
                   class="image-preview-btn set-primary"
                   :class="{ active: index === primaryImageIndex }"
                   @click="setPrimaryImage(index)"
                   title="Set as primary"
-                  :style="{ 
-                    backgroundColor: index === primaryImageIndex ? '#F2C200' : '#FFFFFF',
-                    color: index === primaryImageIndex ? '#FFFFFF' : '#666'
-                  }"
-                >
-                  <i class="fas fa-star"></i>
-                </button>
+                ><i class="fas fa-star"></i></button>
                 <button
-                  class="image-preview-btn"
+                  class="image-preview-btn remove-img"
                   @click="removeImage(index)"
                   title="Remove image"
-                  :style="{ backgroundColor: '#FFFFFF', color: '#F2C200' }"
-                >
-                  <i class="fas fa-times"></i>
-                </button>
+                ><i class="fas fa-times"></i></button>
               </div>
             </div>
           </div>
 
-          <div v-else class="text-center py-6" :style="{ color: '#999' }">
-            <i class="fas fa-images text-4xl mb-2" :style="{ color: '#1E88B6' }"></i>
+          <div v-else class="no-images">
+            <i class="fas fa-images no-images-icon"></i>
             <p>No images uploaded yet</p>
           </div>
         </div>
 
-        <!-- Pricing & Capacity -->
+        <!-- ── Pricing & Capacity ── -->
         <div class="form-section">
           <div class="form-section-header">
-            <div class="section-icon" :style="{ backgroundColor: '#E3F2FD' }">
-              <i class="fas fa-money-bill-wave" :style="{ color: '#1E88B6' }"></i>
+            <div class="section-icon">
+              <i class="fas fa-money-bill-wave"></i>
             </div>
             <div>
-              <h4 :style="{ color: '#1E88B6' }">Pricing & Capacity</h4>
-              <p :style="{ color: '#999' }">Set room rates and guest limits</p>
+              <h4 class="section-heading">Pricing & Capacity</h4>
+              <p class="section-sub">Set room rates and guest limits</p>
             </div>
           </div>
 
           <div class="input-group">
             <div class="form-group">
-              <label for="roomCapacity" :style="{ color: '#1E88B6' }">
-                <i class="fas fa-user-friends" :style="{ color: '#F2C200' }"></i> Capacity
+              <label class="form-label">
+                <i class="fas fa-user-friends label-icon"></i> Capacity
               </label>
               <input
                 id="roomCapacity"
                 v-model.number="form.max_guests"
-                type="number"
-                min="1"
+                type="number" min="1"
                 class="form-control"
                 placeholder="Number of guests"
-                :style="{ borderColor: '#E0E0E0' }"
-                @focus="e => e.target.style.borderColor = '#1E88B6'"
-                @blur="e => e.target.style.borderColor = '#E0E0E0'"
               />
             </div>
 
             <div class="form-group">
-              <label for="roomPrice" :style="{ color: '#1E88B6' }">
-                <i class="fas fa-dollar-sign" :style="{ color: '#F2C200' }"></i> Price per Night
+              <label class="form-label">
+                <i class="fas fa-peso-sign label-icon"></i> Price per Night
               </label>
               <input
                 id="roomPrice"
                 v-model.number="form.price"
-                type="number"
-                min="0"
-                step="0.01"
+                type="number" min="0" step="0.01"
                 class="form-control"
-                placeholder="e.g., 199"
+                placeholder="e.g., 1999"
                 required
-                :style="{ borderColor: '#E0E0E0' }"
-                @focus="e => e.target.style.borderColor = '#1E88B6'"
-                @blur="e => e.target.style.borderColor = '#E0E0E0'"
               />
             </div>
           </div>
         </div>
 
-        <!-- Description -->
+        <!-- ── Description ── -->
         <div class="form-section">
           <div class="form-section-header">
-            <div class="section-icon" :style="{ backgroundColor: '#E3F2FD' }">
-              <i class="fas fa-align-left" :style="{ color: '#1E88B6' }"></i>
+            <div class="section-icon">
+              <i class="fas fa-align-left"></i>
             </div>
             <div>
-              <h4 :style="{ color: '#1E88B6' }">Description</h4>
-              <p :style="{ color: '#999' }">Describe the room features and amenities</p>
+              <h4 class="section-heading">Description</h4>
+              <p class="section-sub">Describe the room features and amenities</p>
             </div>
           </div>
 
@@ -231,92 +198,80 @@
               id="roomDescription"
               v-model="form.description"
               rows="4"
-              class="w-full"
-              placeholder="Luxurious suite with panoramic ocean views, king-sized bed, and private balcony..."
-              :style="{ borderColor: '#E0E0E0' }"
-              @focus="e => e.target.style.borderColor = '#1E88B6'"
-              @blur="e => e.target.style.borderColor = '#E0E0E0'"
+              class="form-control"
+              placeholder="Luxurious suite with panoramic ocean views, king-sized bed, and private balcony…"
             ></textarea>
           </div>
         </div>
 
-        <!-- Status & Settings -->
+        <!-- ── Status & Settings ── -->
         <div class="form-section">
           <div class="form-section-header">
-            <div class="section-icon" :style="{ backgroundColor: '#E3F2FD' }">
-              <i class="fas fa-toggle-on" :style="{ color: '#1E88B6' }"></i>
+            <div class="section-icon">
+              <i class="fas fa-toggle-on"></i>
             </div>
             <div>
-              <h4 :style="{ color: '#1E88B6' }">Status & Settings</h4>
-              <p :style="{ color: '#999' }">Configure room availability and promotions</p>
+              <h4 class="section-heading">Status & Settings</h4>
+              <p class="section-sub">Configure room availability and promotions</p>
             </div>
           </div>
 
           <div class="input-group">
             <div class="form-group">
-              <label for="roomStatus" :style="{ color: '#1E88B6' }">
-                <i class="fas fa-circle" :style="{ color: '#F2C200' }"></i> {{ entityLabel }} Status
+              <label class="form-label">
+                <i class="fas fa-circle label-icon"></i> {{ entityLabel }} Status
               </label>
               <div class="select-wrapper">
-                <select 
-                  id="roomStatus" 
-                  v-model="form.status" 
-                  class="form-control"
-                  :style="{ borderColor: '#E0E0E0' }"
-                  @focus="e => e.target.style.borderColor = '#1E88B6'"
-                  @blur="e => e.target.style.borderColor = '#E0E0E0'"
-                >
+                <select id="roomStatus" v-model="form.status" class="form-control">
                   <option value="Available">Available</option>
                   <option value="Occupied">Occupied</option>
                   <option value="Under Maintenance">Under Maintenance</option>
                 </select>
-                <i class="fas fa-chevron-down select-arrow" :style="{ color: '#F2C200' }"></i>
+                <i class="fas fa-chevron-down select-arrow"></i>
               </div>
             </div>
 
             <div class="form-group">
-              <label for="quantity" :style="{ color: '#1E88B6' }">
-                <i class="fas fa-box" :style="{ color: '#F2C200' }"></i> Quantity Available
+              <label class="form-label">
+                <i class="fas fa-box label-icon"></i> Quantity Available
               </label>
               <div class="select-wrapper">
-                <select 
-                  id="quantity" 
-                  v-model.number="form.quantity" 
-                  class="form-control"
-                  :style="{ borderColor: '#E0E0E0' }"
-                  @focus="e => e.target.style.borderColor = '#1E88B6'"
-                  @blur="e => e.target.style.borderColor = '#E0E0E0'"
-                >
-                  <option v-for="n in 50" :key="n" :value="n">{{ n }} {{ n === 1 ? entityLabel : entityLabel + 's' }}</option>
+                <select id="quantity" v-model.number="form.quantity" class="form-control">
+                  <option v-for="n in 50" :key="n" :value="n">
+                    {{ n }} {{ n === 1 ? entityLabel : entityLabel + 's' }}
+                  </option>
                 </select>
-                <i class="fas fa-chevron-down select-arrow" :style="{ color: '#F2C200' }"></i>
+                <i class="fas fa-chevron-down select-arrow"></i>
               </div>
             </div>
 
             <div class="form-group">
-              <label :style="{ color: '#1E88B6' }">
-                <i class="fas fa-tag" :style="{ color: '#F2C200' }"></i> Promotional Offer
+              <label class="form-label">
+                <i class="fas fa-tag label-icon"></i> Promotional Offer
               </label>
               <div class="switch-container">
                 <label class="switch">
                   <input type="checkbox" v-model="form.promo" />
-                  <span class="slider" :style="{ backgroundColor: form.promo ? '#F2C200' : '#E0E0E0' }"></span>
+                  <span class="slider" :class="{ 'slider--on': form.promo }"></span>
                 </label>
-                <span :style="{ color: '#666' }">Mark as "Limited Offer"</span>
+                <span class="switch-label">Mark as "Limited Offer"</span>
               </div>
             </div>
           </div>
         </div>
+
       </div>
 
-      <div class="modal-footer" :style="{ borderColor: '#E0E0E0' }">
-        <button class="btn-creative btn-creative-outline" @click="close" :style="{ borderColor: '#1E88B6', color: '#1E88B6' }">
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button class="btn-cancel" @click="close">
           <i class="fas fa-times"></i> Cancel
         </button>
-        <button class="btn-creative btn-creative-primary" @click="handleSave" :style="{ background: 'linear-gradient(135deg, #F2C200, #1E88B6)', color: '#FFFFFF' }">
+        <button class="btn-submit" @click="handleSave">
           <i class="fas fa-save"></i> Save {{ entityLabel }}
         </button>
       </div>
+
     </div>
   </div>
 </template>
@@ -325,18 +280,16 @@
 import { ref, watch, computed, onMounted, nextTick } from 'vue'
 
 const props = defineProps({
-  show: { type: Boolean, default: false },
-  initialRoom: { type: Object, default: null }
+  show:        { type: Boolean, default: false },
+  initialRoom: { type: Object,  default: null  }
 })
 
 const emit = defineEmits(['update:show', 'save', 'close'])
 
-// Debug: Log when component mounts and when props change
 onMounted(() => {
   console.log('RoomModal mounted, show prop:', props.show)
 })
 
-// Watch show prop to debug
 watch(() => props.show, (newVal) => {
   console.log('show prop changed to:', newVal)
 })
@@ -358,10 +311,9 @@ const form = ref({
   images: [] // Kept for backward compat; actual images tracked via existingImages/newFileItems
 })
 
-// Dynamic label based on category_type
 const entityLabel = computed(() => {
   if (form.value.category_type === 'cottage') return 'Cottage'
-  if (form.value.category_type === 'event') return 'Event'
+  if (form.value.category_type === 'event')   return 'Event'
   return 'Room'
 })
 
@@ -379,62 +331,14 @@ const imagePreviews = computed(() => [
 const primaryImageIndex = ref(0) // Track which image is marked as primary
 const editing = ref(false)
 
-const statusOptions = computed(() => {
-  if (form.value.category_type === 'event') {
-    return ['Available', 'Occupied', 'Under Maintenance']
-  }
-  return ['Available', 'Occupied', 'Under Maintenance']
-})
+watch(() => props.show,        (v)    => { if (v) resetOrLoadForm() })
+watch(() => props.initialRoom, (room) => { if (room && props.show) loadRoomData(room) }, { immediate: true })
 
-// File input ref
-const fileInput = ref(null)
-const uploadArea = ref(null)
-
-// ────────────────────────────────────────────────
-// Watchers
-// ────────────────────────────────────────────────
-watch(
-  () => props.show,
-  (newVal) => {
-    if (newVal) {
-      resetOrLoadForm()
-    }
-  }
-)
-
-watch(
-  () => props.initialRoom,
-  (room) => {
-    if (room && props.show) {
-      loadRoomData(room)
-    }
-  },
-  { immediate: true }
-)
-
-// ────────────────────────────────────────────────
-// Form Methods
-// ────────────────────────────────────────────────
 const resetForm = () => {
   form.value = {
-    item_id: null, // Reset to null for new room creation
-    room_number: '',
-    name: '',
-    category: 'Standard Room',
-    category_type: 'room',
-    max_guests: 2,
-    price: null,
-    quantity: 1,
-    description: '',
-    status: 'Available',
-    date: '',
-    time: '',
-    promo: false,
-    images: []
-  }
-  // For events, ensure status is Available
-  if (form.value.category_type === 'event') {
-    form.value.status = 'Available'
+    item_id: null, room_number: '', name: '', category: 'Standard Room',
+    category_type: 'room', max_guests: 2, price: null, quantity: 1,
+    description: '', status: 'Available', date: '', time: '', promo: false, images: []
   }
   existingImages.value = []
   newFileItems.value = []
@@ -444,24 +348,15 @@ const resetForm = () => {
 
 const loadRoomData = (room) => {
   if (!room) return
-
   editing.value = true
-
-  // When loading existing room: MUST include item_id to enable UPDATE mode instead of CREATE
   form.value = {
-    item_id: room.item_id, // CRITICAL: This tells the backend to UPDATE instead of CREATE
-    room_number: room.room_number || '',
-    name: room.name || '',
-    category: room.category || 'Standard Room',
-    category_type: room.category_type || 'room',
-    max_guests: room.max_guests || 2,
-    price: room.price || null,
-    description: room.description || '',
-    status: room.status || 'Available',
-    date: room.date || '',
-    time: room.time || '',
-    promo: !!room.promo,
-    images: room.images ? [...room.images] : [] // Existing database URLs/paths
+    item_id: room.item_id, room_number: room.room_number || '',
+    name: room.name || '', category: room.category || 'Standard Room',
+    category_type: room.category_type || 'room', max_guests: room.max_guests || 2,
+    price: room.price || null, description: room.description || '',
+    status: room.status || 'Available', date: room.date || '',
+    time: room.time || '', promo: !!room.promo,
+    images: room.images ? [...room.images] : []
   }
 
   // Load existing image paths from DB for display; no new files yet
@@ -471,29 +366,16 @@ const loadRoomData = (room) => {
 }
 
 const resetOrLoadForm = () => {
-  if (props.initialRoom) {
-    loadRoomData(props.initialRoom)
-  } else {
-    resetForm()
-  }
+  if (props.initialRoom) loadRoomData(props.initialRoom)
+  else resetForm()
 }
 
 const validateForm = () => {
-  if (!form.value.name.trim()) {
-    alert('Room Name is required')
-    return false
+  if (!form.value.name.trim())        { alert('Room Name is required'); return false }
+  if (!form.value.room_number.trim()) { alert('Room Number is required'); return false }
+  if (form.value.category_type !== 'event' && (!form.value.price || form.value.price <= 0)) {
+    alert('Valid Price per Night is required'); return false
   }
-  if (!form.value.room_number.trim()) {
-    alert('Room Number is required')
-    return false
-  }
-  if (form.value.category_type !== 'event') {
-    if (!form.value.price || form.value.price <= 0) {
-      alert('Valid Price per Night is required')
-      return false
-    }
-  }
-  // Images are optional - you can create a room without images
   return true
 }
 
@@ -521,67 +403,20 @@ const close = () => {
   nextTick(() => resetForm())
 }
 
-// ────────────────────────────────────────────────
-// Image Upload Logic — Handles file selection, preview generation, and validation
-// ────────────────────────────────────────────────
-
-/**
- * onDragOver: Visual feedback when user drags files over upload area
- * Changes border color and background to indicate drop zone is active
- */
-const onDragOver = (e) => {
-  e.preventDefault()
-  uploadArea.value.style.borderColor = '#F2C200'
-  uploadArea.value.style.background = 'rgba(242, 194, 0, 0.1)'
+const onDragOver = () => {
+  if (uploadArea.value) {
+    uploadArea.value.classList.add('upload-drag-over')
+  }
 }
-
-/**
- * onDragLeave: Reset visual feedback when user leaves drag area
- */
 const onDragLeave = () => {
-  uploadArea.value.style.borderColor = '#1E88B6'
-  uploadArea.value.style.background = 'linear-gradient(135deg, #E3F2FD 0%, #F0F9FF 100%)'
+  if (uploadArea.value) uploadArea.value.classList.remove('upload-drag-over')
 }
-
-/**
- * onDrop: Handle files dropped into upload area
- * Calls processFiles to validate and preview the dropped files
- */
 const onDrop = (e) => {
-  e.preventDefault()
   onDragLeave()
-  const files = e.dataTransfer.files
-  processFiles(files)
+  processFiles(e.dataTransfer.files)
 }
+const handleFileChange = (e) => processFiles(e.target.files)
 
-/**
- * handleFileChange: Handle files selected from file picker dialog
- * Calls processFiles to validate and preview the selected files
- */
-const handleFileChange = (e) => {
-  const files = e.target.files
-  processFiles(files)
-}
-
-/**
- * processFiles: MAIN IMAGE UPLOAD FUNCTION
- * 1. Validates file type (only JPEG, PNG, WebP allowed)
- * 2. Validates file size (max 5MB per file)
- * 3. Uses FileReader to convert selected file to base64 data URL
- * 4. Stores data URL in imagePreviews for immediate display in modal
- * 5. Sets first image as primary if no primary exists
- * 
- * WHY BASE64?
- * The backend (reservision-backend) stores images as JSON in the database (inventory_items.images)
- * Not as files on disk. So we send base64 encoded data directly to the server,
- * which stores it as-is in the images column.
- * 
- * Flow:
- * 1. User selects image → FileReader converts to base64 → Display preview immediately ✓
- * 2. User clicks save → Base64 strings sent as JSON to backend ✓
- * 3. Backend stores as JSON: ["data:image/jpeg;base64,...", "data:image/png;base64,..."] ✓
- * 4. Next time room loads → Images displayed from data URLs ✓
- */
 const processFiles = (files) => {
   const validTypes = ['image/jpeg', 'image/png', 'image/webp']
 
@@ -611,19 +446,8 @@ const processFiles = (files) => {
   })
 }
 
-/**
- * setPrimaryImage: Set which image preview is marked as "Primary"
- * The primary image will be shown as the room's main thumbnail in the list
- */
-const setPrimaryImage = (index) => {
-  primaryImageIndex.value = index
-}
+const setPrimaryImage = (index) => { primaryImageIndex.value = index }
 
-/**
- * removeImage: Delete an image from preview
- * 1. Removes from preview display
- * 2. Adjusts primaryImageIndex if needed
- */
 const removeImage = (index) => {
   const existingCount = existingImages.value.length
   if (index < existingCount) {
@@ -641,209 +465,324 @@ const removeImage = (index) => {
     primaryImageIndex.value = Math.max(0, index - 1)
   } else if (primaryImageIndex.value > index) {
     primaryImageIndex.value--
-  }
 }
 
-/**
- * openFileDialog: Programmatically open native file picker
- * Called when user clicks the upload area (click to browse)
- */
-const openFileDialog = () => {
-  fileInput.value.click()
-}
+const openFileDialog = () => fileInput.value?.click()
 
 onMounted(() => {
-  if (uploadArea.value) {
-    uploadArea.value.addEventListener('click', openFileDialog)
-  }
+  if (uploadArea.value) uploadArea.value.addEventListener('click', openFileDialog)
 })
 </script>
 
 <style scoped>
-/* Optional: component-specific overrides if needed */
-/* Most styles are already in admin-theme.css */
-.modal {
-  z-index: 9999;
+/* ── Eduardo's Resort Color Palette ── */
+.modal,
+.modal-content {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-white-soft:    rgba(255,255,255,0.1);
+  --color-gray-bg:       #f9fafb;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
 }
 
+/* ── Modal overlay ── */
+.modal {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(12,59,94,0.55);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+.modal.show { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Modal box ── */
+.modal-content {
+  background: var(--color-white);
+  border-radius: 18px;
+  width: 100%;
+  max-width: 760px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(12,59,94,0.22);
+  animation: slideUp 0.22s ease;
+  border: none;
+}
+@keyframes slideUp {
+  from { transform: translateY(18px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Modal header: navy bg + gold bottom border ── */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 1.4rem;
+  background: var(--color-navy);
+  border-radius: 18px 18px 0 0;
+  border-bottom: 3px solid var(--color-gold);
+  position: sticky; top: 0; z-index: 10;
+}
+.modal-head-left {
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.modal-head-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(255,255,255,0.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; color: var(--color-gold); flex-shrink: 0;
+}
+.modal-title {
+  font-size: 1rem; font-weight: 700;
+  color: var(--color-white); margin: 0;
+}
+.modal-sub {
+  font-size: 0.7rem; color: rgba(255,255,255,0.65); margin: 2px 0 0;
+}
+.close-modal {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--color-white);
+  font-size: 1.2rem; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.close-modal:hover { background: rgba(255,255,255,0.28); }
+
+/* ── Modal body ── */
+.modal-body {
+  padding: 1.25rem 1.4rem;
+  display: flex; flex-direction: column; gap: 1rem;
+  background: var(--color-gray-bg);
+}
+
+/* ── Form sections: #eff6ff container, matching MenuSection category blocks ── */
+.form-section {
+  background: #eff6ff;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  border: none;
+  box-shadow: 0 1px 4px rgba(3,105,161,0.06);
+}
+
+.form-section-header {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(3,105,161,0.12);
+}
+
+.section-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: rgba(31,141,191,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; color: var(--color-primary-light); flex-shrink: 0;
+}
+.section-heading {
+  font-size: 0.875rem; font-weight: 700;
+  color: var(--color-navy); margin: 0;
+}
+.section-sub {
+  font-size: 0.72rem; color: var(--color-text-light); margin: 1px 0 0;
+}
+
+/* ── Form controls ── */
 .input-group {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem;
-  align-items: center;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem;
 }
-
 @media (max-width: 640px) {
-  .input-group {
-    grid-template-columns: 1fr;
-  }
+  .input-group { grid-template-columns: 1fr; }
 }
 
-/* Select wrapper with custom arrow */
-.select-wrapper {
-  position: relative;
+.form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.form-label {
+  font-size: 0.72rem; font-weight: 700;
+  color: var(--color-text-light);
+  text-transform: uppercase; letter-spacing: 0.4px;
+  display: flex; align-items: center; gap: 0.35rem;
+}
+.label-icon { color: var(--color-gold-dark); font-size: 0.7rem; }
+
+.form-control {
   width: 100%;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 9px;
+  font-size: 0.875rem;
+  color: var(--color-text-dark);
+  background: var(--color-white);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
 }
-
-.select-wrapper .form-control {
-  appearance: none;
-  padding-right: 2.5rem;
+.form-control:focus {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(31,141,191,0.1);
 }
+textarea.form-control { resize: vertical; min-height: 90px; }
 
+/* Select wrapper */
+.select-wrapper { position: relative; width: 100%; }
+.select-wrapper .form-control { appearance: none; padding-right: 2.4rem; }
 .select-arrow {
-  position: absolute;
-  right: 1rem;
-  top: 50%;
+  position: absolute; right: 0.9rem; top: 50%;
   transform: translateY(-50%);
-  pointer-events: none;
-  font-size: 0.75rem;
+  pointer-events: none; font-size: 0.7rem;
+  color: var(--color-gold-dark);
 }
 
-/* Switch styling */
-.switch-container {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 48px;
-  height: 24px;
-  margin: 0;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
+/* ── Image upload area ── */
+.image-upload-area {
+  background: #dbeafe;
+  border: 2px dashed rgba(3,105,161,0.25);
+  border-radius: 12px;
+  padding: 1.75rem 1rem;
+  text-align: center;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #E0E0E0;
-  transition: .3s;
-  border-radius: 24px;
+  transition: all 0.18s ease;
 }
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: .3s;
-  border-radius: 50%;
+.image-upload-area:hover,
+.image-upload-area.upload-drag-over {
+  background: #bfdbfe;
+  border-color: var(--color-primary-light);
 }
+.upload-icon  { font-size: 2rem; color: var(--color-primary-light); display: block; margin-bottom: 0.5rem; }
+.upload-text  { font-size: 0.875rem; color: var(--color-primary); font-weight: 600; margin: 0; }
+.upload-hint  { font-size: 0.72rem; color: var(--color-text-light); margin-top: 0.25rem; display: block; }
 
-input:checked + .slider:before {
-  transform: translateX(24px);
-}
-
-/* Image preview container */
+/* Image preview grid */
 .image-preview-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.85rem;
 }
-
 .image-preview {
-  position: relative;
-  border-radius: 0.75rem;
-  border: 2px solid;
-  overflow: hidden;
-  aspect-ratio: 1;
-  transition: all 0.3s ease;
+  position: relative; border-radius: 10px;
+  border: 2px solid rgba(3,105,161,0.12);
+  overflow: hidden; aspect-ratio: 1;
+  transition: all 0.2s ease;
 }
-
-.image-preview:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(30, 136, 182, 0.15);
-}
-
-.image-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.image-preview--primary { border-color: var(--color-gold); }
+.image-preview:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(3,105,161,0.15); }
+.image-preview img { width: 100%; height: 100%; object-fit: cover; }
 
 .primary-badge {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.375rem;
-  font-size: 0.7rem;
-  font-weight: bold;
-  color: white;
-  z-index: 2;
+  position: absolute; top: 0.4rem; left: 0.4rem;
+  padding: 0.18rem 0.45rem; border-radius: 6px;
+  font-size: 0.65rem; font-weight: 700;
+  background: var(--color-gold); color: var(--color-navy); z-index: 2;
 }
 
 .image-preview-actions {
-  position: absolute;
-  bottom: 0.5rem;
-  right: 0.5rem;
-  display: flex;
-  gap: 0.25rem;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  position: absolute; bottom: 0.4rem; right: 0.4rem;
+  display: flex; gap: 0.25rem;
+  opacity: 0; transition: opacity 0.2s ease;
 }
-
-.image-preview:hover .image-preview-actions {
-  opacity: 1;
-}
+.image-preview:hover .image-preview-actions { opacity: 1; }
 
 .image-preview-btn {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem;
+  transition: all 0.15s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.set-primary         { background: var(--color-white); color: var(--color-text-light); }
+.set-primary.active  { background: var(--color-gold); color: var(--color-navy); }
+.set-primary:hover   { background: var(--color-gold); color: var(--color-navy); }
+.remove-img          { background: var(--color-white); color: #ef4444; }
+.remove-img:hover    { background: #ef4444; color: var(--color-white); }
+
+/* No images placeholder */
+.no-images {
+  text-align: center; padding: 1.5rem;
+  color: var(--color-text-light);
+}
+.no-images-icon {
+  font-size: 2rem; color: rgba(3,105,161,0.2);
+  display: block; margin-bottom: 0.4rem;
+}
+
+/* Toggle switch */
+.switch-container {
+  display: flex; align-items: center; gap: 0.65rem; margin-top: 0.25rem;
+}
+.switch {
+  position: relative; display: inline-block;
+  width: 44px; height: 22px; margin: 0; flex-shrink: 0;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer;
+  inset: 0; background: var(--color-gray-border);
+  transition: background 0.25s; border-radius: 22px;
+}
+.slider--on { background: var(--color-primary-light); }
+.slider:before {
+  position: absolute; content: '';
+  height: 16px; width: 16px;
+  left: 3px; bottom: 3px;
+  background: var(--color-white);
+  transition: transform 0.25s; border-radius: 50%;
+}
+input:checked + .slider:before { transform: translateX(22px); }
+.switch-label { font-size: 0.82rem; color: var(--color-text-dark); }
+
+/* ── Modal footer ── */
+.modal-footer {
+  display: flex; gap: 0.65rem; justify-content: flex-end;
+  padding: 1rem 1.4rem;
+  border-top: 1px solid var(--color-gray-border);
+  background: var(--color-white);
+  border-radius: 0 0 18px 18px;
+  position: sticky; bottom: 0; z-index: 10;
+}
+
+.btn-cancel {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.55rem 1.1rem; border-radius: 9px;
+  background: var(--color-white); color: var(--color-text-light);
+  border: 1.5px solid var(--color-gray-border);
+  font-size: 0.875rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-cancel:hover { border-color: var(--color-primary-light); color: var(--color-primary); }
+
+/* Primary save button: navy + gold icon — consistent with all other modals */
+.btn-submit {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.55rem 1.25rem; border-radius: 9px;
+  background: var(--color-navy); color: var(--color-white);
+  border: none; font-size: 0.875rem; font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(12,59,94,0.22);
+  transition: all 0.15s;
 }
+.btn-submit:hover {
+  background: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(3,105,161,0.28);
+}
+.btn-submit i { color: var(--color-gold); }
 
-.image-preview-btn:hover {
-  transform: scale(1.1);
-}
-
-.btn-creative {
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  font-size: 0.875rem;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn-creative-outline {
-  background: transparent;
-  border: 2px solid;
-}
-
-.btn-creative-outline:hover {
-  background: #1E88B6;
-  color: white !important;
-}
-
-.btn-creative-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(30, 136, 182, 0.3);
-}
+.textarea-group .form-control { width: 100%; }
 </style>
 <style scoped src="../../../assets/room.css"></style>

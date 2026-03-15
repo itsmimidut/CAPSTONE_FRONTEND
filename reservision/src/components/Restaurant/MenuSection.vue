@@ -1,56 +1,62 @@
 <template>
   <div class="menu-section">
-    <!-- Header with Controls -->
+
+    <!-- ── Section Header ── -->
     <div class="section-header">
-      <div>
+      <div class="section-header-left">
         <h2 class="section-title">Menu Management</h2>
         <p class="section-subtitle">Manage restaurant menu items and pricing</p>
       </div>
       <div class="header-actions">
-        <button class="btn-category" @click="showCategoryModal = true">
-          <i class="fas fa-layer-group"></i> Manage Categories
+        <button class="btn-secondary" @click="showCategoryModal = true">
+          <i class="fas fa-layer-group"></i>
+          <span>Manage Categories</span>
         </button>
-        <button class="btn-add-item" @click="showAddItemModal = true">
-          <i class="fas fa-plus"></i> Add New Item
+        <button class="btn-primary" @click="showAddItemModal = true">
+          <i class="fas fa-plus"></i>
+          <span>Add New Item</span>
         </button>
       </div>
     </div>
 
-    <!-- Stats Container -->
+    <!-- ── Stats Chips ── -->
     <div class="stats-container">
-      <StatCard 
-        label="Total Items"
-        :count="menu.length"
-        class="stat-total"
-        icon="fas fa-utensils"
-        color="primary"
-      />
-      <StatCard 
-        label="Available Items"
-        :count="menu.filter(i => i.available).length"
-        class="stat-available"
-        icon="fas fa-check-circle"
-        color="success"
-      />
-      <StatCard 
-        label="Unavailable Items"
-        :count="menu.filter(i => !i.available).length"
-        class="stat-unavailable"
-        icon="fas fa-ban"
-        color="danger"
-      />
+      <div class="stat-chip stat-chip--blue">
+        <div class="stat-chip-icon"><i class="fas fa-utensils"></i></div>
+        <div class="stat-chip-body">
+          <span class="stat-chip-value">{{ menu.length }}</span>
+          <span class="stat-chip-label">Total Items</span>
+        </div>
+      </div>
+      <div class="stat-chip stat-chip--green">
+        <div class="stat-chip-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-chip-body">
+          <span class="stat-chip-value">{{ menu.filter(i => i.available).length }}</span>
+          <span class="stat-chip-label">Available</span>
+        </div>
+      </div>
+      <div class="stat-chip stat-chip--red">
+        <div class="stat-chip-icon"><i class="fas fa-ban"></i></div>
+        <div class="stat-chip-body">
+          <span class="stat-chip-value">{{ menu.filter(i => !i.available).length }}</span>
+          <span class="stat-chip-label">Unavailable</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Search and Filter -->
-    <div class="controls-container">
+    <!-- ── Search & Filter ── -->
+    <div class="controls-bar">
       <div class="search-box">
         <i class="fas fa-search search-icon"></i>
-        <input 
+        <input
           v-model="searchQuery"
-          type="text" 
-          placeholder="Search dishes..."
+          type="text"
+          placeholder="Search dishes…"
           class="search-input"
         />
+        <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
       <select v-model="filterCategory" class="filter-select">
         <option value="">All Categories</option>
@@ -63,1395 +69,900 @@
       </select>
     </div>
 
-    <!-- Category-Based List Menu -->
+    <!-- ── Menu List ── -->
     <div class="menu-list">
+
       <div v-if="filteredMenu.length === 0" class="empty-state">
-        <i class="fas fa-utensils empty-icon"></i>
+        <div class="empty-icon-wrap"><i class="fas fa-utensils"></i></div>
         <p>No menu items found</p>
-        <button class="btn-add-empty" @click="showAddItemModal = true">
+        <button class="btn-primary" @click="showAddItemModal = true">
           <i class="fas fa-plus"></i> Add Your First Item
         </button>
       </div>
 
-      <!-- Category Sections -->
-      <div v-for="category in categories" :key="category" class="category-section-list">
-        <template v-if="getItemsByCategory(category).length > 0">
-          <div class="category-header-list">
-            <h3 class="category-title-list">{{ category.toUpperCase() }}</h3>
-            <span class="category-count-badge">{{ getItemsByCategory(category).length }} items</span>
+      <div
+        v-for="category in categories"
+        :key="category"
+        class="category-block"
+        v-show="getItemsByCategory(category).length > 0"
+      >
+        <div class="category-header">
+          <div class="category-header-left">
+            <span class="category-dot"></span>
+            <span class="category-title">{{ category }}</span>
           </div>
+          <span class="category-badge">{{ getItemsByCategory(category).length }}</span>
+        </div>
 
-          <div class="items-list">
-            <div 
-              v-for="item in getItemsByCategory(category)" 
-              :key="item.menu_id" 
-              class="list-item" 
-              :class="{ 'item-unavailable': !item.available }"
-            >
-              <div class="item-info">
-                <div class="item-details">
-                  <h4 class="item-name-list">{{ item.name }}</h4>
-                  <span v-if="!item.available" class="unavailable-badge">Not Available</span>
-                </div>
-                <div class="item-price-list">₱{{ item.price }}</div>
+        <div class="items-list">
+          <div
+            v-for="item in getItemsByCategory(category)"
+            :key="item.menu_id"
+            class="list-item"
+            :class="{ 'item-unavailable': !item.available }"
+          >
+            <div class="item-info">
+              <div class="item-details">
+                <span class="item-name">{{ item.name }}</span>
+                <span v-if="!item.available" class="unavailable-tag">Unavailable</span>
               </div>
-              
-              <div class="item-actions">
-                <button 
-                  class="action-btn toggle-btn"
-                  :class="item.available ? 'btn-available' : 'btn-unavailable'"
-                  @click="handleToggle(item)"
-                  :title="item.available ? 'Mark unavailable' : 'Mark available'"
-                >
-                  <i :class="item.available ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
-                </button>
-                <button 
-                  class="action-btn edit-btn"
-                  @click="handleEdit(item)"
-                  title="Edit"
-                >
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button 
-                  class="action-btn delete-btn"
-                  @click="handleDelete(item)"
-                  title="Delete"
-                >
-                  <i class="fas fa-trash"></i>
-                </button>
-              </div>
+              <span class="item-price">₱{{ item.price }}</span>
+            </div>
+
+            <div class="item-actions">
+              <button
+                class="act-btn toggle-btn"
+                :class="item.available ? 'toggle-btn--on' : 'toggle-btn--off'"
+                @click="handleToggle(item)"
+                :title="item.available ? 'Mark unavailable' : 'Mark available'"
+              >
+                <i :class="item.available ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+              </button>
+              <button class="act-btn edit-btn" @click="handleEdit(item)" title="Edit">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="act-btn delete-btn" @click="handleDelete(item)" title="Delete">
+                <i class="fas fa-trash"></i>
+              </button>
             </div>
           </div>
-        </template>
+        </div>
       </div>
+
     </div>
 
-    <!-- Add Item Modal -->
+    <!-- ══ ADD ITEM MODAL ══ -->
     <div v-if="showAddItemModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Add New Menu Item</h3>
-          <button class="btn-close" @click="closeModal">
+      <div class="modal-box">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-head-icon">
+              <i class="fas fa-plus"></i>
+            </div>
+            <div>
+              <h3 class="modal-title">Add New Menu Item</h3>
+              <p class="modal-sub">Fill in the details below</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" @click="closeModal">
             <i class="fas fa-times"></i>
           </button>
         </div>
 
         <form @submit.prevent="handleAddItem" class="modal-form">
           <div class="form-group">
-            <label for="itemName">Name *</label>
-            <input 
-              id="itemName"
-              v-model="newItem.name"
-              type="text" 
-              placeholder="e.g., Grilled Salmon"
-              required
-              class="form-input"
-            />
+            <label class="form-label">Name <span class="req">*</span></label>
+            <input v-model="newItem.name" type="text" placeholder="e.g. Grilled Salmon" required class="form-input" />
           </div>
-
           <div class="form-row">
             <div class="form-group">
-              <label for="category">Category *</label>
-              <select 
-                id="category"
-                v-model="newItem.category"
-                required
-                class="form-input"
-              >
-                <option value="">Select Category</option>
+              <label class="form-label">Category <span class="req">*</span></label>
+              <select v-model="newItem.category" required class="form-input">
+                <option value="">Select category</option>
                 <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
               </select>
             </div>
-
             <div class="form-group">
-              <label for="price">Price (₱) *</label>
-              <input 
-                id="price"
-                v-model.number="newItem.price"
-                type="number" 
-                placeholder="0"
-                required
-                min="0"
-                step="0.01"
-                class="form-input"
-              />
+              <label class="form-label">Price (₱) <span class="req">*</span></label>
+              <input v-model.number="newItem.price" type="number" placeholder="0" required min="0" step="0.01" class="form-input" />
             </div>
           </div>
-
-          <div class="form-group checkbox">
-            <input 
-              id="available"
-              v-model="newItem.available"
-              type="checkbox"
-              class="form-checkbox"
-            />
-            <label for="available">Available for ordering</label>
+          <div class="form-group form-checkbox-row">
+            <input id="add-avail" v-model="newItem.available" type="checkbox" class="form-checkbox" />
+            <label for="add-avail" class="form-label checkbox-label">Available for ordering</label>
           </div>
-
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" @click="closeModal">
-              Cancel
-            </button>
-            <button type="submit" class="btn-submit">
-              <i class="fas fa-plus"></i> Add Item
-            </button>
+          <div class="modal-foot">
+            <button type="button" class="btn-cancel" @click="closeModal">Cancel</button>
+            <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Add Item</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Edit Item Modal -->
+    <!-- ══ EDIT ITEM MODAL ══ -->
     <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Edit Menu Item</h3>
-          <button class="btn-close" @click="closeEditModal">
+      <div class="modal-box">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-head-icon modal-head-icon--gold">
+              <i class="fas fa-edit"></i>
+            </div>
+            <div>
+              <h3 class="modal-title">Edit Menu Item</h3>
+              <p class="modal-sub">Update the item details</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" @click="closeEditModal">
             <i class="fas fa-times"></i>
           </button>
         </div>
 
         <form @submit.prevent="handleEditSubmit" class="modal-form">
           <div class="form-group">
-            <label for="editItemName">Name *</label>
-            <input 
-              id="editItemName"
-              v-model="editingItem.name"
-              type="text" 
-              placeholder="e.g., Grilled Salmon"
-              required
-              class="form-input"
-            />
+            <label class="form-label">Name <span class="req">*</span></label>
+            <input v-model="editingItem.name" type="text" placeholder="e.g. Grilled Salmon" required class="form-input" />
           </div>
-
           <div class="form-row">
             <div class="form-group">
-              <label for="editCategory">Category *</label>
-              <select 
-                id="editCategory"
-                v-model="editingItem.category"
-                required
-                class="form-input"
-              >
-                <option value="">Select Category</option>
+              <label class="form-label">Category <span class="req">*</span></label>
+              <select v-model="editingItem.category" required class="form-input">
+                <option value="">Select category</option>
                 <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
               </select>
             </div>
-
             <div class="form-group">
-              <label for="editPrice">Price (₱) *</label>
-              <input 
-                id="editPrice"
-                v-model.number="editingItem.price"
-                type="number" 
-                placeholder="0"
-                required
-                min="0"
-                step="0.01"
-                class="form-input"
-              />
+              <label class="form-label">Price (₱) <span class="req">*</span></label>
+              <input v-model.number="editingItem.price" type="number" placeholder="0" required min="0" step="0.01" class="form-input" />
             </div>
           </div>
-
-          <div class="form-group checkbox">
-            <input 
-              id="editAvailable"
-              v-model="editingItem.available"
-              type="checkbox"
-              class="form-checkbox"
-            />
-            <label for="editAvailable">Available for ordering</label>
+          <div class="form-group form-checkbox-row">
+            <input id="edit-avail" v-model="editingItem.available" type="checkbox" class="form-checkbox" />
+            <label for="edit-avail" class="form-label checkbox-label">Available for ordering</label>
           </div>
-
-          <div class="form-actions">
-            <button type="button" class="btn-cancel" @click="closeEditModal">
-              Cancel
-            </button>
-            <button type="submit" class="btn-submit">
-              <i class="fas fa-save"></i> Save Changes
-            </button>
+          <div class="modal-foot">
+            <button type="button" class="btn-cancel" @click="closeEditModal">Cancel</button>
+            <button type="submit" class="btn-primary btn-gold"><i class="fas fa-save"></i> Save Changes</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Category Management Modal -->
+    <!-- ══ CATEGORY MODAL ══ -->
     <div v-if="showCategoryModal" class="modal-overlay" @click.self="closeCategoryModal">
-      <div class="modal-content modal-wide-category">
-        <div class="modal-header">
-          <h3><i class="fas fa-layer-group"></i> Manage Categories</h3>
-          <button class="btn-close" @click="closeCategoryModal">
+      <div class="modal-box modal-box--wide">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-head-icon">
+              <i class="fas fa-layer-group"></i>
+            </div>
+            <div>
+              <h3 class="modal-title">Manage Categories</h3>
+              <p class="modal-sub">Add, edit or remove menu categories</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" @click="closeCategoryModal">
             <i class="fas fa-times"></i>
           </button>
         </div>
 
-        <div class="category-modal-body">
-          <!-- Current Categories List -->
-          <div class="category-section">
-            <h4 class="category-section-title">
-              <i class="fas fa-list"></i> Current Categories
-            </h4>
-            <div class="category-list">
-              <div v-for="(cat, index) in categories" :key="index" class="category-item">
-                <div v-if="editingCategoryIndex === index" class="category-edit-mode">
-                  <input 
+        <div class="cat-modal-body">
+          <div class="cat-section">
+            <h4 class="cat-section-title"><i class="fas fa-list"></i> Current Categories</h4>
+            <div class="cat-list">
+              <div v-for="(cat, index) in categories" :key="index" class="cat-item">
+                <div v-if="editingCategoryIndex === index" class="cat-edit-row">
+                  <input
                     v-model="editingCategoryValue"
                     type="text"
                     class="form-input"
                     placeholder="Category name"
                     @keyup.enter="saveEditCategory(index)"
                     @keyup.esc="cancelEditCategory"
-                    ref="editInput"
                   />
-                  <div class="category-actions">
-                    <button type="button" class="btn-icon btn-save" @click="saveEditCategory(index)" title="Save">
+                  <div class="cat-item-actions">
+                    <button type="button" class="act-btn edit-btn" @click="saveEditCategory(index)" title="Save">
                       <i class="fas fa-check"></i>
                     </button>
-                    <button type="button" class="btn-icon btn-cancel-edit" @click="cancelEditCategory" title="Cancel">
+                    <button type="button" class="act-btn delete-btn" @click="cancelEditCategory" title="Cancel">
                       <i class="fas fa-times"></i>
                     </button>
                   </div>
                 </div>
-                <div v-else class="category-display">
-                  <span class="category-name">{{ cat }}</span>
-                  <div class="category-actions">
-                    <button type="button" class="btn-icon btn-edit-cat" @click="startEditCategory(index, cat)" title="Edit">
+                <div v-else class="cat-display-row">
+                  <span class="cat-name"><i class="fas fa-tag cat-tag-icon"></i> {{ cat }}</span>
+                  <div class="cat-item-actions">
+                    <button type="button" class="act-btn edit-btn" @click="startEditCategory(index, cat)" title="Edit">
                       <i class="fas fa-edit"></i>
                     </button>
-                    <button type="button" class="btn-icon btn-delete-cat" @click="deleteCategory(index)" title="Delete">
+                    <button type="button" class="act-btn delete-btn" @click="deleteCategory(index)" title="Delete">
                       <i class="fas fa-trash"></i>
                     </button>
                   </div>
                 </div>
               </div>
-              <div v-if="categories.length === 0" class="empty-categories">
+              <div v-if="categories.length === 0" class="empty-cats">
                 <i class="fas fa-folder-open"></i>
                 <p>No categories yet</p>
               </div>
             </div>
           </div>
 
-          <!-- Add New Category -->
-          <div class="category-section add-section">
-            <h4 class="category-section-title">
-              <i class="fas fa-plus-circle"></i> Add New Category
-            </h4>
-            <form @submit.prevent="addCategory" class="add-category-form">
-              <input 
-                v-model="newCategory"
-                type="text"
-                class="form-input"
-                placeholder="Enter new category name"
-                required
-              />
-              <button type="submit" class="btn-submit">
-                <i class="fas fa-plus"></i> Add Category
+          <div class="cat-section cat-section--add">
+            <h4 class="cat-section-title"><i class="fas fa-plus-circle"></i> Add New Category</h4>
+            <form @submit.prevent="addCategory" class="add-cat-form">
+              <input v-model="newCategory" type="text" class="form-input" placeholder="Enter category name" required />
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-plus"></i> Add
               </button>
             </form>
           </div>
 
-          <!-- Info Note -->
-          <div class="category-info-note">
+          <div class="cat-info-note">
             <i class="fas fa-info-circle"></i>
-            <small>Categories help organize your menu. Deleting a category will affect existing menu items.</small>
+            <span>Deleting a category will affect existing menu items assigned to it.</span>
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn-cancel" @click="closeCategoryModal">
-            Close
-          </button>
+        <div class="modal-foot modal-foot--right">
+          <button type="button" class="btn-cancel" @click="closeCategoryModal">Close</button>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, nextTick } from 'vue'
-import StatCard from './StatCard.vue'
 
-const props = defineProps({
-  menu: Array,
-})
+const props = defineProps({ menu: Array })
+const emit  = defineEmits(['toggle-availability', 'edit-item', 'delete-item', 'add-item', 'update-item'])
 
-const emit = defineEmits(['toggle-availability', 'edit-item', 'delete-item', 'add-item', 'update-item'])
-
-const searchQuery = ref('')
-const filterCategory = ref('')
+const searchQuery        = ref('')
+const filterCategory     = ref('')
 const filterAvailability = ref('')
-const showAddItemModal = ref(false)
-const showEditModal = ref(false)
-const showCategoryModal = ref(false)
-const editingItem = ref(null)
+const showAddItemModal   = ref(false)
+const showEditModal      = ref(false)
+const showCategoryModal  = ref(false)
+const editingItem        = ref(null)
 
-// Category management
 const categories = ref([
-  'Coffee',
-  'Hot & Cold Latte',
-  'Smoothies Frappe',
-  'Fruity Smoothies & Shakes',
-  'Sandwiches & Pastries',
-  'Soup',
-  'Rice',
-  'Noodles',
-  'Pasta'
+  'Coffee', 'Hot & Cold Latte', 'Smoothies Frappe',
+  'Fruity Smoothies & Shakes', 'Sandwiches & Pastries',
+  'Soup', 'Rice', 'Noodles', 'Pasta'
 ])
-const newCategory = ref('')
+const newCategory          = ref('')
 const editingCategoryIndex = ref(null)
 const editingCategoryValue = ref('')
-const editInput = ref(null)
 
-const newItem = ref({
-  name: '',
-  category: '',
-  price: 0,
-  available: true,
-})
+const newItem = ref({ name: '', category: '', price: 0, available: true })
 
-const filteredMenu = computed(() => {
-  return props.menu.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesCategory = !filterCategory.value || item.category === filterCategory.value
-    const matchesAvailability = !filterAvailability.value || 
-      (filterAvailability.value === 'available' ? item.available : !item.available)
-    return matchesSearch && matchesCategory && matchesAvailability
+const filteredMenu = computed(() =>
+  props.menu.filter(item => {
+    const q = searchQuery.value.toLowerCase()
+    return (
+      item.name.toLowerCase().includes(q) &&
+      (!filterCategory.value    || item.category === filterCategory.value) &&
+      (!filterAvailability.value ||
+        (filterAvailability.value === 'available' ? item.available : !item.available))
+    )
   })
-})
+)
 
-// Get items by category for gallery display
-const getItemsByCategory = (category) => {
-  return filteredMenu.value.filter(item => item.category === category)
-}
+const getItemsByCategory = (cat) => filteredMenu.value.filter(i => i.category === cat)
 
-const handleToggle = (item) => {
-  emit('toggle-availability', item.menu_id)
-}
-
-const handleEdit = (item) => {
-  editingItem.value = { ...item }
-  showEditModal.value = true
-}
+const handleToggle = (item) => emit('toggle-availability', item.menu_id)
+const handleEdit   = (item) => { editingItem.value = { ...item }; showEditModal.value = true }
+const handleDelete = (item) => { if (confirm(`Delete ${item.name}?`)) emit('delete-item', item.menu_id) }
 
 const handleEditSubmit = () => {
-  if (editingItem.value) {
-    const itemToUpdate = {
-      menu_id: editingItem.value.menu_id,
-      name: editingItem.value.name,
-      category: editingItem.value.category,
-      price: editingItem.value.price,
-      available: editingItem.value.available,
-    }
-    emit('update-item', itemToUpdate)
-    closeEditModal()
-  }
-}
-
-const closeEditModal = () => {
-  showEditModal.value = false
-  editingItem.value = null
-}
-
-const handleDelete = (item) => {
-  if (confirm(`Delete ${item.name}?`)) {
-    emit('delete-item', item.menu_id)
-  }
+  if (!editingItem.value) return
+  emit('update-item', {
+    menu_id:   editingItem.value.menu_id,
+    name:      editingItem.value.name,
+    category:  editingItem.value.category,
+    price:     editingItem.value.price,
+    available: editingItem.value.available,
+  })
+  closeEditModal()
 }
 
 const handleAddItem = () => {
   if (newItem.value.name && newItem.value.category && newItem.value.price >= 0) {
-    const itemToAdd = {
-      name: newItem.value.name,
-      category: newItem.value.category,
-      price: newItem.value.price,
-      available: newItem.value.available,
-    }
-    emit('add-item', itemToAdd)
+    emit('add-item', { ...newItem.value })
     closeModal()
   }
 }
 
-const closeModal = () => {
-  showAddItemModal.value = false
-  newItem.value = {
-    name: '',
-    category: '',
-    price: 0,
-    available: true,
-  }
-}
+const closeModal     = () => { showAddItemModal.value = false; newItem.value = { name: '', category: '', price: 0, available: true } }
+const closeEditModal = () => { showEditModal.value = false; editingItem.value = null }
 
-// Category Management Functions
 const closeCategoryModal = () => {
-  showCategoryModal.value = false
+  showCategoryModal.value    = false
   editingCategoryIndex.value = null
   editingCategoryValue.value = ''
-  newCategory.value = ''
+  newCategory.value          = ''
 }
 
 const addCategory = () => {
-  const trimmed = newCategory.value.trim()
-  if (trimmed) {
-    if (!categories.value.includes(trimmed)) {
-      categories.value.push(trimmed)
-      newCategory.value = ''
-    } else {
-      alert('This category already exists')
-    }
-  }
+  const t = newCategory.value.trim()
+  if (!t) return
+  if (categories.value.includes(t)) { alert('This category already exists'); return }
+  categories.value.push(t)
+  newCategory.value = ''
 }
 
 const startEditCategory = (index, value) => {
   editingCategoryIndex.value = index
   editingCategoryValue.value = value
-  // Focus the input after render
-  nextTick(() => {
-    const input = document.querySelector('.category-edit-mode .form-input')
-    if (input) input.focus()
-  })
+  nextTick(() => { document.querySelector('.cat-edit-row .form-input')?.focus() })
 }
 
 const saveEditCategory = (index) => {
-  const trimmed = editingCategoryValue.value.trim()
-  if (trimmed) {
-    if (!categories.value.includes(trimmed) || categories.value[index] === trimmed) {
-      categories.value[index] = trimmed
-      cancelEditCategory()
-    } else {
-      alert('This category already exists')
-    }
-  } else {
-    alert('Category name cannot be empty')
-  }
+  const t = editingCategoryValue.value.trim()
+  if (!t) { alert('Category name cannot be empty'); return }
+  if (categories.value.includes(t) && categories.value[index] !== t) { alert('Category already exists'); return }
+  categories.value[index] = t
+  cancelEditCategory()
 }
 
-const cancelEditCategory = () => {
-  editingCategoryIndex.value = null
-  editingCategoryValue.value = ''
-}
+const cancelEditCategory = () => { editingCategoryIndex.value = null; editingCategoryValue.value = '' }
 
 const deleteCategory = (index) => {
-  const categoryName = categories.value[index]
-  const itemsInCategory = props.menu.filter(item => item.category === categoryName).length
-  
-  let message = `Delete category "${categoryName}"?`
-  if (itemsInCategory > 0) {
-    message = `There are ${itemsInCategory} item(s) in "${categoryName}". Delete this category anyway? Items will need to be reassigned.`
-  }
-  
-  if (confirm(message)) {
-    categories.value.splice(index, 1)
-  }
+  const name  = categories.value[index]
+  const count = props.menu.filter(i => i.category === name).length
+  const msg   = count > 0
+    ? `There are ${count} item(s) in "${name}". Delete this category anyway?`
+    : `Delete category "${name}"?`
+  if (confirm(msg)) categories.value.splice(index, 1)
 }
 </script>
 
 <style scoped>
+/* ── Eduardo's Resort Color Palette ── */
 .menu-section {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
-  border: 1px solid rgba(31, 141, 191, 0.1);
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-white-soft:    rgba(255,255,255,0.1);
+  --color-gray-bg:       #EEF5FB;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
 }
 
+/* ── Shell ── */
+.menu-section {
+  background: var(--color-white);
+  border-radius: 20px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 2px 16px rgba(3, 105, 161, 0.08);
+  border: 0.5px solid var(--color-gray-border);
+}
+
+/* ── Section Header ── */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.75rem;
   padding-bottom: 1rem;
-  border-bottom: 3px solid #F4C400;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid rgba(244, 196, 0, 0.3);
 }
+.section-header-left { flex: 1; min-width: 0; }
 
 .section-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #1F8DBF;
-  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-navy);
+  margin: 0 0 0.2rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
-
 .section-title::before {
   content: '';
   display: inline-block;
   width: 4px;
-  height: 2rem;
-  background: linear-gradient(180deg, #1F8DBF, #F4C400);
-  border-radius: 2px;
+  height: 1.1em;
+  background: var(--color-gold);
+  border-radius: 3px;
+  flex-shrink: 0;
 }
 
 .section-subtitle {
-  margin: 0.5rem 0 0 0;
-  color: #1E88B6;
-  font-size: 0.95rem;
-  opacity: 0.8;
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  margin: 0;
+  padding-left: 0.75rem;
 }
 
-.header-actions {
+/* ── Shared Buttons ── */
+.header-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-white);
+  color: var(--color-primary);
+  border: 1.5px solid rgba(3, 105, 161, 0.25);
+  border-radius: 12px;
+  font-weight: 600; font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.btn-secondary:hover {
+  background: var(--color-gray-bg);
+  border-color: var(--color-gold);
+  color: var(--color-navy);
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 1.1rem;
+  background: var(--color-navy);
+  color: var(--color-white);
+  border: none;
+  border-radius: 12px;
+  font-weight: 700; font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(12, 59, 94, 0.22);
+  transition: all 0.18s ease;
+}
+.btn-primary:hover {
+  background: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(3, 105, 161, 0.28);
+}
+.btn-primary i { color: var(--color-gold); }
+
+/* Gold variant for edit submit */
+.btn-gold {
+  background: #92700a;
+}
+.btn-gold:hover { background: #7a5200; }
+.btn-gold i { color: #fde68a; }
+
+/* ── Stats Chips ── */
+.stats-container {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  margin-bottom: 1.25rem;
 }
 
-.btn-category {
+.stat-chip {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  background: white;
-  color: #1F8DBF;
-  border: 2px solid rgba(31, 141, 191, 0.2);
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.925rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  gap: 0.65rem;
+  padding: 0.65rem 1rem;
+  border-radius: 14px;
+  background: var(--color-gray-bg);
+  border: 0.5px solid var(--color-gray-border);
+  flex: 1;
+  min-width: 120px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
-
-.btn-category:hover {
-  background: rgba(244, 196, 0, 0.1);
-  border-color: #F4C400;
+.stat-chip:hover {
   transform: translateY(-2px);
+  box-shadow: 0 5px 16px rgba(3, 105, 161, 0.1);
 }
 
-.btn-add-item {
-  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
+.stat-chip-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+}
+.stat-chip--blue  .stat-chip-icon { background: rgba(31, 141, 191, 0.12); color: var(--color-primary-light); }
+.stat-chip--green .stat-chip-icon { background: rgba(22, 163, 74, 0.12);  color: #16a34a; }
+.stat-chip--red   .stat-chip-icon { background: rgba(239, 68, 68, 0.1);   color: #ef4444; }
+
+.stat-chip-body  { display: flex; flex-direction: column; }
+.stat-chip-value {
+  font-size: 1.35rem; font-weight: 800; line-height: 1;
+  color: var(--color-text-dark);
+}
+.stat-chip--blue  .stat-chip-value { color: var(--color-primary-light); }
+.stat-chip--green .stat-chip-value { color: #15803d; }
+.stat-chip--red   .stat-chip-value { color: #dc2626; }
+.stat-chip-label {
+  font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--color-text-light); margin-top: 2px;
+}
+
+/* ── Controls Bar ── */
+.controls-bar {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
-}
-
-.btn-add-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
-}
-
-.btn-add-item i {
-  color: #F4C400;
-}
-
-.stats-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-/* Controls Container */
-.controls-container {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  gap: 0.65rem;
   flex-wrap: wrap;
-  background: white;
-  padding: 1.25rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
-  border: 1px solid rgba(31, 141, 191, 0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.controls-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, #1F8DBF 50%, #F4C400 50%);
+  padding: 0.85rem 1rem;
+  background: var(--color-gray-bg);
+  border-radius: 14px;
+  border: 0.5px solid var(--color-gray-border);
+  margin-bottom: 1.25rem;
 }
 
 .search-box {
-  flex: 1;
-  min-width: 250px;
-  display: flex;
-  align-items: center;
-  background: #F9FAFB;
-  border-radius: 8px;
-  padding: 0 1rem;
-  border: 2px solid rgba(31, 141, 191, 0.2);
-  transition: all 0.3s ease;
+  flex: 1; min-width: 220px;
+  position: relative;
+  display: flex; align-items: center;
 }
-
-.search-box:focus-within {
-  border-color: #F4C400;
-  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.15);
-}
-
 .search-icon {
-  color: #F4C400;
-  font-size: 0.875rem;
-  margin-right: 0.5rem;
+  position: absolute; left: 12px;
+  color: var(--color-text-light); font-size: 0.82rem; pointer-events: none;
 }
-
 .search-input {
-  border: none;
-  background: transparent;
-  padding: 0.75rem 0;
-  flex: 1;
-  font-size: 0.95rem;
-  outline: none;
-  color: #1F8DBF;
-  font-weight: 500;
+  width: 100%; height: 38px;
+  padding: 0 36px;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 10px;
+  font-size: 0.875rem; color: var(--color-text-dark);
+  background: var(--color-white);
+  outline: none; transition: all 0.15s;
 }
-
-.search-input::placeholder {
-  color: rgba(31, 141, 191, 0.4);
-  font-weight: normal;
+.search-input:focus {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(31, 141, 191, 0.1);
 }
+.search-input::placeholder { color: var(--color-text-light); }
+.search-clear {
+  position: absolute; right: 10px;
+  background: none; border: none; color: var(--color-text-light);
+  font-size: 0.7rem; cursor: pointer; padding: 4px; border-radius: 50%;
+  transition: color 0.15s;
+}
+.search-clear:hover { color: #ef4444; }
 
 .filter-select {
-  padding: 0.75rem 1rem;
-  border: 2px solid rgba(244, 196, 0, 0.3);
-  border-radius: 8px;
-  background: white;
-  color: #1F8DBF;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-  font-weight: 500;
-  min-width: 150px;
+  height: 38px; padding: 0 0.9rem;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 10px;
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  font-size: 0.875rem; font-weight: 500;
+  cursor: pointer; min-width: 148px;
+  transition: border-color 0.15s;
 }
-
-.filter-select:hover {
-  border-color: #1F8DBF;
-}
-
 .filter-select:focus {
   outline: none;
-  border-color: #1F8DBF;
-  box-shadow: 0 0 0 3px rgba(31, 141, 191, 0.15);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(31, 141, 191, 0.08);
 }
 
-/* ========================================
-   Category-Based List Layout Styles
-   ======================================== */
-
+/* ── Menu List ── */
 .menu-list {
-  margin-top: 2rem;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 2rem;
-  column-gap: 2.5rem;
+  gap: 1rem;
 }
 
-.category-section-list {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
-  break-inside: avoid;
-  page-break-inside: avoid;
+/* ── Category Block ── */
+.category-block {
+  background: var(--color-gray-bg);
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  border: 0.5px solid var(--color-gray-border);
   height: fit-content;
-  border: 1px solid rgba(31, 141, 191, 0.1);
-  transition: all 0.3s ease;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
 }
-
-.category-section-list:hover {
-  border-left: 4px solid #F4C400;
+.category-block:hover {
+  box-shadow: 0 6px 20px rgba(3, 105, 161, 0.1);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(31, 141, 191, 0.15);
 }
 
-.category-header-list {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #F4C400;
+.category-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.7rem;
+  border-bottom: 1.5px solid rgba(244, 196, 0, 0.25);
+}
+.category-header-left {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.category-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  flex-shrink: 0;
+}
+.category-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--color-navy);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.category-badge {
+  font-size: 0.68rem; font-weight: 700;
+  background: rgba(3, 105, 161, 0.08);
+  color: var(--color-primary);
+  border: 1px solid rgba(3, 105, 161, 0.18);
+  padding: 0.1rem 0.55rem; border-radius: 20px;
 }
 
-.category-title-list {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1F8DBF;
-  margin: 0;
-  font-family: 'Playfair Display', serif;
-  letter-spacing: 0.5px;
-}
-
-.category-count-badge {
-  background: rgba(244, 196, 0, 0.1);
-  color: #F4C400;
-  padding: 0.25rem 0.65rem;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border: 1px solid rgba(244, 196, 0, 0.2);
-}
-
-.items-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
+/* ── Item Rows ── */
+.items-list { display: flex; flex-direction: column; gap: 0.4rem; }
 
 .list-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: #F9FAFB;
-  border: 1px solid rgba(31, 141, 191, 0.1);
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  gap: 0.75rem;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  background: var(--color-white);
+  border: 0.5px solid var(--color-gray-border);
+  border-radius: 10px;
+  gap: 0.65rem;
+  transition: all 0.15s ease;
 }
-
 .list-item:hover {
-  background: rgba(244, 196, 0, 0.05);
-  border-color: #F4C400;
-  transform: translateX(4px);
+  background: rgba(31, 141, 191, 0.05);
+  border-color: rgba(31, 141, 191, 0.25);
+  transform: translateX(3px);
+  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.08);
 }
-
 .list-item.item-unavailable {
-  opacity: 0.6;
-  background: rgba(239, 68, 68, 0.05);
-  border-left: 4px solid #ef4444;
+  opacity: 0.58;
+  background: rgba(239, 68, 68, 0.03);
+  border-left: 3px solid #ef4444;
+  border-radius: 0 10px 10px 0;
 }
 
 .item-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: 1;
-  gap: 1rem;
+  display: flex; align-items: center;
+  justify-content: space-between; flex: 1; gap: 0.75rem; min-width: 0;
+}
+.item-details { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.item-name {
+  font-size: 0.875rem; font-weight: 600;
+  color: var(--color-text-dark);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.unavailable-tag {
+  font-size: 0.62rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap;
+  background: rgba(239, 68, 68, 0.1); color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  padding: 0.1rem 0.5rem; border-radius: 20px;
+}
+.item-price {
+  font-size: 0.95rem; font-weight: 700;
+  color: #7a5200;
+  white-space: nowrap; flex-shrink: 0;
 }
 
-.item-details {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-}
+/* ── Action Buttons ── */
+.item-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
 
-.item-name-list {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1F8DBF;
-  margin: 0;
-}
-
-.unavailable-badge {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.item-price-list {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #F4C400;
-  white-space: nowrap;
-}
-
-.item-actions {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
-}
-
-.action-btn:hover {
-  transform: scale(1.1);
-}
-
-.toggle-btn.btn-available {
-  background: rgba(31, 141, 191, 0.1);
-  color: #1F8DBF;
-}
-
-.toggle-btn.btn-available:hover {
-  background: #1F8DBF;
-  color: white;
-}
-
-.toggle-btn.btn-unavailable {
-  background: rgba(244, 196, 0, 0.1);
-  color: #F4C400;
-}
-
-.toggle-btn.btn-unavailable:hover {
-  background: #F4C400;
-  color: #1F8DBF;
-}
-
-.edit-btn {
-  background: rgba(31, 141, 191, 0.1);
-  color: #1F8DBF;
-}
-
-.edit-btn:hover {
-  background: #1F8DBF;
-  color: white;
-}
-
-.delete-btn {
-  background: rgba(244, 196, 0, 0.1);
-  color: #F4C400;
-}
-
-.delete-btn:hover {
-  background: #F4C400;
-  color: #1F8DBF;
-}
-
-/* Empty State */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  color: #1F8DBF;
-  text-align: center;
-  background: white;
-  border-radius: 12px;
-  border: 2px dashed #F4C400;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
-  grid-column: span 2;
-}
-
-.empty-icon {
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
-  color: #F4C400;
-  opacity: 0.5;
-}
-
-.empty-state p {
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
-  color: #1F8DBF;
-}
-
-.btn-add-empty {
-  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
+.act-btn {
+  width: 30px; height: 30px;
   border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
+  border: 1px solid var(--color-gray-border);
+  background: var(--color-white);
+  font-size: 0.78rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-light);
+  transition: all 0.15s ease;
 }
+.act-btn:hover { transform: translateY(-1px); }
 
-.btn-add-empty:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
+.toggle-btn--on  { color: var(--color-primary-light); }
+.toggle-btn--on:hover  { background: var(--color-primary-light); color: var(--color-white); border-color: var(--color-primary-light); }
+.toggle-btn--off { color: #92700a; }
+.toggle-btn--off:hover { background: var(--color-gold); color: var(--color-navy); border-color: var(--color-gold); }
+.edit-btn:hover   { background: var(--color-primary-light); color: var(--color-white); border-color: var(--color-primary-light); }
+.delete-btn:hover { background: #ef4444; color: var(--color-white); border-color: #ef4444; }
+
+/* ── Empty State ── */
+.empty-state {
+  grid-column: span 2;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 0.85rem;
+  padding: 4rem 2rem; text-align: center;
+  border: 2px dashed rgba(244, 196, 0, 0.4);
+  border-radius: 16px;
+  background: rgba(244, 196, 0, 0.03);
+  color: var(--color-text-light);
 }
-
-.btn-add-empty i {
-  color: #F4C400;
+.empty-icon-wrap {
+  width: 60px; height: 60px; border-radius: 16px;
+  background: rgba(3, 105, 161, 0.08); color: var(--color-primary-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
 }
+.empty-state p { font-size: 0.95rem; font-weight: 600; color: var(--color-text-dark); margin: 0; }
 
-/* Modal Styles */
+/* ── Modal Overlay ── */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(31, 141, 191, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-  animation: fadeIn 0.3s ease;
+  position: fixed; inset: 0;
+  background: rgba(12, 59, 94, 0.55);
+  backdrop-filter: blur(5px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 1rem;
+  animation: fadeIn 0.2s ease;
 }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.modal-box {
+  background: var(--color-white);
+  border-radius: 20px;
+  width: 100%; max-width: 480px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(12, 59, 94, 0.22);
+  animation: slideUp 0.22s ease;
 }
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px rgba(31, 141, 191, 0.15);
-  max-width: 500px;
-  width: 100%;
-  animation: slideUp 0.3s ease;
-  border: 2px solid #F4C400;
-}
-
-.modal-wide-category {
-  max-width: 600px;
-}
-
+.modal-box--wide { max-width: 560px; }
 @keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  from { transform: translateY(18px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 2px solid #F4C400;
+/* Modal header */
+.modal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.1rem 1.4rem;
+  background: var(--color-navy);
+  border-radius: 20px 20px 0 0;
+  border-bottom: 3px solid var(--color-gold);
 }
+.modal-head-left { display: flex; align-items: center; gap: 0.8rem; }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: #1F8DBF;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+.modal-head-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; color: var(--color-white); flex-shrink: 0;
 }
+.modal-head-icon--gold { background: rgba(244, 196, 0, 0.2); color: var(--color-gold); }
 
-.btn-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #1F8DBF;
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.3s;
-}
+.modal-title { font-size: 1rem; font-weight: 700; color: var(--color-white); margin: 0; }
+.modal-sub   { font-size: 0.72rem; color: rgba(255, 255, 255, 0.6); margin: 2px 0 0; }
 
-.btn-close:hover {
-  color: #F4C400;
+.modal-close-btn {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--color-white); font-size: 0.85rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
 }
+.modal-close-btn:hover { background: rgba(255, 255, 255, 0.28); }
 
-.modal-form {
-  padding: 1.5rem;
-}
+/* ── Modal Form ── */
+.modal-form { padding: 1.4rem; display: flex; flex-direction: column; gap: 0.1rem; }
+.form-group  { margin-bottom: 1rem; }
+.form-row    { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
-.form-group {
-  margin-bottom: 1.5rem;
+.form-label {
+  display: block; margin-bottom: 0.4rem;
+  font-size: 0.72rem; font-weight: 700;
+  color: var(--color-text-light);
+  text-transform: uppercase; letter-spacing: 0.4px;
 }
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: #1F8DBF;
-  font-size: 0.95rem;
-}
+.req { color: #ef4444; margin-left: 2px; }
 
 .form-input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 2px solid rgba(31, 141, 191, 0.2);
-  border-radius: 8px;
-  font-size: 0.95rem;
-  transition: all 0.3s;
-  box-sizing: border-box;
-  background: white;
-  color: #1E88B6;
+  width: 100%; padding: 0.65rem 0.9rem;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 10px; font-size: 0.9rem;
+  color: var(--color-text-dark);
+  background: var(--color-white);
+  transition: all 0.15s; box-sizing: border-box;
 }
-
 .form-input:focus {
   outline: none;
-  border-color: #F4C400;
-  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.15);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(31, 141, 191, 0.1);
 }
 
-.form-group.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0;
-}
+.form-checkbox-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0; }
+.form-checkbox     { width: 16px; height: 16px; accent-color: var(--color-primary-light); cursor: pointer; }
+.checkbox-label    { margin: 0; text-transform: none; letter-spacing: 0; font-size: 0.875rem; color: var(--color-text-dark); }
 
-.form-checkbox {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #F4C400;
+/* ── Modal Footer ── */
+.modal-foot {
+  display: flex; gap: 0.6rem; justify-content: flex-end;
+  padding: 1rem 1.4rem;
+  border-top: 1px solid var(--color-gray-border);
+  background: var(--color-gray-bg);
+  border-radius: 0 0 20px 20px;
 }
-
-.form-group.checkbox label {
-  margin-bottom: 0;
-  cursor: pointer;
-  color: #1F8DBF;
-}
-
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 2px solid rgba(244, 196, 0, 0.3);
-}
-
-.btn-cancel,
-.btn-submit {
-  flex: 1;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-}
+.modal-foot--right { justify-content: flex-end; }
 
 .btn-cancel {
-  background: rgba(31, 141, 191, 0.1);
-  color: #1F8DBF;
-  border: 1px solid rgba(31, 141, 191, 0.2);
+  padding: 0.55rem 1.1rem; border-radius: 10px;
+  background: var(--color-white); color: var(--color-text-light);
+  border: 1.5px solid var(--color-gray-border);
+  font-size: 0.875rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-cancel:hover { border-color: var(--color-primary-light); color: var(--color-primary); }
+
+/* ── Category Modal Body ── */
+.cat-modal-body {
+  padding: 1.4rem;
+  max-height: 65vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 1.25rem;
 }
 
-.btn-cancel:hover {
-  background: #F4C400;
-  color: #1F8DBF;
-  border-color: #F4C400;
-}
-
-.btn-submit {
-  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
-}
-
-.btn-submit:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
-}
-
-.btn-submit i {
-  color: #F4C400;
-}
-
-/* Category Modal Styles */
-.category-modal-body {
-  padding: 1.5rem;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.category-section {
-  margin-bottom: 2rem;
-}
-
-.category-section.add-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
+.cat-section { display: flex; flex-direction: column; gap: 0.65rem; }
+.cat-section--add {
+  padding-top: 1rem;
   border-top: 2px dashed rgba(244, 196, 0, 0.3);
 }
 
-.category-section-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1F8DBF;
-  margin: 0 0 1rem 0;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid rgba(244, 196, 0, 0.3);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.category-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.category-item {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem;
-  background: rgba(31, 141, 191, 0.05);
-  border: 1px solid rgba(31, 141, 191, 0.1);
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.category-item:hover {
-  background: rgba(244, 196, 0, 0.05);
-  border-color: #F4C400;
-}
-
-.category-display,
-.category-edit-mode {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: 0.75rem;
-}
-
-.category-name {
-  flex: 1;
-  font-weight: 500;
-  color: #1F8DBF;
-}
-
-.category-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-edit-cat {
-  background: rgba(31, 141, 191, 0.1);
-  color: #1F8DBF;
-}
-
-.btn-edit-cat:hover {
-  background: #1F8DBF;
-  color: white;
-}
-
-.btn-delete-cat {
-  background: rgba(244, 196, 0, 0.1);
-  color: #F4C400;
-}
-
-.btn-delete-cat:hover {
-  background: #F4C400;
-  color: #1F8DBF;
-}
-
-.btn-save {
-  background: rgba(31, 141, 191, 0.1);
-  color: #1F8DBF;
-}
-
-.btn-save:hover {
-  background: #1F8DBF;
-  color: white;
-}
-
-.btn-cancel-edit {
-  background: rgba(244, 196, 0, 0.1);
-  color: #F4C400;
-}
-
-.btn-cancel-edit:hover {
-  background: #F4C400;
-  color: #1F8DBF;
-}
-
-.add-category-form {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.add-category-form .form-input {
-  flex: 1;
-}
-
-.empty-categories {
-  text-align: center;
-  padding: 2rem;
-  color: #1F8DBF;
-  opacity: 0.5;
-}
-
-.empty-categories i {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  color: #F4C400;
-}
-
-.empty-categories p {
+.cat-section-title {
+  font-size: 0.75rem; font-weight: 700;
+  color: var(--color-navy);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  display: flex; align-items: center; gap: 0.4rem;
   margin: 0;
 }
+.cat-section-title i { color: var(--color-primary-light); }
 
-.category-info-note {
-  margin-top: 1.5rem;
-  padding: 0.75rem;
-  background: rgba(31, 141, 191, 0.05);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #1F8DBF;
-  font-size: 0.85rem;
+.cat-list { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.cat-item {
+  padding: 0.6rem 0.9rem;
+  background: var(--color-gray-bg);
+  border: 0.5px solid var(--color-gray-border);
+  border-radius: 10px;
+  transition: border-color 0.15s;
 }
+.cat-item:hover { border-color: rgba(244, 196, 0, 0.4); }
 
-.category-info-note i {
-  color: #F4C400;
+.cat-display-row,
+.cat-edit-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.75rem; width: 100%;
 }
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 1rem 1.5rem;
-  border-top: 2px solid rgba(244, 196, 0, 0.3);
-  background: rgba(31, 141, 191, 0.02);
+.cat-name {
+  flex: 1; font-size: 0.875rem; font-weight: 500;
+  color: var(--color-text-dark);
+  display: flex; align-items: center; gap: 0.4rem;
 }
+.cat-tag-icon { color: var(--color-primary-light); font-size: 0.72rem; }
+.cat-item-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
 
-/* Responsive */
+.add-cat-form { display: flex; gap: 0.6rem; }
+.add-cat-form .form-input { flex: 1; }
+
+.empty-cats {
+  text-align: center; padding: 1.5rem;
+  color: var(--color-text-light); font-size: 0.85rem;
+}
+.empty-cats i { font-size: 1.5rem; color: var(--color-gold); display: block; margin-bottom: 0.4rem; }
+
+.cat-info-note {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  background: rgba(3, 105, 161, 0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(3, 105, 161, 0.12);
+  font-size: 0.75rem; color: var(--color-text-light); line-height: 1.5;
+}
+.cat-info-note i { color: var(--color-primary-light); flex-shrink: 0; margin-top: 1px; }
+
+/* ── Responsive ── */
 @media (max-width: 1024px) {
-  .menu-list {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-  
-  .empty-state {
-    grid-column: span 1;
-  }
+  .menu-list    { grid-template-columns: 1fr; }
+  .empty-state  { grid-column: span 1; }
 }
-
 @media (max-width: 768px) {
-  .menu-section {
-    padding: 1.5rem;
-  }
-
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .header-actions {
-    width: 100%;
-  }
-
-  .btn-category,
-  .btn-add-item {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .stats-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-
-  .controls-container {
-    flex-direction: column;
-  }
-
-  .search-box {
-    min-width: auto;
-  }
-
-  .filter-select {
-    width: 100%;
-  }
-
-  .category-section-list {
-    padding: 1.25rem;
-  }
-
-  .category-title-list {
-    font-size: 1.125rem;
-  }
-
-  .list-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-
-  .item-info {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-  }
-
-  .item-details {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .item-actions {
-    justify-content: flex-end;
-  }
-
-  .item-price-list {
-    font-size: 1rem;
-  }
-
-  .section-title {
-    font-size: 1.5rem;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .add-category-form {
-    flex-direction: column;
-  }
-
-  .add-category-form .btn-submit {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .stats-container {
-    grid-template-columns: 1fr;
-  }
+  .menu-section   { padding: 1rem; border-radius: 14px; }
+  .section-header { flex-direction: column; align-items: flex-start; }
+  .header-actions { width: 100%; }
+  .btn-secondary, .btn-primary { flex: 1; justify-content: center; }
+  .stats-container { flex-direction: column; }
+  .controls-bar    { flex-direction: column; }
+  .filter-select   { width: 100%; }
+  .form-row        { grid-template-columns: 1fr; }
+  .add-cat-form    { flex-direction: column; }
+  .list-item       { flex-wrap: wrap; }
 }
 </style>

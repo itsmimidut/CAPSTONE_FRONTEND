@@ -10,10 +10,10 @@
 
         <!-- MULTIPLE BOOKINGS VIEW - List -->
         <div v-if="selectedCheckinsList.length > 1 && !selectedBookingId" class="bookings-list-view">
-          <p class="text-xs text-gray-500 mb-3">{{ selectedCheckinsList.length }} booking(s) on this date</p>
+          <p class="list-count">{{ selectedCheckinsList.length }} booking(s) on this date</p>
           <div class="bookings-list">
-            <div 
-              v-for="booking in selectedCheckinsList" 
+            <div
+              v-for="booking in selectedCheckinsList"
               :key="booking.id"
               @click="selectedBookingId = booking.id"
               class="booking-list-item"
@@ -37,15 +37,13 @@
 
         <!-- SINGLE OR SELECTED BOOKING - Details -->
         <div v-else-if="selectedCheckinsList.length > 0" class="booking-details-view">
-          <!-- Back button for selected booking -->
           <div v-if="selectedCheckinsList.length > 1 && selectedBookingId" class="back-button">
             <button @click="selectedBookingId = null" class="btn-back">
-              <i class="fas fa-arrow-left"></i> Back to list
+              <i class="fas fa-arrow-left"></i> Back
             </button>
           </div>
 
           <div class="booking-card">
-            <!-- Back button for selected booking -->
             <div v-if="selectedCheckinsList.length > 1 && selectedBookingId" class="back-button-bar">
               <button @click="selectedBookingId = null" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Back
@@ -69,37 +67,37 @@
             <!-- Details -->
             <div class="checkin-details">
               <div class="detail-row">
-                <span class="label">Code:</span>
+                <span class="label">Code</span>
                 <span class="value">{{ selectedBooking.reservation_code || 'N/A' }}</span>
               </div>
               <div class="detail-row">
-                <span class="label">Check-in:</span>
+                <span class="label">Check-in</span>
                 <span class="value">{{ formatDate(selectedBooking.check_in) }}</span>
               </div>
               <div class="detail-row">
-                <span class="label">Check-out:</span>
+                <span class="label">Check-out</span>
                 <span class="value">{{ formatDate(selectedBooking.check_out) }}</span>
               </div>
               <div class="detail-row">
-                <span class="label">Type:</span>
+                <span class="label">Type</span>
                 <span :class="getItemBadgeClass(selectedBooking.items_list)" class="value item-badge">
                   {{ getItemLabel(selectedBooking.items_list) }}
                 </span>
               </div>
               <div class="detail-row">
-                <span class="label">Guests:</span>
+                <span class="label">Guests</span>
                 <span class="value">
                   <span v-if="selectedBooking.adults > 0">{{ selectedBooking.adults }} Adult<span v-if="selectedBooking.adults > 1">s</span></span>
                   <span v-if="selectedBooking.children > 0" class="ml-2">{{ selectedBooking.children }} Child<span v-if="selectedBooking.children > 1">ren</span></span>
                 </span>
               </div>
               <div class="detail-row">
-                <span class="label">Payment:</span>
+                <span class="label">Payment</span>
                 <span class="value">{{ selectedBooking.payment_method || 'N/A' }}</span>
               </div>
               <div class="detail-row">
-                <span class="label">Total:</span>
-                <span class="value font-semibold">₱{{ parseFloat(selectedBooking.total || 0).toFixed(2) }}</span>
+                <span class="label">Total</span>
+                <span class="value total-value">₱{{ parseFloat(selectedBooking.total || 0).toFixed(2) }}</span>
               </div>
             </div>
 
@@ -112,17 +110,17 @@
                 class="action-btn confirm-btn"
                 title="Confirm booking"
               >
-                <i class="fas fa-check"></i>
+                <i class="fas fa-check"></i> Confirm
               </button>
-              <button 
+              <button
                 @click="cancelBooking(selectedBooking.id)"
                 :disabled="loadingBookingId !== null"
                 class="action-btn cancel-btn"
                 title="Cancel booking"
               >
-                <i class="fas fa-times"></i>
+                <i class="fas fa-times"></i> Cancel
               </button>
-              <button 
+              <button
                 @click="deleteBooking(selectedBooking.id)"
                 :disabled="loadingBookingId !== null"
                 class="action-btn delete-btn"
@@ -135,14 +133,16 @@
         </div>
 
         <div v-else class="empty-state">
-          <i class="fas fa-inbox text-4xl text-gray-300 mb-3"></i>
-          <p class="text-gray-500">No check-ins for this date</p>
+          <i class="fas fa-inbox"></i>
+          <p>No check-ins for this date</p>
         </div>
       </div>
 
       <div v-else class="panel-empty">
-        <i class="fas fa-calendar-alt text-4xl text-gray-300 mb-3"></i>
-        <p class="text-gray-500">Select a date to view check-ins</p>
+        <div class="panel-empty-icon">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <p>Select a date to view check-ins</p>
       </div>
     </div>
 
@@ -150,9 +150,9 @@
     <div class="calendar-main">
       <!-- Calendar Header -->
       <div class="calendar-header">
-        <div>
+        <div class="header-title-block">
           <h3>Reservation Calendar</h3>
-          <p class="text-sm text-gray-500">View check-ins by date</p>
+          <p>View and manage check-ins by date</p>
         </div>
         <div class="month-navigation">
           <button @click="prevMonth" class="nav-btn">
@@ -167,19 +167,19 @@
 
       <!-- Occupancy Legend -->
       <div class="occupancy-legend">
-        <div class="legend-title">Occupancy Status:</div>
+        <span class="legend-title">Occupancy:</span>
         <div class="legend-items">
           <div class="legend-item">
-            <div class="legend-dot occupancy-available"></div>
-            <span>Available (0-39%)</span>
+            <div class="legend-dot legend-available"></div>
+            <span>Available (0–39%)</span>
           </div>
           <div class="legend-item">
-            <div class="legend-dot occupancy-partial"></div>
-            <span>Partial (40-79%)</span>
+            <div class="legend-dot legend-partial"></div>
+            <span>Partial (40–79%)</span>
           </div>
           <div class="legend-item">
-            <div class="legend-dot occupancy-full"></div>
-            <span>Full (80-100%)</span>
+            <div class="legend-dot legend-full"></div>
+            <span>Full (80–100%)</span>
           </div>
         </div>
       </div>
@@ -187,16 +187,12 @@
       <!-- Calendar Grid -->
       <div class="calendar-container">
         <div class="weekdays">
-          <div v-for="day in weekDays" :key="day" class="weekday">
-            {{ day }}
-          </div>
+          <div v-for="day in weekDays" :key="day" class="weekday">{{ day }}</div>
         </div>
 
         <div class="dates-grid">
-          <!-- Empty cells for days before month starts -->
           <div v-for="i in firstDayOfMonth" :key="`empty-${i}`" class="date-cell empty"></div>
 
-          <!-- Calendar dates -->
           <div
             v-for="date in daysInMonth"
             :key="date"
@@ -205,21 +201,17 @@
             class="date-cell"
           >
             <div class="date-number">{{ date }}</div>
-            
-            <!-- Occupancy Indicator -->
+
             <div v-if="!isDateInPast(date)" class="occupancy-indicator" :title="`${getOccupancyDisplay(date).count} items occupied`">
-              <div :class="`occupancy-dot occupancy-${getOccupancyStatus(date).status}`"></div>
+              <div :class="`occupancy-dot occ-${getOccupancyStatus(date).status}`"></div>
             </div>
-            
+
             <div v-if="getReservationsForDate(date).length > 0" class="reservation-badge">
               {{ getReservationsForDate(date).length }}
             </div>
+
             <div v-if="getReservationsForDate(date).length > 0" class="view-button">
-              <button
-                @click.stop="openCheckInsList(date)"
-                class="btn-view"
-                title="View check-ins"
-              >
+              <button @click.stop="openCheckInsList(date)" class="btn-view" title="View check-ins">
                 View
               </button>
             </div>
@@ -242,11 +234,10 @@ const props = defineProps({
 
 const emit = defineEmits(['confirm', 'cancel', 'delete'])
 
-// Facility Capacity Configuration (UPDATE THESE WITH YOUR ACTUAL COUNTS)
 const facilityCapacity = {
-  rooms: 15,      // Total number of rooms
-  cottages: 8,    // Total number of cottages
-  events: 5       // Total event space slots
+  rooms: 15,
+  cottages: 8,
+  events: 5
 }
 
 const currentDate = ref(new Date())
@@ -257,26 +248,15 @@ const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 const loadingBookingId = ref(null)
 
 const daysInMonth = computed(() => {
-  return new Date(
-    currentDate.value.getFullYear(),
-    currentDate.value.getMonth() + 1,
-    0
-  ).getDate()
+  return new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() + 1, 0).getDate()
 })
 
 const firstDayOfMonth = computed(() => {
-  return new Date(
-    currentDate.value.getFullYear(),
-    currentDate.value.getMonth(),
-    1
-  ).getDay()
+  return new Date(currentDate.value.getFullYear(), currentDate.value.getMonth(), 1).getDay()
 })
 
 const formatMonthYear = (date) => {
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ]
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
   return `${months[date.getMonth()]} ${date.getFullYear()}`
 }
 
@@ -288,16 +268,11 @@ const formatDate = (dateStr) => {
 }
 
 const formatCheckinDate = (date) => {
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ]
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
   return `${months[currentDate.value.getMonth()]} ${date}, ${currentDate.value.getFullYear()}`
 }
 
-const formatStatus = (status) => {
-  return status.replace(/_/g, ' ').toUpperCase()
-}
+const formatStatus = (status) => status.replace(/_/g, ' ').toUpperCase()
 
 const getStatusClass = (status) => {
   const classes = {
@@ -313,75 +288,39 @@ const getStatusClass = (status) => {
 
 const getItemLabel = (itemsList) => {
   if (!itemsList || itemsList === 'N/A') return 'Other'
-  
   const itemsStr = String(itemsList).toLowerCase()
-  
   if (itemsStr.includes('swimming lesson')) {
     const match = String(itemsList).match(/Swimming Lesson - (.+?)(?:,|$)/i)
-    if (match) {
-      return `🏊 Swimming: ${match[1].trim()}`
-    }
-    return '🏊 Swimming Lesson'
+    return match ? `🏊 Swimming: ${match[1].trim()}` : '🏊 Swimming Lesson'
   }
-  
-  if (itemsStr.includes('deluxe room') || itemsStr.includes('room')) {
-    return '🏨 Room'
-  }
-  
-  if (itemsStr.includes('cottage')) {
-    return '🏠 Cottage'
-  }
-  
-  if (itemsStr.includes('event')) {
-    return '🎉 Event'
-  }
-  
+  if (itemsStr.includes('deluxe room') || itemsStr.includes('room')) return '🏨 Room'
+  if (itemsStr.includes('cottage')) return '🏠 Cottage'
+  if (itemsStr.includes('event')) return '🎉 Event'
   return String(itemsList)
 }
 
 const getItemBadgeClass = (itemsList) => {
   if (!itemsList || itemsList === 'N/A') return 'badge-other'
-  
   const itemsStr = String(itemsList).toLowerCase()
-  
-  if (itemsStr.includes('swimming')) {
-    return 'badge-swimming'
-  }
-  if (itemsStr.includes('room')) {
-    return 'badge-room'
-  }
-  if (itemsStr.includes('cottage')) {
-    return 'badge-cottage'
-  }
-  if (itemsStr.includes('event')) {
-    return 'badge-event'
-  }
-  
+  if (itemsStr.includes('swimming')) return 'badge-swimming'
+  if (itemsStr.includes('room')) return 'badge-room'
+  if (itemsStr.includes('cottage')) return 'badge-cottage'
+  if (itemsStr.includes('event')) return 'badge-event'
   return 'badge-other'
 }
 
 const parseSwimmingDetails = (itemsDescriptions) => {
   if (!itemsDescriptions) return null
-  
   try {
     const descriptions = itemsDescriptions.split('|||')
-    
     for (const desc of descriptions) {
       if (!desc || desc === 'null') continue
-      
       try {
         const parsed = JSON.parse(desc)
-        if (parsed && parsed.dates && Array.isArray(parsed.dates)) {
-          return parsed
-        }
-      } catch (e) {
-        continue
-      }
+        if (parsed && parsed.dates && Array.isArray(parsed.dates)) return parsed
+      } catch (e) { continue }
     }
-  } catch (error) {
-    console.error('Error parsing swimming details:', error)
-  }
-  
+  } catch (error) { console.error('Error parsing swimming details:', error) }
   return null
 }
 
@@ -393,9 +332,7 @@ const isSwimmingBooking = (itemsList) => {
 const getCheckInDate = (booking) => {
   if (isSwimmingBooking(booking.items_list)) {
     const swimmingDetails = parseSwimmingDetails(booking.items_descriptions)
-    if (swimmingDetails && swimmingDetails.dates && swimmingDetails.dates.length > 0) {
-      return new Date(swimmingDetails.dates[0])
-    }
+    if (swimmingDetails?.dates?.length > 0) return new Date(swimmingDetails.dates[0])
   }
   return new Date(booking.check_in)
 }
@@ -403,35 +340,17 @@ const getCheckInDate = (booking) => {
 const isDateInPast = (date) => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  
-  const targetDate = new Date(
-    currentDate.value.getFullYear(),
-    currentDate.value.getMonth(),
-    date
-  )
+  const targetDate = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth(), date)
   targetDate.setHours(0, 0, 0, 0)
-  
   return targetDate < today
 }
 
 const getOccupancyForDate = (date) => {
-  const targetDate = new Date(
-    currentDate.value.getFullYear(),
-    currentDate.value.getMonth(),
-    date
-  )
-
-  let occupancy = {
-    rooms: 0,
-    cottages: 0,
-    events: 0
-  }
-
+  const targetDate = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth(), date)
+  let occupancy = { rooms: 0, cottages: 0, events: 0 }
   props.bookings.forEach(booking => {
     const checkInDate = getCheckInDate(booking)
     const checkOutDate = new Date(booking.check_out)
-    
-    // Check if booking overlaps with this date
     if (
       checkInDate.getFullYear() === targetDate.getFullYear() &&
       checkInDate.getMonth() === targetDate.getMonth() &&
@@ -440,75 +359,38 @@ const getOccupancyForDate = (date) => {
       checkOutDate.getMonth() === targetDate.getMonth() &&
       checkOutDate.getDate() >= targetDate.getDate()
     ) {
-      // Count by item type
       const itemsStr = String(booking.items_list || '').toLowerCase()
-      if (itemsStr.includes('room')) {
-        occupancy.rooms++
-      } else if (itemsStr.includes('cottage')) {
-        occupancy.cottages++
-      } else if (itemsStr.includes('event') || itemsStr.includes('swimming')) {
-        occupancy.events++
-      }
+      if (itemsStr.includes('room')) occupancy.rooms++
+      else if (itemsStr.includes('cottage')) occupancy.cottages++
+      else if (itemsStr.includes('event') || itemsStr.includes('swimming')) occupancy.events++
     }
   })
-
   return occupancy
 }
 
 const getOccupancyStatus = (date) => {
   const occupancy = getOccupancyForDate(date)
-  
-  // Calculate occupancy percentages
   const roomPercent = (occupancy.rooms / facilityCapacity.rooms) * 100
   const cottagePercent = (occupancy.cottages / facilityCapacity.cottages) * 100
   const eventPercent = (occupancy.events / facilityCapacity.events) * 100
-  
-  // Determine overall status based on all facilities
   const avgPercent = (roomPercent + cottagePercent + eventPercent) / 3
-  
   let status = 'available'
-  if (avgPercent >= 80) {
-    status = 'full'
-  } else if (avgPercent >= 40) {
-    status = 'partial'
-  }
-  
-  return {
-    status,
-    occupancy,
-    percentages: {
-      rooms: Math.round(roomPercent),
-      cottages: Math.round(cottagePercent),
-      events: Math.round(eventPercent),
-      avg: Math.round(avgPercent)
-    }
-  }
+  if (avgPercent >= 80) status = 'full'
+  else if (avgPercent >= 40) status = 'partial'
+  return { status, occupancy, percentages: { rooms: Math.round(roomPercent), cottages: Math.round(cottagePercent), events: Math.round(eventPercent), avg: Math.round(avgPercent) } }
 }
 
 const getOccupancyDisplay = (date) => {
   const { status, occupancy } = getOccupancyStatus(date)
   const total = occupancy.rooms + occupancy.cottages + occupancy.events
-  return {
-    status,
-    count: total
-  }
+  return { status, count: total }
 }
 
 const getReservationsForDate = (date) => {
-  const targetDate = new Date(
-    currentDate.value.getFullYear(),
-    currentDate.value.getMonth(),
-    date
-  )
-
-  // Don't show reservations for past dates
-  if (isDateInPast(date)) {
-    return []
-  }
-
+  const targetDate = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth(), date)
+  if (isDateInPast(date)) return []
   return props.bookings.filter(booking => {
     const checkInDate = getCheckInDate(booking)
-    
     return (
       checkInDate.getFullYear() === targetDate.getFullYear() &&
       checkInDate.getMonth() === targetDate.getMonth() &&
@@ -520,63 +402,33 @@ const getReservationsForDate = (date) => {
 const getDayClass = (date) => {
   const reservations = getReservationsForDate(date)
   const today = new Date()
-  const isToday = (
-    date === today.getDate() &&
-    currentDate.value.getMonth() === today.getMonth() &&
-    currentDate.value.getFullYear() === today.getFullYear()
-  )
+  const isToday = (date === today.getDate() && currentDate.value.getMonth() === today.getMonth() && currentDate.value.getFullYear() === today.getFullYear())
   const isPast = isDateInPast(date)
   const { status } = getOccupancyStatus(date)
-
   return {
     today: isToday,
     'has-reservations': reservations.length > 0,
     'past-date': isPast,
-    [`occupancy-${status}`]: true
+    [`occ-cell-${status}`]: true
   }
 }
 
-const prevMonth = () => {
-  currentDate.value = new Date(
-    currentDate.value.getFullYear(),
-    currentDate.value.getMonth() - 1
-  )
-}
-
-const nextMonth = () => {
-  currentDate.value = new Date(
-    currentDate.value.getFullYear(),
-    currentDate.value.getMonth() + 1
-  )
-}
+const prevMonth = () => { currentDate.value = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() - 1) }
+const nextMonth = () => { currentDate.value = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() + 1) }
 
 const selectDate = (date) => {
-  // Don't allow selecting past dates
-  if (isDateInPast(date)) {
-    return
-  }
-  
+  if (isDateInPast(date)) return
   const reservations = getReservationsForDate(date)
-  if (reservations.length > 0) {
-    selectedCheckinDate.value = date
-    showCheckinModal.value = true
-  }
+  if (reservations.length > 0) { selectedCheckinDate.value = date; showCheckinModal.value = true }
 }
 
 const openCheckInsList = (date) => {
-  // Don't allow opening past dates
-  if (isDateInPast(date)) {
-    return
-  }
-  
+  if (isDateInPast(date)) return
   selectedCheckinDate.value = date
   showCheckinModal.value = true
 }
 
-const closeCheckinModal = () => {
-  showCheckinModal.value = false
-  selectedCheckinDate.value = null
-}
+const closeCheckinModal = () => { showCheckinModal.value = false; selectedCheckinDate.value = null }
 
 const selectedCheckinsList = computed(() => {
   if (!selectedCheckinDate.value) return []
@@ -584,97 +436,100 @@ const selectedCheckinsList = computed(() => {
 })
 
 const selectedBooking = computed(() => {
-  if (!selectedBookingId.value) {
-    // Return first booking if only one exists
-    return selectedCheckinsList.value.length === 1 ? selectedCheckinsList.value[0] : null
-  }
-  // Return the selected booking by ID
+  if (!selectedBookingId.value) return selectedCheckinsList.value.length === 1 ? selectedCheckinsList.value[0] : null
   return selectedCheckinsList.value.find(b => b.id === selectedBookingId.value) || selectedCheckinsList.value[0]
 })
 
-// Reset selected booking when date changes
-watch(selectedCheckinDate, () => {
-  selectedBookingId.value = null
-})
+watch(selectedCheckinDate, () => { selectedBookingId.value = null })
 
-const closeModalAfterAction = () => {
-  closeCheckinModal()
-}
+const closeModalAfterAction = () => closeCheckinModal()
+defineExpose({ closeModalAfterAction })
 
-defineExpose({
-  closeModalAfterAction
-})
-
-const confirmBooking = async (id) => {
-  if (!confirm('Confirm this booking?')) return
-  emit('confirm', id)
-}
-
-const cancelBooking = async (id) => {
-  if (!confirm('Cancel this booking?')) return
-  emit('cancel', id)
-}
-
-const deleteBooking = async (id) => {
-  if (!confirm('Delete this booking permanently?')) return
-  emit('delete', id)
-}
+const confirmBooking = async (id) => { if (!confirm('Confirm this booking?')) return; emit('confirm', id) }
+const cancelBooking = async (id) => { if (!confirm('Cancel this booking?')) return; emit('cancel', id) }
+const deleteBooking = async (id) => { if (!confirm('Delete this booking permanently?')) return; emit('delete', id) }
 </script>
 
 <style scoped>
+/* ── Eduardo's Resort Palette ── */
+.calendar-wrapper {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-gray-bg:       #f9fafb;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
+
+  /* Semantic occupancy colors */
+  --occ-available:       #10b981;
+  --occ-available-soft:  rgba(16, 185, 129, 0.08);
+  --occ-available-hover: rgba(16, 185, 129, 0.15);
+  --occ-partial:         #f59e0b;
+  --occ-partial-soft:    rgba(245, 158, 11, 0.08);
+  --occ-partial-hover:   rgba(245, 158, 11, 0.15);
+  --occ-full:            #ef4444;
+  --occ-full-soft:       rgba(239, 68, 68, 0.08);
+  --occ-full-hover:      rgba(239, 68, 68, 0.15);
+}
+
+/* ── Wrapper ── */
 .calendar-wrapper {
   display: flex;
-  gap: 20px;
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
+  gap: 0;
+  background: var(--color-white);
+  border-radius: 8px;
+  overflow: hidden;
   margin: 24px 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  min-height: 700px;
+  box-shadow: 0 2px 16px rgba(12, 59, 94, 0.1), 0 0 0 1px rgba(12, 59, 94, 0.06);
+  min-height: 680px;
 }
 
-.calendar-main {
-  flex: 1;
-  width: 70%;
-  display: flex;
-  flex-direction: column;
-}
-
+/* ══════════════════════════════════
+   SIDE PANEL
+══════════════════════════════════ */
 .bookings-panel {
-  width: 30%;
-  border-right: 1px solid #e5e7eb;
-  padding-right: 20px;
-  margin-right: 20px;
-  overflow-y: auto;
-  min-height: 700px;
+  width: 288px;
+  flex-shrink: 0;
+  background: var(--color-gray-bg);
+  border-right: 2px solid var(--color-gray-border);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .panel-content {
   display: flex;
   flex-direction: column;
   height: 100%;
-  flex: 1;
+  overflow: hidden;
 }
 
+/* Panel header — navy bar matching sidebar */
 .panel-header {
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--color-navy);
+  padding: 18px 20px 16px;
+  border-bottom: 2px solid var(--color-gold);
+  flex-shrink: 0;
 }
 
 .panel-header h3 {
-  margin: 0 0 4px 0;
-  font-size: 1.1rem;
-  color: #1f2937;
-  font-weight: 600;
+  margin: 0 0 3px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-white);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .panel-date {
   margin: 0;
-  font-size: 0.875rem;
-  color: #0ea5e9;
+  font-size: 0.8rem;
+  color: var(--color-gold);
   font-weight: 600;
 }
 
@@ -684,108 +539,400 @@ const deleteBooking = async (id) => {
   align-items: center;
   justify-content: center;
   height: 100%;
+  padding: 32px 20px;
   text-align: center;
-  color: #6b7280;
+  gap: 14px;
+}
+
+.panel-empty-icon {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  background: rgba(3, 105, 161, 0.1);
+  border: 1.5px solid rgba(3, 105, 161, 0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+  color: var(--color-primary-light);
 }
 
 .panel-empty p {
-  margin-top: 12px;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-light);
+  font-weight: 500;
+  line-height: 1.5;
 }
 
-.checkins-list {
+/* List count label */
+.list-count {
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+  font-weight: 600;
+  padding: 12px 16px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Bookings list */
+.bookings-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 6px;
+  padding: 8px 12px 16px;
+  overflow-y: auto;
+}
+
+.bookings-list::-webkit-scrollbar { width: 4px; }
+.bookings-list::-webkit-scrollbar-track { background: transparent; }
+.bookings-list::-webkit-scrollbar-thumb { background: var(--color-gray-border); border-radius: 4px; }
+
+.booking-list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--color-white);
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.15s;
+}
+
+.booking-list-item:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 2px 8px rgba(3, 105, 161, 0.12);
+  transform: translateX(2px);
+}
+
+.item-avatar {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  background: var(--color-navy);
+  color: var(--color-gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 700;
+  flex-shrink: 0;
+}
+
+.item-info { flex: 1; min-width: 0; }
+
+.item-name {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+}
+
+.item-code {
+  margin: 2px 0 0;
+  font-size: 0.7rem;
+  color: var(--color-text-light);
+  text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+}
+
+.item-arrow { color: var(--color-gray-border); font-size: 0.7rem; flex-shrink: 0; }
+
+/* ── Booking details card ── */
+.booking-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.back-button-bar {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-gray-border);
+  background: var(--color-white);
+  flex-shrink: 0;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(3, 105, 161, 0.08);
+  border: 1.5px solid rgba(3, 105, 161, 0.2);
+  color: var(--color-primary);
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-back:hover {
+  background: rgba(3, 105, 161, 0.15);
+  border-color: var(--color-primary);
+}
+
+/* Guest header */
+.checkin-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-gray-border);
+  background: var(--color-white);
+  flex-shrink: 0;
+}
+
+.guest-avatar {
+  width: 38px; height: 38px;
+  border-radius: 8px;
+  background: var(--color-navy);
+  color: var(--color-gold);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.guest-details { flex: 1; min-width: 0; }
+
+.guest-details h4 {
+  margin: 0 0 2px;
+  color: var(--color-text-dark);
+  font-size: 0.82rem;
+  font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.email {
+  margin: 0;
+  color: var(--color-text-light);
+  font-size: 0.7rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Detail rows */
+.checkin-details {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
   flex: 1;
   overflow-y: auto;
-  padding-right: 8px;
+  background: var(--color-white);
 }
 
-.checkins-list::-webkit-scrollbar {
-  width: 6px;
+.checkin-details::-webkit-scrollbar { width: 4px; }
+.checkin-details::-webkit-scrollbar-thumb { background: var(--color-gray-border); border-radius: 4px; }
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  padding: 9px 16px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+  gap: 8px;
+  transition: background 0.12s;
 }
 
-.checkins-list::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 10px;
+.detail-row:last-child { border-bottom: none; }
+.detail-row:hover { background: var(--color-gray-bg); }
+
+.label {
+  color: var(--color-text-light);
+  font-weight: 600;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.checkins-list::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
+.value {
+  color: var(--color-text-dark);
+  font-weight: 600;
+  text-align: right;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-.checkins-list::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+.total-value {
+  color: var(--color-primary);
+  font-size: 0.85rem;
 }
 
+/* Action buttons */
+.checkin-actions {
+  display: flex;
+  gap: 6px;
+  padding: 12px 14px;
+  border-top: 2px solid var(--color-gray-border);
+  background: var(--color-gray-bg);
+  flex-shrink: 0;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 8px 6px;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-weight: 700;
+  transition: all 0.18s;
+  letter-spacing: 0.02em;
+}
+
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.confirm-btn { background: #10b981; color: white; }
+.confirm-btn:hover:not(:disabled) { background: #059669; box-shadow: 0 2px 8px rgba(16,185,129,0.3); }
+
+.cancel-btn { background: var(--color-gold); color: var(--color-navy); }
+.cancel-btn:hover:not(:disabled) { background: var(--color-gold-dark); box-shadow: 0 2px 8px rgba(244,196,0,0.3); }
+
+.delete-btn { background: rgba(239,68,68,0.1); color: #ef4444; border: 1.5px solid rgba(239,68,68,0.25); flex: 0 0 36px; padding: 8px; }
+.delete-btn:hover:not(:disabled) { background: #ef4444; color: white; border-color: #ef4444; }
+
+/* Status badges */
+.status, .item-status {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.status-pending  { background: #fef3c7; color: #b45309; }
+.status-confirmed { background: #d1fae5; color: #065f46; }
+.status-cancelled { background: #fee2e2; color: #991b1b; }
+
+/* Type badges */
+.item-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-swimming { background: rgba(3,105,161,0.1); color: var(--color-primary); border: 1px solid rgba(3,105,161,0.2); }
+.badge-room     { background: #fef3c7; color: #b45309; border: 1px solid #fbbf24; }
+.badge-cottage  { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+.badge-event    { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+.badge-other    { background: var(--color-gray-bg); color: var(--color-text-light); border: 1px solid var(--color-gray-border); }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--color-text-light);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.empty-state i { font-size: 2rem; opacity: 0.4; }
+.empty-state p { margin: 0; font-size: 0.8rem; }
+
+/* ══════════════════════════════════
+   CALENDAR MAIN
+══════════════════════════════════ */
+.calendar-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: var(--color-white);
+  min-width: 0;
+}
+
+/* Calendar header */
 .calendar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
-.calendar-header h3 {
-  margin: 0 0 4px 0;
-  font-size: 1.25rem;
-  color: #1f2937;
-  font-weight: 600;
+.header-title-block h3 {
+  margin: 0 0 3px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-navy);
 }
 
-.calendar-header p {
+.header-title-block p {
   margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-light);
 }
 
 .month-navigation {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 0;
+  background: var(--color-navy);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid var(--color-navy);
 }
 
 .nav-btn {
-  background: #f3f4f6;
+  background: transparent;
   border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 38px; height: 38px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #374151;
-  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.75rem;
+  transition: background 0.15s, color 0.15s;
 }
 
 .nav-btn:hover {
-  background: #e5e7eb;
-  color: #1f2937;
+  background: rgba(255,255,255,0.12);
+  color: var(--color-gold);
 }
 
 .current-month {
-  font-weight: 600;
-  color: #1f2937;
-  min-width: 200px;
+  font-weight: 700;
+  color: var(--color-white);
+  min-width: 170px;
   text-align: center;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  padding: 0 4px;
+  border-left: 1px solid rgba(255,255,255,0.12);
+  border-right: 1px solid rgba(255,255,255,0.12);
 }
 
+/* Occupancy legend */
 .occupancy-legend {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px 0;
-  margin-bottom: 12px;
-  font-size: 0.875rem;
+  gap: 14px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: var(--color-gray-bg);
+  border-radius: 6px;
+  border: 1.5px solid var(--color-gray-border);
+  font-size: 0.78rem;
 }
 
 .legend-title {
-  font-weight: 600;
-  color: #374151;
+  font-weight: 700;
+  color: var(--color-navy);
+  white-space: nowrap;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .legend-items {
   display: flex;
-  gap: 20px;
+  gap: 18px;
   flex-wrap: wrap;
 }
 
@@ -793,887 +940,206 @@ const deleteBooking = async (id) => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #6b7280;
+  color: var(--color-text-light);
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .legend-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px; height: 10px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
+.legend-available { background: var(--occ-available); box-shadow: 0 0 5px rgba(16,185,129,0.4); }
+.legend-partial   { background: var(--occ-partial);   box-shadow: 0 0 5px rgba(245,158,11,0.4); }
+.legend-full      { background: var(--occ-full);      box-shadow: 0 0 5px rgba(239,68,68,0.4); }
+
+/* Calendar grid container */
 .calendar-container {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 6px;
   overflow: hidden;
+  flex: 1;
 }
 
+/* Weekday row */
 .weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  background: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
+  background: var(--color-navy);
+  border-bottom: 2px solid var(--color-gold);
 }
 
 .weekday {
-  padding: 12px;
+  padding: 11px 8px;
   text-align: center;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: #6b7280;
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.75);
+  letter-spacing: 0.08em;
 }
 
+.weekday:first-child,
+.weekday:last-child { color: var(--color-gold); }
+
+/* Dates grid */
 .dates-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0;
-  background: white;
+  background: var(--color-gray-border);
+  gap: 1px;
 }
 
+/* ── Date cell ── */
 .date-cell {
-  border: 1px solid #e5e7eb;
-  padding: 16px 12px;
-  min-height: 120px;
+  border: none;
+  padding: 10px 10px 8px;
+  min-height: 108px;
   position: relative;
-  background: white;
+  background: var(--color-white);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s, box-shadow 0.15s;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
 }
 
-.date-cell:hover {
-  background: #f3f4f6;
-}
-
-.date-cell.has-reservations {
-  background: #fafbfc;
-}
-
-.date-cell.has-reservations:hover {
-  background: #f0f1f3;
-}
+.date-cell:hover { background: #f0f4f8; }
 
 .date-cell.empty {
-  background: #ffffff;
+  background: var(--color-gray-bg);
   cursor: default;
+  opacity: 0.5;
 }
-
-.date-cell.empty:hover {
-  background: #ffffff;
-}
+.date-cell.empty:hover { background: var(--color-gray-bg); }
 
 .date-cell.past-date {
-  background: #f3f4f6;
+  background: var(--color-gray-bg);
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.55;
   pointer-events: none;
 }
 
-.date-cell.past-date .date-number {
-  color: #9ca3af;
-}
-
-.date-cell.past-date .reservation-badge {
-  opacity: 0.4;
-}
-
-.date-cell.past-date .view-button {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
+/* Today */
 .date-cell.today {
-  background: #eff6ff;
-  border: 2px solid #0ea5e9;
+  background: rgba(3, 105, 161, 0.06);
+  box-shadow: inset 0 0 0 2px var(--color-primary);
 }
 
 .date-cell.today .date-number {
-  background: #0ea5e9;
-  color: white;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
+  background: var(--color-primary);
+  color: var(--color-white);
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
 }
 
-/* Occupancy Indicator Styles */
-.occupancy-indicator {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  margin-bottom: 8px;
+/* Date with reservations */
+.date-cell.has-reservations {
+  background: rgba(3, 105, 161, 0.03);
 }
+.date-cell.has-reservations:hover { background: rgba(3, 105, 161, 0.08); }
 
-.occupancy-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-  transition: all 0.2s;
-}
+/* Occupancy cell tints */
+.date-cell.occ-cell-available { background: var(--occ-available-soft); }
+.date-cell.occ-cell-available:hover { background: var(--occ-available-hover); }
+.date-cell.occ-cell-partial   { background: var(--occ-partial-soft); }
+.date-cell.occ-cell-partial:hover   { background: var(--occ-partial-hover); }
+.date-cell.occ-cell-full      { background: var(--occ-full-soft); }
+.date-cell.occ-cell-full:hover      { background: var(--occ-full-hover); }
 
-.occupancy-available {
-  background: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
-}
-
-.occupancy-partial {
-  background: #f59e0b;
-  box-shadow: 0 0 6px rgba(245, 158, 11, 0.3);
-}
-
-.occupancy-full {
-  background: #ef4444;
-  box-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
-}
-
-/* Color-coded date cells based on occupancy */
-.date-cell.occupancy-available {
-  background: rgba(16, 185, 129, 0.05);
-}
-
-.date-cell.occupancy-available:hover {
-  background: rgba(16, 185, 129, 0.1);
-}
-
-.date-cell.occupancy-partial {
-  background: rgba(245, 158, 11, 0.05);
-}
-
-.date-cell.occupancy-partial:hover {
-  background: rgba(245, 158, 11, 0.1);
-}
-
-.date-cell.occupancy-full {
-  background: rgba(239, 68, 68, 0.05);
-}
-
-.date-cell.occupancy-full:hover {
-  background: rgba(239, 68, 68, 0.1);
-}
-
+/* Date number */
 .date-number {
   font-weight: 700;
-  color: #1f2937;
-  font-size: 1.1rem;
-  margin-bottom: 12px;
+  color: var(--color-text-dark);
+  font-size: 0.9rem;
+  margin-bottom: 6px;
   line-height: 1;
 }
 
-.reservation-badge {
-  display: inline-flex;
+.past-date .date-number { color: var(--color-text-light); }
+
+/* Occupancy dot */
+.occupancy-indicator {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  background: #ef4444;
-  color: white;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 0.875rem;
-  font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
+.occupancy-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.occ-available { background: var(--occ-available); box-shadow: 0 0 4px rgba(16,185,129,0.5); }
+.occ-partial   { background: var(--occ-partial);   box-shadow: 0 0 4px rgba(245,158,11,0.5); }
+.occ-full      { background: var(--occ-full);      box-shadow: 0 0 4px rgba(239,68,68,0.5); }
+
+/* Reservation count badge */
+.reservation-badge {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  background: var(--color-navy);
+  color: var(--color-gold);
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+/* View button */
 .view-button {
   margin-top: auto;
   width: 100%;
 }
 
 .btn-view {
-  background: #0ea5e9;
-  color: white;
+  background: var(--color-primary);
+  color: var(--color-white);
   border: none;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  padding: 5px 0;
+  border-radius: 4px;
+  font-size: 0.7rem;
   cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 600;
+  transition: background 0.15s, transform 0.12s;
+  font-weight: 700;
   width: 100%;
   text-align: center;
+  letter-spacing: 0.03em;
 }
 
 .btn-view:hover {
-  background: #0284c7;
+  background: var(--color-navy);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  border-bottom: 1px solid #e5e7eb;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 10;
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  color: #1f2937;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #6b7280;
-  transition: color 0.2s;
-}
-
-.close-btn:hover {
-  color: #1f2937;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
-.checkins-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.checkin-item {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 14px;
-  background: #fafbfc;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.checkin-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 12px 12px 12px;
-}
-
-.guest-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #dbeafe;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: #0369a1;
-  flex-shrink: 0;
-}
-
-.guest-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.guest-details h4 {
-  margin: 0 0 2px 0;
-  color: #1f2937;
-  font-size: 0.85rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.email {
-  margin: 0;
-  color: #6b7280;
-  font-size: 0.75rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.status {
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.status-pending {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-.status-confirmed {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.checkin-details {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  background: #fafafa;
-  border-radius: 0;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  font-size: 0.75rem;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.label {
-  color: #6b7280;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.value {
-  color: #1f2937;
-  font-weight: 600;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.item-badge {
-  display: inline-block;
-  padding: 0.3rem 0.6rem;
-  border-radius: 0.375rem;
-  font-size: 0.65rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.badge-swimming {
-  background-color: #e0f2fe;
-  color: #0369a1;
-  border: 1px solid #0ea5e9;
-}
-
-.badge-room {
-  background-color: #fef3c7;
-  color: #b45309;
-  border: 1px solid #fbbf24;
-}
-
-.badge-cottage {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #3b82f6;
-}
-
-.badge-event {
-  background-color: #f3e8ff;
-  color: #6b21a8;
-  border: 1px solid #d946ef;
-}
-
-.badge-other {
-  background-color: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.checkin-actions {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-  padding: 12px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.action-btn {
-  flex: 1;
-  padding: 8px 6px;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.confirm-btn {
-  background: #10b981;
-  color: white;
-}
-
-.confirm-btn:hover:not(:disabled) {
-  background: #059669;
-}
-
-.cancel-btn {
-  background: #f59e0b;
-  color: white;
-}
-
-.cancel-btn:hover:not(:disabled) {
-  background: #d97706;
-}
-
-.delete-btn {
-  background: #ef4444;
-  color: white;
-}
-
-.delete-btn:hover:not(:disabled) {
-  background: #dc2626;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 20px;
-  color: #6b7280;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.empty-state p {
-  margin: 8px 0 0;
-  font-size: 0.875rem;
-}
-
-.back-button-bar {
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.btn-back {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  color: #374151;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-back:hover {
-  background: #e5e7eb;
-  border-color: #9ca3af;
-}
-
-/* Multiple Bookings List View */
-.bookings-list-view {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.bookings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 500px;
-  overflow-y: auto;
-}
-
-.booking-list-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.booking-list-item:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.item-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-
-.item-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.item-name {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #1f2937;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.item-code {
-  margin: 4px 0 0;
-  font-size: 0.75rem;
-  color: #9ca3af;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.item-status {
-  font-size: 0.625rem !important;
-  padding: 4px 6px !important;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.item-arrow {
-  color: #d1d5db;
-  flex-shrink: 0;
-  font-size: 0.75rem;
-}
-
-/* Booking Details View */
-.booking-details-view {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.back-button {
-  margin-bottom: 4px;
-}
-
-.btn-back {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  color: #374151;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-back:hover {
-  background: #e5e7eb;
-  border-color: #9ca3af;
-}
-
-.booking-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: white;
-  border-radius: 8px;
-  height: 100%;
-}
-
-.back-button-bar {
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.checkin-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 12px 12px 12px;
-}
-
-.guest-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #dbeafe;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: #0369a1;
-  flex-shrink: 0;
-}
-
-.guest-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.guest-details h4 {
-  margin: 0 0 2px 0;
-  color: #1f2937;
-  font-size: 0.85rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.email {
-  margin: 0;
-  color: #6b7280;
-  font-size: 0.75rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.status {
-  padding: 3px 10px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.status-pending {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-.status-confirmed {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.checkin-details {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  background: #fafafa;
-  border-radius: 0;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.detail-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  font-size: 0.75rem;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.label {
-  color: #6b7280;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.value {
-  color: #1f2937;
-  font-weight: 600;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.item-badge {
-  display: inline-block;
-  padding: 0.3rem 0.6rem;
-  border-radius: 0.375rem;
-  font-size: 0.65rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.badge-swimming {
-  background-color: #e0f2fe;
-  color: #0369a1;
-  border: 1px solid #0ea5e9;
-}
-
-.badge-room {
-  background-color: #fef3c7;
-  color: #b45309;
-  border: 1px solid #fbbf24;
-}
-
-.badge-cottage {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #3b82f6;
-}
-
-.badge-event {
-  background-color: #f3e8ff;
-  color: #6b21a8;
-  border: 1px solid #d946ef;
-}
-
-.badge-other {
-  background-color: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
-}
-
-.checkin-actions {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-  padding: 12px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.action-btn {
-  flex: 1;
-  padding: 8px 6px;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.confirm-btn {
-  background: #10b981;
-  color: white;
-}
-
-.confirm-btn:hover:not(:disabled) {
-  background: #059669;
-}
-
-.cancel-btn {
-  background: #f59e0b;
-  color: white;
-}
-
-.cancel-btn:hover:not(:disabled) {
-  background: #d97706;
-}
-
-.delete-btn {
-  background: #ef4444;
-  color: white;
-}
-
-.delete-btn:hover:not(:disabled) {
-  background: #dc2626;
-}
-
-/* Responsive */
-@media (max-width: 1200px) {
+/* ── Responsive ── */
+@media (max-width: 1100px) {
   .calendar-wrapper {
     flex-direction: column;
     min-height: auto;
-    padding: 16px;
-    gap: 16px;
-  }
-
-  .calendar-main {
-    width: 100%;
   }
 
   .bookings-panel {
     width: 100%;
     border-right: none;
-    border-bottom: 1px solid #e5e7eb;
-    padding-right: 0;
-    padding-bottom: 16px;
-    margin-right: 0;
-    margin-bottom: 16px;
-    max-height: none;
-    max-height: 400px;
+    border-bottom: 2px solid var(--color-gray-border);
+    max-height: 380px;
   }
+
+  .calendar-main { padding: 16px; }
+}
+
+@media (max-width: 640px) {
+  .date-cell { min-height: 76px; padding: 7px 6px 6px; }
+  .weekday { font-size: 0.6rem; padding: 9px 4px; }
+  .current-month { min-width: 130px; font-size: 0.78rem; }
+  .legend-items { gap: 10px; }
+  .occupancy-legend { flex-wrap: wrap; gap: 8px; }
 }
 </style>

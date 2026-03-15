@@ -1,74 +1,79 @@
 <template>
   <div class="admin-dashboard">
-    <AdminSidebar 
+    <AdminSidebar
       :is-open="sidebarOpen"
       :is-collapsed="sidebarCollapsed"
       @close="sidebarOpen = false"
     />
 
-    <!-- Header -->
-    <AdminHeader 
+    <AdminHeader
       title="Restaurant Menu"
       subtitle="Manage menu items and pricing"
       @toggle-sidebar="sidebarOpen = !sidebarOpen"
     />
 
-    <!-- Main Content -->
     <main class="main-content">
       <div class="content-container">
-        <div class="page-header">
-          <div class="header-content">
-            <h1 class="page-title">Restaurant Menu</h1>
-            <p class="page-subtitle">Manage your menu items, pricing, and availability</p>
-          </div>
-          <div class="header-actions">
-            <button class="btn btn-primary" @click="addNewItem">
-              <i class="fas fa-plus"></i> Add Menu Item
-            </button>
-          </div>
-        </div>
 
-        <!-- Stats Cards -->
+        <!-- ── Stats Cards ── -->
         <div class="stats-grid">
+
           <div class="stat-card">
-            <div class="stat-icon">
+            <div class="stat-icon stat-icon--blue">
               <i class="fas fa-utensils"></i>
             </div>
             <div class="stat-content">
-              <div class="stat-value">{{ menu.length }}</div>
+              <div class="stat-value stat-value--blue">{{ menu.length }}</div>
               <div class="stat-label">Total Items</div>
             </div>
+            <div class="stat-card-bg">
+              <i class="fas fa-utensils"></i>
+            </div>
           </div>
+
           <div class="stat-card">
-            <div class="stat-icon available">
+            <div class="stat-icon stat-icon--green">
               <i class="fas fa-check-circle"></i>
             </div>
             <div class="stat-content">
-              <div class="stat-value">{{ availableCount }}</div>
+              <div class="stat-value stat-value--green">{{ availableCount }}</div>
               <div class="stat-label">Available</div>
             </div>
+            <div class="stat-card-bg">
+              <i class="fas fa-check-circle"></i>
+            </div>
           </div>
+
           <div class="stat-card">
-            <div class="stat-icon categories">
+            <div class="stat-icon stat-icon--navy">
               <i class="fas fa-tags"></i>
             </div>
             <div class="stat-content">
-              <div class="stat-value">{{ categoryCount }}</div>
+              <div class="stat-value stat-value--navy">{{ categoryCount }}</div>
               <div class="stat-label">Categories</div>
             </div>
+            <div class="stat-card-bg">
+              <i class="fas fa-tags"></i>
+            </div>
           </div>
+
           <div class="stat-card">
-            <div class="stat-icon avg-price">
+            <div class="stat-icon stat-icon--gold">
               <i class="fas fa-peso-sign"></i>
             </div>
             <div class="stat-content">
-              <div class="stat-value">₱{{ avgPrice }}</div>
+              <div class="stat-value stat-value--gold">₱{{ avgPrice }}</div>
               <div class="stat-label">Avg. Price</div>
             </div>
+            <div class="stat-card-bg">
+              <i class="fas fa-peso-sign"></i>
+            </div>
           </div>
+
         </div>
 
-        <MenuSection 
+        <!-- ── Menu Section ── -->
+        <MenuSection
           :menu="menu"
           @add-item="addMenuItem"
           @toggle-availability="toggleMenuAvailability"
@@ -76,6 +81,7 @@
           @update-item="updateMenuItem"
           @delete-item="deleteMenuItem"
         />
+
       </div>
     </main>
   </div>
@@ -85,25 +91,25 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRestaurantStore } from '../../stores/restaurant.js'
 import AdminHeader from '../../components/Admin/AdminHeader.vue'
-import AdminSidebar from '../../components/Admin/AdminSidebar.vue' 
+import AdminSidebar from '../../components/Admin/AdminSidebar.vue'
 import MenuSection from '../../components/Restaurant/MenuSection.vue'
 
-const restaurant = useRestaurantStore()
-const sidebarOpen = ref(false)
+const restaurant      = useRestaurantStore()
+const sidebarOpen      = ref(false)
 const sidebarCollapsed = ref(false)
 
 const menu = computed(() =>
   restaurant.menuItems.map(m => ({
-    menu_id: m.menu_id,
-    id: m.menu_id,
-    name: m.name,
-    price: m.price,
-    category: m.category,
+    menu_id:   m.menu_id,
+    id:        m.menu_id,
+    name:      m.name,
+    price:     m.price,
+    category:  m.category,
     available: m.available,
   }))
 )
 
-const availableCount = computed(() => 
+const availableCount = computed(() =>
   menu.value.filter(item => item.available).length
 )
 
@@ -118,46 +124,28 @@ const avgPrice = computed(() => {
   return Math.round(total / menu.value.length)
 })
 
-const addNewItem = () => {
-  // This will trigger the add item modal in MenuSection
-  // The actual implementation will depend on how MenuSection handles this
-}
-
 const addMenuItem = async (item) => {
-  try {
-    await restaurant.createMenuItem(item)
-  } catch (error) {
-    console.error('Error adding menu item:', error)
-  }
+  try { await restaurant.createMenuItem(item) }
+  catch (error) { console.error('Error adding menu item:', error) }
 }
 
 const toggleMenuAvailability = async (id, available) => {
-  try {
-    await restaurant.toggleMenuItemAvailability(id, available)
-  } catch (error) {
-    console.error('Error toggling menu availability:', error)
-  }
+  try { await restaurant.toggleMenuItemAvailability(id, available) }
+  catch (error) { console.error('Error toggling menu availability:', error) }
 }
 
-const editMenuItem = (item) => {
-  // handled in component
-}
+const editMenuItem = (item) => {}
 
 const updateMenuItem = async (item) => {
   try {
     const itemId = item.menu_id || item.id
     await restaurant.updateMenuItem(itemId, item)
-  } catch (error) {
-    console.error('Error updating menu item:', error)
-  }
+  } catch (error) { console.error('Error updating menu item:', error) }
 }
 
 const deleteMenuItem = async (id) => {
-  try {
-    await restaurant.deleteMenuItem(id)
-  } catch (error) {
-    console.error('Error deleting menu item:', error)
-  }
+  try { await restaurant.deleteMenuItem(id) }
+  catch (error) { console.error('Error deleting menu item:', error) }
 }
 
 onMounted(() => {
@@ -168,250 +156,141 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ── Eduardo's Resort Color Palette ── */
+.admin-dashboard {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-white-soft:    rgba(255, 255, 255, 0.1);
+  --color-gray-bg:       #EEF5FB;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
+}
+
+/* ── Layout ── */
 .admin-dashboard {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
+  background: var(--color-gray-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 .main-content {
   margin-left: 0;
-  padding-top: 4.5rem;
+  padding-top: 60px;
   transition: margin-left 0.3s ease;
 }
-
 @media (min-width: 768px) {
-  .main-content {
-    margin-left: 260px;
-  }
+  .main-content { margin-left: 262px; }
 }
 
 .content-container {
-  padding: 2rem;
+  padding: 1.5rem 1.75rem;
   max-width: 1400px;
   margin: 0 auto;
 }
-
 @media (max-width: 768px) {
-  .content-container {
-    padding: 1rem;
-  }
+  .content-container { padding: 0.85rem; }
 }
 
-/* Page Header */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 3px solid #F4C400;
-}
-
-.header-content {
-  flex: 1;
-}
-
-.page-title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #1F8DBF;
-  margin: 0 0 0.25rem 0;
-  letter-spacing: -0.02em;
-}
-
-.page-subtitle {
-  font-size: 0.95rem;
-  color: #1E88B6;
-  opacity: 0.8;
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, #1E88B6 0%, #1F8DBF 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
-}
-
-.btn-primary i {
-  font-size: 1rem;
-}
-
-/* Stats Grid */
+/* ── Stats Grid ── */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .stat-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: var(--color-white);
+  border-radius: 16px;
+  padding: 1.25rem 1.4rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
-  border-left: 4px solid;
-  transition: all 0.3s ease;
+  border: 0.5px solid var(--color-gray-border);
+  box-shadow: 0 2px 10px rgba(3, 105, 161, 0.07);
   position: relative;
   overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
 }
-
 .stat-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(31, 141, 191, 0.15);
+  box-shadow: 0 10px 28px rgba(3, 105, 161, 0.14);
 }
 
-.stat-card::after {
+/* Watermark background icon */
+.stat-card-bg {
+  position: absolute;
+  right: -10px; bottom: -10px;
+  font-size: 4rem;
+  opacity: 0.04;
+  pointer-events: none;
+  transition: opacity 0.22s;
+}
+.stat-card:hover .stat-card-bg { opacity: 0.07; }
+
+/* Top accent bar */
+.stat-card::before {
   content: '';
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, transparent 50%, rgba(244, 196, 0, 0.05) 50%);
-  border-radius: 0 0 0 60px;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
 }
+.stat-card:nth-child(1)::before { background: var(--color-primary-light); }
+.stat-card:nth-child(2)::before { background: #16a34a; }
+.stat-card:nth-child(3)::before { background: var(--color-navy); }
+.stat-card:nth-child(4)::before { background: var(--color-gold); }
 
-.stat-card:nth-child(1) {
-  border-left-color: #1F8DBF;
-}
-.stat-card:nth-child(2) {
-  border-left-color: #F4C400;
-}
-.stat-card:nth-child(3) {
-  border-left-color: #1E88B6;
-}
-.stat-card:nth-child(4) {
-  border-left-color: #F2C200;
-}
-
+/* Stat icons */
 .stat-icon {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  background: rgba(31, 141, 191, 0.1);
-  color: #1F8DBF;
-  transition: all 0.3s ease;
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  transition: transform 0.22s ease;
 }
+.stat-card:hover .stat-icon { transform: scale(1.1) rotate(-4deg); }
 
-.stat-icon.available {
-  background: rgba(244, 196, 0, 0.1);
-  color: #F4C400;
-}
+.stat-icon--blue  { background: rgba(31, 141, 191, 0.12); color: var(--color-primary-light); }
+.stat-icon--green { background: rgba(22, 163, 74, 0.12);  color: #16a34a; }
+.stat-icon--navy  { background: rgba(12, 59, 94, 0.1);    color: var(--color-navy); }
+.stat-icon--gold  { background: rgba(244, 196, 0, 0.15);  color: #92700a; }
 
-.stat-icon.categories {
-  background: rgba(30, 136, 182, 0.1);
-  color: #1E88B6;
-}
-
-.stat-icon.avg-price {
-  background: rgba(242, 194, 0, 0.1);
-  color: #F2C200;
-}
-
-.stat-card:hover .stat-icon {
-  transform: scale(1.1);
-}
-
-.stat-content {
-  flex: 1;
-}
-
+/* Stat values */
 .stat-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-text-dark);
 }
-
-.stat-card:nth-child(1) .stat-value,
-.stat-card:nth-child(3) .stat-value {
-  color: #1F8DBF;
-}
-
-.stat-card:nth-child(2) .stat-value,
-.stat-card:nth-child(4) .stat-value {
-  color: #F4C400;
-}
+.stat-value--blue  { color: var(--color-primary-light); }
+.stat-value--green { color: #16a34a; }
+.stat-value--navy  { color: var(--color-navy); }
+.stat-value--gold  { color: #92700a; }
 
 .stat-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
-  font-weight: 500;
+  font-size: 0.7rem;
+  color: var(--color-text-light);
+  margin-top: 0.3rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.6px;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
+@media (max-width: 1100px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
-
-@media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .header-actions {
-    width: 100%;
-  }
-  
-  .btn {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .stat-card {
-    padding: 1.25rem;
-  }
-  
-  .stat-icon {
-    width: 3rem;
-    height: 3rem;
-    font-size: 1.25rem;
-  }
-  
-  .stat-value {
-    font-size: 1.5rem;
-  }
+@media (max-width: 640px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .stat-card  { padding: 1rem; }
+  .stat-icon  { width: 44px; height: 44px; font-size: 1.1rem; }
+  .stat-value { font-size: 1.5rem; }
 }
 </style>

@@ -1,1126 +1,841 @@
 <template>
   <div class="admin-layout">
-    <!-- Sidebar -->
-    <AdminSidebar 
+    <AdminSidebar
       :is-open="sidebarOpen"
       :is-collapsed="sidebarCollapsed"
       current-path="/admin/reservations"
       @close="sidebarOpen = false"
     />
 
-    <!-- Main Content -->
-    <main 
-      class="main-content"
-      :class="{ shifted: sidebarCollapsed }"
-    >
-      <!-- Header -->
-      <div class="header-container">
-        <AdminHeader 
-          title="Reservation Management"
-          subtitle="Manage all guest bookings"
-          :has-notifications="pendingCount > 0"
-          :pending-count="pendingCount"
-          @toggle-sidebar="sidebarOpen = !sidebarOpen"
-        />
-        <!-- Quick Actions -->
-      </div>
+    <main class="main-content" :class="{ shifted: sidebarCollapsed }">
 
-      <!-- QR Check-In Scanner Modal -->
+      <AdminHeader
+        title="Reservation Management"
+        subtitle="Manage all guest bookings"
+        :has-notifications="pendingCount > 0"
+        :pending-count="pendingCount"
+        @toggle-sidebar="sidebarOpen = !sidebarOpen"
+      />
+
       <QRCheckInScanner
         :is-open="isCheckinScannerOpen"
         @close="isCheckinScannerOpen = false"
         @check-in-success="handleCheckInSuccess"
       />
-      
-      <!-- Stats Grid -->
-      <ReservationStats :stats="stats" />
 
-      <!-- Filters -->
-      <ReservationFilters
-        v-model:search="filters.search"
-        v-model:status="filters.status"
-        v-model:from="filters.from"
-        v-model:to="filters.to"
-        @apply="applyFilters"
-        @reset="resetFilters"
-      />
+      <div class="content-container">
 
-      <!-- Reservation Calendar -->
-      <ReservationCalendar
-        ref="reservationCalendar"
-        :bookings="bookings"
-        @confirm="confirmBooking"
-        @cancel="cancelBooking"
-        @delete="deleteBooking"
-      />
+        <!-- ── Stats ── -->
+        <ReservationStats :stats="stats" />
 
-      <!-- Desktop Table -->
-      <div class="desktop-table">
-        <div class="table-header">
-          <h3>Recent Reservations</h3>
-          <div class="flex gap-2">
-            <button @click="exportData" class="btn btn-outline">
-              <i class="fas fa-download mr-2"></i>Export
-            </button>
-            <button @click="createNew" class="btn btn-primary">
-              <i class="fas fa-plus mr-2"></i>New
-            </button>
-          </div>
-        </div>
+        <!-- ── Filters ── -->
+        <ReservationFilters
+          v-model:search="filters.search"
+          v-model:status="filters.status"
+          v-model:from="filters.from"
+          v-model:to="filters.to"
+          @apply="applyFilters"
+          @reset="resetFilters"
+        />
 
-        <div style="overflow-x:auto">
-          <table v-if="!loading && bookings.length > 0" class="reservations-table">
-            <thead>
-              <tr>
-                <th>Guest Name</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Booking Type</th>
-                <th>Payment Method</th>
-                <th>Code</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="booking in bookings" :key="booking.id">
-                <td class="guest-cell">
-                  <div class="guest-avatar-mini">
-                    {{ booking.guest_name.charAt(0).toUpperCase() }}
-                  </div>
-                  <span>{{ booking.guest_name }}</span>
-                </td>
-                <td>{{ getCheckInDisplay(booking) }}</td>
-                <td>{{ getCheckOutDisplay(booking) }}</td>
-                <td>
-                  <span :class="getItemBadgeClass(booking.items_list)" class="item-badge">
-                    {{ getItemLabel(booking.items_list) }}
-                  </span>
-                </td>
-                <td>{{ booking.payment_method || 'N/A' }}</td>
-                <td class="code-cell">{{ booking.reservation_code || 'N/A' }}</td>
-                <td>
-                  <span :class="getStatusClass(booking.status)" class="status-badge">
-                    {{ formatStatus(booking.status) }}
-                  </span>
-                </td>
-                <td>
-                  <div class="action-group">
-                    <button
-                      v-if="booking.status === 'pending'"
-                      @click="confirmBooking(booking.id)"
-                      class="action-btn confirm-btn"
-                      title="Confirm"
-                    >
-                      <i class="fas fa-check"></i>
-                    </button>
-                    <button
-                      @click="cancelBooking(booking.id)"
-                      class="action-btn cancel-btn"
-                      title="Cancel"
-                    >
-                      <i class="fas fa-times"></i>
-                    </button>
-                    <button
-                      @click="deleteBooking(booking.id)"
-                      class="action-btn delete-btn"
-                      title="Delete"
-                    >
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- ── Calendar ── -->
+        <ReservationCalendar
+          ref="reservationCalendar"
+          :bookings="bookings"
+          @confirm="confirmBooking"
+          @cancel="cancelBooking"
+          @delete="deleteBooking"
+        />
 
-          <div v-if="loading" class="text-center py-10">
-            <i class="fas fa-spinner fa-spin text-3xl" style="color: #1F8DBF;"></i>
-            <p class="mt-2" style="color: #1E88B6;">Loading bookings...</p>
+        <!-- ── Desktop Table ── -->
+        <div class="section-card desktop-table">
+
+          <div class="section-header">
+            <div class="section-header-left">
+              <h2 class="section-title">Recent Reservations</h2>
+              <p class="section-subtitle">All guest bookings and their current status</p>
+            </div>
+            <div class="header-actions">
+              <button @click="exportData" class="btn-outline">
+                <i class="fas fa-download"></i>
+                <span>Export</span>
+              </button>
+              <button @click="createNew" class="btn-primary">
+                <i class="fas fa-plus"></i>
+                <span>New Booking</span>
+              </button>
+            </div>
           </div>
 
-          <div v-if="!loading && bookings.length === 0" class="empty-state">
-            <i class="fas fa-calendar-check"></i>
-            <p>No bookings found</p>
-            <button @click="createNew" class="btn btn-primary mt-3">
+          <!-- Loading -->
+          <div v-if="loading" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading reservations…</p>
+          </div>
+
+          <!-- Empty -->
+          <div v-else-if="bookings.length === 0" class="empty-state">
+            <div class="empty-icon-wrap"><i class="fas fa-calendar-check"></i></div>
+            <p class="empty-title">No bookings found</p>
+            <p class="empty-sub">Try adjusting your filters or create a new booking.</p>
+            <button @click="createNew" class="btn-primary">
               <i class="fas fa-plus"></i> Create New Booking
             </button>
           </div>
-        </div>
 
-        <!-- Pagination -->
-        <div class="table-footer" v-if="!loading && bookings.length > 0">
-          <p class="text-sm" style="color: #6b7280;">
-            Showing {{ (currentPage - 1) * limit + 1 }} to {{ Math.min(currentPage * limit, totalCount) }} of {{ totalCount }}
-          </p>
-          <div class="pagination">
-            <button
-              @click="prevPage"
-              :disabled="currentPage === 1"
-              class="pagination-btn"
-            >
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <button
-              v-for="page in visiblePages"
-              :key="page"
-              @click="currentPage = page; fetchBookings()"
-              :class="{ active: currentPage === page }"
-              class="pagination-btn"
-            >
-              {{ page }}
-            </button>
-            <button
-              @click="nextPage"
-              :disabled="currentPage === totalPages"
-              class="pagination-btn"
-            >
-              <i class="fas fa-chevron-right"></i>
-            </button>
+          <!-- Table -->
+          <div v-else style="overflow-x:auto">
+            <table class="res-table">
+              <thead>
+                <tr>
+                  <th>Guest</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Type</th>
+                  <th>Payment</th>
+                  <th>Code</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="booking in bookings" :key="booking.id">
+                  <td>
+                    <div class="guest-cell">
+                      <div class="guest-avatar-mini">{{ booking.guest_name.charAt(0).toUpperCase() }}</div>
+                      <span class="guest-name">{{ booking.guest_name }}</span>
+                    </div>
+                  </td>
+                  <td class="date-cell">{{ getCheckInDisplay(booking) }}</td>
+                  <td class="date-cell">{{ getCheckOutDisplay(booking) }}</td>
+                  <td>
+                    <span :class="['item-badge', getItemBadgeClass(booking.items_list)]">
+                      {{ getItemLabel(booking.items_list) }}
+                    </span>
+                  </td>
+                  <td class="muted-cell">{{ booking.payment_method || 'N/A' }}</td>
+                  <td class="code-cell">{{ booking.reservation_code || 'N/A' }}</td>
+                  <td>
+                    <span :class="['status-badge', getStatusClass(booking.status)]">
+                      {{ formatStatus(booking.status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="action-group">
+                      <button
+                        v-if="booking.status === 'pending'"
+                        @click="confirmBooking(booking.id)"
+                        class="act-btn confirm-btn"
+                        title="Confirm"
+                      ><i class="fas fa-check"></i></button>
+                      <button @click="cancelBooking(booking.id)" class="act-btn cancel-btn" title="Cancel">
+                        <i class="fas fa-times"></i>
+                      </button>
+                      <button @click="deleteBooking(booking.id)" class="act-btn delete-btn" title="Delete">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-      </div>
 
-      <!-- Mobile Cards -->
-      <div class="mobile-cards">
-        <div class="mobile-header">
-          <h3>Recent Reservations</h3>
-          <div class="flex gap-2">
-            <button @click="exportData" class="btn btn-outline btn-sm">
-              <i class="fas fa-download"></i>
-            </button>
-            <button @click="createNew" class="btn btn-primary btn-sm">
-              <i class="fas fa-plus"></i>
-            </button>
-          </div>
-        </div>
-
-        <div v-if="loading" class="text-center py-10">
-          <i class="fas fa-spinner fa-spin text-3xl" style="color: #1F8DBF;"></i>
-        </div>
-
-        <div v-else-if="bookings.length === 0" class="empty-state">
-          <i class="fas fa-calendar-check"></i>
-          <p>No bookings found</p>
-        </div>
-
-        <div v-else>
-          <div
-            v-for="booking in bookings"
-            :key="booking.id"
-            class="booking-card"
-          >
-            <div class="card-header">
-              <div class="guest-info">
-                <div class="guest-avatar">
-                  {{ booking.guest_name.charAt(0).toUpperCase() }}
-                </div>
-                <div>
-                  <div class="font-semibold" style="color: #1F8DBF;">{{ booking.guest_name }}</div>
-                  <div class="text-xs" style="color: #1E88B6;">{{ booking.email }}</div>
-                </div>
-              </div>
-              <span :class="getStatusClass(booking.status)" class="status-badge">
-                {{ formatStatus(booking.status) }}
-              </span>
+          <!-- Pagination -->
+          <div class="table-footer" v-if="!loading && bookings.length > 0">
+            <p class="page-info">
+              Showing {{ (currentPage - 1) * limit + 1 }}–{{ Math.min(currentPage * limit, totalCount) }}
+              of <strong>{{ totalCount }}</strong>
+            </p>
+            <div class="pagination">
+              <button @click="prevPage" :disabled="currentPage === 1" class="pg-btn">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button
+                v-for="page in visiblePages"
+                :key="page"
+                @click="currentPage = page; fetchBookings()"
+                :class="['pg-btn', { active: currentPage === page }]"
+              >{{ page }}</button>
+              <button @click="nextPage" :disabled="currentPage === totalPages" class="pg-btn">
+                <i class="fas fa-chevron-right"></i>
+              </button>
             </div>
+          </div>
 
-            <div class="card-body">
-              <div class="card-row">
-                <div>
-                  <div class="card-label">{{ isSwimmingBooking(booking.items_list) ? 'First Class' : 'Check-in' }}</div>
-                  <div class="card-value">{{ getCheckInDisplay(booking) }}</div>
-                </div>
-                <div>
-                  <div class="card-label">{{ isSwimmingBooking(booking.items_list) ? 'Last Class' : 'Check-out' }}</div>
-                  <div class="card-value">{{ getCheckOutDisplay(booking) }}</div>
-                </div>
-              </div>
-              <div class="card-row">
-                <div>
-                  <div class="card-label">Booking Type</div>
-                  <div class="item-badge" :class="getItemBadgeClass(booking.items_list)">
-                    {{ getItemLabel(booking.items_list) }}
+        </div>
+
+        <!-- ── Mobile Cards ── -->
+        <div class="mobile-cards">
+
+          <div class="section-header mobile-header">
+            <div class="section-header-left">
+              <h2 class="section-title">Recent Reservations</h2>
+            </div>
+            <div class="header-actions">
+              <button @click="exportData" class="btn-outline btn-icon"><i class="fas fa-download"></i></button>
+              <button @click="createNew" class="btn-primary btn-icon"><i class="fas fa-plus"></i></button>
+            </div>
+          </div>
+
+          <div v-if="loading" class="loading-state">
+            <div class="loading-spinner"></div>
+          </div>
+
+          <div v-else-if="bookings.length === 0" class="empty-state">
+            <div class="empty-icon-wrap"><i class="fas fa-calendar-check"></i></div>
+            <p class="empty-title">No bookings found</p>
+          </div>
+
+          <div v-else>
+            <div v-for="booking in bookings" :key="booking.id" class="booking-card">
+              <div class="bc-header">
+                <div class="bc-guest">
+                  <div class="guest-avatar">{{ booking.guest_name.charAt(0).toUpperCase() }}</div>
+                  <div>
+                    <div class="bc-name">{{ booking.guest_name }}</div>
+                    <div class="bc-email">{{ booking.email }}</div>
                   </div>
                 </div>
-                <div>
-                  <div class="card-label">Code</div>
-                  <div class="card-value code">{{ booking.reservation_code || 'N/A' }}</div>
+                <span :class="['status-badge', getStatusClass(booking.status)]">
+                  {{ formatStatus(booking.status) }}
+                </span>
+              </div>
+
+              <div class="bc-body">
+                <div class="bc-row">
+                  <div>
+                    <div class="bc-label">{{ isSwimmingBooking(booking.items_list) ? 'First Class' : 'Check-in' }}</div>
+                    <div class="bc-value">{{ getCheckInDisplay(booking) }}</div>
+                  </div>
+                  <div>
+                    <div class="bc-label">{{ isSwimmingBooking(booking.items_list) ? 'Last Class' : 'Check-out' }}</div>
+                    <div class="bc-value">{{ getCheckOutDisplay(booking) }}</div>
+                  </div>
+                </div>
+                <div class="bc-row">
+                  <div>
+                    <div class="bc-label">Booking Type</div>
+                    <span :class="['item-badge', getItemBadgeClass(booking.items_list)]">
+                      {{ getItemLabel(booking.items_list) }}
+                    </span>
+                  </div>
+                  <div>
+                    <div class="bc-label">Code</div>
+                    <div class="bc-code">{{ booking.reservation_code || 'N/A' }}</div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div class="card-actions">
-              <button
-                v-if="booking.status === 'pending'"
-                @click="confirmBooking(booking.id)"
-                class="action-btn confirm-btn"
-              >
-                <i class="fas fa-check"></i>
-              </button>
-              <button @click="cancelBooking(booking.id)" class="action-btn cancel-btn">
-                <i class="fas fa-times"></i>
-              </button>
-              <button @click="deleteBooking(booking.id)" class="action-btn delete-btn">
-                <i class="fas fa-trash"></i>
-              </button>
+              <div class="bc-actions">
+                <button v-if="booking.status === 'pending'" @click="confirmBooking(booking.id)" class="act-btn confirm-btn">
+                  <i class="fas fa-check"></i>
+                </button>
+                <button @click="cancelBooking(booking.id)" class="act-btn cancel-btn">
+                  <i class="fas fa-times"></i>
+                </button>
+                <button @click="deleteBooking(booking.id)" class="act-btn delete-btn">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
+
         </div>
+
       </div>
     </main>
 
-    <!-- Toast Notification -->
-    <div 
-      v-if="toastMessage" 
-      class="fixed bottom-8 right-8 px-6 py-4 rounded-xl font-bold text-sm shadow-2xl z-50 animate-slideIn text-white"
-      :class="toastType === 'success' ? 'bg-green-500' : 'bg-red-500'"
-    >
-      {{ toastMessage }}
-    </div>
+    <!-- ── Toast ── -->
+    <transition name="toast">
+      <div
+        v-if="toastMessage"
+        class="toast"
+        :class="toastType === 'success' ? 'toast--success' : 'toast--error'"
+      >
+        <i :class="toastType === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"></i>
+        {{ toastMessage }}
+      </div>
+    </transition>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import axios from 'axios'
 import * as XLSX from 'xlsx'
-import AdminSidebar from '../../components/admin/AdminSidebar.vue'
-import AdminHeader from '../../components/admin/AdminHeader.vue'
-import ReservationStats from '../../components/admin/ReservationStats.vue'
-import ReservationFilters from '../../components/admin/ReservationFilters.vue'
-import ReservationCalendar from '../../components/admin/ReservationCalendar.vue'
-import QRCheckInScanner from '../../components/QRCheckInScanner.vue'
+import AdminSidebar          from '../../components/admin/AdminSidebar.vue'
+import AdminHeader           from '../../components/admin/AdminHeader.vue'
+import ReservationStats      from '../../components/admin/ReservationStats.vue'
+import ReservationFilters    from '../../components/admin/ReservationFilters.vue'
+import ReservationCalendar   from '../../components/admin/ReservationCalendar.vue'
+import QRCheckInScanner      from '../../components/QRCheckInScanner.vue'
 
-const sidebarOpen = ref(false)
-const sidebarCollapsed = ref(false)
-const activeTab = ref('all')
-const loading = ref(false)
-const bookings = ref([])
-const currentPage = ref(1)
-const limit = 15
-const totalCount = ref(0)
-const totalPages = ref(0)
-const reservationCalendar = ref(null)
+const sidebarOpen          = ref(false)
+const sidebarCollapsed     = ref(false)
+const loading              = ref(false)
+const bookings             = ref([])
+const currentPage          = ref(1)
+const limit                = 15
+const totalCount           = ref(0)
+const totalPages           = ref(0)
+const reservationCalendar  = ref(null)
 const isCheckinScannerOpen = ref(false)
-const toastMessage = ref('')
-const toastType = ref('success')
+const toastMessage         = ref('')
+const toastType            = ref('success')
 
-const filters = ref({
-  search: '',
-  status: '',
-  from: '',
-  to: ''
-})
+const filters = ref({ search: '', status: '', from: '', to: '' })
 
 const stats = computed(() => {
-  const statusCounts = bookings.value.reduce((acc, b) => {
-    acc[b.status] = (acc[b.status] || 0) + 1
-    return acc
-  }, {})
-
+  const sc = bookings.value.reduce((a, b) => { a[b.status] = (a[b.status] || 0) + 1; return a }, {})
   return [
-    { label: 'Total', value: totalCount.value, type: 'total', icon: 'fas fa-calendar-check', color: 'blue' },
-    { label: 'Confirmed', value: statusCounts.confirmed || 0, type: 'confirmed', icon: 'fas fa-check-circle', color: 'green' },
-    { label: 'Pending', value: statusCounts.pending || 0, type: 'pending', icon: 'fas fa-clock', color: 'amber' },
-    { label: 'Cancelled', value: statusCounts.cancelled || 0, type: 'cancelled', icon: 'fas fa-times-circle', color: 'red' }
+    { label: 'Total',     value: totalCount.value,       type: 'total',     icon: 'fas fa-calendar-check', color: 'blue'   },
+    { label: 'Confirmed', value: sc.confirmed || 0,      type: 'confirmed', icon: 'fas fa-check-circle',   color: 'green'  },
+    { label: 'Pending',   value: sc.pending   || 0,      type: 'pending',   icon: 'fas fa-clock',          color: 'yellow' },
+    { label: 'Cancelled', value: sc.cancelled || 0,      type: 'cancelled', icon: 'fas fa-times-circle',   color: 'red'    }
   ]
 })
 
-const pendingCount = computed(() => 
-  bookings.value.filter(b => b.status === 'pending').length
-)
+const pendingCount = computed(() => bookings.value.filter(b => b.status === 'pending').length)
 
 const visiblePages = computed(() => {
-  const pages = []
-  const maxVisible = 5
-  let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
-  let end = Math.min(totalPages.value, start + maxVisible - 1)
-  
-  if (end - start < maxVisible - 1) {
-    start = Math.max(1, end - maxVisible + 1)
-  }
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-  
+  const pages = []; const max = 5
+  let start = Math.max(1, currentPage.value - Math.floor(max / 2))
+  let end   = Math.min(totalPages.value, start + max - 1)
+  if (end - start < max - 1) start = Math.max(1, end - max + 1)
+  for (let i = start; i <= end; i++) pages.push(i)
   return pages
 })
 
-const buildReservationParams = (page, pageLimit) => {
-  const params = new URLSearchParams()
-  params.append('page', page)
-  params.append('limit', pageLimit)
-
-  if (filters.value.search) params.append('search', filters.value.search)
-  if (filters.value.status && filters.value.status !== 'all') params.append('status', filters.value.status)
-  if (filters.value.from) params.append('startDate', filters.value.from)
-  if (filters.value.to) params.append('endDate', filters.value.to)
-
-  return params
+const buildParams = (page, lim) => {
+  const p = new URLSearchParams()
+  p.append('page', page); p.append('limit', lim)
+  if (filters.value.search) p.append('search', filters.value.search)
+  if (filters.value.status && filters.value.status !== 'all') p.append('status', filters.value.status)
+  if (filters.value.from)   p.append('startDate', filters.value.from)
+  if (filters.value.to)     p.append('endDate',   filters.value.to)
+  return p
 }
 
-const mapBookingData = (booking) => {
-  const guestName = `${booking.first_name || ''} ${booking.last_name || ''}`.trim()
-
-  return {
-    id: booking.booking_id,
-    guest_name: guestName || booking.email || 'Guest',
-    email: booking.email || 'N/A',
-    reservation_code: booking.booking_reference,
-    check_in: booking.check_in_date,
-    check_out: booking.check_out_date,
-    adults: parseInt(booking.adults) || 0,
-    children: parseInt(booking.children) || 0,
-    status: booking.booking_status?.toLowerCase() || 'pending',
-    payment_status: booking.payment_status,
-    payment_method: booking.payment_method || 'N/A',
-    payment_reference: booking.payment_reference || 'N/A',
-    total: parseFloat(booking.total) || 0,
-    item_count: booking.item_count || 0,
-    items_list: booking.items_summary || 'N/A',
-    items_descriptions: booking.items_descriptions || null
-  }
-}
-
-const fetchAllBookingsForExport = async () => {
-  const exportLimit = 200
-  let page = 1
-  let totalPageCount = 1
-  const allBookings = []
-
-  do {
-    const params = buildReservationParams(page, exportLimit)
-    const response = await fetch(`http://localhost:8000/api/bookings/admin/reservations?${params}`)
-    const result = await response.json()
-
-    if (!result.success) {
-      throw new Error(result.message || 'Failed to fetch all bookings for export')
-    }
-
-    const currentPageData = Array.isArray(result.data) ? result.data : []
-    allBookings.push(...currentPageData.map(mapBookingData))
-
-    totalPageCount = Math.max(1, Number(result.pagination?.totalPages) || 1)
-    page += 1
-  } while (page <= totalPageCount)
-
-  return allBookings
-}
-
-const toPercent = (value, total) => {
-  if (!total) return '0.00%'
-  return `${((value / total) * 100).toFixed(2)}%`
-}
+const mapBooking = b => ({
+  id:               b.booking_id,
+  guest_name:       `${b.first_name || ''} ${b.last_name || ''}`.trim() || b.email || 'Guest',
+  email:            b.email || 'N/A',
+  reservation_code: b.booking_reference,
+  check_in:         b.check_in_date,
+  check_out:        b.check_out_date,
+  adults:           parseInt(b.adults) || 0,
+  children:         parseInt(b.children) || 0,
+  status:           b.booking_status?.toLowerCase() || 'pending',
+  payment_status:   b.payment_status,
+  payment_method:   b.payment_method || 'N/A',
+  total:            parseFloat(b.total) || 0,
+  items_list:       b.items_summary || 'N/A',
+  items_descriptions: b.items_descriptions || null
+})
 
 const fetchBookings = async () => {
   loading.value = true
-  
   try {
-    const params = buildReservationParams(currentPage.value, limit)
-
-    const response = await fetch(`http://localhost:8000/api/bookings/admin/reservations?${params}`)
-    const result = await response.json()
-    
+    const res    = await fetch(`http://localhost:8000/api/bookings/admin/reservations?${buildParams(currentPage.value, limit)}`)
+    const result = await res.json()
     if (result.success) {
-      console.log('📦 Admin reservations data:', result.data)
-      showToast('✅ Reservations loaded successfully', 'success')
-      
-      // Map backend data to frontend format
-      bookings.value = (Array.isArray(result.data) ? result.data : []).map(mapBookingData)
-      
-      // Update pagination info
-      if (result.pagination) {
-        totalCount.value = result.pagination.totalCount
-        totalPages.value = result.pagination.totalPages
-      } else {
-        totalCount.value = bookings.value.length
-        totalPages.value = 1
-      }
-    } else {
-      throw new Error(result.message || 'Failed to fetch bookings')
-    }
-  } catch (error) {
-    console.error('Failed to fetch bookings:', error)
-    bookings.value = []
-    showToast('❌ Failed to load bookings', 'error')
-  } finally {
-    loading.value = false
-  }
+      bookings.value  = (Array.isArray(result.data) ? result.data : []).map(mapBooking)
+      totalCount.value = result.pagination?.totalCount || bookings.value.length
+      totalPages.value = result.pagination?.totalPages || 1
+    } else throw new Error(result.message)
+  } catch (e) {
+    bookings.value = []; showToast('Failed to load bookings', 'error')
+  } finally { loading.value = false }
 }
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return 'N/A'
-  const date = new Date(dateStr)
-  // Check if it's the default 1970 date (invalid date)
-  if (date.getFullYear() === 1970) return 'N/A'
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const fetchAllForExport = async () => {
+  const limit = 200; let page = 1; let totalP = 1; const all = []
+  do {
+    const res    = await fetch(`http://localhost:8000/api/bookings/admin/reservations?${buildParams(page, limit)}`)
+    const result = await res.json()
+    if (!result.success) throw new Error(result.message)
+    all.push(...(result.data || []).map(mapBooking))
+    totalP = result.pagination?.totalPages || 1; page++
+  } while (page <= totalP)
+  return all
 }
 
-// Helper function to parse swimming details from item_description
-const parseSwimmingDetails = (itemsDescriptions) => {
-  if (!itemsDescriptions) return null
-  
+const formatDate = d => {
+  if (!d) return 'N/A'
+  const dt = new Date(d)
+  return dt.getFullYear() === 1970 ? 'N/A' : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const parseSwimmingDetails = desc => {
+  if (!desc) return null
   try {
-    // Split multiple descriptions (separated by |||)
-    const descriptions = itemsDescriptions.split('|||')
-    
-    for (const desc of descriptions) {
-      if (!desc || desc === 'null') continue
-      
-      try {
-        const parsed = JSON.parse(desc)
-        // Check if this is swimming details (has dates array)
-        if (parsed && parsed.dates && Array.isArray(parsed.dates)) {
-          return parsed
-        }
-      } catch (e) {
-        // Skip if can't parse individual description
-        continue
-      }
+    for (const d of desc.split('|||')) {
+      if (!d || d === 'null') continue
+      try { const p = JSON.parse(d); if (p?.dates) return p } catch {}
     }
-  } catch (error) {
-    console.error('Error parsing swimming details:', error)
-  }
-  
+  } catch {}
   return null
 }
 
-// Check if booking is a swimming lesson
-const isSwimmingBooking = (itemsList) => {
-  if (!itemsList) return false
-  return String(itemsList).toLowerCase().includes('swimming')
+const isSwimmingBooking = list => list && String(list).toLowerCase().includes('swimming')
+
+const getCheckInDisplay  = b => {
+  if (isSwimmingBooking(b.items_list)) {
+    const sw = parseSwimmingDetails(b.items_descriptions)
+    if (sw?.dates?.length) return formatDate(sw.dates[0])
+  }
+  return formatDate(b.check_in)
 }
 
-// Get display dates for check-in (for swimming, returns first class date)
-const getCheckInDisplay = (booking) => {
-  if (isSwimmingBooking(booking.items_list)) {
-    const swimmingDetails = parseSwimmingDetails(booking.items_descriptions)
-    if (swimmingDetails && swimmingDetails.dates && swimmingDetails.dates.length > 0) {
-      // Return first date
-      return formatDate(swimmingDetails.dates[0])
-    }
+const getCheckOutDisplay = b => {
+  if (isSwimmingBooking(b.items_list)) {
+    const sw = parseSwimmingDetails(b.items_descriptions)
+    if (sw?.dates?.length) return formatDate(sw.dates[sw.dates.length - 1])
   }
-  return formatDate(booking.check_in)
+  return formatDate(b.check_out)
 }
 
-// Get display dates for check-out (for swimming, returns last class date)
-const getCheckOutDisplay = (booking) => {
-  if (isSwimmingBooking(booking.items_list)) {
-    const swimmingDetails = parseSwimmingDetails(booking.items_descriptions)
-    if (swimmingDetails && swimmingDetails.dates && swimmingDetails.dates.length > 0) {
-      // Return last date
-      const lastDate = swimmingDetails.dates[swimmingDetails.dates.length - 1]
-      return formatDate(lastDate)
-    }
+const formatStatus  = s => s.replace(/_/g, ' ').toUpperCase()
+const getStatusClass = s => ({
+  pending: 'status-pending', confirmed: 'status-confirmed',
+  checked_in: 'status-confirmed', checked_out: 'status-confirmed',
+  cancelled: 'status-cancelled', no_show: 'status-cancelled'
+}[s] || 'status-pending')
+
+const getItemLabel = list => {
+  if (!list || list === 'N/A') return 'Other'
+  const s = String(list).toLowerCase()
+  if (s.includes('swimming lesson')) {
+    const m = String(list).match(/Swimming Lesson - (.+?)(?:,|$)/i)
+    return m ? `Swimming: ${m[1].trim()}` : 'Swimming Lesson'
   }
-  return formatDate(booking.check_out)
+  if (s.includes('room')) { const m = String(list).match(/(.+?room[^,]*)/i); return m ? m[1].trim() : 'Room' }
+  if (s.includes('cottage')) return 'Cottage'
+  if (s.includes('event'))   return 'Event'
+  return String(list)
 }
 
-const formatStatus = (status) => {
-  return status.replace(/_/g, ' ').toUpperCase()
-}
-
-const getStatusClass = (status) => {
-  const classes = {
-    pending: 'status-pending',
-    confirmed: 'status-confirmed',
-    checked_in: 'status-confirmed',
-    checked_out: 'status-confirmed',
-    cancelled: 'status-cancelled',
-    no_show: 'status-cancelled'
-  }
-  return classes[status] || 'status-pending'
-}
-
-const getItemLabel = (itemsList) => {
-  if (!itemsList || itemsList === 'N/A') return 'Other'
-  
-  const itemsStr = String(itemsList).toLowerCase()
-  
-  // Check for swimming lesson variations
-  if (itemsStr.includes('swimming lesson')) {
-    // Extract lesson type if possible
-    const match = String(itemsList).match(/Swimming Lesson - (.+?)(?:,|$)/i)
-    if (match) {
-      return `🏊 Swimming: ${match[1].trim()}`
-    }
-    return '🏊 Swimming Lesson'
-  }
-  
-  // Check for room types
-  if (itemsStr.includes('deluxe room') || itemsStr.includes('room')) {
-    // Extract room name if possible
-    const match = String(itemsList).match(/(.+?room[^,]*)/i)
-    if (match) {
-      return `🏨 ${match[1].trim()}`
-    }
-    return '🏨 Room'
-  }
-  
-  if (itemsStr.includes('cottage')) {
-    return '🏠 Cottage'
-  }
-  
-  if (itemsStr.includes('event')) {
-    return '🎉 Event'
-  }
-  
-  return String(itemsList)
-}
-
-const getItemBadgeClass = (itemsList) => {
-  if (!itemsList || itemsList === 'N/A') return 'badge-other'
-  
-  const itemsStr = String(itemsList).toLowerCase()
-  
-  if (itemsStr.includes('swimming')) {
-    return 'badge-swimming'
-  }
-  if (itemsStr.includes('room')) {
-    return 'badge-room'
-  }
-  if (itemsStr.includes('cottage')) {
-    return 'badge-cottage'
-  }
-  if (itemsStr.includes('event')) {
-    return 'badge-event'
-  }
-  
+const getItemBadgeClass = list => {
+  if (!list || list === 'N/A') return 'badge-other'
+  const s = String(list).toLowerCase()
+  if (s.includes('swimming')) return 'badge-swimming'
+  if (s.includes('room'))     return 'badge-room'
+  if (s.includes('cottage'))  return 'badge-cottage'
+  if (s.includes('event'))    return 'badge-event'
   return 'badge-other'
 }
 
-const confirmBooking = async (id) => {
+const confirmBooking = async id => {
   if (!confirm('Confirm this booking?')) return
-  
   try {
-    console.log('Confirming booking:', id)
-    const response = await fetch(`http://localhost:8000/api/bookings/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        booking_status: 'Confirmed'
-      })
+    const res = await fetch(`http://localhost:8000/api/bookings/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ booking_status: 'Confirmed' })
     })
-    
-    const result = await response.json()
-    
-    if (result.success) {
-      showToast('✅ Booking confirmed successfully', 'success')
-      // Refresh data
-      fetchBookings()
-    } else {
-      throw new Error(result.message)
-    }
-  } catch (error) {
-    console.error('Error confirming booking:', error)
-    showToast('❌ Failed to confirm booking', 'error')
-  }
+    const r = await res.json()
+    if (r.success) { showToast('Booking confirmed successfully', 'success'); fetchBookings() }
+    else throw new Error(r.message)
+  } catch { showToast('Failed to confirm booking', 'error') }
 }
 
-const cancelBooking = async (id) => {
+const cancelBooking = async id => {
   if (!confirm('Cancel this booking?')) return
-  
   try {
-    console.log('Cancelling booking:', id)
-    const response = await fetch(`http://localhost:8000/api/bookings/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        booking_status: 'Cancelled'
-      })
+    const res = await fetch(`http://localhost:8000/api/bookings/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ booking_status: 'Cancelled' })
     })
-    
-    const result = await response.json()
-    
-    if (result.success) {
-      showToast('✅ Booking cancelled successfully', 'success')
-      // Refresh data
-      fetchBookings()
-    } else {
-      throw new Error(result.message)
-    }
-  } catch (error) {
-    console.error('Error cancelling booking:', error)
-    showToast('❌ Failed to cancel booking', 'error')
-  }
+    const r = await res.json()
+    if (r.success) { showToast('Booking cancelled', 'success'); fetchBookings() }
+    else throw new Error(r.message)
+  } catch { showToast('Failed to cancel booking', 'error') }
 }
 
-const deleteBooking = async (id) => {
-  if (!confirm('Delete this booking permanently? This action cannot be undone.')) return
-  
+const deleteBooking = async id => {
+  if (!confirm('Delete this booking permanently?')) return
   try {
-    console.log('Deleting booking:', id)
-    const response = await fetch(`http://localhost:8000/api/bookings/${id}`, {
-      method: 'DELETE'
-    })
-    
-    const result = await response.json()
-    
-    if (result.success) {
-      showToast('✅ Booking deleted successfully', 'success')
-      // Refresh data
-      fetchBookings()
-    } else {
-      throw new Error(result.message)
-    }
-  } catch (error) {
-    console.error('Error deleting booking:', error)
-    showToast('❌ Failed to delete booking', 'error')
-  }
+    const res = await fetch(`http://localhost:8000/api/bookings/${id}`, { method: 'DELETE' })
+    const r   = await res.json()
+    if (r.success) { showToast('Booking deleted', 'success'); fetchBookings() }
+    else throw new Error(r.message)
+  } catch { showToast('Failed to delete booking', 'error') }
 }
 
-const handleCheckInSuccess = () => {
-  // Refresh bookings after successful check-in
-  isCheckinScannerOpen.value = false
-  fetchBookings()
-  // Show success toast
-  showToast('✅ Guest checked in successfully', 'success')
-}
+const handleCheckInSuccess = () => { isCheckinScannerOpen.value = false; fetchBookings(); showToast('Guest checked in successfully', 'success') }
+const createNew = () => showToast('Create new reservation coming soon', 'info')
 
-const createNew = () => {
-  showToast('📋 Create new reservation feature coming soon', 'info')
-}
+const toPercent = (v, t) => (!t ? '0.00%' : `${((v / t) * 100).toFixed(2)}%`)
 
 const exportData = async () => {
   try {
-    const exportBookings = await fetchAllBookingsForExport()
-
-    // Prepare booking details data
-    const bookingDetails = exportBookings.map((b, index) => ({
-      'No.': index + 1,
-      'Guest Name': b.guest_name,
-      'Email': b.email,
-      'Check In': getCheckInDisplay(b),
-      'Check Out': getCheckOutDisplay(b),
-      'Booking Type': getItemLabel(b.items_list).replace(/[🏨🏠🏊🎉]/g, '').trim(),
-      'Payment Method': b.payment_method,
-      'Booking Code': b.reservation_code,
-      'Status': formatStatus(b.status),
-      'Amount': b.total
+    const all = await fetchAllForExport()
+    const details = all.map((b, i) => ({
+      'No.': i + 1, 'Guest Name': b.guest_name, 'Email': b.email,
+      'Check In': getCheckInDisplay(b), 'Check Out': getCheckOutDisplay(b),
+      'Booking Type': getItemLabel(b.items_list), 'Payment Method': b.payment_method,
+      'Booking Code': b.reservation_code, 'Status': formatStatus(b.status), 'Amount': b.total
     }))
 
-    // Calculate revenue summary by month
-    const monthlyData = {}
-    exportBookings.forEach(b => {
-      const date = new Date(b.check_in)
-      if (Number.isNaN(date.getTime()) || date.getFullYear() === 1970) return
-
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-      
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = {
-          month: new Date(date.getFullYear(), date.getMonth()).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
-          total_bookings: 0,
-          total_revenue: 0,
-          confirmed: 0,
-          pending: 0,
-          cancelled: 0
-        }
-      }
-      
-      monthlyData[monthKey].total_bookings++
-      monthlyData[monthKey].total_revenue += b.total
-      if (b.status === 'confirmed' || b.status === 'checked_in') monthlyData[monthKey].confirmed++
-      else if (b.status === 'pending') monthlyData[monthKey].pending++
-      else if (b.status === 'cancelled') monthlyData[monthKey].cancelled++
-    })
-
-    const revenueSummary = Object.values(monthlyData).map(m => ({
-      'Month': m.month,
-      'Total Bookings': m.total_bookings,
-      'Total Revenue': m.total_revenue,
-      'Confirmed': m.confirmed,
-      'Pending': m.pending,
-      'Cancelled': m.cancelled
-    }))
-
-    // Calculate totals
-    const totalBookings = exportBookings.length
-    const confirmedBookings = exportBookings.filter(b => b.status === 'confirmed' || b.status === 'checked_in').length
-    const pendingBookings = exportBookings.filter(b => b.status === 'pending').length
-    const cancelledBookings = exportBookings.filter(b => b.status === 'cancelled').length
-    
-    const totalRevenue = exportBookings.reduce((sum, b) => sum + b.total, 0)
-    const confirmedRevenue = exportBookings
-      .filter(b => b.status === 'confirmed' || b.status === 'checked_in')
-      .reduce((sum, b) => sum + b.total, 0)
-    const pendingRevenue = exportBookings
-      .filter(b => b.status === 'pending')
-      .reduce((sum, b) => sum + b.total, 0)
-    const cancelledRevenue = exportBookings
-      .filter(b => b.status === 'cancelled')
-      .reduce((sum, b) => sum + b.total, 0)
-
-    // Profit calculations (assuming 25% operating costs)
-    const operatingCostPercentage = 0.25
-    const operatingCosts = totalRevenue * operatingCostPercentage
-    const netProfit = totalRevenue - operatingCosts
-    const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(2) : 0
-
-    const profitAnalysis = [
-      { 'FINANCIAL SUMMARY': '', 'Amount': '', 'Percentage': '' },
-      { 'FINANCIAL SUMMARY': 'Total Revenue', 'Amount': totalRevenue, 'Percentage': '100%' },
-      { 'FINANCIAL SUMMARY': 'Confirmed Payments', 'Amount': confirmedRevenue, 'Percentage': toPercent(confirmedRevenue, totalRevenue) },
-      { 'FINANCIAL SUMMARY': 'Pending Payments', 'Amount': pendingRevenue, 'Percentage': toPercent(pendingRevenue, totalRevenue) },
-      { 'FINANCIAL SUMMARY': 'Cancelled/Refunded', 'Amount': cancelledRevenue, 'Percentage': toPercent(cancelledRevenue, totalRevenue) },
-      { 'FINANCIAL SUMMARY': '', 'Amount': '', 'Percentage': '' },
-      { 'FINANCIAL SUMMARY': 'Operating Costs (25%)', 'Amount': operatingCosts.toFixed(2), 'Percentage': '25%' },
-      { 'FINANCIAL SUMMARY': 'Net Profit', 'Amount': netProfit.toFixed(2), 'Percentage': profitMargin + '%' },
-      { 'FINANCIAL SUMMARY': '', 'Amount': '', 'Percentage': '' },
-      { 'FINANCIAL SUMMARY': 'BOOKING SUMMARY', 'Amount': '', 'Percentage': '' },
-      { 'FINANCIAL SUMMARY': 'Total Bookings', 'Amount': totalBookings, 'Percentage': '100%' },
-      { 'FINANCIAL SUMMARY': 'Confirmed', 'Amount': confirmedBookings, 'Percentage': toPercent(confirmedBookings, totalBookings) },
-      { 'FINANCIAL SUMMARY': 'Pending', 'Amount': pendingBookings, 'Percentage': toPercent(pendingBookings, totalBookings) },
-      { 'FINANCIAL SUMMARY': 'Cancelled', 'Amount': cancelledBookings, 'Percentage': toPercent(cancelledBookings, totalBookings) }
-    ]
-
-    // Create Excel workbook
-    const workbook = XLSX.utils.book_new()
-    
-    // Add sheets
-    const ws1 = XLSX.utils.json_to_sheet(bookingDetails)
-    const ws2 = XLSX.utils.json_to_sheet(revenueSummary)
-    const ws3 = XLSX.utils.json_to_sheet(profitAnalysis)
-    
-    // Set column widths
-    ws1['!cols'] = [
-      { wch: 5 },
-      { wch: 20 },
-      { wch: 25 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 20 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 12 },
-      { wch: 12 }
-    ]
-    
-    ws2['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }]
-    ws3['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 12 }]
-    
-    XLSX.utils.book_append_sheet(workbook, ws1, 'Booking Details')
-    XLSX.utils.book_append_sheet(workbook, ws2, 'Revenue Summary')
-    XLSX.utils.book_append_sheet(workbook, ws3, 'Profit Analysis')
-    
-    // Generate filename with timestamp
-    const timestamp = new Date().toISOString().split('T')[0]
-    const filename = `Reservations_Report_${timestamp}.xlsx`
-    
-    // Write file
-    XLSX.writeFile(workbook, filename)
-    
-    // Show success toast
-    showToast(`✅ Export successful! File: ${filename}`, 'success')
-  } catch (error) {
-    console.error('Export error:', error)
-    showToast('❌ Failed to export data. Please try again.', 'error')
-  }
+    const wb = XLSX.utils.book_new()
+    const ws = XLSX.utils.json_to_sheet(details)
+    ws['!cols'] = [5, 20, 25, 12, 12, 20, 15, 15, 12, 12].map(w => ({ wch: w }))
+    XLSX.utils.book_append_sheet(wb, ws, 'Booking Details')
+    XLSX.writeFile(wb, `Reservations_${new Date().toISOString().split('T')[0]}.xlsx`)
+    showToast('Export successful', 'success')
+  } catch { showToast('Failed to export data', 'error') }
 }
 
-const applyFilters = () => {
-  currentPage.value = 1
-  fetchBookings()
-}
+const applyFilters = () => { currentPage.value = 1; fetchBookings() }
+const resetFilters = () => { filters.value = { search: '', status: '', from: '', to: '' }; currentPage.value = 1; fetchBookings() }
+const prevPage     = () => { if (currentPage.value > 1) { currentPage.value--; fetchBookings() } }
+const nextPage     = () => { if (currentPage.value < totalPages.value) { currentPage.value++; fetchBookings() } }
+const showToast    = (msg, type = 'success') => { toastMessage.value = msg; toastType.value = type; setTimeout(() => toastMessage.value = '', 4000) }
 
-const resetFilters = () => {
-  filters.value = {
-    search: '',
-    status: '',
-    from: '',
-    to: ''
-  }
-  currentPage.value = 1
-  fetchBookings()
-}
-
-const prevPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--
-    fetchBookings()
-  }
-}
-
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++
-    fetchBookings()
-  }
-}
-
-// Update notification store when pending count changes
-watch(() => pendingCount.value, (newCount) => {
-  // Notifications watch (if needed)
-})
-
-// Toast helper function
-const showToast = (msg, type = 'success') => {
-  toastMessage.value = msg
-  toastType.value = type
-  setTimeout(() => toastMessage.value = '', 4000)
-}
-
-let pollInterval = null
-let visibilityHandler = null
-
+let pollInterval = null; let visHandler = null
 onMounted(() => {
   fetchBookings()
-
-  // Auto-poll every 30 seconds so the list stays real-time
   pollInterval = setInterval(() => fetchBookings(), 30000)
-
-  // Refetch immediately when the user switches back to this browser tab
-  visibilityHandler = () => {
-    if (document.visibilityState === 'visible') fetchBookings()
-  }
-  document.addEventListener('visibilitychange', visibilityHandler)
+  visHandler = () => { if (document.visibilityState === 'visible') fetchBookings() }
+  document.addEventListener('visibilitychange', visHandler)
 })
-
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
-  if (visibilityHandler) document.removeEventListener('visibilitychange', visibilityHandler)
+  if (visHandler) document.removeEventListener('visibilitychange', visHandler)
 })
 </script>
 
 <style scoped>
-@import '../../assets/admin-styles.css';
-
-.header-container {
-  margin-bottom: 1.5rem;
+/* ── Eduardo's Resort Color Palette ── */
+.admin-layout {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-gray-bg:       #EEF5FB;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
 }
 
-.quick-actions {
+@keyframes fadeUp   { from{opacity:0;transform:translateY(8px)}  to{opacity:1;transform:translateY(0)} }
+@keyframes slideIn  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes spin     { to { transform: rotate(360deg) } }
+
+/* ── Layout ── */
+.admin-layout {
+  min-height: 100vh;
+  background: var(--color-gray-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.main-content {
+  margin-left: 0;
+  padding-top: 64px;
+  transition: margin-left 0.3s ease;
+}
+.main-content.shifted { margin-left: 72px; }
+@media (min-width: 768px) { .main-content { margin-left: 262px; } }
+
+.content-container {
+  padding: 1.5rem 1.75rem;
+  max-width: 1400px;
+  margin: 0 auto;
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 1.5rem;
 }
+@media (max-width: 768px) { .content-container { padding: .85rem; gap: 1rem; } }
 
-.quick-actions .btn {
-  font-size: 0.875rem;
-  padding: 0.5rem 1rem;
-}
-
-.item-badge {
-  display: inline-block;
-  padding: 0.35rem 0.75rem;
+/* ── Section Card ── */
+.section-card {
+  background: var(--color-white);
   border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
+  padding: 1.5rem 1.75rem;
+  border: 0.5px solid var(--color-gray-border);
+  box-shadow: 0 2px 16px rgba(3, 105, 161, .07);
+  animation: fadeUp .3s ease both;
 }
+@media (max-width: 768px) { .section-card { padding: 1rem; border-radius: 14px; } }
 
-.badge-swimming {
-  background: rgba(31, 141, 191, 0.15);
-  color: #1F8DBF;
-  border: 1px solid #1F8DBF;
-}
-
-.badge-room {
-  background: rgba(244, 196, 0, 0.15);
-  color: #F4C400;
-  border: 1px solid #F4C400;
-}
-
-.badge-cottage {
-  background: rgba(30, 136, 182, 0.15);
-  color: #1E88B6;
-  border: 1px solid #1E88B6;
-}
-
-.badge-event {
-  background: rgba(242, 194, 0, 0.15);
-  color: #F2C200;
-  border: 1px solid #F2C200;
-}
-
-.badge-other {
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
-}
-
-/* Table Footer */
-.table-footer {
+/* ── Section Header ── */
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(31, 141, 191, 0.1);
+  flex-wrap: wrap;
+  gap: .75rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid rgba(244, 196, 0, .3);
+}
+.section-header-left { flex: 1; min-width: 0; }
+.section-title {
+  font-size: 1.15rem; font-weight: 800; color: var(--color-navy);
+  margin: 0 0 .2rem;
+  display: flex; align-items: center; gap: .65rem;
+}
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 1.1em;
+  background: var(--color-gold);
+  border-radius: 3px; flex-shrink: 0;
+}
+.section-subtitle { font-size: .8rem; color: var(--color-text-light); margin: 0; padding-left: .75rem; }
+.header-actions    { display: flex; gap: .6rem; flex-wrap: wrap; }
+
+/* ── Buttons ── */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: 0 1.2rem; height: 38px;
+  background: var(--color-navy); color: var(--color-white);
+  border: none; border-radius: 12px;
+  font-size: .875rem; font-weight: 700; cursor: pointer;
+  white-space: nowrap; box-shadow: 0 2px 8px rgba(12,59,94,.22);
+  transition: all .18s ease;
+}
+.btn-primary:hover { background: var(--color-primary); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(3,105,161,.28); }
+.btn-primary i { color: var(--color-gold); font-size: .8rem; transition: transform .2s; }
+.btn-primary:hover i { transform: rotate(90deg); }
+
+.btn-outline {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: 0 1.2rem; height: 38px;
+  background: var(--color-white); color: var(--color-primary);
+  border: 1.5px solid rgba(3,105,161,.3); border-radius: 12px;
+  font-size: .875rem; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: all .18s ease;
+}
+.btn-outline:hover { background: var(--color-gray-bg); border-color: var(--color-gold); color: var(--color-navy); transform: translateY(-1px); }
+.btn-outline i { font-size: .8rem; }
+.btn-icon { width: 38px; padding: 0; justify-content: center; }
+
+/* ── Table ── */
+.res-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .875rem;
+}
+.res-table thead th {
+  padding: .7rem 1rem;
+  text-align: left;
+  font-size: .7rem; font-weight: 700;
+  color: var(--color-text-light);
+  text-transform: uppercase; letter-spacing: .6px;
+  background: var(--color-gray-bg);
+  border-bottom: 2px solid rgba(244,196,0,.25);
+}
+.res-table thead th:first-child { border-radius: 10px 0 0 0; }
+.res-table thead th:last-child  { border-radius: 0 10px 0 0; }
+
+.res-table tbody tr {
+  border-bottom: 0.5px solid var(--color-gray-border);
+  transition: background .15s;
+}
+.res-table tbody tr:hover { background: rgba(31,141,191,.04); }
+.res-table tbody tr:last-child { border-bottom: none; }
+
+.res-table tbody td {
+  padding: .85rem 1rem;
+  color: var(--color-text-dark);
+  vertical-align: middle;
 }
 
-/* Pagination */
-.pagination {
-  display: flex;
-  gap: 0.25rem;
+/* Guest cell */
+.guest-cell { display: flex; align-items: center; gap: .65rem; }
+.guest-avatar-mini {
+  width: 32px; height: 32px; border-radius: 9px;
+  background: var(--color-gold); color: var(--color-navy);
+  font-size: .85rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
-
-.pagination-btn {
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 1px solid rgba(31, 141, 191, 0.2);
-  background: white;
-  color: #1F8DBF;
+.guest-name { font-weight: 600; color: var(--color-text-dark); }
+.date-cell  { color: var(--color-text-dark); font-size: .85rem; white-space: nowrap; }
+.muted-cell { color: var(--color-text-light); font-size: .85rem; }
+.code-cell  {
+  font-family: monospace;
+  font-size: .8rem;
+  color: var(--color-primary);
+  background: rgba(31,141,191,.06);
+  padding: .2rem .55rem !important;
   border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
 }
 
-.pagination-btn:hover:not(:disabled) {
-  background: #F4C400;
-  border-color: #F4C400;
-  color: #1F8DBF;
+/* ── Badges ── */
+.item-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: .72rem; font-weight: 600;
+  white-space: nowrap;
+}
+.badge-swimming { background: rgba(31,141,191,.1);  color: var(--color-primary-light); border: 1px solid rgba(31,141,191,.25); }
+.badge-room     { background: rgba(12,59,94,.08);   color: var(--color-navy);          border: 1px solid rgba(12,59,94,.2); }
+.badge-cottage  { background: rgba(244,196,0,.12);  color: #7a5200;                    border: 1px solid rgba(244,196,0,.3); }
+.badge-event    { background: rgba(22,163,74,.1);   color: #15803d;                    border: 1px solid rgba(22,163,74,.25); }
+.badge-other    { background: var(--color-gray-bg); color: var(--color-text-light);    border: 1px solid var(--color-gray-border); }
+
+/* ── Status badges ── */
+.status-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: .7rem; font-weight: 700;
+  letter-spacing: .3px; white-space: nowrap;
+}
+.status-confirmed { background: rgba(22,163,74,.1);   color: #15803d; border: 1px solid rgba(22,163,74,.25); }
+.status-pending   { background: rgba(244,196,0,.15);  color: #7a5200; border: 1px solid rgba(244,196,0,.3); }
+.status-cancelled { background: rgba(220,38,38,.1);   color: #dc2626; border: 1px solid rgba(220,38,38,.22); }
+
+/* ── Action buttons ── */
+.action-group { display: flex; gap: .3rem; }
+.act-btn {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--color-gray-border);
+  background: var(--color-white);
+  font-size: .75rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-light);
+  transition: all .15s ease;
+}
+.act-btn:hover { transform: translateY(-1px); }
+.confirm-btn { color: #15803d; }
+.confirm-btn:hover { background: #16a34a; color: var(--color-white); border-color: #16a34a; }
+.cancel-btn  { color: #92700a; }
+.cancel-btn:hover  { background: var(--color-gold); color: var(--color-navy); border-color: var(--color-gold); }
+.delete-btn  { color: #dc2626; }
+.delete-btn:hover  { background: #ef4444; color: var(--color-white); border-color: #ef4444; }
+
+/* ── Table Footer ── */
+.table-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 1.25rem; padding-top: 1rem;
+  border-top: 1px solid var(--color-gray-border);
+  flex-wrap: wrap; gap: .75rem;
+}
+.page-info { font-size: .8rem; color: var(--color-text-light); }
+.page-info strong { color: var(--color-text-dark); }
+
+.pagination { display: flex; gap: .25rem; }
+.pg-btn {
+  width: 34px; height: 34px;
+  border: 1.5px solid var(--color-gray-border);
+  background: var(--color-white);
+  color: var(--color-primary);
+  border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; font-weight: 600;
+  transition: all .18s ease;
+}
+.pg-btn:hover:not(:disabled) { background: var(--color-gold); border-color: var(--color-gold); color: var(--color-navy); }
+.pg-btn.active { background: var(--color-navy); color: var(--color-white); border-color: var(--color-navy); }
+.pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Loading State ── */
+.loading-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: .75rem;
+  padding: 3rem 2rem;
+  color: var(--color-text-light); font-size: .875rem;
+}
+.loading-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--color-gray-border);
+  border-top-color: var(--color-primary-light);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
 }
 
-.pagination-btn.active {
-  background: #1F8DBF;
-  color: white;
-  border-color: #1F8DBF;
-}
-
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Empty State */
+/* ── Empty State ── */
 .empty-state {
-  text-align: center;
-  padding: 3rem 1rem;
-  background: white;
-  border-radius: 12px;
-  border: 2px dashed #F4C400;
-  color: #1F8DBF;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: .75rem;
+  padding: 4rem 2rem; text-align: center;
+  border: 2px dashed rgba(244,196,0,.4);
+  border-radius: 16px;
+  background: rgba(244,196,0,.02);
 }
+.empty-icon-wrap {
+  width: 60px; height: 60px; border-radius: 16px;
+  background: rgba(3,105,161,.08); color: var(--color-primary-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+}
+.empty-title { font-size: .95rem; font-weight: 700; color: var(--color-text-dark); margin: 0; }
+.empty-sub   { font-size: .8rem;  color: var(--color-text-light); margin: 0; }
 
-.empty-state i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  color: #F4C400;
-}
-
-.empty-state p {
-  font-size: 1rem;
-  margin: 0;
-}
-
-/* Mobile Cards */
-.mobile-cards {
-  display: none;
-  margin-top: 2rem;
-}
+/* ── Mobile Cards ── */
+.mobile-cards { display: none; }
 
 @media (max-width: 768px) {
-  .desktop-table {
-    display: none;
-  }
-  
-  .mobile-cards {
-    display: block;
-  }
-  
-  .mobile-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #F4C400;
-  }
-  
-  .mobile-header h3 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1F8DBF;
-    margin: 0;
-  }
+  .desktop-table { display: none; }
+  .mobile-cards  { display: block; }
+  .mobile-header { border-bottom: none; padding-bottom: 0; margin-bottom: 1rem; }
 }
 
 .booking-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1rem;
+  background: var(--color-white);
+  border-radius: 16px;
+  border: 0.5px solid var(--color-gray-border);
+  box-shadow: 0 2px 10px rgba(3,105,161,.07);
   margin-bottom: 1rem;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
-  border: 1px solid rgba(31, 141, 191, 0.1);
+  overflow: hidden;
+  transition: box-shadow .2s, border-color .2s;
 }
+.booking-card:hover { box-shadow: 0 6px 20px rgba(3,105,161,.12); border-color: rgba(244,196,0,.35); }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid rgba(244, 196, 0, 0.3);
+.bc-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: .9rem 1rem;
+  background: var(--color-navy);
+  border-bottom: 2px solid var(--color-gold);
 }
-
-.guest-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
+.bc-guest { display: flex; align-items: center; gap: .65rem; }
 .guest-avatar {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 8px;
-  background: #F4C400;
-  color: #1F8DBF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 1rem;
-  border: 2px solid white;
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--color-gold); color: var(--color-navy);
+  font-size: .95rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
+.bc-name  { color: var(--color-white); font-size: .875rem; font-weight: 700; }
+.bc-email { color: rgba(255,255,255,.55); font-size: .75rem; margin-top: 1px; }
 
-.card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.card-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.card-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-bottom: 0.25rem;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  font-weight: 600;
-}
-
-.card-value {
-  font-size: 0.875rem;
-  color: #1E88B6;
-  font-weight: 500;
-}
-
-.card-value.code {
-  font-family: monospace;
-  background: rgba(31, 141, 191, 0.05);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+.bc-body { padding: .85rem 1rem; display: flex; flex-direction: column; gap: .65rem; }
+.bc-row  { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.bc-label { font-size: .68rem; font-weight: 700; color: var(--color-text-light); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+.bc-value { font-size: .85rem; color: var(--color-text-dark); font-weight: 500; }
+.bc-code  {
+  font-family: monospace; font-size: .8rem;
+  background: rgba(31,141,191,.07);
+  color: var(--color-primary);
+  padding: 2px 8px; border-radius: 5px;
   display: inline-block;
 }
 
-.card-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  padding-top: 0.75rem;
-  border-top: 1px solid rgba(244, 196, 0, 0.2);
+.bc-actions {
+  display: flex; gap: .4rem; justify-content: flex-end;
+  padding: .65rem 1rem;
+  border-top: 1px solid var(--color-gray-border);
+  background: var(--color-gray-bg);
 }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 2rem; right: 2rem;
+  display: flex; align-items: center; gap: .6rem;
+  padding: .8rem 1.2rem;
+  border-radius: 12px;
+  font-size: .875rem; font-weight: 600;
+  color: var(--color-white);
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+  z-index: 9999;
+}
+.toast--success { background: #16a34a; }
+.toast--error   { background: #dc2626; }
+.toast-enter-active, .toast-leave-active { transition: all .3s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(12px); }
 </style>

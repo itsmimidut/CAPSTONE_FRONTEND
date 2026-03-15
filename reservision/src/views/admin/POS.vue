@@ -1,16 +1,14 @@
 <template>
   <div class="admin-layout" :class="{ 'pos-fullscreen': isFullscreen }">
-    <!-- Sidebar -->
-    <AdminSidebar 
+
+    <AdminSidebar
       :is-open="sidebarOpen"
       :is-collapsed="sidebarCollapsed"
       @close="sidebarOpen = false"
     />
 
-    <!-- Main Content -->
     <main class="main-content" :class="{ shifted: sidebarCollapsed }">
 
-      <!-- POS Header -->
       <AdminHeader
         :pos-mode="true"
         :categories="visibleCategories"
@@ -28,7 +26,6 @@
         @toggle-fullscreen="toggleFullscreen"
       />
 
-      <!-- QR Check-In Scanner Modal -->
       <QRCheckInScanner
         :is-open="isCheckinScannerOpen"
         @close="isCheckinScannerOpen = false"
@@ -37,243 +34,311 @@
 
       <div class="pos-container">
 
-        <!-- POS GRID (hidden when transaction is open) -->
+        <!-- ══ POS VIEW ══ -->
         <div v-show="!showTransaction" class="pos-section">
-
-          <!-- Items + Cart Grid -->
           <div class="pos-grid">
 
-            <!-- ITEMS -->
-            <div class="card p-8 items-card">
+            <!-- ── Items Panel ── -->
+            <div class="items-panel">
 
-              <!-- Restaurant Type Filters -->
-              <div
-                v-if="currentCategory === 'restaurant' && restaurantTypeFilters.length > 0"
-                class="mb-4 menu-filter-wrap"
-              >
-                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Filter Menu</div>
-                <div class="flex flex-wrap gap-2 items-center">
-                  <!-- All chip -->
-                  <button type="button" @click="restaurantTypeFilter = 'all'; showMoreFilters = false"
-                    :class="['chip-btn', restaurantTypeFilter === 'all' ? 'chip-active' : 'chip-idle']"
-                  >All</button>
-
-                  <!-- First 5 visible chips -->
-                  <button
-                    v-for="filter in visibleFilters" :key="filter"
-                    type="button" @click="restaurantTypeFilter = filter; showMoreFilters = false"
-                    :class="['chip-btn', restaurantTypeFilter === filter ? 'chip-active' : 'chip-idle']"
-                  >{{ filter }}</button>
-
-                  <!-- More dropdown -->
-                  <div v-if="overflowFilters.length > 0" class="filter-more-wrap">
-                    <button
-                      type="button"
-                      :class="['chip-btn chip-more', (showMoreFilters || overflowFilters.includes(restaurantTypeFilter)) ? 'chip-active' : 'chip-idle']"
-                      @click.stop="showMoreFilters = !showMoreFilters"
-                    >
-                      {{ overflowFilters.includes(restaurantTypeFilter) ? restaurantTypeFilter : 'More' }}
-                      <i :class="showMoreFilters ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" style="font-size:0.65rem;margin-left:3px;"></i>
-                    </button>
-                    <div v-if="showMoreFilters" class="filter-dropdown" @click.stop>
-                      <button
-                        v-for="filter in overflowFilters" :key="filter"
-                        type="button"
-                        :class="['filter-dropdown-item', restaurantTypeFilter === filter ? 'filter-dropdown-item--active' : '']"
-                        @click="restaurantTypeFilter = filter; showMoreFilters = false"
-                      >{{ filter }}</button>
-                    </div>
+              <!-- Panel header -->
+              <div class="panel-header">
+                <div class="panel-header-left">
+                  <div class="panel-icon"><i class="fas fa-th"></i></div>
+                  <div>
+                    <div class="panel-title">Menu Items</div>
+                    <div class="panel-sub">Select items to add to cart</div>
                   </div>
                 </div>
               </div>
 
-              <!-- Items Grid -->
-              <div class="items-scroll">
-                <div 
-                  v-for="category in visibleCategories" 
+              <!-- Restaurant type filters -->
+              <div
+                v-if="currentCategory === 'restaurant' && restaurantTypeFilters.length > 0"
+                class="filter-strip"
+              >
+                <button
+                  type="button"
+                  @click="restaurantTypeFilter = 'all'; showMoreFilters = false"
+                  :class="['filter-chip', restaurantTypeFilter === 'all' ? 'chip--active' : 'chip--idle']"
+                >All</button>
+
+                <button
+                  v-for="f in visibleFilters" :key="f"
+                  type="button"
+                  @click="restaurantTypeFilter = f; showMoreFilters = false"
+                  :class="['filter-chip', restaurantTypeFilter === f ? 'chip--active' : 'chip--idle']"
+                >{{ f }}</button>
+
+                <div v-if="overflowFilters.length > 0" class="more-wrap">
+                  <button
+                    type="button"
+                    :class="['filter-chip chip--more', (showMoreFilters || overflowFilters.includes(restaurantTypeFilter)) ? 'chip--active' : 'chip--idle']"
+                    @click.stop="showMoreFilters = !showMoreFilters"
+                  >
+                    {{ overflowFilters.includes(restaurantTypeFilter) ? restaurantTypeFilter : 'More' }}
+                    <i :class="showMoreFilters ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" class="more-arrow"></i>
+                  </button>
+                  <div v-if="showMoreFilters" class="more-dropdown" @click.stop>
+                    <button
+                      v-for="f in overflowFilters" :key="f"
+                      type="button"
+                      :class="['more-item', restaurantTypeFilter === f ? 'more-item--active' : '']"
+                      @click="restaurantTypeFilter = f; showMoreFilters = false"
+                    >{{ f }}</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Items scrollable area -->
+              <div class="items-body">
+                <div
+                  v-for="category in visibleCategories"
                   :key="`items-${category.id}`"
                   v-show="currentCategory === category.id"
-                  class="category-items grid grid-cols-2 md:grid-cols-3 gap-3"
                 >
-                  <button 
-                    v-for="item in getFilteredItems(category.items, category.id)" 
-                    :key="item.name"
-                    @click="handleItemClick(item.name, item.price, category.id)" 
-                    class="item-btn p-3 bg-white"
-                  >
-                    <div class="font-medium text-gray-800">{{ item.name }}</div>
-                    <div class="text-green-600 font-bold text-lg mt-1">₱{{ item.price.toLocaleString() }}</div>
-                  </button>
+                  <!-- Grouped restaurant view (only when not searching) -->
+                  <template v-if="category.id === 'restaurant' && restaurantTypeFilter === 'all' && !searchQuery && groupedRestaurantItems.length > 0">
+                    <div v-for="group in groupedRestaurantItems" :key="group.type" class="item-group">
+                      <div class="group-header">
+                        <span class="group-label">{{ group.type }}</span>
+                        <span class="group-count">{{ group.items.length }}</span>
+                      </div>
+                      <div class="items-grid">
+                        <button
+                          v-for="item in group.items" :key="item.name"
+                          @click="handleItemClick(item.name, item.price, category.id)"
+                          class="item-card"
+                        >
+                          <div class="item-card-icon"><i class="fas fa-utensils"></i></div>
+                          <div class="item-card-name">{{ item.name }}</div>
+                          <div class="item-card-price">₱{{ item.price.toLocaleString() }}</div>
+                        </button>
+                      </div>
+                    </div>
+                    <div v-if="uncategorizedRestaurantItems.length > 0" class="item-group">
+                      <div class="group-header">
+                        <span class="group-label">Other</span>
+                        <span class="group-count">{{ uncategorizedRestaurantItems.length }}</span>
+                      </div>
+                      <div class="items-grid">
+                        <button
+                          v-for="item in uncategorizedRestaurantItems" :key="item.name"
+                          @click="handleItemClick(item.name, item.price, category.id)"
+                          class="item-card"
+                        >
+                          <div class="item-card-icon"><i class="fas fa-utensils"></i></div>
+                          <div class="item-card-name">{{ item.name }}</div>
+                          <div class="item-card-price">₱{{ item.price.toLocaleString() }}</div>
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- Flat grid (filtered category OR searching) -->
+                  <template v-else>
+                    <div v-if="getFilteredItems(category.items, category.id).length === 0" class="items-no-results">
+                      <i class="fas fa-search"></i>
+                      <p>No items match "<strong>{{ searchQuery }}</strong>"</p>
+                    </div>
+                    <div v-else class="items-grid">
+                      <button
+                        v-for="item in getFilteredItems(category.items, category.id)"
+                        :key="item.name"
+                        @click="handleItemClick(item.name, item.price, category.id)"
+                        class="item-card"
+                      >
+                        <div class="item-card-icon">
+                          <i :class="`fas fa-${category.id === 'rooms' ? 'bed' : category.id === 'cottage' ? 'home' : category.id === 'event' ? 'calendar-alt' : 'utensils'}`"></i>
+                        </div>
+                        <div class="item-card-name">{{ item.name }}</div>
+                        <div class="item-card-price">₱{{ item.price.toLocaleString() }}</div>
+                      </button>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>
 
-            <!-- CART -->
-            <div class="cart-card">
+            <!-- ── Cart Panel ── -->
+            <div class="cart-panel">
+
               <!-- Cart Header -->
               <div class="cart-header">
-                <div class="cart-title">
-                  <i class="fas fa-receipt"></i>
-                  <span>Current Transaction</span>
+                <div class="cart-header-left">
+                  <div class="cart-header-icon"><i class="fas fa-receipt"></i></div>
+                  <div>
+                    <div class="cart-header-title">Current Order</div>
+                    <div class="cart-header-sub">{{ cart.length }} item{{ cart.length !== 1 ? 's' : '' }}</div>
+                  </div>
                 </div>
-                <button @click="clearCart" class="cart-clear-btn" title="Clear all">
-                  <i class="fas fa-trash-alt"></i> Clear
+                <button @click="clearCart" class="cart-clear-btn" title="Clear cart">
+                  <i class="fas fa-trash-alt"></i>
                 </button>
               </div>
 
               <!-- Cart Items -->
-              <div class="cart-content">
-                <div class="cart-items-area">
-                  <!-- Empty State -->
-                  <div v-if="cart.length === 0" class="cart-empty-state">
-                    <div class="cart-empty-icon"><i class="fas fa-shopping-basket"></i></div>
-                    <p>No items added yet</p>
-                    <span>Tap an item to add it here</span>
-                  </div>
+              <div class="cart-items-scroll">
+                <div v-if="cart.length === 0" class="cart-empty">
+                  <div class="cart-empty-icon"><i class="fas fa-shopping-basket"></i></div>
+                  <p>No items yet</p>
+                  <span>Tap an item on the left to add it here</span>
+                </div>
 
-                  <!-- Items List -->
+                <div v-else class="cart-list">
                   <div
-                    v-else
                     v-for="(item, index) in cart"
                     :key="index"
-                    class="cart-item"
+                    class="cart-row"
                   >
-                    <div class="cart-item-left">
-                      <div class="cart-item-name">{{ item.name }}</div>
-                      <div v-if="item.isBooking" class="cart-item-meta">
+                    <div class="cart-row-left">
+                      <div class="cart-row-name">{{ item.name }}</div>
+                      <div v-if="item.isBooking" class="cart-row-meta">
                         <span><i class="fas fa-user"></i> {{ item.firstName }} {{ item.lastName }}</span>
-                        <span><i class="fas fa-calendar"></i> {{ item.checkIn }} – {{ item.checkOut }}</span>
+                        <span><i class="fas fa-calendar-alt"></i> {{ item.checkIn }} – {{ item.checkOut }}</span>
                         <span v-if="item.nights"><i class="fas fa-moon"></i> {{ item.nights }} night{{ item.nights > 1 ? 's' : '' }}</span>
                       </div>
-                      <div v-else class="cart-item-qty">× {{ item.qty }}</div>
+                      <div v-else class="cart-row-qty">× {{ item.qty }}</div>
                     </div>
-                    <div class="cart-item-right">
-                      <span class="cart-item-price">₱{{ item.price.toLocaleString() }}</span>
-                      <button @click="removeItem(index)" class="cart-remove-btn">
+                    <div class="cart-row-right">
+                      <span class="cart-row-price">₱{{ item.price.toLocaleString() }}</span>
+                      <button @click="removeItem(index)" class="cart-row-remove">
                         <i class="fas fa-times"></i>
                       </button>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <!-- Cart Footer -->
-                <div class="cart-footer">
-                  <!-- Total -->
-                  <div class="cart-total">
-                    <span class="cart-total-label">Total</span>
-                    <span class="cart-total-amount">₱{{ total.toLocaleString() }}</span>
-                  </div>
+              <!-- Cart Footer -->
+              <div class="cart-footer">
 
-                  <!-- Divider -->
-                  <div class="cart-divider"></div>
-
-                  <!-- Payment Method -->
-                  <div class="cart-payment">
-                    <div class="cart-payment-label"><i class="fas fa-credit-card"></i> Payment Method</div>
-                    <div class="cart-payment-btns">
-                      <button
-                        type="button"
-                        :class="['cart-pay-btn', paymentMethod === 'GCash' ? 'active-gcash' : '']"
-                        @click="paymentMethod = 'GCash'"
-                      >
-                        <i class="fas fa-wallet"></i> GCash
-                        <i v-if="paymentMethod === 'GCash'" class="fas fa-check-circle cart-pay-check"></i>
-                      </button>
-                      <button
-                        type="button"
-                        :class="['cart-pay-btn', paymentMethod === 'Cash' ? 'active-cash' : '']"
-                        @click="paymentMethod = 'Cash'"
-                      >
-                        <i class="fas fa-money-bill-wave"></i> Cash
-                        <i v-if="paymentMethod === 'Cash'" class="fas fa-check-circle cart-pay-check"></i>
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Checkout Button -->
-                  <button @click="checkout" class="cart-checkout-btn">
-                    <i class="fas fa-check-circle"></i> Pay & Complete
-                  </button>
+                <!-- Total bar -->
+                <div class="total-bar">
+                  <span class="total-label">Total</span>
+                  <span class="total-amount">₱{{ total.toLocaleString() }}</span>
                 </div>
+
+                <!-- Payment method -->
+                <div class="payment-section">
+                  <div class="payment-label"><i class="fas fa-credit-card"></i> Payment Method</div>
+                  <div class="payment-btns">
+                    <button
+                      type="button"
+                      :class="['pay-btn', paymentMethod === 'GCash' ? 'pay-btn--gcash' : '']"
+                      @click="paymentMethod = 'GCash'"
+                    >
+                      <i class="fas fa-wallet"></i>
+                      <span>GCash</span>
+                      <i v-if="paymentMethod === 'GCash'" class="fas fa-check-circle pay-check"></i>
+                    </button>
+                    <button
+                      type="button"
+                      :class="['pay-btn', paymentMethod === 'Cash' ? 'pay-btn--cash' : '']"
+                      @click="paymentMethod = 'Cash'"
+                    >
+                      <i class="fas fa-money-bill-wave"></i>
+                      <span>Cash</span>
+                      <i v-if="paymentMethod === 'Cash'" class="fas fa-check-circle pay-check"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Checkout -->
+                <button @click="checkout" class="checkout-btn">
+                  <i class="fas fa-check-circle"></i>
+                  <span>Pay & Complete</span>
+                  <span class="checkout-amount">₱{{ total.toLocaleString() }}</span>
+                </button>
+
               </div>
             </div>
+
           </div>
         </div>
 
-        <!-- TRANSACTION HISTORY (shown when showTransaction is true) -->
-        <div v-show="showTransaction" class="transaction-section card p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="font-bold text-lg text-gray-800"><i class="fas fa-history mr-2"></i>Recent POS Transactions</h2>
-            <div class="flex gap-2">
-              <button @click="exportAllTransactions" class="text-green-600 hover:text-green-800 text-sm font-medium transition-all">
-                <i class="fas fa-file-excel mr-1"></i>Export to Excel
+        <!-- ══ TRANSACTION HISTORY ══ -->
+        <div v-show="showTransaction" class="trans-section">
+
+          <div class="trans-header">
+            <div class="trans-header-left">
+              <div class="panel-icon"><i class="fas fa-history"></i></div>
+              <div>
+                <div class="panel-title">POS Transaction History</div>
+                <div class="panel-sub">{{ filteredTransactionHistory.length }} transaction{{ filteredTransactionHistory.length !== 1 ? 's' : '' }}</div>
+              </div>
+            </div>
+            <div class="trans-actions">
+              <button @click="exportAllTransactions" class="btn-export">
+                <i class="fas fa-file-excel"></i> Export Excel
               </button>
-              <button @click="clearHistory" class="text-red-600 hover:text-red-800 text-sm font-medium transition-all">
-                <i class="fas fa-trash mr-1"></i>Clear History
+              <button @click="clearHistory" class="btn-danger-outline">
+                <i class="fas fa-trash"></i> Clear History
               </button>
             </div>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+          <div class="trans-table-wrap">
+            <table class="trans-table">
               <thead>
-                <tr class="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200">
-                  <th class="p-3 text-left font-semibold text-gray-700">Receipt</th>
-                  <th class="p-3 text-left font-semibold text-gray-700">Items</th>
-                  <th class="p-3 text-left font-semibold text-gray-700">Type</th>
-                  <th class="p-3 text-left font-semibold text-gray-700">Payment</th>
-                  <th class="p-3 text-left font-semibold text-gray-700">Amount</th>
-                  <th class="p-3 text-left font-semibold text-gray-700">Date & Time</th>
-                  <th class="p-3 text-center font-semibold text-gray-700">Actions</th>
+                <tr>
+                  <th>Receipt</th>
+                  <th>Items</th>
+                  <th>Type</th>
+                  <th>Payment</th>
+                  <th>Amount</th>
+                  <th>Date & Time</th>
+                  <th class="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="filteredTransactionHistory.length === 0">
-                  <td colspan="7" class="p-8 text-center text-gray-400">
-                    <i class="fas fa-inbox text-4xl mb-2 block"></i>No transactions yet
+                  <td colspan="7">
+                    <div class="trans-empty">
+                      <div class="empty-icon-wrap"><i class="fas fa-inbox"></i></div>
+                      <p class="empty-title">No transactions yet</p>
+                      <p class="empty-sub">Completed transactions will appear here.</p>
+                    </div>
                   </td>
                 </tr>
-                <tr 
+                <tr
                   v-else
-                  v-for="(trans, index) in filteredTransactionHistory" 
+                  v-for="trans in filteredTransactionHistory"
                   :key="trans.receiptNo"
-                  :class="['border-b hover:bg-blue-50 transition-colors', trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo) ? 'bg-yellow-50 border-l-4 border-yellow-400' : '']"
+                  :class="['trans-row', trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo) ? 'trans-row--new' : '']"
                 >
-                  <td class="p-3 font-semibold text-blue-700">
-                    POS-{{ trans.receiptNo }}
-                    <span v-if="trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo)"
-                      class="ml-2 inline-block bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-bold">
-                      <i class="fas fa-star mr-1"></i>NEW
-                    </span>
+                  <td>
+                    <div class="receipt-cell">
+                      <span class="receipt-no">POS-{{ trans.receiptNo }}</span>
+                      <span v-if="trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo)" class="new-badge">
+                        NEW
+                      </span>
+                    </div>
                   </td>
-                  <td class="p-3">
-                    <div class="text-gray-700">{{ getItemsPreview(trans.items) }}</div>
-                    <button @click="viewDetails(trans.receiptNo)" class="text-blue-600 text-xs hover:underline mt-1 transition-all">
+                  <td>
+                    <div class="items-preview">{{ getItemsPreview(trans.items) }}</div>
+                    <button @click="viewDetails(trans.receiptNo)" class="view-btn">
                       <i class="fas fa-eye"></i> View Details
                     </button>
                   </td>
-                  <td class="p-3 text-gray-700">{{ trans.type }}</td>
-                  <td class="p-3">
-                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">{{ trans.payment }}</span>
+                  <td><span class="type-pill">{{ trans.type }}</span></td>
+                  <td>
+                    <span :class="['pay-badge', trans.payment === 'GCash' ? 'pay-badge--gcash' : 'pay-badge--cash']">
+                      {{ trans.payment }}
+                    </span>
                   </td>
-                  <td class="p-3 font-bold text-gray-800">₱{{ trans.total.toLocaleString() }}</td>
-                  <td class="p-3 text-gray-600">
-                    {{ trans.date }}<br>
-                    <span class="text-xs text-gray-400">{{ trans.time }}</span>
+                  <td class="amount-cell">₱{{ trans.total.toLocaleString() }}</td>
+                  <td>
+                    <div class="date-cell">{{ trans.date }}</div>
+                    <div class="time-cell">{{ trans.time }}</div>
                   </td>
-                  <td class="p-3 text-center">
-                    <button @click="printReceipt(trans.receiptNo)" class="text-green-600 hover:text-green-800 mr-3 transition-all hover:scale-110 inline-block" title="Print">
-                      <i class="fas fa-print text-lg"></i>
-                    </button>
-                    <button @click="downloadReceipt(trans.receiptNo)" class="text-blue-600 hover:text-blue-800 mr-3 transition-all hover:scale-110 inline-block" title="Download">
-                      <i class="fas fa-download text-lg"></i>
-                    </button>
-                    <button @click="customizeReceipt(trans.receiptNo)" class="text-purple-600 hover:text-purple-800 mr-3 transition-all hover:scale-110 inline-block" title="Customize">
-                      <i class="fas fa-palette text-lg"></i>
-                    </button>
-                    <button @click="deleteTransaction(trans.receiptNo)" class="text-red-600 hover:text-red-800 transition-all hover:scale-110 inline-block" title="Delete">
-                      <i class="fas fa-trash text-lg"></i>
-                    </button>
+                  <td>
+                    <div class="tbl-acts">
+                      <button @click="printReceipt(trans.receiptNo)" class="tbl-btn tbl-btn--print" title="Print"><i class="fas fa-print"></i></button>
+                      <button @click="downloadReceipt(trans.receiptNo)" class="tbl-btn tbl-btn--dl" title="Download"><i class="fas fa-download"></i></button>
+                      <button @click="customizeReceipt(trans.receiptNo)" class="tbl-btn tbl-btn--cust" title="Customize"><i class="fas fa-palette"></i></button>
+                      <button @click="deleteTransaction(trans.receiptNo)" class="tbl-btn tbl-btn--del" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -455,167 +520,241 @@
 
     </main>
 
-    <!-- Toast -->
-    <div 
-      v-if="toastMessage" 
-      class="fixed bottom-8 right-8 px-6 py-4 rounded-xl font-bold text-sm shadow-2xl z-50 text-white"
-      :class="toastType === 'success' ? 'bg-green-500' : 'bg-red-500'"
-    >
-      {{ toastMessage }}
+    <!-- ══ RECEIPT CUSTOMIZER MODAL ══ -->
+    <div v-if="showReceiptCustomizer" class="modal-overlay" @click.self="showReceiptCustomizer = false">
+      <div class="modal-box" @click.stop>
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-head-icon modal-head-icon--gold"><i class="fas fa-palette"></i></div>
+            <div>
+              <div class="modal-title">Customize Receipt</div>
+              <div class="modal-sub">POS-{{ selectedReceipt?.receiptNo }}</div>
+            </div>
+          </div>
+          <button @click="showReceiptCustomizer = false" class="modal-close-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-paint-brush"></i> Colors</div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label">Header Background</label>
+                <div class="color-row">
+                  <input type="color" v-model="receiptStyle.headerBg" class="color-swatch" />
+                  <input type="text" v-model="receiptStyle.headerBg" class="form-input font-mono" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Header Text</label>
+                <div class="color-row">
+                  <input type="color" v-model="receiptStyle.headerText" class="color-swatch" />
+                  <input type="text" v-model="receiptStyle.headerText" class="form-input font-mono" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-file-alt"></i> Content</div>
+            <div class="form-group">
+              <label class="form-label">Company Name</label>
+              <input type="text" v-model="receiptStyle.companyName" class="form-input" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button @click="showReceiptCustomizer = false" class="btn-cancel">Cancel</button>
+          <button @click="downloadCustomizedReceipt" class="btn-action btn-action--green"><i class="fas fa-download"></i> Download</button>
+          <button @click="saveReceiptStyle" class="btn-action btn-action--primary"><i class="fas fa-save"></i> Save Style</button>
+        </div>
+      </div>
     </div>
+
+    <!-- ══ BOOKING MODAL ══ -->
+    <POSRoomBookingModal
+      :is-open="showBookingModal"
+      :item-name="pendingBookingItem?.name || ''"
+      :item-price="pendingBookingItem?.price || 0"
+      @close="showBookingModal = false"
+      @confirm="handleBookingConfirm"
+    />
+
+    <!-- ══ TRANSACTION DETAILS MODAL ══ -->
+    <div v-if="showTransactionDetails && selectedTransaction" class="modal-overlay" @click.self="showTransactionDetails = false">
+      <div class="modal-box" @click.stop>
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-head-icon"><i class="fas fa-receipt"></i></div>
+            <div>
+              <div class="modal-title">Transaction Details</div>
+              <div class="modal-sub">POS-{{ selectedTransaction.receiptNo }}</div>
+            </div>
+          </div>
+          <button @click="showTransactionDetails = false" class="modal-close-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-info-circle"></i> Transaction Info</div>
+            <div class="detail-grid">
+              <div class="detail-row"><span class="detail-key">Receipt No</span><span class="detail-val">POS-{{ selectedTransaction.receiptNo }}</span></div>
+              <div class="detail-row"><span class="detail-key">Type</span><span class="detail-val">{{ selectedTransaction.type }}</span></div>
+              <div class="detail-row"><span class="detail-key">Date</span><span class="detail-val">{{ selectedTransaction.date }}</span></div>
+              <div class="detail-row"><span class="detail-key">Time</span><span class="detail-val">{{ selectedTransaction.time }}</span></div>
+            </div>
+          </div>
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-shopping-cart"></i> Items</div>
+            <div class="items-detail-list">
+              <div v-for="(item, idx) in selectedTransaction.items" :key="idx" class="items-detail-row">
+                <div class="items-detail-left">
+                  <div class="items-detail-name">{{ item.name }}</div>
+                  <div v-if="item.bookingReference" class="items-detail-ref"><i class="fas fa-tag"></i> Ref: {{ item.bookingReference }}</div>
+                </div>
+                <div class="items-detail-price">₱{{ item.price.toLocaleString() }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-credit-card"></i> Payment</div>
+            <div class="detail-grid">
+              <div class="detail-row">
+                <span class="detail-key">Method</span>
+                <span :class="['pay-badge', selectedTransaction.payment === 'GCash' ? 'pay-badge--gcash' : 'pay-badge--cash']">{{ selectedTransaction.payment }}</span>
+              </div>
+              <div class="detail-row detail-row--total">
+                <span class="detail-key">Total Amount</span>
+                <span class="detail-total">₱{{ selectedTransaction.total.toLocaleString() }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button @click="printReceipt(selectedTransaction.receiptNo)" class="btn-action btn-action--green"><i class="fas fa-print"></i> Print</button>
+          <button @click="showTransactionDetails = false" class="btn-cancel"><i class="fas fa-times"></i> Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TOAST ══ -->
+    <transition name="toast">
+      <div v-if="toastMessage" :class="['toast', toastType === 'success' ? 'toast--success' : 'toast--error']">
+        <i :class="toastType === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'"></i>
+        {{ toastMessage }}
+      </div>
+    </transition>
+
   </div>
 </template>
 
 <script>
-import AdminSidebar from '../../components/Admin/AdminSidebar.vue';
-import AdminHeader from '../../components/Admin/AdminHeader.vue';
-import QRCheckInScanner from '../../components/QRCheckInScanner.vue';
-import POSRoomBookingModal from '../../components/POSRoomBookingModal.vue';
-import QRCode from 'qrcode';
-import { useAuthStore } from '../../stores/auth';
-import { useNotificationStore } from '../../stores/notifications';
-import axios from 'axios';
-import * as XLSX from 'xlsx';
+import AdminSidebar        from '../../components/Admin/AdminSidebar.vue'
+import AdminHeader         from '../../components/Admin/AdminHeader.vue'
+import QRCheckInScanner    from '../../components/QRCheckInScanner.vue'
+import POSRoomBookingModal from '../../components/POSRoomBookingModal.vue'
+import QRCode              from 'qrcode'
+import { useAuthStore }    from '../../stores/auth'
+import { useNotificationStore } from '../../stores/notifications'
+import axios from 'axios'
+import * as XLSX from 'xlsx'
 
-const API_BASE = 'http://localhost:8000/api/pos';
+const API_BASE = 'http://localhost:8000/api/pos'
 
 export default {
   name: 'POSSystem',
   components: { AdminSidebar, AdminHeader, QRCheckInScanner, POSRoomBookingModal },
   data() {
     return {
-      sidebarOpen: false,
-      sidebarCollapsed: false,
-      isCheckinScannerOpen: false,
-      showTransaction: false,       // ← controls POS/Transaction toggle
-      isFullscreen: false,
-      auth: useAuthStore(),
-      notifications: useNotificationStore(),
-      cart: [],
-      total: 0,
-      receiptNo: 1,
-      currentCategory: 'restaurant',
-      paymentMethod: 'Cash',
-      searchQuery: '',
-      restaurantTypeFilter: 'all',
-      showMoreFilters: false,
+      sidebarOpen: false, sidebarCollapsed: false,
+      isCheckinScannerOpen: false, showTransaction: false, isFullscreen: false,
+      auth: useAuthStore(), notifications: useNotificationStore(),
+      cart: [], total: 0, receiptNo: 1,
+      currentCategory: 'restaurant', paymentMethod: 'Cash',
+      searchQuery: '', restaurantTypeFilter: 'all', showMoreFilters: false,
       transactionHistory: [],
-      showReceiptCustomizer: false,
-      selectedReceipt: null,
+      showReceiptCustomizer: false, selectedReceipt: null,
       receiptStyle: {
-        headerBg: '#1E88B6',
-        headerText: '#ffffff',
-        totalBg: '#1F8DBF',
-        totalText: '#ffffff',
-        companySize: 20,
-        itemSize: 13,
-        totalSize: 16,
-        fontFamily: "'Courier New', monospace",
-        showCompanyName: true,
-        showDateTime: true,
-        showFooter: true,
-        companyName: 'ReserVision',
-        receiptTitle: 'Point of Sale'
+        headerBg: '#0C3B5E', headerText: '#ffffff', totalBg: '#1F8DBF', totalText: '#ffffff',
+        companySize: 20, itemSize: 13, totalSize: 16, fontFamily: "'Courier New', monospace",
+        showCompanyName: true, showDateTime: true, showFooter: true,
+        companyName: "Eduardo's Resort", receiptTitle: 'Point of Sale'
       },
       categories: [
-        { id: 'restaurant', name: 'Restaurant', icon: 'utensils', items: [] },
-        { id: 'rooms',      name: 'Rooms',      icon: 'bed',      items: [] },
-        { id: 'cottage',    name: 'Cottage',    icon: 'home',     items: [] },
+        { id: 'restaurant', name: 'Restaurant', icon: 'utensils',     items: [] },
+        { id: 'rooms',      name: 'Rooms',      icon: 'bed',          items: [] },
+        { id: 'cottage',    name: 'Cottage',    icon: 'home',         items: [] },
         { id: 'event',      name: 'Event',      icon: 'calendar-alt', items: [] }
       ],
       viewedTransactions: new Set(JSON.parse(localStorage.getItem('viewedEshopOrders') || '[]')),
-      toastMessage: '',
-      toastType: 'success',
-      hoveredTab: null,
-      // Booking Modal
-      showBookingModal: false,
-      pendingBookingItem: null,
-      // Transaction Details Modal
-      showTransactionDetails: false,
-      selectedTransaction: null
-    };
+      toastMessage: '', toastType: 'success',
+      showBookingModal: false, pendingBookingItem: null,
+      showTransactionDetails: false, selectedTransaction: null
+    }
   },
   computed: {
-    userRole() { return this.auth.role || 'staff'; },
+    userRole() { return this.auth.role || 'staff' },
     visibleCategories() {
-      if (this.userRole === 'admin') return this.categories;
-      if (this.userRole === 'receptionist') return this.categories.filter(c => c.id !== 'restaurant');
-      return this.categories.filter(c => c.id === 'restaurant');
+      if (this.userRole === 'admin') return this.categories
+      if (this.userRole === 'receptionist') return this.categories.filter(c => c.id !== 'restaurant')
+      return this.categories.filter(c => c.id === 'restaurant')
     },
     restaurantTypeFilters() {
-      const cat = this.categories.find(c => c.id === 'restaurant');
-      if (!cat) return [];
-      return [...new Set(cat.items.map(i => (i.description || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      const cat = this.categories.find(c => c.id === 'restaurant')
+      if (!cat) return []
+      return [...new Set(cat.items.map(i => (i.description || '').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}))
     },
-    visibleFilters() { return this.restaurantTypeFilters.slice(0, 5); },
-    overflowFilters() { return this.restaurantTypeFilters.slice(5); },
+    visibleFilters()  { return this.restaurantTypeFilters.slice(0, 5) },
+    overflowFilters() { return this.restaurantTypeFilters.slice(5) },
     filteredTransactionHistory() {
-      if (this.userRole === 'admin') return this.transactionHistory;
-      return this.transactionHistory.filter(trans => {
-        const hasRestaurantItem = this.hasItemFromCategory(trans.items, 'restaurant');
-        if (this.userRole === 'restaurantstaff') return hasRestaurantItem;
-        if (this.userRole === 'receptionist') return !hasRestaurantItem;
-        return true;
-      });
+      if (this.userRole === 'admin') return this.transactionHistory
+      return this.transactionHistory.filter(t => {
+        const hasRest = this.hasItemFromCategory(t.items, 'restaurant')
+        if (this.userRole === 'restaurantstaff') return hasRest
+        if (this.userRole === 'receptionist')    return !hasRest
+        return true
+      })
     },
-    eshopPendingCount() {
-      return this.transactionHistory.filter(t => t.source === 'eshop' && !this.viewedTransactions.has(t.receiptNo)).length;
+    eshopPendingCount() { return this.transactionHistory.filter(t => t.source === 'eshop' && !this.viewedTransactions.has(t.receiptNo)).length },
+    groupedRestaurantItems() {
+      const cat = this.categories.find(c => c.id === 'restaurant'); if (!cat) return []
+      const items = this.searchQuery
+        ? cat.items.filter(i => i.name.toLowerCase().includes(this.searchQuery.toLowerCase()))
+        : cat.items
+      const groups = {}
+      items.forEach(item => { const type=(item.description||'').trim(); if (!type) return; if (!groups[type]) groups[type]=[]; groups[type].push(item) })
+      return Object.keys(groups).sort().map(type => ({ type, items: groups[type] }))
+    },
+    uncategorizedRestaurantItems() {
+      const cat = this.categories.find(c => c.id === 'restaurant'); if (!cat) return []
+      const items = this.searchQuery
+        ? cat.items.filter(i => i.name.toLowerCase().includes(this.searchQuery.toLowerCase()))
+        : cat.items
+      return items.filter(item => !(item.description||'').trim())
     }
   },
   watch: {
-    visibleCategories(newCats) {
-      if (!newCats.some(c => c.id === this.currentCategory)) {
-        this.currentCategory = newCats[0]?.id || '';
-      }
-    },
-    currentCategory(newCat) {
-      if (newCat !== 'restaurant') this.restaurantTypeFilter = 'all';
-    },
-    eshopPendingCount(newCount) {
-      this.notifications.setEshopPending(newCount);
-    }
+    visibleCategories(newCats) { if (!newCats.some(c=>c.id===this.currentCategory)) this.currentCategory=newCats[0]?.id||'' },
+    currentCategory(newCat)  { if (newCat !== 'restaurant') this.restaurantTypeFilter='all' },
+    eshopPendingCount(n)      { this.notifications.setEshopPending(n) }
   },
   beforeUnmount() {
-    document.removeEventListener('keydown', this._fsKeyHandler);
-    document.removeEventListener('fullscreenchange', this._fsChangeHandler);
-    document.removeEventListener('click', this._outsideClick);
-    // Clear polling interval
-    if (this._pollInterval) {
-      clearInterval(this._pollInterval);
-      this._pollInterval = null;
-    }
-    if (this._visibilityHandler) {
-      document.removeEventListener('visibilitychange', this._visibilityHandler);
-    }
+    document.removeEventListener('keydown', this._fsKeyHandler)
+    document.removeEventListener('fullscreenchange', this._fsChangeHandler)
+    document.removeEventListener('click', this._outsideClick)
+    if (this._pollInterval) clearInterval(this._pollInterval)
+    if (this._visibilityHandler) document.removeEventListener('visibilitychange', this._visibilityHandler)
   },
   async mounted() {
-    await this.fetchItems();
-    await this.fetchTransactions();
-    this.updateReceiptNumber();
-    // Auto-poll transactions every 30 seconds so the list stays real-time
-    this._pollInterval = setInterval(() => {
-      this.fetchTransactions();
-    }, 30000);
-    // Refetch immediately when user switches back to this browser tab
-    this._visibilityHandler = () => {
-      if (document.visibilityState === 'visible') this.fetchTransactions();
-    };
-    document.addEventListener('visibilitychange', this._visibilityHandler);
-    this._fsKeyHandler = (e) => {
-      if (e.ctrlKey && e.key === 'F12') { e.preventDefault(); this.toggleFullscreen(); }
-    };
-    this._fsChangeHandler = () => {
-      this.isFullscreen = !!document.fullscreenElement;
-    };
-    this._outsideClick = () => { this.showMoreFilters = false; };
-    document.addEventListener('keydown', this._fsKeyHandler);
-    document.addEventListener('fullscreenchange', this._fsChangeHandler);
-    document.addEventListener('click', this._outsideClick);
-    const savedStyle = localStorage.getItem('receiptStyle');
-    if (savedStyle) {
-      try { this.receiptStyle = { ...this.receiptStyle, ...JSON.parse(savedStyle) }; }
-      catch (e) { console.error(e); }
-    }
+    await this.fetchItems(); await this.fetchTransactions(); this.updateReceiptNumber()
+    this._pollInterval = setInterval(()=>this.fetchTransactions(), 30000)
+    this._visibilityHandler = ()=>{ if(document.visibilityState==='visible') this.fetchTransactions() }
+    document.addEventListener('visibilitychange', this._visibilityHandler)
+    this._fsKeyHandler   = e=>{ if(e.ctrlKey&&e.key==='F12'){e.preventDefault();this.toggleFullscreen()} }
+    this._fsChangeHandler= ()=>{ this.isFullscreen=!!document.fullscreenElement }
+    this._outsideClick   = ()=>{ this.showMoreFilters=false }
+    document.addEventListener('keydown', this._fsKeyHandler)
+    document.addEventListener('fullscreenchange', this._fsChangeHandler)
+    document.addEventListener('click', this._outsideClick)
+    const saved = localStorage.getItem('receiptStyle')
+    if (saved) { try { this.receiptStyle = {...this.receiptStyle,...JSON.parse(saved)} } catch {} }
   },
   methods: {
       formatReceiptDate(dateValue) {
@@ -666,430 +805,146 @@ export default {
     // ── Existing Methods ──
     async fetchItems() {
       try {
-        const response = await axios.get(`${API_BASE}/items`);
-        const items = response.data;
-        this.categories.forEach(category => {
-          category.items = items
-            .filter(item => item.category === category.id)
-            .map(item => ({ name: item.name, price: parseFloat(item.price), description: item.description || '' }));
-        });
-      } catch (error) {
-        this.showToast('❌ Failed to load items from server', 'error');
-      }
+        const res = await axios.get(`${API_BASE}/items`)
+        this.categories.forEach(cat => {
+          cat.items = res.data.filter(i=>i.category===cat.id).map(i=>({name:i.name,price:parseFloat(i.price),description:i.description||''}))
+        })
+      } catch { this.showToast('Failed to load items from server','error') }
     },
     async fetchTransactions() {
       try {
-        const response = await axios.get(`${API_BASE}/transactions`);
-        this.transactionHistory = response.data.map(trans => {
-          const isEshop = trans.receipt_no && trans.receipt_no.toString().includes('ESHOP');
-          return {
-            receiptNo: trans.receipt_no,
-            items: trans.items,
-            type: trans.type,
-            payment: trans.payment_method,
-            total: parseFloat(trans.total_amount),
-            date: trans.transaction_date,
-            time: trans.transaction_time,
-            source: trans.source || (isEshop ? 'eshop' : 'pos')
-          };
-        });
-        const currentReceiptNos = new Set(this.transactionHistory.map(t => t.receiptNo));
-        this.viewedTransactions = new Set(Array.from(this.viewedTransactions).filter(r => currentReceiptNos.has(r)));
-        localStorage.setItem('viewedEshopOrders', JSON.stringify(Array.from(this.viewedTransactions)));
-      } catch (e) { console.error(e); }
+        const res = await axios.get(`${API_BASE}/transactions`)
+        this.transactionHistory = res.data.map(t => {
+          const isEshop = t.receipt_no && String(t.receipt_no).includes('ESHOP')
+          return { receiptNo:t.receipt_no, items:t.items, type:t.type, payment:t.payment_method, total:parseFloat(t.total_amount), date:t.transaction_date, time:t.transaction_time, source:t.source||(isEshop?'eshop':'pos'), bookingDetails:t.bookingDetails||[] }
+        })
+        const current = new Set(this.transactionHistory.map(t=>t.receiptNo))
+        this.viewedTransactions = new Set(Array.from(this.viewedTransactions).filter(r=>current.has(r)))
+        localStorage.setItem('viewedEshopOrders', JSON.stringify(Array.from(this.viewedTransactions)))
+      } catch(e) { console.error(e) }
     },
     updateReceiptNumber() {
-      if (this.transactionHistory.length > 0) {
-        const numericReceipts = this.transactionHistory
-          .map(t => { const n = parseInt(String(t.receiptNo).replace(/[^\d]/g, '')); return isNaN(n) ? 0 : n; })
-          .filter(n => n > 0);
-        this.receiptNo = numericReceipts.length > 0 ? Math.max(...numericReceipts) + 1 : 1;
-      } else {
-        this.receiptNo = 1;
-      }
+      if (!this.transactionHistory.length) { this.receiptNo=1; return }
+      const nums = this.transactionHistory.map(t=>parseInt(String(t.receiptNo).replace(/[^\d]/g,''))).filter(n=>n>0)
+      this.receiptNo = nums.length ? Math.max(...nums)+1 : 1
     },
-    showCategory(categoryId) {
-      if (!this.visibleCategories.some(c => c.id === categoryId)) return;
-      this.currentCategory = categoryId;
-      this.searchQuery = '';
-      if (categoryId !== 'restaurant') this.restaurantTypeFilter = 'all';
-    },
+    showCategory(id) { if (!this.visibleCategories.some(c=>c.id===id)) return; this.currentCategory=id; this.searchQuery=''; if(id!=='restaurant') this.restaurantTypeFilter='all' },
     getFilteredItems(items, categoryId) {
-      let filtered = [...items];
+      let f=[...items]
+      if(this.searchQuery) { const q=this.searchQuery.toLowerCase(); f=f.filter(i=>i.name.toLowerCase().includes(q)) }
+      if(categoryId==='restaurant'&&this.restaurantTypeFilter!=='all') f=f.filter(i=>(i.description||'').toLowerCase()===this.restaurantTypeFilter.toLowerCase())
+      return f
+    },
+    hasItemFromCategory(transItems, catId) {
+      const names=(this.categories.find(c=>c.id===catId)?.items||[]).map(i=>i.name.toLowerCase())
+      return transItems.some(t=>names.includes(t.name.toLowerCase()))
+    },
+    filterItems() {
       if (this.searchQuery) {
-        const q = this.searchQuery.toLowerCase();
-        filtered = filtered.filter(item => item.name.toLowerCase().includes(q));
+        this.restaurantTypeFilter = 'all'
       }
-      if (categoryId === 'restaurant' && this.restaurantTypeFilter !== 'all') {
-        filtered = filtered.filter(item => (item.description || '').toLowerCase() === this.restaurantTypeFilter.toLowerCase());
-      }
-      return filtered;
     },
-    hasItemFromCategory(transactionItems, categoryId) {
-      const categoryItemNames = (this.categories.find(c => c.id === categoryId)?.items || []).map(i => i.name.toLowerCase());
-      return transactionItems.some(t => categoryItemNames.includes(t.name.toLowerCase()));
-    },
-    filterItems() {},
-    // ── Handle Item Click ──
     handleItemClick(name, price, category) {
-      if (['rooms', 'cottage', 'event'].includes(category)) {
-        // Open booking modal for accommodations
-        this.pendingBookingItem = { name, price, category };
-        this.showBookingModal = true;
-      } else {
-        // Direct add for restaurant items
-        this.addItem(name, price);
-      }
+      if (['rooms','cottage','event'].includes(category)) { this.pendingBookingItem={name,price,category}; this.showBookingModal=true }
+      else this.addItem(name, price)
     },
-    // ── Handle Booking Confirmation ──
     async handleBookingConfirm(bookingData) {
       try {
-        const guestName = `${bookingData.firstName} ${bookingData.lastName}`;
-        
-        // Step 1: Create booking in database with auto check-in
-        const bookingResponse = await axios.post('http://localhost:8000/api/bookings/confirm', {
-          guest: {
-            firstName: bookingData.firstName,
-            lastName: bookingData.lastName,
-            phone: bookingData.phone || '',
-            email: bookingData.email || '',
-            address: '',
-            city: '',
-            postal: '',
-            country: 'Philippines'
-          },
-          checkIn: bookingData.checkIn,
-          checkOut: bookingData.checkOut,
-          isSwimmingOnly: false,
-          items: [{
-            item_id: this.pendingBookingItem.category,
-            name: this.pendingBookingItem.name,
-            category: this.pendingBookingItem.category,
-            qty: 1,
-            guests: bookingData.adults + bookingData.children,
-            price: this.pendingBookingItem.price,
-            perNight: true
-          }],
-          paymentMethod: 'pos-walkin',
-          total: bookingData.lineTotal
-        });
-
-        if (!bookingResponse.data.success) {
-          throw new Error(bookingResponse.data.error || 'Failed to create booking');
-        }
-
-        const { bookingId, bookingReference } = bookingResponse.data.data;
-
-        // Step 2: Auto check-in the booking
-        await axios.post(`http://localhost:8000/api/bookings/${bookingId}/check-in`, {
-          checked_in_by: this.userRole || 'staff',
-          checked_in_time: new Date().toISOString()
-        });
-
-        // Step 3: Create PayMongo payment link for walk-in booking
-        const paymentResponse = await axios.post('http://localhost:8000/api/paymongo/create-payment-link', {
-          amount: bookingData.lineTotal,
-          description: `Eduardo's Resort Booking - ${bookingReference}`,
-          bookingId: bookingId,
-          email: bookingData.email || `walkin-${bookingReference}@resort.local`,
-          paymentMethod: 'gcash' // Default for walk-ins, can be changed
-        });
-
-        if (!paymentResponse.data.success) {
-          throw new Error('Failed to create payment link');
-        }
-
-        // Step 4: Generate QR code from the payment link (not booking reference)
-        const checkoutUrl = paymentResponse.data.checkout_url;
-        const paymentQR = await QRCode.toDataURL(checkoutUrl, {
-          errorCorrectionLevel: 'H',
-          type: 'image/png',
-          width: 200,
-          margin: 1,
-          color: { dark: '#2B6CB0', light: '#FFFFFF' }
-        });
-
-        // Step 5: Add to cart
-        this.cart.push({
-          name: this.pendingBookingItem.name,
-          price: bookingData.lineTotal,
-          isBooking: true,
-          bookingId,
-          bookingReference,
-          paymentUrl: checkoutUrl,
-          paymentQR, // QR encodes payment link now
-          firstName: bookingData.firstName,
-          lastName: bookingData.lastName,
-          phone: bookingData.phone,
-          email: bookingData.email,
-          adults: bookingData.adults,
-          children: bookingData.children,
-          checkIn: bookingData.checkIn,
-          checkOut: bookingData.checkOut,
-          nights: bookingData.nights,
-          specialRequests: bookingData.specialRequests
-        });
-
-        this.total += bookingData.lineTotal;
-        this.showToast(`✅ Booking created! Reference: ${bookingReference}`, 'success');
-        this.pendingBookingItem = null;
-
-      } catch (error) {
-        console.error('Booking error:', error);
-        this.showToast(error.message || '❌ Failed to create booking', 'error');
-      }
+        const bookRes = await axios.post('http://localhost:8000/api/bookings/confirm', {
+          guest:{ firstName:bookingData.firstName, lastName:bookingData.lastName, phone:bookingData.phone||'', email:bookingData.email||'', address:'', city:'', postal:'', country:'Philippines' },
+          checkIn:bookingData.checkIn, checkOut:bookingData.checkOut, isSwimmingOnly:false,
+          items:[{ item_id:this.pendingBookingItem.category, name:this.pendingBookingItem.name, category:this.pendingBookingItem.category, qty:1, guests:bookingData.adults+bookingData.children, price:this.pendingBookingItem.price, perNight:true }],
+          paymentMethod:'pos-walkin', total:bookingData.lineTotal
+        })
+        if (!bookRes.data.success) throw new Error(bookRes.data.error||'Failed to create booking')
+        const { bookingId, bookingReference } = bookRes.data.data
+        await axios.post(`http://localhost:8000/api/bookings/${bookingId}/check-in`, { checked_in_by:this.userRole||'staff', checked_in_time:new Date().toISOString() })
+        const payRes = await axios.post('http://localhost:8000/api/paymongo/create-payment-link', { amount:bookingData.lineTotal, description:`Eduardo's Resort - ${bookingReference}`, bookingId, email:bookingData.email||`walkin-${bookingReference}@resort.local`, paymentMethod:'gcash' })
+        if (!payRes.data.success) throw new Error('Failed to create payment link')
+        const qr = await QRCode.toDataURL(payRes.data.checkout_url, { errorCorrectionLevel:'H', type:'image/png', width:200, margin:1, color:{dark:'#0C3B5E',light:'#FFFFFF'} })
+        this.cart.push({ name:this.pendingBookingItem.name, price:bookingData.lineTotal, isBooking:true, bookingId, bookingReference, paymentUrl:payRes.data.checkout_url, paymentQR:qr, ...bookingData })
+        this.total += bookingData.lineTotal
+        this.showToast(`Booking created! Ref: ${bookingReference}`, 'success')
+        this.pendingBookingItem=null
+      } catch(err) { this.showToast(err.message||'Failed to create booking','error') }
     },
     addItem(name, price) {
-      const existing = this.cart.find(i => i.name === name && !i.isBooking);
-      if (existing) {
-        existing.qty++;
-        existing.price = existing.unitPrice * existing.qty;
-      } else {
-        this.cart.push({ name, price, unitPrice: price, qty: 1 });
-      }
-      this.total += price;
+      const ex = this.cart.find(i=>i.name===name&&!i.isBooking)
+      if (ex) { ex.qty++; ex.price=ex.unitPrice*ex.qty } else this.cart.push({ name, price, unitPrice:price, qty:1 })
+      this.total += price
     },
-    incrementItem(index) {},
-    decrementItem(index) {},
-    removeItem(index) {
-      const item = this.cart[index];
-      this.total -= item.isBooking ? item.price : item.unitPrice * item.qty;
-      this.cart.splice(index, 1);
-    },
-    clearCart() {
-      if (this.cart.length > 0 && confirm('Clear all items from the current transaction?')) {
-        this.cart = []; this.total = 0;
-      }
-    },
+    removeItem(index) { const i=this.cart[index]; this.total-=i.isBooking?i.price:i.unitPrice*i.qty; this.cart.splice(index,1) },
+    clearCart() { if(this.cart.length>0&&confirm('Clear all items?')) { this.cart=[]; this.total=0 } },
     async checkout() {
-      if (this.cart.length === 0) { this.showToast('❌ No items added', 'error'); return; }
-      if (isNaN(this.receiptNo) || this.receiptNo < 1) this.receiptNo = 1;
-      const now = new Date();
-      
-      // Separate bookings from regular items for transaction record
-      const transactionItems = this.cart.map(item => ({
-        name: item.name,
-        price: item.isBooking ? item.price : item.price,
-        ...(item.isBooking && { bookingId: item.bookingId, bookingReference: item.bookingReference })
-      }));
-
-      const transaction = {
-        receiptNo: String(Math.floor(this.receiptNo)).padStart(3, '0'),
-        items: transactionItems,
-        type: 'Walk-in',
-        payment: this.paymentMethod,
-        total: this.total,
+      if (!this.cart.length) { this.showToast('No items added','error'); return }
+      if (isNaN(this.receiptNo)||this.receiptNo<1) this.receiptNo=1
+      const now = new Date()
+      const trans = {
+        receiptNo: String(Math.floor(this.receiptNo)).padStart(3,'0'),
+        items: this.cart.map(i=>({ name:i.name, price:i.price, ...(i.isBooking&&{bookingId:i.bookingId,bookingReference:i.bookingReference}) })),
+        type:'Walk-in', payment:this.paymentMethod, total:this.total,
         date: now.toISOString().split('T')[0],
-        time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-        // Store complete booking details for later printing
-        bookingDetails: this.cart.filter(item => item.isBooking).map(item => ({
-          firstName: item.firstName,
-          lastName: item.lastName,
-          phone: item.phone,
-          email: item.email,
-          roomName: item.name,
-          checkInDate: item.checkIn,
-          checkOutDate: item.checkOut,
-          nights: item.nights,
-          adults: item.adults,
-          children: item.children,
-          bookingReference: item.bookingReference,
-          paymentUrl: item.paymentUrl
-        }))
-      };
-      
-      try {
-        await axios.post(`${API_BASE}/transactions`, {
-          receipt_no: transaction.receiptNo, 
-          items: transaction.items, 
-          type: transaction.type,
-          payment_method: transaction.payment, 
-          total_amount: transaction.total,
-          transaction_date: transaction.date, 
-          transaction_time: transaction.time
-        });
-
-        // Show receipt with QR codes for bookings
-        const hasBookings = this.cart.some(item => item.isBooking);
-        if (hasBookings) {
-          this.showBookingReceipt(transaction);
-        }
-
-        this.transactionHistory.unshift(transaction);
-        this.receiptNo++;
-        this.showToast(`✅ Transaction completed! Receipt: POS-${transaction.receiptNo}`, 'success');
-        this.cart = []; 
-        this.total = 0;
-      } catch (error) {
-        this.showToast('❌ Failed to save transaction. Please try again.', 'error');
+        time: now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}),
+        bookingDetails: this.cart.filter(i=>i.isBooking).map(i=>({ firstName:i.firstName, lastName:i.lastName, phone:i.phone, email:i.email, roomName:i.name, checkInDate:i.checkIn, checkOutDate:i.checkOut, nights:i.nights, adults:i.adults, children:i.children, bookingReference:i.bookingReference, paymentUrl:i.paymentUrl }))
       }
+      try {
+        await axios.post(`${API_BASE}/transactions`, { receipt_no:trans.receiptNo, items:trans.items, type:trans.type, payment_method:trans.payment, total_amount:trans.total, transaction_date:trans.date, transaction_time:trans.time })
+        if (this.cart.some(i=>i.isBooking)) this.showBookingReceipt(trans)
+        this.transactionHistory.unshift(trans); this.receiptNo++
+        this.showToast(`Transaction complete! POS-${trans.receiptNo}`,'success')
+        this.cart=[]; this.total=0
+      } catch { this.showToast('Failed to save transaction','error') }
     },
-    showBookingReceipt(transaction) {
-      const bookings = this.cart.filter(item => item.isBooking);
-      
-      // Send each booking to thermal printer directly (no dialog)
-      bookings.forEach(async (booking, idx) => {
+    showBookingReceipt(trans) {
+      const bookings = this.cart.filter(i=>i.isBooking)
+      bookings.forEach(async b => {
         try {
-          const receiptData = {
-            receiptNo: `POS-${transaction.receiptNo}`,
-            date: transaction.date,
-            time: transaction.time,
-            guestName: `${booking.firstName} ${booking.lastName}`,
-            phone: booking.phone || 'N/A',
-            email: booking.email || 'N/A',
-            roomName: booking.name,
-            checkInDate: booking.checkIn,
-            checkOutDate: booking.checkOut,
-            nights: booking.nights,
-            adults: booking.adults,
-            children: booking.children,
-            pricePerNight: booking.nights > 0 ? (booking.price / booking.nights).toFixed(2) : '0.00',
-            total: booking.price,
-            paymentMethod: this.paymentMethod,
-            bookingReference: booking.bookingReference,
-            paymentUrl: booking.paymentUrl
-          };
-
-          // Send to backend thermal printer service  
-          const response = await axios.post(`http://localhost:8000/api/pos/print/booking`, receiptData);
-          
-          if (response.data.success) {
-            this.showToast(`✅ Receipt printed! Ref: ${booking.bookingReference}`, 'success');
-          } else {
-            // If printer fails, fallback to system print dialog (optional)
-            console.log('Printer unavailable, falling back to system dialog');
-            this.showToast(`⚠️ Printer service unavailable. Using system print dialog.`, 'warning');
-            // Could uncomment to use window.print() as fallback
-            // this.showSystemPrintDialog(transaction);
-          }
-        } catch (error) {
-          console.error('Print error:', error);
-          this.showToast(`⚠️ Print failed: ${error.message}`, 'warning');
-        }
-      });
+          const r = await axios.post('http://localhost:8000/api/pos/print/booking', { receiptNo:`POS-${trans.receiptNo}`, date:trans.date, time:trans.time, guestName:`${b.firstName} ${b.lastName}`, phone:b.phone||'N/A', email:b.email||'N/A', roomName:b.name, checkInDate:b.checkIn, checkOutDate:b.checkOut, nights:b.nights, adults:b.adults, children:b.children, pricePerNight:b.nights?(b.price/b.nights).toFixed(2):'0.00', total:b.price, paymentMethod:this.paymentMethod, bookingReference:b.bookingReference, paymentUrl:b.paymentUrl })
+          if (r.data.success) this.showToast(`Receipt printed! Ref: ${b.bookingReference}`,'success')
+        } catch {}
+      })
     },
-    getItemsPreview(items) {
-      const list = items.map(i => i.name).join(', ');
-      return list.length > 30 ? list.substring(0, 30) + '...' : list;
-    },
+    getItemsPreview(items) { const l=items.map(i=>i.name).join(', '); return l.length>35?l.substring(0,35)+'…':l },
     viewDetails(receiptNo) {
-      const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
-      if (!trans) return;
-      this.viewedTransactions.add(receiptNo);
-      localStorage.setItem('viewedEshopOrders', JSON.stringify(Array.from(this.viewedTransactions)));
-      this.selectedTransaction = trans;
-      this.showTransactionDetails = true;
+      const t=this.transactionHistory.find(x=>x.receiptNo===receiptNo); if(!t) return
+      this.viewedTransactions.add(receiptNo)
+      localStorage.setItem('viewedEshopOrders', JSON.stringify(Array.from(this.viewedTransactions)))
+      this.selectedTransaction=t; this.showTransactionDetails=true
     },
     printReceipt(receiptNo) {
-      const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
-      if (!trans) return;
-      
-      // Check if this is a booking transaction
-      const hasBookings = trans.items.some(item => item.bookingReference);
-      
-      if (hasBookings && trans.bookingDetails && trans.bookingDetails.length > 0) {
-        // For bookings, send to thermal printer service
-        const bookingDetail = trans.bookingDetails[0];
-        const receiptData = {
-          receiptNo: `POS-${trans.receiptNo}`,
-          date: trans.date,
-          time: trans.time,
-          guestName: `${bookingDetail.firstName} ${bookingDetail.lastName}`,
-          phone: bookingDetail.phone || 'N/A',
-          email: bookingDetail.email || 'N/A',
-          roomName: bookingDetail.roomName || 'N/A',
-          checkInDate: bookingDetail.checkInDate || 'N/A',
-          checkOutDate: bookingDetail.checkOutDate || 'N/A',
-          nights: bookingDetail.nights || 0,
-          adults: bookingDetail.adults || 0,
-          children: bookingDetail.children || 0,
-          pricePerNight: bookingDetail.nights ? (trans.total / bookingDetail.nights).toFixed(2) : '0.00',
-          total: trans.total,
-          paymentMethod: trans.payment,
-          bookingReference: bookingDetail.bookingReference
-        };
-        
-        // Send to backend printer service
-        axios.post('http://localhost:8000/api/pos/print/booking', receiptData)
-          .then(response => {
-            if (response.data.success) {
-              this.showToast(`✅ Receipt sent to printer! Ref: ${bookingDetail.bookingReference}`, 'success');
-            } else {
-              this.showToast(`⚠️ Printer service unavailable`, 'warning');
-            }
-          })
-          .catch(error => {
-            this.showToast(`❌ Print failed: ${error.message}`, 'error');
-          });
+      const t=this.transactionHistory.find(x=>x.receiptNo===receiptNo); if(!t) return
+      const hasBookings=t.items.some(i=>i.bookingReference)
+      if (hasBookings&&t.bookingDetails?.length) {
+        const b=t.bookingDetails[0]
+        axios.post('http://localhost:8000/api/pos/print/booking',{ receiptNo:`POS-${t.receiptNo}`, date:t.date, time:t.time, guestName:`${b.firstName} ${b.lastName}`, phone:b.phone||'N/A', email:b.email||'N/A', roomName:b.roomName||'N/A', checkInDate:b.checkInDate||'N/A', checkOutDate:b.checkOutDate||'N/A', nights:b.nights||0, adults:b.adults||0, children:b.children||0, pricePerNight:b.nights?(t.total/b.nights).toFixed(2):'0.00', total:t.total, paymentMethod:t.payment, bookingReference:b.bookingReference })
+          .then(r=>{ if(r.data.success) this.showToast(`Receipt sent to printer! Ref: ${b.bookingReference}`,'success'); else this.showToast('Printer service unavailable','error') }).catch(e=>this.showToast(`Print failed: ${e.message}`,'error'))
       } else {
-        // For regular POS items, send to thermal printer service
-        const receiptData = {
-          receiptNo: `POS-${trans.receiptNo}`,
-          date: trans.date,
-          time: trans.time,
-          items: trans.items.map(item => ({
-            name: item.name,
-            price: parseFloat(item.price),
-            quantity: 1,
-            total: parseFloat(item.price)
-          })),
-          total: trans.total,
-          paymentMethod: trans.payment
-        };
-        
-        // Send to backend printer service
-        axios.post('http://localhost:8000/api/pos/print/regular', receiptData)
-          .then(response => {
-            if (response.data.success) {
-              this.showToast(`✅ Receipt sent to printer!`, 'success');
-            } else {
-              this.showToast(`⚠️ Printer service unavailable`, 'warning');
-            }
-          })
-          .catch(error => {
-            this.showToast(`❌ Print failed: ${error.message}`, 'error');
-          });
+        axios.post('http://localhost:8000/api/pos/print/regular',{ receiptNo:`POS-${t.receiptNo}`, date:t.date, time:t.time, items:t.items.map(i=>({name:i.name,price:parseFloat(i.price),quantity:1,total:parseFloat(i.price)})), total:t.total, paymentMethod:t.payment })
+          .then(r=>{ if(r.data.success) this.showToast('Receipt sent to printer!','success'); else this.showToast('Printer service unavailable','error') }).catch(e=>this.showToast(`Print failed: ${e.message}`,'error'))
       }
     },
     async deleteTransaction(receiptNo) {
-      if (!confirm('Delete this transaction permanently?')) return;
-      const idx = this.transactionHistory.findIndex(t => t.receiptNo === receiptNo);
-      if (idx === -1) return;
+      if (!confirm('Delete this transaction permanently?')) return
+      const idx=this.transactionHistory.findIndex(t=>t.receiptNo===receiptNo); if(idx===-1) return
       try {
-        const response = await axios.get(`${API_BASE}/transactions`);
-        const backend = response.data.find(t => t.receipt_no === this.transactionHistory[idx].receiptNo);
-        if (backend) await axios.delete(`${API_BASE}/transactions/${backend.id}`);
-        this.transactionHistory.splice(idx, 1);
-      } catch (error) {
-        this.showToast('❌ Failed to delete transaction', 'error');
-      }
+        const res=await axios.get(`${API_BASE}/transactions`)
+        const be=res.data.find(t=>t.receipt_no===this.transactionHistory[idx].receiptNo)
+        if(be) await axios.delete(`${API_BASE}/transactions/${be.id}`)
+        this.transactionHistory.splice(idx,1)
+      } catch { this.showToast('Failed to delete transaction','error') }
     },
     async clearHistory() {
-      if (!confirm('Clear all transaction history?')) return;
-      try {
-        await axios.delete(`${API_BASE}/transactions`);
-        this.transactionHistory = [];
-      } catch (error) {
-        this.showToast('❌ Failed to clear transaction history', 'error');
-      }
+      if (!confirm('Clear all transaction history?')) return
+      try { await axios.delete(`${API_BASE}/transactions`); this.transactionHistory=[] }
+      catch { this.showToast('Failed to clear history','error') }
     },
     exportAllTransactions() {
-      if (this.transactionHistory.length === 0) { this.showToast('❌ No transactions to export', 'error'); return; }
-      try {
-        const data = this.transactionHistory.map((t, i) => ({
-          'No.': i + 1, 'Receipt No.': `POS-${t.receiptNo}`,
-          'Items': t.items.map(item => `${item.name} (₱${item.price})`).join('; '),
-          'Type': t.type, 'Payment Method': t.payment, 'Total': t.total, 'Date': t.date, 'Time': t.time
-        }));
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
-        const filename = `POS_Transactions_${new Date().toISOString().split('T')[0]}.xlsx`;
-        XLSX.writeFile(wb, filename);
-        this.showToast(`✅ Export successful! File: ${filename}`, 'success');
-      } catch (error) {
-        this.showToast('❌ Failed to export data.', 'error');
-      }
+      if (!this.transactionHistory.length) { this.showToast('No transactions to export','error'); return }
+      const data = this.transactionHistory.map((t,i) => ({ 'No.':i+1, 'Receipt No.':`POS-${t.receiptNo}`, 'Items':t.items.map(i=>`${i.name} (₱${i.price})`).join('; '), 'Type':t.type, 'Payment Method':t.payment, 'Total':t.total, 'Date':t.date, 'Time':t.time }))
+      const wb=XLSX.utils.book_new(); const ws=XLSX.utils.json_to_sheet(data)
+      XLSX.utils.book_append_sheet(wb,ws,'Transactions')
+      const fn=`POS_Transactions_${new Date().toISOString().split('T')[0]}.xlsx`
+      XLSX.writeFile(wb,fn); this.showToast(`Export successful! ${fn}`,'success')
     },
     downloadReceipt(receiptNo) {
       const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
@@ -1130,968 +985,627 @@ export default {
       setTimeout(() => { this.toastMessage = ''; }, 4000);
     }
   }
-};
+}
 </script>
 
 <style scoped>
-/* ── Admin Layout ── */
+/* ── Eduardo's Resort Color Palette ── */
+.admin-layout {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-gray-bg:       #EEF5FB;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
+}
+
+@keyframes fadeUp  { from{opacity:0;transform:translateY(6px)}  to{opacity:1;transform:translateY(0)} }
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn  { from{opacity:0}to{opacity:1} }
+@keyframes dropIn  { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes popIn   { from{opacity:0;transform:scale(.95)}       to{opacity:1;transform:scale(1)} }
+
+/* ── Layout ── */
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background: #F8F7F4;
+  background: var(--color-gray-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
-
 .main-content {
   flex: 1;
-  margin-left: 260px;
-  padding-top: 56px;
-  transition: margin-left 0.3s ease;
+  margin-left: 262px;
+  padding-top: 64px;
+  transition: margin-left .3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
 }
-
-.main-content.shifted { margin-left: 70px; }
-
-/* header-container removed — POSHeader is self-contained fixed element */
+.main-content.shifted { margin-left: 72px; }
+@media (max-width: 768px) { .main-content { margin-left: 0; } }
 
 .pos-container {
-  padding: 1.5rem;
-  background: #F8F7F4;
-  min-height: 100vh;
-  max-width: 1240px;
-  margin: 0 auto;
-}
-
-/* ── BOOKMARK TABS ── */
-/* ── Search Row (search + scanner inline) ── */
-.search-row {
+  flex: 1;
+  padding: 1.25rem 1.5rem;
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  flex-direction: column;
+  min-height: 0;
 }
+@media (max-width: 768px) { .pos-container { padding: .75rem; } }
 
-.scanner-inline-btn {
+/* ── POS grid ── */
+.pos-section {
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0 1rem;
-  height: 48px;
-  background: #1F8DBF;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: background 0.15s;
+  flex-direction: column;
+  min-height: 0;
+  animation: fadeUp .25s ease both;
 }
-.scanner-inline-btn:hover { background: #1677a3; }
-.scanner-inline-btn i { font-size: 1rem; }
-
-.topbar-badge {
-  background: #ef4444;
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 800;
-  padding: 0.1rem 0.35rem;
-  border-radius: 20px;
-  min-width: 16px;
-  text-align: center;
-  line-height: 1.5;
-  position: absolute;
-  top: -4px;
-  right: -4px;
-}
-
-.fs-toggle-btn { position: relative; }
-.fs-toggle-btn--active { background: #1F8DBF; color: #fff; border-color: #1F8DBF; }
-.fs-toggle-btn--active:hover { background: #1677a3; }
-
-/* ── POS / Transaction sections ── */
-.pos-section { animation: fadeIn 0.22s ease; }
-.transaction-section { animation: fadeIn 0.22s ease; }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── POS Grid ── */
 .pos-grid {
   display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 0;
-  align-items: stretch;
-}
-
-.items-card, .cart-card {
-  min-height: 0;
-  height: 100%;
-}
-
-.items-card { display: flex; flex-direction: column; border-radius: 12px 0 0 12px !important; border-right: none !important; }
-/* ══════════════════════════════════════
-   CART CARD
-══════════════════════════════════════ */
-.cart-card {
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border-radius: 0 12px 12px 0 !important;
-  border-left: 1px solid #e5e7eb;
-  height: 100%;
-}
-
-.cart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.1rem 1.25rem 0.85rem;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.cart-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.cart-title i { color: #1F8DBF; font-size: 1rem; }
-
-.cart-clear-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: none;
-  border: 1px solid #fee2e2;
-  color: #ef4444;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.3rem 0.65rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.cart-clear-btn:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
-
-.cart-content {
-  display: flex;
-  flex-direction: column;
+  grid-template-columns: 1fr 340px;
+  gap: 1rem;
   flex: 1;
   min-height: 0;
+  /* 64px = AdminHeader, 1.25rem top + 1.25rem bottom = 2.5rem container padding */
+  height: calc(100vh - 64px - 2.5rem);
+  max-height: calc(100vh - 64px - 2.5rem);
   overflow: hidden;
 }
+@media (max-width: 900px) { .pos-grid { grid-template-columns: 1fr; height: auto; } }
 
-.cart-items-area {
-  flex: 0 0 auto;
-  overflow-y: auto;
-  height: 450px;
-  padding: 0.5rem 1.25rem;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.cart-items-area::-webkit-scrollbar { display: none; }
-
-/* Empty State */
-.cart-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 10rem 0;
-  color: #94a3b8;
-  text-align: center;
-  gap: 0.4rem;
-}
-.cart-empty-icon {
-  width: 56px;
-  height: 56px;
-  background: #f1f5f9;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.5rem;
-}
-.cart-empty-icon i { font-size: 1.4rem; color: #cbd5e1; }
-.cart-empty-state p { font-size: 0.875rem; font-weight: 600; color: #64748b; margin: 0; }
-.cart-empty-state span { font-size: 0.75rem; color: #94a3b8; }
-
-/* Cart Item Row */
-.cart-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.55rem 0;
-  border-bottom: 1px solid #f1f5f9;
-  gap: 0.5rem;
-}
-.cart-item:last-child { border-bottom: none; }
-
-.cart-item-left { flex: 1; min-width: 0; }
-
-.cart-item-name {
-  font-size: 0.83rem;
-  font-weight: 600;
-  color: #1e293b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cart-item-qty {
-  font-size: 0.72rem;
-  color: #94a3b8;
-  margin-top: 1px;
-}
-
-.cart-item-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin-top: 2px;
-}
-.cart-item-meta span {
-  font-size: 0.7rem;
-  color: #94a3b8;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.cart-item-meta i { color: #cbd5e1; width: 10px; text-align: center; }
-
-.cart-item-right {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.cart-item-price {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #1e293b;
-  white-space: nowrap;
-}
-
-.cart-remove-btn {
-  width: 22px;
-  height: 22px;
-  background: #fee2e2;
-  border: none;
-  border-radius: 50%;
-  color: #ef4444;
-  font-size: 0.65rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-.cart-remove-btn:hover { background: #ef4444; color: #fff; }
-
-/* Cart Footer */
-.cart-footer {
-  padding: 0.85rem 1.25rem 1.1rem;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.cart-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.cart-total-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.cart-total-amount {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: #1F8DBF;
-  line-height: 1;
-}
-
-.cart-divider { height: 1px; background: #f0f0f0; }
-
-.cart-payment-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.cart-payment-btns { display: flex; gap: 0.5rem; }
-
-.cart-pay-btn {
-  flex: 1;
-  padding: 0.55rem 0.5rem;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  background: #fafafa;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  transition: all 0.15s;
-}
-.cart-pay-btn:hover { border-color: #1F8DBF; color: #1F8DBF; background: #f0f9ff; }
-
-.active-gcash {
-  background: #f0fdf4;
-  border-color: #22c55e;
-  color: #16a34a;
-}
-.active-cash {
-  background: #fefce8;
-  border-color: #eab308;
-  color: #854d0e;
-}
-.cart-pay-check { font-size: 0.75rem; margin-left: 2px; }
-
-.cart-checkout-btn {
-  width: 100%;
-  padding: 0.8rem;
-  background: #16a34a;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(22,163,74,0.25);
-}
-.cart-checkout-btn:hover {
-  background: #15803d;
-  box-shadow: 0 4px 14px rgba(22,163,74,0.35);
-  transform: translateY(-1px);
-}
-
-.items-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.9rem;
-  min-height: 30px;
-}
-
-.items-topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.fs-toggle-btn {
-  width: 36px;
-  height: 36px;
-  border: 1.5px solid #e2e8f0;
-  background: #f8fafc;
-  border-radius: 8px;
-  color: #64748b;
-  font-size: 0.9rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-.fs-toggle-btn:hover { background: #1F8DBF; color: #fff; border-color: #1F8DBF; }
-
-.section-title {
-  font-size: 1.5rem;
-  line-height: 1;
-  margin: 0;
-  white-space: nowrap;
-}
-
-.category-switch {
-  display: flex;
-  gap: 0.45rem;
-  flex-wrap: nowrap;
-  justify-content: flex-end;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.category-switch::-webkit-scrollbar { display: none; }
-
-.menu-filter-wrap {
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 0.65rem;
-}
-
-/* ── Filter Chips ───────────────────────────────────── */
-.chip-btn {
-  padding: 0.35rem 0.85rem;
+/* ── Shared panel base ── */
+.items-panel, .cart-panel {
+  background: var(--color-white);
   border-radius: 20px;
-  font-size: 0.8rem;
+  border: 0.5px solid var(--color-gray-border);
+  box-shadow: 0 2px 16px rgba(3,105,161,.08);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;        /* fill the full grid cell */
+  overflow: hidden;
+}
+
+/* ── Panel header (shared) ── */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .9rem 1.2rem;
+  border-bottom: 2px solid rgba(244,196,0,.25);
+  background: var(--color-navy);
+  border-radius: 20px 20px 0 0;
+  flex-shrink: 0;
+}
+.panel-header-left { display: flex; align-items: center; gap: .75rem; }
+.panel-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(255,255,255,.12);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-gold); font-size: 1rem; flex-shrink: 0;
+}
+.panel-title { color: var(--color-white); font-size: .95rem; font-weight: 700; }
+.panel-sub   { color: rgba(255,255,255,.55); font-size: .72rem; margin-top: 1px; }
+
+/* ── Filter strip ── */
+.filter-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  padding: .75rem 1.1rem .6rem;
+  border-bottom: 0.5px solid var(--color-gray-border);
+  background: #fafcff;
+  flex-shrink: 0;
+}
+.filter-chip {
+  padding: .3rem .8rem;
+  border-radius: 20px;
+  font-size: .75rem;
   font-weight: 600;
   border: 1.5px solid;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all .15s;
   white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
+  display: inline-flex; align-items: center;
 }
-.chip-idle  { background: #fff; color: #374151; border-color: #d1d5db; }
-.chip-idle:hover { border-color: #93c5fd; color: #1d4ed8; }
-.chip-active { background: #2563eb; color: #fff; border-color: #2563eb; }
+.chip--idle   { background: var(--color-white); color: var(--color-text-dark); border-color: var(--color-gray-border); }
+.chip--idle:hover { border-color: var(--color-primary-light); color: var(--color-primary); }
+.chip--active { background: var(--color-navy); color: var(--color-white); border-color: var(--color-navy); }
+.chip--more   { gap: 4px; }
+.more-arrow   { font-size: .65rem; }
 
-/* More dropdown wrapper */
-.filter-more-wrap {
-  position: relative;
-  display: inline-block;
+.more-wrap { position: relative; display: inline-block; }
+.more-dropdown {
+  position: absolute; top: calc(100% + 6px); left: 0;
+  background: var(--color-white); border: 1.5px solid var(--color-gray-border);
+  border-radius: 12px; box-shadow: 0 8px 24px rgba(3,105,161,.14);
+  z-index: 500; min-width: 170px; padding: .35rem;
+  display: flex; flex-direction: column; gap: 2px;
+  animation: dropIn .15s ease;
 }
-.chip-more { gap: 2px; }
+.more-item {
+  text-align: left; padding: .45rem .75rem; border-radius: 8px;
+  font-size: .8rem; font-weight: 600; color: var(--color-text-dark);
+  background: none; border: none; cursor: pointer; transition: background .12s;
+}
+.more-item:hover       { background: rgba(3,105,161,.07); color: var(--color-primary); }
+.more-item--active     { background: rgba(3,105,161,.1); color: var(--color-primary); }
 
-.filter-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  background: #fff;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  z-index: 500;
-  min-width: 170px;
-  padding: 0.4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  animation: dropIn 0.15s ease;
-}
-@keyframes dropIn {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.filter-dropdown-item {
-  text-align: left;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #374151;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.filter-dropdown-item:hover { background: #eff6ff; color: #1d4ed8; }
-.filter-dropdown-item--active { background: #dbeafe; color: #1d4ed8; }
-
-.items-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 2px;
-  scrollbar-width: none;
-}
-.items-scroll::-webkit-scrollbar { width: 0; height: 0; }
-
-.card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: box-shadow 0.3s ease;
-}
-.card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
-
-.item-btn {
-  transition: all 0.2s ease;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  cursor: pointer;
-  min-height: 76px;
-}
-.item-btn:hover {
-  border-color: #3b82f6;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(59,130,246,0.16);
-}
-
-.category-btn {
-  transition: all 0.2s ease;
-  font-weight: 500;
-  border: 1px solid transparent;
-  line-height: 1;
-  height: 36px;
-  padding: 0 15px;
-  font-size: 0.86rem;
-  white-space: nowrap;
-}
-.category-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(15,23,42,0.12); }
-
-.btn-success { transition: all 0.2s ease; }
-.btn-success:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(22,163,74,0.3); }
-
-.cart-item {
-  transition: all 0.2s ease;
-  padding: 0.35rem 0.4rem;
-  border-radius: 6px;
-  border-bottom: 1px solid #f1f5f9;
-}
-.cart-item:last-child { border-bottom: none; }
-.cart-item:hover { background: #f9fafb; }
-
-
-
-/* ── Card Base ─────────────────────────────────────────── */
-.pos-card {
-  background: #fff;
-  border-radius: 18px;
-  border: 1px solid #e8edf2;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  overflow: hidden;
-}
-
-.pos-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.1rem 1.4rem;
-  border-bottom: 1px solid #f1f5f9;
-  background: #fafcfe;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-.pos-card-header-left { display: flex; align-items: center; gap: 0.8rem; }
-
-.pos-icon-wrap {
-  width: 40px; height: 40px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1rem; flex-shrink: 0;
-}
-.icon-blue   { background: rgba(31,141,191,.12); color: #1F8DBF; }
-.icon-yellow { background: rgba(244,196,0,.18);  color: #a07800; }
-
-.pos-card-title { font-size: 0.97rem; font-weight: 700; color: #1e293b; margin: 0; }
-.pos-card-sub   { font-size: 0.75rem; color: #94a3b8; margin: 0.1rem 0 0; }
-
-/* ── Category Buttons ──────────────────────────────────── */
-.category-switch {
-  display: flex; gap: 0.4rem; flex-wrap: nowrap;
-  overflow-x: auto; scrollbar-width: none;
-}
-.category-switch::-webkit-scrollbar { display: none; }
-
-.category-btn {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  height: 34px; padding: 0 13px;
-  border-radius: 9px; border: 1.5px solid #e8edf2;
-  background: #f8fafc; color: #64748b;
-  font-size: 0.82rem; font-weight: 600; white-space: nowrap;
-  cursor: pointer; transition: all 0.15s;
-}
-.category-btn i { font-size: 0.72rem; }
-.category-btn:hover {
-  border-color: #1F8DBF; color: #1F8DBF;
-  background: rgba(31,141,191,.06);
-}
-.category-btn--active {
-  background: #1F8DBF; color: #fff;
-  border-color: #1F8DBF;
-  box-shadow: 0 3px 10px rgba(31,141,191,.3);
-}
-.category-btn--active:hover { background: #1E88B6; border-color: #1E88B6; color: #fff; }
-
-/* ── Items Body ────────────────────────────────────────── */
+/* ── Items body ── */
 .items-body {
-  padding: 1.1rem 1.4rem;
-  display: flex; flex-direction: column; gap: 0.9rem;
+  flex: 1; min-height: 0; overflow-y: auto;
+  padding: .85rem 1rem 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-border) transparent;
+}
+.items-body::-webkit-scrollbar { width: 4px; }
+.items-body::-webkit-scrollbar-thumb { background: var(--color-gray-border); border-radius: 4px; }
+
+/* ── Item group ── */
+.item-group { margin-bottom: 1.5rem; }
+.item-group:last-child { margin-bottom: 0; }
+.group-header {
+  display: flex; align-items: center; gap: .45rem;
+  margin-bottom: .6rem; padding-bottom: .45rem;
+  border-bottom: 1.5px solid rgba(244,196,0,.25);
+}
+.group-label {
+  font-size: .7rem; font-weight: 800; color: var(--color-navy);
+  text-transform: uppercase; letter-spacing: .7px;
+}
+.group-count {
+  font-size: .65rem; font-weight: 700;
+  background: rgba(3,105,161,.08); color: var(--color-primary);
+  border: 1px solid rgba(3,105,161,.18);
+  padding: .1rem .45rem; border-radius: 20px;
 }
 
-.search-wrap { position: relative; }
-.search-icon {
-  position: absolute; left: 0.9rem; top: 50%; transform: translateY(-50%);
-  color: #94a3b8; font-size: 0.85rem; pointer-events: none;
+/* ── Items grid ── */
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .6rem;
 }
-.search-input {
-  width: 100%; padding: 0.65rem 0.9rem 0.65rem 2.4rem;
-  border: 1.5px solid #e8edf2; border-radius: 10px;
-  font-size: 0.9rem; color: #1e293b; background: #f8fafc;
-  transition: all 0.15s; box-sizing: border-box;
-}
-.search-input:focus {
-  outline: none; border-color: #1F8DBF; background: #fff;
-  box-shadow: 0 0 0 3px rgba(31,141,191,.1);
-}
+@media (max-width: 1100px) { .items-grid { grid-template-columns: repeat(2, 1fr); } }
 
-/* ── Filter Chips ──────────────────────────────────────── */
-.filter-wrap { border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem; }
-.filter-label {
-  font-size: 0.7rem; font-weight: 700; color: #94a3b8;
-  text-transform: uppercase; letter-spacing: 0.5px;
-  display: block; margin-bottom: 0.5rem;
+/* ── Item card ── */
+.item-card {
+  background: #EEF5FB;
+  border: 1.5px solid #c8dff0;
+  border-radius: 14px;
+  padding: .75rem .85rem;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: .35rem; min-height: 78px;
+  transition: all .18s ease;
+  text-align: left;
 }
-.filter-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.chip {
-  padding: 0.25rem 0.75rem; border-radius: 30px;
-  border: 1.5px solid #e8edf2; background: #fff;
-  font-size: 0.78rem; font-weight: 600; color: #64748b;
-  cursor: pointer; transition: all 0.15s;
-}
-.chip:hover { border-color: #1F8DBF; color: #1F8DBF; }
-.chip--active { background: #1F8DBF; color: #fff; border-color: #1F8DBF; }
-
-/* ── Items Grid ────────────────────────────────────────── */
-.items-scroll {
-  max-height: 560px; overflow-y: auto; scrollbar-width: none;
-}
-.items-scroll::-webkit-scrollbar { display: none; }
-
-.items-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.65rem; }
-
-.item-btn {
-  padding: 0.8rem; min-height: 76px;
-  border: 1.5px solid #e8edf2; border-radius: 12px;
-  background: #fff; cursor: pointer; text-align: left;
-  display: flex; flex-direction: column; justify-content: space-between;
-  transition: all 0.2s;
-}
-.item-btn:hover {
-  border-color: #1F8DBF;
+.item-card:hover {
+  background: #dbeafe;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 4px 12px rgba(31,141,191,.18);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(31,141,191,.15);
-  background: rgba(31,141,191,.03);
 }
-.item-name  { font-size: 0.83rem; font-weight: 600; color: #1e293b; line-height: 1.3; }
-.item-price { font-size: 1rem; font-weight: 700; color: #1F8DBF; margin-top: 0.35rem; }
+.item-card:active { transform: scale(.97); }
 
-/* ── Cart ──────────────────────────────────────────────── */
-.cart-card { display: flex; flex-direction: column; }
+.item-card-icon { font-size: .8rem; color: rgba(3,105,161,.3); margin-bottom: .1rem; }
+.item-card-name { font-size: .8rem; font-weight: 600; color: var(--color-text-dark); line-height: 1.3; }
+.item-card-price { font-size: .92rem; font-weight: 800; color: var(--color-primary); margin-top: auto; }
 
-.clear-cart-btn {
-  display: inline-flex; align-items: center; gap: 0.35rem;
-  font-size: 0.8rem; font-weight: 600; color: #ef4444;
-  background: rgba(239,68,68,.08); border: 1.5px solid rgba(239,68,68,.2);
-  border-radius: 8px; padding: 0.35rem 0.75rem;
-  cursor: pointer; transition: all 0.15s;
-}
-.clear-cart-btn:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+/* ═══════════════════════════════════
+   CART PANEL
+═══════════════════════════════════ */
+.cart-panel { flex-shrink: 0; }
 
-.cart-body { display: flex; flex-direction: column; flex: 1; padding: 1.1rem 1.4rem; }
-
-
-
-.cart-empty {
-  min-height: 220px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  color: #94a3b8; gap: 0.6rem; text-align: center;
-}
-.cart-empty i { font-size: 2.2rem; color: #d1d5db; }
-.cart-empty p  { font-size: 0.88rem; margin: 0; }
-
-.remove-item-btn { background: none; border: none; cursor: pointer; color: #fca5a5; font-size: 1rem; transition: color 0.15s; }
-.remove-item-btn:hover { color: #ef4444; }
-
-/* ── Cart Bottom ───────────────────────────────────────── */
-.cart-bottom { display: flex; flex-direction: column; gap: 0.85rem; }
-
-.total-panel {
+/* Cart header */
+.cart-header {
   display: flex; justify-content: space-between; align-items: center;
-  background: rgba(31,141,191,.06);
-  border: 1.5px solid rgba(31,141,191,.2);
-  border-radius: 12px; padding: 0.85rem 1rem;
+  padding: .9rem 1.2rem;
+  background: var(--color-navy);
+  border-bottom: 3px solid var(--color-gold);
+  border-radius: 20px 20px 0 0;
+  flex-shrink: 0;
 }
-.total-label  { font-size: 0.95rem; font-weight: 600; color: #64748b; }
-.total-amount { font-size: 2rem; font-weight: 800; color: #1F8DBF; line-height: 1; }
+.cart-header-left { display: flex; align-items: center; gap: .65rem; }
+.cart-header-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(244,196,0,.18);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-gold); font-size: 1rem; flex-shrink: 0;
+}
+.cart-header-title { color: var(--color-white); font-size: .95rem; font-weight: 700; }
+.cart-header-sub   { color: rgba(255,255,255,.55); font-size: .72rem; margin-top: 1px; }
 
-.payment-label {
-  display: block; font-size: 0.78rem; font-weight: 700;
-  color: #64748b; text-transform: uppercase; letter-spacing: 0.4px;
-  margin-bottom: 0.5rem;
+.cart-clear-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: rgba(239,68,68,.18); border: 1px solid rgba(239,68,68,.35);
+  color: #fca5a5; font-size: .8rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
 }
-.payment-btns { display: flex; gap: 0.6rem; }
-.pay-method-btn {
-  flex: 1; padding: 0.65rem 0.5rem; border-radius: 10px;
-  border: 1.5px solid #e8edf2; background: #fff;
-  font-size: 0.85rem; font-weight: 600; color: #64748b;
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.35rem;
-  transition: all 0.15s;
-}
-.pay-method-btn:hover { border-color: #1E88B6; color: #1E88B6; }
+.cart-clear-btn:hover { background: #ef4444; color: var(--color-white); border-color: #ef4444; }
 
-/* GCash selected — green tint */
-.pay-method-btn--gcash {
-  background: rgba(34,197,94,.06); border-color: #22c55e;
-  color: #15803d; box-shadow: 0 0 0 3px rgba(34,197,94,.12);
+/* Cart items — ONLY this scrolls */
+.cart-items-scroll {
+  flex: 1; min-height: 0; overflow-y: auto;
+  padding: .5rem 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-border) transparent;
 }
-/* Cash selected — yellow/golden tint matching palette */
-.pay-method-btn--cash {
-  background: rgba(242,194,0,.1); border-color: #F2C200;
-  color: #8a6500; box-shadow: 0 0 0 3px rgba(244,196,0,.18);
-}
-.pay-check { font-size: 0.8rem; color: #1F8DBF; }
+.cart-items-scroll::-webkit-scrollbar { width: 4px; }
+.cart-items-scroll::-webkit-scrollbar-thumb { background: var(--color-gray-border); border-radius: 4px; }
 
-.checkout-btn {
-  width: 100%; padding: 0.9rem;
-  background: linear-gradient(135deg, #1F8DBF, #1E88B6);
-  color: #fff; border: none; border-radius: 12px;
-  font-size: 1rem; font-weight: 700; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-  transition: all 0.2s;
-  box-shadow: 0 4px 14px rgba(31,141,191,.35);
-}
-.checkout-btn:hover {
-  background: linear-gradient(135deg, #1E88B6, #1a7aa8);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(30,136,182,.4);
-}
-
-/* ── Transactions ──────────────────────────────────────── */
-.transactions-card { width: 100%; }
-
-.trans-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.trans-action-btn {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  padding: 0.4rem 0.9rem; border-radius: 9px;
-  font-size: 0.8rem; font-weight: 600; cursor: pointer;
-  transition: all 0.15s; border: 1.5px solid;
-}
-.trans-action-btn--export {
-  color: #15803d; background: rgba(34,197,94,.08); border-color: rgba(34,197,94,.3);
-}
-.trans-action-btn--export:hover { background: #22c55e; color: #fff; border-color: #22c55e; }
-.trans-action-btn--clear {
-  color: #ef4444; background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.3);
-}
-.trans-action-btn--clear:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
-
-.table-wrap { overflow-x: auto; }
-.pos-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-
-.pos-table thead tr {
-  background: linear-gradient(90deg, rgba(31,141,191,.08), rgba(30,136,182,.13));
-  border-bottom: 2px solid rgba(31,141,191,.2);
-}
-.pos-table th {
-  padding: 0.85rem 1rem; text-align: left;
-  font-size: 0.75rem; font-weight: 700; color: #64748b;
-  text-transform: uppercase; letter-spacing: 0.4px;
-}
-.pos-table td { padding: 0.85rem 1rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
-
-.table-row { transition: background 0.15s; }
-.table-row:hover { background: rgba(31,141,191,.03); }
-/* NEW eshop row — golden yellow accent from palette */
-.table-row--new {
-  background: rgba(242,194,0,.07);
-  border-left: 3px solid #F4C400;
-}
-.table-row:last-child td { border-bottom: none; }
-
-.table-empty {
+/* Cart empty */
+.cart-empty {
   display: flex; flex-direction: column; align-items: center;
-  gap: 0.5rem; padding: 3rem; color: #94a3b8; text-align: center;
+  justify-content: center; height: 100%; min-height: 120px;
+  text-align: center; gap: .4rem;
 }
-.table-empty i { font-size: 2rem; color: #d1d5db; }
+.cart-empty-icon {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--color-gray-bg);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: .35rem;
+}
+.cart-empty-icon i { font-size: 1.3rem; color: #c1c8d0; }
+.cart-empty p    { font-size: .85rem; font-weight: 600; color: #64748b; margin: 0; }
+.cart-empty span { font-size: .72rem; color: var(--color-text-light); }
 
-.receipt-no { font-weight: 700; color: #1F8DBF; }
-/* NEW badge uses yellow-2 from palette */
-.new-badge {
-  display: inline-block; margin-left: 0.4rem;
-  background: #F4C400; color: #6b4e00;
-  font-size: 0.68rem; font-weight: 800;
-  padding: 0.15rem 0.5rem; border-radius: 5px;
+/* Cart rows */
+.cart-list { display: flex; flex-direction: column; gap: 1px; }
+.cart-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .55rem .25rem; gap: .5rem;
+  border-bottom: 0.5px solid #f1f5f9;
+  transition: background .12s;
+  border-radius: 8px;
+}
+.cart-row:hover { background: #f0f6fb; }
+.cart-row:last-child { border-bottom: none; }
+
+.cart-row-left  { flex: 1; min-width: 0; }
+.cart-row-name  { font-size: .8rem; font-weight: 600; color: var(--color-text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cart-row-qty   { font-size: .7rem; color: var(--color-text-light); margin-top: 1px; }
+.cart-row-meta  { display: flex; flex-direction: column; gap: 1px; margin-top: 2px; }
+.cart-row-meta span { font-size: .68rem; color: var(--color-text-light); display: flex; align-items: center; gap: 4px; }
+.cart-row-meta i    { color: #c1c8d0; width: 10px; }
+
+.cart-row-right { display: flex; align-items: center; gap: .4rem; flex-shrink: 0; }
+.cart-row-price { font-size: .82rem; font-weight: 700; color: var(--color-text-dark); white-space: nowrap; }
+.cart-row-remove {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fee2e2; border: none; color: #ef4444;
+  font-size: .6rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .12s; flex-shrink: 0;
+}
+.cart-row-remove:hover { background: #ef4444; color: var(--color-white); }
+
+/* ── COMPACT CART FOOTER — always pinned, never scrolls ── */
+.cart-footer {
+  flex-shrink: 0;
+  padding: .55rem .9rem .7rem;
+  border-top: 2px solid rgba(244,196,0,.3);
+  display: flex; flex-direction: column; gap: .42rem;
+  background: var(--color-white);
 }
 
-.items-preview { color: #334155; font-size: 0.85rem; }
-.view-details-btn {
+.total-bar   { display: flex; justify-content: space-between; align-items: center; }
+.total-label { font-size: .65rem; font-weight: 700; color: var(--color-text-light); text-transform: uppercase; letter-spacing: .5px; }
+.total-amount{ font-size: 1.2rem; font-weight: 800; color: var(--color-navy); line-height: 1; }
+
+.payment-section { display: flex; flex-direction: column; }
+.payment-label {
+  font-size: .62rem; font-weight: 700; color: var(--color-text-light);
+  text-transform: uppercase; letter-spacing: .4px;
+  display: flex; align-items: center; gap: .3rem; margin-bottom: .3rem;
+}
+.payment-btns { display: flex; gap: .4rem; }
+.pay-btn {
+  flex: 1; padding: .36rem .3rem; border: 1.5px solid var(--color-gray-border);
+  border-radius: 8px; background: var(--color-gray-bg);
+  font-size: .72rem; font-weight: 600; color: var(--color-text-light);
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .28rem;
+  transition: all .15s; white-space: nowrap;
+}
+.pay-btn:hover { border-color: var(--color-primary-light); color: var(--color-primary); background: rgba(31,141,191,.05); }
+.pay-btn--gcash { background: #f0fdf4; border-color: #22c55e; color: #16a34a; }
+.pay-btn--cash  { background: rgba(244,196,0,.1); border-color: var(--color-gold-dark); color: #7a5200; }
+.pay-check { font-size: .65rem; }
+
+/* Checkout button */
+.checkout-btn {
+  width: 100%; padding: .62rem;
+  background: var(--color-navy); color: var(--color-white);
+  border: none; border-radius: 10px;
+  font-size: .82rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: .42rem;
+  box-shadow: 0 3px 10px rgba(12,59,94,.25);
+  transition: all .18s ease;
+}
+.checkout-btn:hover { background: var(--color-primary); box-shadow: 0 5px 16px rgba(3,105,161,.35); transform: translateY(-1px); }
+.checkout-btn .checkout-amount {
+  margin-left: auto;
+  font-size: .72rem;
+  background: rgba(255,255,255,.15);
+  padding: 2px 8px; border-radius: 20px;
+}
+
+/* Search no-results state */
+.items-no-results {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: .5rem;
+  padding: 3rem 1rem; text-align: center;
+  border: 2px dashed rgba(244,196,0,.35);
+  border-radius: 14px; background: rgba(244,196,0,.02);
+  margin: .5rem 0;
+}
+.items-no-results i { font-size: 1.4rem; color: #c1c8d0; }
+.items-no-results p { font-size: .85rem; color: var(--color-text-light); margin: 0; }
+.items-no-results strong { color: var(--color-text-dark); }
+
+/* ═══════════════════════════════════
+   TRANSACTION SECTION
+═══════════════════════════════════ */
+.trans-section {
+  background: var(--color-white);
+  border-radius: 20px;
+  border: 0.5px solid var(--color-gray-border);
+  box-shadow: 0 2px 16px rgba(3,105,161,.08);
+  overflow: hidden;
+  flex: 1;
+  animation: fadeUp .25s ease both;
+}
+
+.trans-header {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: .75rem;
+  padding: 1.1rem 1.5rem;
+  background: var(--color-navy);
+  border-bottom: 3px solid var(--color-gold);
+}
+.trans-header-left { display: flex; align-items: center; gap: .75rem; }
+.trans-actions     { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+.btn-export {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .45rem 1rem; border-radius: 10px;
+  font-size: .8rem; font-weight: 600; cursor: pointer;
+  background: rgba(34,197,94,.15); color: #86efac;
+  border: 1px solid rgba(34,197,94,.3); transition: all .15s;
+}
+.btn-export:hover { background: #22c55e; color: var(--color-white); border-color: #22c55e; }
+
+.btn-danger-outline {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .45rem 1rem; border-radius: 10px;
+  font-size: .8rem; font-weight: 600; cursor: pointer;
+  background: rgba(239,68,68,.15); color: #fca5a5;
+  border: 1px solid rgba(239,68,68,.3); transition: all .15s;
+}
+.btn-danger-outline:hover { background: #ef4444; color: var(--color-white); border-color: #ef4444; }
+
+.trans-table-wrap { overflow-x: auto; padding: 0 1.25rem 1.25rem; }
+.trans-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+
+.trans-table thead th {
+  padding: .8rem .9rem; text-align: left;
+  font-size: .68rem; font-weight: 700; color: var(--color-text-light);
+  text-transform: uppercase; letter-spacing: .6px;
+  background: var(--color-gray-bg);
+  border-bottom: 2px solid rgba(244,196,0,.25);
+}
+.trans-table thead th:first-child { border-radius: 10px 0 0 0; }
+.trans-table thead th:last-child  { border-radius: 0 10px 0 0; }
+.text-center { text-align: center; }
+
+.trans-row { border-bottom: 0.5px solid var(--color-gray-border); transition: background .12s; }
+.trans-row:hover { background: rgba(3,105,161,.03); }
+.trans-row:last-child { border-bottom: none; }
+.trans-row--new { background: rgba(244,196,0,.05); border-left: 3px solid var(--color-gold); }
+
+.trans-table td { padding: .8rem .9rem; color: var(--color-text-dark); vertical-align: middle; }
+
+/* Trans table cells */
+.receipt-cell { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.receipt-no   { font-weight: 700; color: var(--color-primary); font-family: monospace; }
+.new-badge    { background: var(--color-gold); color: #5a3e00; font-size: .65rem; font-weight: 800; padding: 2px 7px; border-radius: 5px; }
+
+.items-preview { font-size: .82rem; color: var(--color-text-dark); }
+.view-btn {
   background: none; border: none; cursor: pointer;
-  color: #1F8DBF; font-size: 0.75rem; font-weight: 600;
-  margin-top: 0.2rem; display: inline-flex; align-items: center; gap: 0.25rem;
-  transition: color 0.15s; padding: 0;
+  color: var(--color-primary-light); font-size: .72rem; font-weight: 600;
+  margin-top: 3px; display: inline-flex; align-items: center; gap: 4px;
+  padding: 0; transition: color .12s;
 }
-.view-details-btn:hover { color: #1E88B6; text-decoration: underline; }
+.view-btn:hover { color: var(--color-primary); text-decoration: underline; }
 
-.type-cell  { color: #64748b; font-size: 0.85rem; }
-.amount-cell{ font-weight: 700; color: #1e293b; }
-.date-cell  { color: #334155; font-size: 0.85rem; }
-.time-sub   { display: block; font-size: 0.75rem; color: #94a3b8; margin-top: 0.1rem; }
+.type-pill { font-size: .75rem; font-weight: 600; color: var(--color-text-light); }
 
-/* Payment badges */
-.payment-badge {
-  display: inline-block; padding: 0.25rem 0.65rem;
-  border-radius: 30px; font-size: 0.75rem; font-weight: 600;
+.pay-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: .72rem; font-weight: 600;
 }
-.payment-badge--gcash { background: rgba(34,197,94,.1);  color: #15803d; }
-/* Cash badge uses palette yellow */
-.payment-badge--cash  { background: rgba(242,194,0,.15); color: #7a5200; }
+.pay-badge--gcash { background: rgba(22,163,74,.1);  color: #15803d; border: 1px solid rgba(22,163,74,.25); }
+.pay-badge--cash  { background: rgba(244,196,0,.12); color: #7a5200; border: 1px solid rgba(244,196,0,.3); }
 
-.actions-cell { text-align: center; white-space: nowrap; }
+.amount-cell { font-weight: 700; color: var(--color-text-dark); }
+.date-cell   { font-size: .82rem; color: var(--color-text-dark); }
+.time-cell   { font-size: .72rem; color: var(--color-text-light); margin-top: 1px; }
+
+.tbl-acts { display: flex; gap: 4px; justify-content: center; }
 .tbl-btn {
-  width: 30px; height: 30px; border-radius: 7px;
-  border: 1.5px solid #e8edf2; background: #fff;
-  font-size: 0.85rem; cursor: pointer;
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--color-gray-border); background: var(--color-white);
+  font-size: .75rem; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
-  transition: all 0.15s; margin: 0 2px;
+  transition: all .15s;
 }
 .tbl-btn:hover { transform: translateY(-1px); }
-/* Print — blue-2 */
-.tbl-btn--print    { color: #1F8DBF; }
-.tbl-btn--print:hover    { background: #1F8DBF; color: #fff; border-color: #1F8DBF; }
-/* Download — blue-1 */
-.tbl-btn--download { color: #1E88B6; }
-.tbl-btn--download:hover { background: #1E88B6; color: #fff; border-color: #1E88B6; }
-/* Customize — purple kept as-is (not part of this palette) */
-.tbl-btn--customize{ color: #8b5cf6; }
-.tbl-btn--customize:hover{ background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
-/* Delete — red */
-.tbl-btn--delete   { color: #ef4444; }
-.tbl-btn--delete:hover   { background: #ef4444; color: #fff; border-color: #ef4444; }
+.tbl-btn--print { color: var(--color-primary-light); }
+.tbl-btn--print:hover { background: var(--color-primary-light); color: var(--color-white); border-color: var(--color-primary-light); }
+.tbl-btn--dl  { color: var(--color-primary); }
+.tbl-btn--dl:hover  { background: var(--color-primary); color: var(--color-white); border-color: var(--color-primary); }
+.tbl-btn--cust{ color: #8b5cf6; }
+.tbl-btn--cust:hover { background: #8b5cf6; color: var(--color-white); border-color: #8b5cf6; }
+.tbl-btn--del { color: #ef4444; }
+.tbl-btn--del:hover  { background: #ef4444; color: var(--color-white); border-color: #ef4444; }
 
-/* ── Modal ─────────────────────────────────────────────── */
+/* Trans empty */
+.trans-empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: .6rem; padding: 3.5rem; text-align: center;
+}
+.empty-icon-wrap { width: 56px; height: 56px; border-radius: 14px; background: rgba(3,105,161,.08); color: var(--color-primary-light); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+.empty-title { font-size: .9rem; font-weight: 700; color: var(--color-text-dark); margin: 0; }
+.empty-sub   { font-size: .78rem; color: var(--color-text-light); margin: 0; }
+
+/* ═══════════════════════════════════
+   MODALS
+═══════════════════════════════════ */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(15,23,42,.55); backdrop-filter: blur(5px);
+  background: rgba(12,59,94,.55); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center;
-  z-index: 1000; animation: fadeIn 0.2s;
+  z-index: 1000; padding: 1rem;
+  animation: fadeIn .2s ease;
 }
-@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-
 .modal-box {
-  background: #fff; border-radius: 20px;
-  width: 90%; max-width: 620px; max-height: 90vh; overflow-y: auto;
-  box-shadow: 0 20px 50px rgba(0,0,0,.2);
-  animation: slideUp 0.25s ease;
-}
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  background: var(--color-white); border-radius: 20px;
+  width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(12,59,94,.22);
+  animation: popIn .22s ease;
 }
 
-/* Modal header uses blue gradient from palette */
 .modal-head {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  padding: 1.4rem 1.5rem;
-  background: linear-gradient(135deg, #1E88B6, #1F8DBF);
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.1rem 1.4rem;
+  background: var(--color-navy);
   border-radius: 20px 20px 0 0;
+  border-bottom: 3px solid var(--color-gold);
+  flex-shrink: 0;
 }
-.modal-title { font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0; }
-.modal-sub   { font-size: 0.82rem; color: rgba(255,255,255,.75); margin: 0.25rem 0 0; }
-.modal-close {
-  width: 34px; height: 34px; border-radius: 9px;
-  background: rgba(255,255,255,.15); border: none; color: #fff;
-  font-size: 1rem; cursor: pointer;
+.modal-head-left { display: flex; align-items: center; gap: .8rem; }
+.modal-head-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: rgba(255,255,255,.12);
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s;
+  font-size: 1rem; color: var(--color-white); flex-shrink: 0;
 }
-.modal-close:hover { background: rgba(255,255,255,.3); }
+.modal-head-icon--gold { background: rgba(244,196,0,.2); color: var(--color-gold); }
+.modal-title { font-size: 1rem; font-weight: 700; color: var(--color-white); margin: 0; }
+.modal-sub   { font-size: .72rem; color: rgba(255,255,255,.6); margin: 2px 0 0; }
+.modal-close-btn {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+  color: var(--color-white); font-size: .85rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: background .15s;
+}
+.modal-close-btn:hover { background: rgba(255,255,255,.28); }
 
-.modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.modal-body { padding: 1.25rem 1.4rem; display: flex; flex-direction: column; gap: 1rem; }
 
 .modal-section {
-  background: #f8fafc; border: 1px solid #e8edf2;
-  border-radius: 14px; padding: 1.1rem;
+  background: var(--color-gray-bg);
+  border: 0.5px solid var(--color-gray-border);
+  border-radius: 14px; padding: 1rem;
 }
 .modal-section-title {
-  font-size: 0.9rem; font-weight: 700; color: #1e293b; margin: 0 0 1rem;
-  display: flex; align-items: center; gap: 0.4rem;
+  font-size: .78rem; font-weight: 700; color: var(--color-navy);
+  text-transform: uppercase; letter-spacing: .4px;
+  margin: 0 0 .85rem; display: flex; align-items: center; gap: .4rem;
 }
-.modal-section-title i { color: #1F8DBF; }
+.modal-section-title i { color: var(--color-primary-light); }
 
-.modal-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-
-.form-group  { display: flex; flex-direction: column; gap: 0.4rem; }
-.form-label  { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; }
-.form-input  {
-  padding: 0.6rem 0.85rem; border: 1.5px solid #e8edf2;
-  border-radius: 9px; font-size: 0.9rem; color: #1e293b;
-  background: #fff; transition: all 0.15s;
-  width: 100%; box-sizing: border-box;
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.form-group { display: flex; flex-direction: column; gap: .35rem; }
+.form-label { font-size: .68rem; font-weight: 700; color: var(--color-text-light); text-transform: uppercase; letter-spacing: .4px; }
+.form-input {
+  width: 100%; padding: .6rem .85rem;
+  border: 1.5px solid var(--color-gray-border); border-radius: 10px;
+  font-size: .875rem; color: var(--color-text-dark);
+  background: var(--color-white); transition: all .15s; box-sizing: border-box;
 }
-.form-input:focus { outline: none; border-color: #1F8DBF; box-shadow: 0 0 0 3px rgba(31,141,191,.1); }
-.form-input.mono  { font-family: monospace; font-size: 0.82rem; }
+.form-input:focus { outline: none; border-color: var(--color-primary-light); box-shadow: 0 0 0 3px rgba(31,141,191,.1); }
+.font-mono { font-family: monospace; font-size: .8rem; }
 
-.color-row { display: flex; gap: 0.5rem; align-items: center; }
-.color-swatch {
-  width: 42px; height: 36px; border-radius: 8px;
-  border: 1.5px solid #e8edf2; cursor: pointer; padding: 2px; flex-shrink: 0;
-}
+.color-row { display: flex; gap: .5rem; align-items: center; }
+.color-swatch { width: 40px; height: 36px; border-radius: 8px; border: 1.5px solid var(--color-gray-border); cursor: pointer; padding: 2px; flex-shrink: 0; }
 
-.modal-checks { display: flex; flex-direction: column; gap: 0.6rem; }
-.check-row {
-  display: flex; align-items: center; gap: 0.65rem;
-  font-size: 0.88rem; color: #334155; cursor: pointer; font-weight: 500;
+/* Detail rows (inside modal) */
+.detail-grid    { display: flex; flex-direction: column; gap: .4rem; }
+.detail-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .4rem 0; border-bottom: 0.5px solid var(--color-gray-border); font-size: .875rem;
 }
-.check-input { width: 16px; height: 16px; accent-color: #1F8DBF; cursor: pointer; }
+.detail-row:last-child { border-bottom: none; }
+.detail-row--total { padding-top: .6rem; border-top: 1px solid var(--color-gray-border); border-bottom: none; }
+.detail-key   { color: var(--color-text-light); }
+.detail-val   { font-weight: 600; color: var(--color-text-dark); }
+.detail-total { font-size: 1.2rem; font-weight: 800; color: var(--color-primary); }
 
-/* Receipt preview */
-.receipt-preview {
-  background: #fff; border: 2px dashed #e8edf2;
-  border-radius: 10px; padding: 1rem;
+/* Items detail */
+.items-detail-list { display: flex; flex-direction: column; gap: .45rem; }
+.items-detail-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: .65rem .85rem;
+  background: var(--color-white); border-radius: 10px;
+  border: 0.5px solid var(--color-gray-border);
+  border-left: 3px solid var(--color-gold);
 }
-.rp-header { text-align: center; padding: 12px; border-radius: 7px; margin-bottom: 10px; }
-.rp-body   { margin: 8px 0; }
-.rp-item   { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
-.rp-total  { text-align: center; font-weight: 700; padding: 10px; border-radius: 7px; margin-top: 8px; }
+.items-detail-left  { flex: 1; }
+.items-detail-name  { font-weight: 600; color: var(--color-text-dark); font-size: .875rem; }
+.items-detail-ref   { font-size: .7rem; color: var(--color-text-light); margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+.items-detail-ref i { color: var(--color-primary-light); }
+.items-detail-price { font-weight: 700; color: var(--color-primary); font-size: .875rem; margin-left: .75rem; flex-shrink: 0; }
 
 .modal-foot {
-  padding: 1.1rem 1.5rem; border-top: 1px solid #f1f5f9;
-  background: #fafcfe; border-radius: 0 0 20px 20px;
-  display: flex; gap: 0.6rem; justify-content: flex-end;
+  display: flex; gap: .55rem; justify-content: flex-end;
+  padding: 1rem 1.4rem;
+  border-top: 1px solid var(--color-gray-border);
+  background: var(--color-gray-bg);
+  border-radius: 0 0 20px 20px;
 }
-.modal-btn {
-  padding: 0.55rem 1.2rem; border-radius: 10px;
-  font-size: 0.88rem; font-weight: 700; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  transition: all 0.15s; border: none;
+.btn-cancel {
+  padding: .5rem 1.1rem; border-radius: 10px;
+  background: var(--color-white); color: var(--color-text-light);
+  border: 1.5px solid var(--color-gray-border);
+  font-size: .875rem; font-weight: 600; cursor: pointer; transition: all .15s;
 }
-.modal-btn--cancel   { background: #f1f5f9; color: #64748b; }
-.modal-btn--cancel:hover { background: #e2e8f0; }
-.modal-btn--download { background: #22c55e; color: #fff; }
-.modal-btn--download:hover { background: #16a34a; }
-/* Save uses blue-2 */
-.modal-btn--save     { background: #1F8DBF; color: #fff; }
-.modal-btn--save:hover { background: #1E88B6; }
+.btn-cancel:hover { border-color: var(--color-primary-light); color: var(--color-primary); }
+.btn-action {
+  padding: .5rem 1.1rem; border-radius: 10px;
+  font-size: .875rem; font-weight: 700; cursor: pointer;
+  border: none; display: inline-flex; align-items: center; gap: .4rem; transition: all .15s;
+}
+.btn-action--green   { background: #22c55e; color: var(--color-white); }
+.btn-action--green:hover  { background: #16a34a; }
+.btn-action--primary { background: var(--color-navy); color: var(--color-white); }
+.btn-action--primary:hover { background: var(--color-primary); }
+.btn-action--primary i { color: var(--color-gold); }
 
-/* ── Fullscreen Mode ────────────────────────────────────── */
-.pos-fullscreen .main-content {
-  margin-left: 0 !important;
-  padding: 0 !important;
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 2rem; right: 2rem;
+  display: flex; align-items: center; gap: .6rem;
+  padding: .8rem 1.3rem; border-radius: 14px;
+  font-size: .875rem; font-weight: 600;
+  color: var(--color-white);
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+  z-index: 9999;
 }
-.pos-fullscreen :deep(.page-header) {
-  display: none !important;
-}
-/* hide the AdminSidebar root element in fullscreen */
-.pos-fullscreen > aside,
-.pos-fullscreen > nav {
-  display: none !important;
-}
-.pos-fullscreen .pos-container {
-  padding: 0.75rem !important;
-}
-.pos-fullscreen .pos-grid {
-  height: calc(100vh - 1.5rem);
-}
-.pos-fullscreen .items-card,
-.pos-fullscreen .cart-card {
-  height: 100% !important;
-}
+.toast--success { background: #16a34a; }
+.toast--error   { background: #dc2626; }
+.toast-enter-active, .toast-leave-active { transition: all .28s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(10px); }
 
 /* ── Responsive ────────────────────────────────────────── */
 @media (max-width: 768px) {
