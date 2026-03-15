@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
+import axios from 'axios'
+
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export const useNotificationStore = defineStore('notifications', () => {
     // Initialize from localStorage or defaults
@@ -41,6 +44,16 @@ export const useNotificationStore = defineStore('notifications', () => {
         eshopPendingCount.value = count
     }
 
+    async function fetchNotificationCounts() {
+        try {
+            const { data } = await axios.get(`${BACKEND_URL}/api/notifications/pending-counts`)
+            reservationPendingCount.value = data.reservationPendingCount
+            swimmingPendingCount.value = data.swimmingPendingCount
+        } catch (err) {
+            console.error('Failed to fetch notification counts:', err)
+        }
+    }
+
     return {
         swimmingPendingCount,
         reservationPendingCount,
@@ -48,6 +61,7 @@ export const useNotificationStore = defineStore('notifications', () => {
         hasAnyNotifications,
         setSwimmingPending,
         setReservationPending,
-        setEshopPending
+        setEshopPending,
+        fetchNotificationCounts
     }
 })

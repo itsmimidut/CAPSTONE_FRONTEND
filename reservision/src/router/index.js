@@ -297,22 +297,42 @@ const router = createRouter({
 /* 🔐 GLOBAL ROUTE GUARD */
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Timing-safe state hydration
+  //
+  // Root cause of "need to refresh before the page shows" bug:
+  //   After login (especially Google renderButton popup), router.push() can be
+  //   called from an async callback that fires outside Vue's synchronous update
+  //   cycle.  In that window the Pinia `isAuthenticated` ref may still read as
+  //   false even though localStorage was already updated by loginWithGoogle().
+  //
+  // Fix: if Pinia says the user is not authenticated, ask initFromStorage() to
+  //   try reading the token+user from localStorage right now (before we apply
+  //   any guard logic).  This is side-effect-free when no valid session exists,
+  //   and synchronously sets isAuthenticated = true when a valid one is found.
+  // ─────────────────────────────────────────────────────────────────────────
+  if (!auth.isAuthenticated) {
+    auth.initFromStorage()
+  }
+
   const { isAuthenticated, role } = storeToRefs(auth)
   const currentRole = String(role.value || '').toLowerCase()
 
   /**
    * Check 1: Authentication requirement
    * If route requires auth (requiresAuth: true) but user is not logged in,
-   * redirect to login page
+   * redirect to login page with the intended destination as a query param so
+   * we can redirect back after a successful login.
    */
   if (to.meta.requiresAuth && !isAuthenticated.value) {
-    return next('/login')
+    return next({ path: '/login', query: { redirect: to.fullPath } })
   }
 
   /**
-   * Check 2: Role-based access control
+   * Check 2: Role-based access control (array form — used by admin routes)
    * If route specifies allowed roles and user's role is not in the list,
-   * redirect to home page (or could use '/403' for forbidden page)
+   * redirect to home page.
    */
   if (to.meta.roles) {
     const allowedRoles = to.meta.roles.map((item) => String(item).toLowerCase())
@@ -321,6 +341,9 @@ router.beforeEach((to, from, next) => {
     }
   }
 
+  /**
+   * Check 3: Single-role access control (string form — used by customer routes)
+   */
   if (to.meta.role) {
     const requiredRole = String(to.meta.role).toLowerCase()
     if (requiredRole !== currentRole) {
@@ -329,7 +352,7 @@ router.beforeEach((to, from, next) => {
   }
 
   /**
-   * All checks passed - Allow navigation
+   * All checks passed — allow navigation
    */
   next()
 })

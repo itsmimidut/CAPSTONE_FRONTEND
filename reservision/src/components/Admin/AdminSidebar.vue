@@ -147,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useNotificationStore } from '../../stores/notifications'
@@ -287,6 +287,15 @@ watch(() => activePath.value, () => {
 onMounted(() => {
   auth.initFromStorage()
   autoOpenDropdown()
+  notifications.fetchNotificationCounts()
+  notificationInterval = setInterval(() => {
+    notifications.fetchNotificationCounts()
+  }, 30000)
+})
+
+let notificationInterval = null
+onUnmounted(() => {
+  if (notificationInterval) clearInterval(notificationInterval)
 })
 </script>
 

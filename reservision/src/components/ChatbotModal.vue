@@ -40,12 +40,6 @@
         <button @click="sendQuickMessage('What rooms are available?')" class="quick-btn">
           🏨 Rooms
         </button>
-        <button @click="sendQuickMessage('May promo ba?')" class="quick-btn">
-          🎉 Promos
-        </button>
-        <button @click="sendQuickMessage('Magkano ang entrance?')" class="quick-btn">
-          💰 Rates
-        </button>
         <button @click="sendQuickMessage('Menu items?')" class="quick-btn">
           🍽️ Menu
         </button>
@@ -129,7 +123,7 @@ const unreadCount = ref(0)
 
 const messages = ref([
   { 
-    text: 'Kumusta! I\'m Eduardo\'s Resort AI assistant. Ask me anything about our rooms, cottages, menu, promos, and rates! 😊', 
+    text: 'Kumusta! I\'m Eduardo\'s Resort AI assistant. Ask me anything about our rooms, cottages, and menu! 😊', 
     sender: 'bot',
     time: getCurrentTime()
   }

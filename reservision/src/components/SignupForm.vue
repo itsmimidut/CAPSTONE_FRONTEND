@@ -81,6 +81,11 @@
         <div v-if="authStore.error" class="p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs font-semibold">
           <i class="fas fa-exclamation-circle mr-1"></i> {{ authStore.error }}
         </div>
+
+        <!-- Success Message -->
+        <div v-if="signupSuccess" class="p-3 bg-green-50 border border-green-100 rounded-lg text-green-700 text-xs font-semibold">
+          <i class="fas fa-check-circle mr-1"></i> Account created! Redirecting…
+        </div>
         
         <!-- Create Account Button -->
         <button 
@@ -114,18 +119,27 @@
           </div>
         </div>
         
-        <!-- Google Button -->
-        <button 
-          type="button"
-          @click="handleGoogleLogin"
-          :disabled="authStore.isLoading"
-          class="w-full py-3 bg-white border border-[#1F8DBF]/20 text-[#1F8DBF] rounded-lg flex items-center justify-center gap-2 text-sm font-semibold
-                 hover:bg-[#1F8DBF]/5 hover:border-[#1F8DBF] hover:shadow-md
-                 transition-all duration-300"
-        >
-          <img src="https://www.google.com/favicon.ico" alt="Google" class="w-4 h-4" />
-          <span>Continue with Google</span>
-        </button>
+        <!-- ─────────────────────────────────────────────────────────────── -->
+        <!-- Google Sign-In Button (injected by Google Identity Services)      -->
+        <!--                                                                    -->
+        <!-- How it works:                                                      -->
+        <!--  • onMounted calls initGoogleSignIn()                              -->
+        <!--  • google.accounts.id.renderButton() inserts an <iframe> here     -->
+        <!--  • Clicking the iframe opens a centred popup account selector      -->
+        <!--  • No more prompt() → no more One-Tap corner overlay               -->
+        <!-- ─────────────────────────────────────────────────────────────── -->
+        <div ref="googleButtonContainer" class="w-full flex justify-center min-h-[44px]">
+          <!-- Skeleton pulse shown while the GIS script loads (disappears once
+               googleReady becomes true and renderButton() fires) -->
+          <div
+            v-if="!googleReady"
+            class="w-full h-[44px] rounded-lg border border-[#1F8DBF]/20 bg-gray-50 animate-pulse
+                   flex items-center justify-center gap-2 text-xs text-gray-400"
+          >
+            <i class="fas fa-circle-notch fa-spin text-[#1F8DBF]/40"></i>
+            <span>Loading Google Sign-In…</span>
+          </div>
+        </div>
         
         <div class="text-center text-xs text-[#1F8DBF]/70 font-semibold">
           <p>
@@ -141,51 +155,6 @@
 
       </form>
     </div>
-
-    <!-- Google Sign-In Help Modal -->
-    <div
-      v-if="showGoogleHelpModal"
-      class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-      @click="showGoogleHelpModal = false"
-    >
-      <div
-        class="w-full max-w-sm bg-white rounded-2xl border border-[#1F8DBF]/20 shadow-2xl p-5"
-        @click.stop
-      >
-        <div class="flex items-start gap-3 mb-3">
-          <div class="w-9 h-9 rounded-full bg-[#F4C400]/20 text-[#1F8DBF] flex items-center justify-center">
-            <i class="fas fa-info-circle"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-[#1F8DBF] text-base">Google Sign-In Needs Attention</h3>
-            <p class="text-xs text-[#1F8DBF]/70 mt-1">{{ googleHelpMessage }}</p>
-          </div>
-        </div>
-
-        <ul class="text-xs text-gray-600 space-y-1.5 mb-4 list-disc pl-5">
-          <li>Allow popups for this site.</li>
-          <li>Turn off strict tracking/ad blockers for this page.</li>
-          <li>Try opening in Chrome or an incognito window.</li>
-        </ul>
-
-        <div class="flex gap-2">
-          <button
-            type="button"
-            class="flex-1 py-2 rounded-lg border border-[#1F8DBF]/20 text-[#1F8DBF] font-semibold text-sm hover:bg-[#1F8DBF]/5 transition"
-            @click="showGoogleHelpModal = false"
-          >
-            Close
-          </button>
-          <button
-            type="button"
-            class="flex-1 py-2 rounded-lg bg-[#1F8DBF] text-white font-semibold text-sm hover:bg-[#1E88B6] transition"
-            @click="retryGoogleLogin"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -199,9 +168,13 @@ const route = useRoute()
 const authStore = useAuthStore()
 const showPassword = ref(false)
 const googleReady = ref(false)
-const showGoogleHelpModal = ref(false)
-const googleHelpMessage = ref('The Google popup was blocked, closed, or skipped.')
+// Template ref that points to the <div ref="googleButtonContainer"> element.
+// renderButton() injects Google's iframe into this div after the GIS script loads.
+const googleButtonContainer = ref(null)
+const signupSuccess = ref(false)  // Shown instead of alert() after successful signup
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+// Use the same API base URL as the auth store (configured via VITE_API_URL in .env)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const formData = reactive({
   fullName: '',
   email: '',
@@ -226,7 +199,7 @@ const handleSubmit = async () => {
     authStore.setLoading(true);
     authStore.clearError();
 
-    const response = await fetch('http://localhost:8000/api/customers/signup', {
+    const response = await fetch(`${API_URL}/api/customers/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -240,16 +213,17 @@ const handleSubmit = async () => {
         localStorage.setItem('authToken', data.token);
       }
       
-      // Store user data
+      // Store user data and update Pinia state
       if (data.customer) {
         localStorage.setItem('user', JSON.stringify(data.customer));
+        authStore.setUser(data.customer);
       }
 
-      // Show success message
-      alert('Account created successfully! Redirecting to dashboard...');
-      
-      // Redirect to customer dashboard
-      window.location.href = '/customer';
+      // Show inline success banner, then redirect with Vue Router
+      // (No alert() — that blocks the thread and is inconsistent UX)
+      signupSuccess.value = true;
+      // redirectByRole is async and handles NavigationFailure fallback
+      await redirectByRole(data.customer?.role || 'customer');
     } else {
       authStore.setError(data.error || 'Signup failed. Please try again.');
     }
@@ -286,18 +260,33 @@ const loadGoogleScript = () => {
   })
 }
 
-const redirectByRole = (role) => {
-  const redirectPath = route.query.redirect
+const redirectByRole = async (role) => {
+  // Choose the destination based on role, honouring any ?redirect= query param
+  const savedRedirect = route.query.redirect
+  let destination
   if (role === 'customer') {
-    if (redirectPath && redirectPath.startsWith('/')) {
-      return router.push(redirectPath)
+    destination = (savedRedirect && typeof savedRedirect === 'string' && savedRedirect.startsWith('/'))
+      ? savedRedirect
+      : '/customer'
+  } else if (role === 'admin' || role === 'restaurantstaff' || role === 'receptionist') {
+    destination = '/dashboard'
+  } else {
+    destination = '/'
+  }
+
+  try {
+    // router.push() returns a NavigationFailure (truthy) when the navigation
+    // is rejected by a guard, or undefined when it succeeds.
+    // If it is rejected for any reason (timing / guard edge-case), fall back to
+    // a full-page replace which re-runs main.js and initFromStorage() so the
+    // next guard always sees the correct auth state.
+    const failure = await router.push(destination)
+    if (failure) {
+      window.location.replace(destination)
     }
-    return router.push('/customer')
+  } catch {
+    window.location.replace(destination)
   }
-  if (role === 'admin' || role === 'restaurantstaff' || role === 'receptionist') {
-    return router.push('/dashboard')
-  }
-  return router.push('/')
 }
 
 const initGoogleSignIn = async () => {
@@ -308,59 +297,58 @@ const initGoogleSignIn = async () => {
   try {
     await loadGoogleScript()
 
+    // Step 1 — Initialize the Google Identity Services library.
+    //
+    // ux_mode: 'popup'
+    //   Opens the account chooser as a standard centred popup window.
+    //   This is the key change: previously the absence of this option
+    //   (combined with prompt()) caused the One-Tap overlay to appear in
+    //   the top-right corner of the screen, which looks unprofessional.
     window.google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
+      ux_mode: 'popup',
       callback: async (response) => {
         if (!response?.credential) {
           authStore.setError('Google signup failed. No credential returned.')
           return
         }
-
+        // The credential (ID token) is forwarded unchanged to the existing
+        // backend endpoint. No server-side modifications required.
         const result = await authStore.loginWithGoogle(response.credential)
         if (result.success) {
+          // redirectByRole is async and handles NavigationFailure fallback
           await redirectByRole(result.role)
+        } else {
+          authStore.setError(result.message || 'Google sign-up failed. Please try again.')
         }
       }
     })
 
+    // Step 2 — Render Google's official button inside the mount-point div.
+    //
+    // This completely replaces our custom <button> + prompt() approach:
+    //   • Clicking the rendered button triggers the popup selector (no prompt())
+    //   • The button uses Google's own branding — compliant with their UX policy
+    //   • width is capped at 400px (Google's internal maximum) while still filling
+    //     the form column on narrower screens
+    if (googleButtonContainer.value) {
+      window.google.accounts.id.renderButton(googleButtonContainer.value, {
+        type: 'standard',        // icon + label (vs 'icon' for logo-only)
+        theme: 'outline',        // white background with subtle border
+        size: 'large',           // tallest option — visually matches form buttons
+        text: 'continue_with',   // label reads "Continue with Google"
+        shape: 'rectangular',    // consistent with the form's rounded-lg buttons
+        logo_alignment: 'left',  // Google G on the left, text centred
+        // Fill the container width; Google caps this at 400 px internally
+        width: Math.min(googleButtonContainer.value.offsetWidth || 320, 400)
+      })
+    }
+
     googleReady.value = true
   } catch (error) {
     console.error('Google initialization error:', error)
-    authStore.setError('Unable to initialize Google Sign-In. Please try again.')
+    authStore.setError('Unable to initialize Google Sign-In. Please try again later.')
   }
-}
-
-const handleGoogleLogin = async () => {
-  authStore.clearError()
-  showGoogleHelpModal.value = false
-
-  if (!GOOGLE_CLIENT_ID) {
-    authStore.setError('Google Sign-In is not configured yet. Add VITE_GOOGLE_CLIENT_ID to frontend .env.')
-    return
-  }
-
-  if (!googleReady.value) {
-    await initGoogleSignIn()
-  }
-
-  if (!window.google?.accounts?.id) {
-    authStore.setError('Google Sign-In is currently unavailable. Please try again later.')
-    return
-  }
-
-  window.google.accounts.id.prompt((notification) => {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      const reason = notification.getNotDisplayedReason?.() || notification.getSkippedReason?.() || 'unknown'
-      googleHelpMessage.value = `Google prompt was blocked or skipped (reason: ${reason}).`
-      authStore.setError('Google prompt was closed or blocked. Please allow popups and try again.')
-      showGoogleHelpModal.value = true
-    }
-  })
-}
-
-const retryGoogleLogin = async () => {
-  showGoogleHelpModal.value = false
-  await handleGoogleLogin()
 }
 
 const createRipple = (e) => {

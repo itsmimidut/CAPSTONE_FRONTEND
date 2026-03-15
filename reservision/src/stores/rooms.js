@@ -250,52 +250,37 @@ export const useRoomsStore = defineStore('rooms', {
      */
     async saveRoom(room) {
       try {
-        console.log('saveRoom called with:', room)
-
-        // Prepare room data for backend
-        const roomData = {
-          category: room.category,
-          category_type: room.category_type,
-          room_number: room.room_number,
-          name: room.name,
-          description: room.description,
-          max_guests: room.max_guests,
-          price: room.price,
-          quantity: room.quantity || 1,
-          status: room.status,
-          promo: room.promo ? 1 : 0,
-          images: room.images || [], // Array of image URLs/paths
-          primaryImageIndex: room.primaryImageIndex || 0
+        // Build FormData for multipart/form-data (file upload)
+        const formData = new FormData();
+        formData.append('category', room.category || '');
+        formData.append('category_type', room.category_type || 'room');
+        formData.append('room_number', room.room_number || '');
+        formData.append('name', room.name || '');
+        formData.append('description', room.description || '');
+        formData.append('max_guests', room.max_guests || 2);
+        formData.append('price', room.price || 0);
+        formData.append('quantity', room.quantity || 1);
+        formData.append('status', room.status || 'Available');
+        formData.append('promo', room.promo ? 1 : 0);
+        formData.append('primaryImageIndex', room.primaryImageIndex || 0);
+        // Existing image paths to keep (already stored on server)
+        formData.append('existingImages', JSON.stringify(room.existingImages || []));
+        // Append new image File objects
+        if (room.newFiles && room.newFiles.length) {
+          room.newFiles.forEach(file => formData.append('images', file));
         }
-
-        console.log('Sending roomData to backend:', roomData)
 
         if (room.item_id) {
-          // UPDATE: Send to PUT endpoint
-          console.log(`Updating room ${room.item_id}...`)
-          const response = await axios.put(
-            `${BACKEND_URL}/api/rooms/${room.item_id}`,
-            roomData
-          )
-          console.log('Update response:', response.data)
+          await axios.put(`${BACKEND_URL}/api/rooms/${room.item_id}`, formData);
         } else {
-          // CREATE: Send to POST endpoint
-          console.log('Creating new room...')
-          const { data } = await axios.post(
-            `${BACKEND_URL}/api/rooms`,
-            roomData
-          )
-          console.log('Create response:', data)
-          room.item_id = data.id
+          const { data } = await axios.post(`${BACKEND_URL}/api/rooms`, formData);
+          room.item_id = data.id;
         }
 
-        // Refresh the rooms list from server
-        console.log('Fetching rooms after save...')
-        await this.fetchRooms()
-        console.log('Rooms after save:', this.rooms)
+        await this.fetchRooms();
       } catch (error) {
-        console.error('Error saving room:', error.response?.data || error.message || error)
-        throw error
+        console.error('Error saving room:', error.response?.data || error.message || error);
+        throw error;
       }
     },
 

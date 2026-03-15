@@ -9,10 +9,15 @@ const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
-app.use(router)
 
-// Initialize auth state from localStorage
+// ─── CRITICAL ORDER ───────────────────────────────────────────────────────────
+// Hydrate auth state from localStorage BEFORE installing the router.
+// This guarantees that the very first beforeEach guard (fired on initial page
+// load or hard refresh) already sees the correct isAuthenticated / role values
+// and never redirects a logged-in user to /login on a direct URL visit.
+// ─────────────────────────────────────────────────────────────────────────────
 const authStore = useAuthStore()
 authStore.initFromStorage()
 
+app.use(router)
 app.mount('#app')

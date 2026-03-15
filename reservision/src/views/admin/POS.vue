@@ -346,91 +346,105 @@
         @confirm="handleBookingConfirm"
       />
 
-      <!-- Transaction Details Modal -->
-      <div v-if="showTransactionDetails && selectedTransaction" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <!-- Transaction Details Modal / Receipt Preview -->
+      <div
+        v-if="showTransactionDetails && selectedTransaction"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      >
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
           <!-- Header -->
           <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex justify-between items-center border-b">
             <div>
-              <h3 class="text-2xl font-bold"><i class="fas fa-receipt mr-2"></i>Transaction Details</h3>
-              <p class="text-blue-100 text-sm mt-1">POS-{{ selectedTransaction.receiptNo }}</p>
+              <h3 class="text-2xl font-bold">
+                <i class="fas fa-receipt mr-2"></i>Receipt Preview
+              </h3>
+              <p class="text-blue-100 text-sm mt-1">This is how the printer receipt will look</p>
             </div>
-            <button @click="showTransactionDetails = false" class="text-2xl hover:bg-blue-600 p-2 rounded transition-colors">
+            <button
+              @click="showTransactionDetails = false"
+              class="text-2xl hover:bg-blue-600 p-2 rounded transition-colors"
+            >
               <i class="fas fa-times"></i>
             </button>
           </div>
 
-          <!-- Content -->
-          <div class="p-6 space-y-4">
-            <!-- Transaction Info -->
-            <div class="border rounded-lg p-4 bg-gray-50">
-              <h4 class="font-bold text-gray-800 mb-3"><i class="fas fa-info-circle mr-2 text-blue-600"></i>Transaction Info</h4>
-              <div class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Receipt No:</span>
-                  <span class="font-semibold">POS-{{ selectedTransaction.receiptNo }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Type:</span>
-                  <span class="font-semibold">{{ selectedTransaction.type }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Date:</span>
-                  <span class="font-semibold">{{ selectedTransaction.date }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Time:</span>
-                  <span class="font-semibold">{{ selectedTransaction.time }}</span>
-                </div>
+          <!-- Receipt Preview Body -->
+          <div class="p-6 bg-gray-100 flex justify-center">
+            <div class="receipt-preview-paper">
+              <div class="receipt-center receipt-title-company">
+                {{ receiptStyle.companyName || 'ReserVision' }}
               </div>
-            </div>
+              <div class="receipt-center receipt-title-sub">
+                {{ receiptStyle.receiptTitle || 'Point of Sale' }}
+              </div>
 
-            <!-- Items -->
-            <div class="border rounded-lg p-4 bg-gray-50">
-              <h4 class="font-bold text-gray-800 mb-3"><i class="fas fa-shopping-cart mr-2 text-blue-600"></i>Items</h4>
-              <div class="space-y-2">
-                <div v-for="(item, idx) in selectedTransaction.items" :key="idx" class="flex justify-between items-start p-2 bg-white rounded border-l-4 border-blue-400">
-                  <div class="flex-1">
-                    <div class="font-medium text-gray-800">{{ item.name }}</div>
-                    <div v-if="item.bookingReference" class="text-xs text-gray-500 mt-1">
-                      <i class="fas fa-tag mr-1"></i>Ref: {{ item.bookingReference }}
-                    </div>
+              <div class="receipt-divider">--------------------------------</div>
+
+              <div class="receipt-meta">
+                <div>Receipt: POS-{{ selectedTransaction.receiptNo }}</div>
+                <div>Type: {{ selectedTransaction.type }}</div>
+                <div>Date: {{ formatReceiptDate(selectedTransaction.date) }}</div>
+                <div>Time: {{ selectedTransaction.time }}</div>
+                <div>Payment: {{ selectedTransaction.payment }}</div>
+              </div>
+
+              <template v-if="selectedTransaction.items.some(item => item.bookingReference)">
+                <div class="receipt-divider">--------------------------------</div>
+
+                <div
+                  v-for="(item, idx) in selectedTransaction.items"
+                  :key="idx"
+                  class="receipt-item-block"
+                >
+                  <div class="receipt-item-name">{{ item.name }}</div>
+                  <div v-if="item.bookingReference" class="receipt-small">
+                    Ref: {{ item.bookingReference }}
                   </div>
-                  <div class="text-right ml-2">
-                    <div class="font-semibold text-blue-600">₱{{ item.price.toLocaleString() }}</div>
+                  <div class="receipt-line-between">
+                    <span>Amount</span>
+                    <span>₱{{ Number(item.price).toLocaleString() }}</span>
                   </div>
                 </div>
-              </div>
-            </div>
+              </template>
 
-            <!-- Payment Info -->
-            <div class="border rounded-lg p-4 bg-gray-50">
-              <h4 class="font-bold text-gray-800 mb-3"><i class="fas fa-credit-card mr-2 text-blue-600"></i>Payment</h4>
-              <div class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Payment Method:</span>
-                  <span class="px-2 py-1 rounded text-xs font-semibold" :class="selectedTransaction.payment === 'GCash' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'">
-                    {{ selectedTransaction.payment }}
-                  </span>
+              <template v-else>
+                <div class="receipt-divider">--------------------------------</div>
+
+                <div
+                  v-for="(item, idx) in selectedTransaction.items"
+                  :key="idx"
+                  class="receipt-line-between receipt-item-row"
+                >
+                  <span class="receipt-item-name-inline">{{ item.name }}</span>
+                  <span>₱{{ Number(item.price).toLocaleString() }}</span>
                 </div>
-                <div class="flex justify-between pt-2 border-t border-gray-300">
-                  <span class="font-bold">Total Amount:</span>
-                  <span class="text-xl font-bold text-blue-600">₱{{ selectedTransaction.total.toLocaleString() }}</span>
-                </div>
+              </template>
+
+              <div class="receipt-divider">--------------------------------</div>
+
+              <div class="receipt-line-between receipt-total-row">
+                <span>TOTAL</span>
+                <span>₱{{ Number(selectedTransaction.total).toLocaleString() }}</span>
+              </div>
+
+              <div class="receipt-divider">--------------------------------</div>
+
+              <div class="receipt-center receipt-footer">
+                Thank you for your purchase!
               </div>
             </div>
           </div>
 
           <!-- Footer -->
           <div class="sticky bottom-0 bg-gray-100 p-4 flex gap-2 justify-end border-t">
-            <button 
-              @click="printReceipt(selectedTransaction.receiptNo)" 
+            <button
+              @click="printReceipt(selectedTransaction.receiptNo)"
               class="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
             >
               <i class="fas fa-print mr-2"></i>Print
             </button>
-            <button 
-              @click="showTransactionDetails = false" 
+            <button
+              @click="showTransactionDetails = false"
               class="px-4 py-2 bg-gray-400 text-white rounded-lg font-semibold hover:bg-gray-500 transition-colors"
             >
               <i class="fas fa-times mr-2"></i>Close
@@ -604,6 +618,20 @@ export default {
     }
   },
   methods: {
+      formatReceiptDate(dateValue) {
+        if (!dateValue) return 'N/A';
+        try {
+          const d = new Date(dateValue);
+          if (isNaN(d.getTime())) return String(dateValue);
+          return d.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          });
+        } catch {
+          return String(dateValue);
+        }
+      },
     // ── Fullscreen ──
     toggleFullscreen() {
       if (!document.fullscreenElement) {
@@ -1066,21 +1094,24 @@ export default {
     downloadReceipt(receiptNo) {
       const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
       if (!trans) return;
+
       let csv = `ReserVision\nReceipt: POS-${trans.receiptNo}\nDate: ${trans.date}\nTime: ${trans.time}\nPayment: ${trans.payment}\n\nItem,Price\n`;
-      trans.items.forEach(item => { csv += `"${item.name}",${item.price}\n`; });
+      trans.items.forEach(item => {
+        csv += `"${item.name}",${item.price}\n`;
+      });
       csv += `\nTotal,${trans.total}\n`;
+
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = `Receipt_POS-${trans.receiptNo}.csv`;
       link.click();
     },
+
     customizeReceipt(receiptNo) {
       this.selectedReceipt = this.transactionHistory.find(t => t.receiptNo === receiptNo);
       this.showReceiptCustomizer = true;
     },
-    downloadReceipt(receiptNo) { const t = this.transactionHistory.find(x => x.receiptNo === receiptNo); if (t) this.saveReceiptToCSV(t); },
-    customizeReceipt(receiptNo) { this.selectedReceipt = this.transactionHistory.find(x => x.receiptNo === receiptNo); this.showReceiptCustomizer = true; },
     downloadCustomizedReceipt() {
       if (!this.selectedReceipt) return;
       this.printReceipt(this.selectedReceipt.receiptNo);
@@ -2069,5 +2100,95 @@ export default {
   .items-topbar { flex-direction: column; align-items: flex-start; }
   .category-switch { width: 100%; justify-content: flex-start; }
   /* responsive handled by Vue getTabStyle */
+}
+
+/* ── Thermal Receipt Preview ───────────────────────── */
+.receipt-preview-paper {
+  width: 290px;
+  background: #fff;
+  color: #111;
+  padding: 18px 14px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  border: 1px dashed #d1d5db;
+}
+
+.receipt-center {
+  text-align: center;
+}
+
+.receipt-title-company {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.receipt-title-sub {
+  font-size: 13px;
+  margin-top: 2px;
+  margin-bottom: 8px;
+}
+
+.receipt-divider {
+  text-align: center;
+  letter-spacing: 0.4px;
+  color: #374151;
+  margin: 8px 0;
+  white-space: pre;
+}
+
+.receipt-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  word-break: break-word;
+}
+
+.receipt-item-block {
+  padding: 4px 0;
+}
+
+.receipt-item-row {
+  padding: 2px 0;
+  gap: 10px;
+}
+
+.receipt-line-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.receipt-item-name {
+  font-weight: 700;
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.receipt-item-name-inline {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.receipt-small {
+  font-size: 11px;
+  color: #4b5563;
+  margin-bottom: 2px;
+}
+
+.receipt-total-row {
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.receipt-footer {
+  margin-top: 10px;
+  font-size: 12px;
 }
 </style>

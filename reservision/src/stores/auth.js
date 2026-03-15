@@ -48,15 +48,18 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-/**
- * ============================================================
- * STORE DEFINITION
- * ============================================================
- * 
- * defineStore(id, state_function)
- * - id: 'auth' - unique identifier for this store
- * - state_function: returns state, getters, and actions
- */
+// Single source of truth for the backend API base URL.
+// Set VITE_API_URL in your .env file to change it (e.g. for production).
+// Falls back to localhost for local development.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+// export const useAuthStore = defineStore('auth', () => {
+//  * ============================================================
+//  * 
+//  * defineStore(id, state_function)
+//  * - id: 'auth' - unique identifier for this store
+//  * - state_function: returns state, getters, and actions
+//  */
 export const useAuthStore = defineStore('auth', () => {
   // ──────────────────────────────────────────────────────
   // STATE VARIABLES
@@ -324,7 +327,7 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error('Missing Google credential token')
       }
 
-      const response = await fetch('http://localhost:8000/api/customers/google-login', {
+      const response = await fetch(`${API_URL}/api/customers/google-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential: idToken })
@@ -356,21 +359,36 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * initFromStorage - Initialize auth state from localStorage
-   * Called on app startup to restore session
+   * initFromStorage - Initialize auth state from localStorage.
+   * Also validates the stored JWT has not expired so we don't restore a dead
+   * session that will fail on the first API call.
    */
   const initFromStorage = () => {
     const token = localStorage.getItem('authToken')
     const storedUser = localStorage.getItem('user')
 
-    if (token && storedUser) {
-      try {
-        user.value = JSON.parse(storedUser)
-        isAuthenticated.value = true
-      } catch (err) {
-        console.error('Failed to parse stored user data:', err)
+    if (!token || !storedUser) return
+
+    try {
+      // Decode the JWT payload (base64url → JSON) to read the expiry claim.
+      // We are NOT verifying the signature here — that is the server's job.
+      // We just want to avoid restoring an obviously expired session.
+      const payloadBase64 = token.split('.')[1]
+      if (!payloadBase64) throw new Error('Malformed token')
+      const payload = JSON.parse(atob(payloadBase64))
+
+      if (!payload.exp || Date.now() / 1000 > payload.exp) {
+        // Token is expired — clear everything so the user sees the login page
+        console.warn('Stored auth token is expired. Clearing session.')
         logout()
+        return
       }
+
+      user.value = JSON.parse(storedUser)
+      isAuthenticated.value = true
+    } catch (err) {
+      console.error('Failed to restore auth session:', err)
+      logout()
     }
   }
 
