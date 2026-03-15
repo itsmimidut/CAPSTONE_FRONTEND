@@ -1,1499 +1,1050 @@
 <template>
   <div class="admin-layout">
-    <!-- Sidebar -->
-    <AdminSidebar 
+    <AdminSidebar
       :is-open="sidebarOpen"
       :is-collapsed="sidebarCollapsed"
       current-path="/admin/rooms"
       @close="sidebarOpen = false"
     />
 
-    <!-- Main Content -->
-    <main 
-      class="main-content"
-      :class="{ shifted: sidebarCollapsed }"
-    >
-      <!-- Header -->
-      <div class="header-container">
-        <AdminHeader 
-          title="Room & Cottage Configuration"
-          subtitle="Manage your resort rooms and cottages"
-          @toggle-sidebar="sidebarOpen = !sidebarOpen"
-        />
-      </div>
+    <main class="main-content" :class="{ shifted: sidebarCollapsed }">
 
-      <!-- Stats Grid -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="fas fa-bed"></i>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value" id="totalRooms">24</div>
-            <div class="stat-label">Total Rooms</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon success">
-            <i class="fas fa-check-circle"></i>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value" id="availableRooms">18</div>
-            <div class="stat-label">Available</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon warning">
-            <i class="fas fa-door-open"></i>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value" id="occupiedRooms">4</div>
-            <div class="stat-label">Occupied</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon danger">
-            <i class="fas fa-tools"></i>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value" id="maintenanceRooms">2</div>
-            <div class="stat-label">Maintenance</div>
-          </div>
-        </div>
-      </div>
+      <AdminHeader
+        title="Room & Cottage Configuration"
+        subtitle="Manage your resort rooms and cottages"
+        @toggle-sidebar="sidebarOpen = !sidebarOpen"
+      />
 
-      <!-- Filters Section -->
-      <div class="filters-container">
-        <div class="filter-row">
-          <input type="text" id="globalSearch" class="search-input" placeholder="Search rooms...">
-          <select class="filter-select" id="typeFilter">
-            <option value="all">All Types</option>
-            <option>Standard Room</option>
-            <option>Deluxe Room</option>
-            <option>Cottage</option>
-            <option>Suite</option>
-          </select>
-          <select class="filter-select" id="statusFilter">
-            <option value="all">All Status</option>
-            <option>Available</option>
-            <option>Occupied</option>
-            <option>Maintenance</option>
-          </select>
-        </div>
-        <div class="action-buttons">
-          <button class="btn btn-primary" id="addRoomBtn">
-            <i class="fas fa-plus"></i> Add Room
-          </button>
-          <button class="btn btn-secondary" id="openAddPromo">
-            <i class="fas fa-tag"></i> Add Promo
-          </button>
-          <button class="btn btn-outline" id="openSeasonalBtn">
-            <i class="fas fa-calendar-day"></i> Seasonal
-          </button>
-        </div>
-      </div>
+      <div class="content-container">
 
-      <!-- Room Cards Section -->
-      <div class="rooms-section">
-        <div class="section-header">
-          <h3>Room Inventory</h3>
-          <span class="room-count" id="roomCount">4 rooms</span>
-        </div>
-        <div class="room-grid" id="roomGrid"></div>
-      </div>
-
-      <!-- Promos Section -->
-      <div class="promos-section">
-        <div class="section-header">
-          <h3>Promotions & Pricing</h3>
-          <button class="btn btn-sm btn-secondary" id="addPromoBtn">
-            <i class="fas fa-plus"></i> New
-          </button>
-        </div>
-        <div class="promo-list" id="promoList"></div>
-      </div>
-    </main>
-  </div>
-
-  <!-- Modals -->
-  <!-- Add/Edit Room Modal -->
-  <div class="modal" id="roomModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="roomModalTitle">Add New Room</h3>
-        <button class="close-modal" data-close="roomModal">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="roomName">Room Name</label>
-            <input type="text" id="roomName" class="form-control" placeholder="e.g., Ocean View Suite">
+        <!-- ── Stats Grid ── -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon si-blue"><i class="fas fa-bed"></i></div>
+            <div class="stat-content">
+              <div class="stat-value sv-blue" id="totalRooms">24</div>
+              <div class="stat-label">Total Rooms</div>
+            </div>
+            <div class="stat-wm"><i class="fas fa-bed"></i></div>
           </div>
-          <div class="form-group">
-            <label for="roomType">Room Type</label>
-            <select id="roomType" class="form-control">
+          <div class="stat-card">
+            <div class="stat-icon si-green"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-content">
+              <div class="stat-value sv-green" id="availableRooms">18</div>
+              <div class="stat-label">Available</div>
+            </div>
+            <div class="stat-wm"><i class="fas fa-check-circle"></i></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-orange"><i class="fas fa-door-open"></i></div>
+            <div class="stat-content">
+              <div class="stat-value sv-orange" id="occupiedRooms">4</div>
+              <div class="stat-label">Occupied</div>
+            </div>
+            <div class="stat-wm"><i class="fas fa-door-open"></i></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-red"><i class="fas fa-tools"></i></div>
+            <div class="stat-content">
+              <div class="stat-value sv-red" id="maintenanceRooms">2</div>
+              <div class="stat-label">Maintenance</div>
+            </div>
+            <div class="stat-wm"><i class="fas fa-tools"></i></div>
+          </div>
+        </div>
+
+        <!-- ── Rooms Section ── -->
+        <div class="section-card">
+
+          <!-- Section header -->
+          <div class="section-header">
+            <div class="section-header-left">
+              <h2 class="section-title">Room Inventory</h2>
+              <p class="section-subtitle">Browse and manage all room configurations</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn-outline" id="openSeasonalBtn">
+                <i class="fas fa-calendar-day"></i>
+                <span>Seasonal</span>
+              </button>
+              <button class="btn-secondary" id="openAddPromo">
+                <i class="fas fa-tag"></i>
+                <span>Add Promo</span>
+              </button>
+              <button class="btn-primary" id="addRoomBtn">
+                <i class="fas fa-plus"></i>
+                <span>Add Room</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Controls bar -->
+          <div class="controls-bar">
+            <div class="search-wrapper">
+              <i class="fas fa-search search-icon"></i>
+              <input
+                type="text"
+                id="globalSearch"
+                class="search-input"
+                placeholder="Search rooms and promos…"
+              />
+            </div>
+            <select class="filter-select" id="typeFilter">
+              <option value="all">All Types</option>
               <option>Standard Room</option>
               <option>Deluxe Room</option>
-              <option>Suite</option>
               <option>Cottage</option>
+              <option>Suite</option>
             </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="roomCapacity">Capacity</label>
-            <input type="number" id="roomCapacity" class="form-control" placeholder="Number of guests">
-          </div>
-          <div class="form-group">
-            <label for="roomPrice">Price per Night ($)</label>
-            <input type="number" id="roomPrice" class="form-control" placeholder="e.g., 199">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="roomDescription">Description</label>
-          <textarea id="roomDescription" class="form-control" rows="3" placeholder="Describe the room features and amenities"></textarea>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="roomStatus">Room Status</label>
-            <select id="roomStatus" class="form-control">
+            <select class="filter-select" id="statusFilter">
+              <option value="all">All Status</option>
               <option>Available</option>
               <option>Occupied</option>
-              <option>Under Maintenance</option>
+              <option>Maintenance</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>
-              <input type="checkbox" id="promoSwitch"> Mark as "Limited Offer"
-            </label>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" data-close="roomModal">Cancel</button>
-        <button class="btn btn-primary" id="saveRoomBtn">Save Room</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Add/Edit Promo Modal -->
-  <div class="modal" id="promoModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="promoModalTitle">Add New Promo</h3>
-        <button class="close-modal" data-close="promoModal">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="promoCode">Promo Code</label>
-          <input type="text" id="promoCode" class="form-control" placeholder="e.g., SUMMER25">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="promoType">Type</label>
-            <select id="promoType" class="form-control">
-              <option value="percent">Percentage</option>
-              <option value="fixed">Fixed amount</option>
-            </select>
+          <!-- Summary pill -->
+          <div class="rooms-summary">
+            <i class="fas fa-bed summary-icon"></i>
+            <span id="roomCount">Showing 4 room(s)</span>
           </div>
-          <div class="form-group">
-            <label for="promoValue">Value</label>
-            <input type="number" id="promoValue" class="form-control" placeholder="e.g., 25">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="promoDesc">Description</label>
-          <textarea id="promoDesc" class="form-control" rows="3" placeholder="Details about the promo"></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="promoStart">Start Date</label>
-            <input type="date" id="promoStart" class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="promoEnd">End Date</label>
-            <input type="date" id="promoEnd" class="form-control">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="promoUsage">Usage Limit (optional)</label>
-          <input type="number" id="promoUsage" class="form-control" placeholder="Total uses allowed">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" data-close="promoModal">Cancel</button>
-        <button class="btn btn-primary" id="savePromoBtn">Save Promo</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Seasonal Pricing Modal -->
-  <div class="modal" id="seasonalModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Seasonal Pricing Setup</h3>
-        <button class="close-modal" data-close="seasonalModal">×</button>
+          <!-- Rooms grid -->
+          <div class="room-grid" id="roomGrid"></div>
+
+        </div>
+
+        <!-- ── Promos Section ── -->
+        <div class="section-card">
+
+          <div class="section-header">
+            <div class="section-header-left">
+              <h2 class="section-title">Promotions & Pricing</h2>
+              <p class="section-subtitle">Create and manage promotional offers</p>
+            </div>
+            <button class="btn-primary" id="addPromoBtn">
+              <i class="fas fa-plus"></i>
+              <span>New Promo</span>
+            </button>
+          </div>
+
+          <div class="promo-list" id="promoList"></div>
+
+        </div>
+
       </div>
-      <div class="modal-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="seasonName">Season Name</label>
-            <input type="text" id="seasonName" class="form-control" placeholder="e.g., Peak Season">
+    </main>
+
+    <!-- ══ ROOM MODAL ══ -->
+    <div class="modal" id="roomModal">
+      <div class="modal-box">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-head-icon"><i class="fas fa-bed"></i></div>
+            <div>
+              <h3 class="modal-title" id="roomModalTitle">Add New Room</h3>
+              <p class="modal-sub">Fill in the room details below</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" data-close="roomModal"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Room Name <span class="req">*</span></label>
+              <input type="text" id="roomName" class="form-input" placeholder="e.g., Ocean View Suite" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Room Type <span class="req">*</span></label>
+              <select id="roomType" class="form-input">
+                <option>Standard Room</option>
+                <option>Deluxe Room</option>
+                <option>Suite</option>
+                <option>Cottage</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Capacity</label>
+              <input type="number" id="roomCapacity" class="form-input" placeholder="Number of guests" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price per Night (₱)</label>
+              <input type="number" id="roomPrice" class="form-input" placeholder="e.g., 4500" />
+            </div>
           </div>
           <div class="form-group">
-            <label for="seasonMultiplier">Price Multiplier</label>
-            <input type="number" id="seasonMultiplier" class="form-control" step="0.1" value="1.2" placeholder="e.g., 1.2">
+            <label class="form-label">Description</label>
+            <textarea id="roomDescription" class="form-input" rows="3" placeholder="Describe the room features and amenities"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Room Status</label>
+              <select id="roomStatus" class="form-input">
+                <option>Available</option>
+                <option>Occupied</option>
+                <option>Under Maintenance</option>
+              </select>
+            </div>
+            <div class="form-group form-checkbox-row">
+              <input type="checkbox" id="promoSwitch" class="form-checkbox" />
+              <label for="promoSwitch" class="form-label checkbox-label">Mark as "Limited Offer"</label>
+            </div>
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="seasonStart">Start Date</label>
-            <input type="date" id="seasonStart" class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="seasonEnd">End Date</label>
-            <input type="date" id="seasonEnd" class="form-control">
-          </div>
+        <div class="modal-foot">
+          <button class="btn-cancel" data-close="roomModal">Cancel</button>
+          <button class="btn-primary" id="saveRoomBtn"><i class="fas fa-save"></i> Save Room</button>
         </div>
-        <div class="form-group">
-          <label for="applyToRooms">Apply to room types (comma-separated or 'all')</label>
-          <input type="text" id="applyToRooms" class="form-control" placeholder="e.g., Suite,Cottage or all">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" data-close="seasonalModal">Cancel</button>
-        <button class="btn btn-primary" id="saveSeasonBtn">Save Seasonal Pricing</button>
       </div>
     </div>
+
+    <!-- ══ PROMO MODAL ══ -->
+    <div class="modal" id="promoModal">
+      <div class="modal-box">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-head-icon modal-head-icon--gold"><i class="fas fa-tag"></i></div>
+            <div>
+              <h3 class="modal-title" id="promoModalTitle">Add New Promo</h3>
+              <p class="modal-sub">Set up a promotional offer</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" data-close="promoModal"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Promo Code <span class="req">*</span></label>
+            <input type="text" id="promoCode" class="form-input" placeholder="e.g., SUMMER25" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Type</label>
+              <select id="promoType" class="form-input">
+                <option value="percent">Percentage</option>
+                <option value="fixed">Fixed Amount</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Value <span class="req">*</span></label>
+              <input type="number" id="promoValue" class="form-input" placeholder="e.g., 25" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea id="promoDesc" class="form-input" rows="3" placeholder="Details about the promo"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Start Date</label>
+              <input type="date" id="promoStart" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">End Date</label>
+              <input type="date" id="promoEnd" class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Usage Limit <span class="form-hint">(optional)</span></label>
+            <input type="number" id="promoUsage" class="form-input" placeholder="Total uses allowed" />
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-cancel" data-close="promoModal">Cancel</button>
+          <button class="btn-primary btn-gold" id="savePromoBtn"><i class="fas fa-save"></i> Save Promo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SEASONAL MODAL ══ -->
+    <div class="modal" id="seasonalModal">
+      <div class="modal-box">
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-head-icon"><i class="fas fa-calendar-day"></i></div>
+            <div>
+              <h3 class="modal-title">Seasonal Pricing Setup</h3>
+              <p class="modal-sub">Configure rate multipliers by season</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" data-close="seasonalModal"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Season Name <span class="req">*</span></label>
+              <input type="text" id="seasonName" class="form-input" placeholder="e.g., Peak Season" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price Multiplier</label>
+              <input type="number" id="seasonMultiplier" class="form-input" step="0.1" value="1.2" placeholder="e.g., 1.2" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Start Date</label>
+              <input type="date" id="seasonStart" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">End Date</label>
+              <input type="date" id="seasonEnd" class="form-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Apply to Room Types <span class="form-hint">(comma-separated or "all")</span></label>
+            <input type="text" id="applyToRooms" class="form-input" placeholder="e.g., Suite,Cottage or all" />
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-cancel" data-close="seasonalModal">Cancel</button>
+          <button class="btn-primary" id="saveSeasonBtn"><i class="fas fa-save"></i> Save Pricing</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import AdminSidebar from '../../components/admin/AdminSidebar.vue'
-import AdminHeader from '../../components/admin/AdminHeader.vue'
+import AdminHeader  from '../../components/admin/AdminHeader.vue'
 
-const sidebarOpen = ref(false)
+const sidebarOpen      = ref(false)
 const sidebarCollapsed = ref(false)
 
-// Modal helpers
-const showModal = (id) => {
-  const modal = document.getElementById(id)
-  if (modal) modal.classList.add('show')
-}
+const showModal = (id) => { const m = document.getElementById(id); if (m) m.classList.add('show') }
+const hideModal = (id) => { const m = document.getElementById(id); if (m) m.classList.remove('show') }
 
-const hideModal = (id) => {
-  const modal = document.getElementById(id)
-  if (modal) modal.classList.remove('show')
-}
-
-// Utility functions
-const qs = (sel, ctx = document) => ctx.querySelector(sel)
+const qs  = (sel, ctx = document) => ctx.querySelector(sel)
 const qsa = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel))
 
 const escapeHtml = (text = '') => {
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  }
-  return String(text).replace(/[&<>"']/g, (m) => map[m])
+  const map = { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }
+  return String(text).replace(/[&<>"']/g, m => map[m])
 }
 
-// Storage keys
-const STORAGE_KEY_PROMOS = 'reservision_promos_v1'
+const STORAGE_KEY_PROMOS  = 'reservision_promos_v1'
 const STORAGE_KEY_SEASONS = 'reservision_seasons_v1'
 
 let promos = []
-let editingPromoId = null
+let editingPromoId  = null
 let editingRoomCard = null
 
-// Load promos from localStorage
 const loadPromos = () => {
-  const raw = localStorage.getItem(STORAGE_KEY_PROMOS)
-  try {
-    promos = raw ? JSON.parse(raw) : []
-  } catch {
-    promos = []
-  }
+  try { promos = JSON.parse(localStorage.getItem(STORAGE_KEY_PROMOS) || '[]') }
+  catch { promos = [] }
 }
+const savePromos = () => localStorage.setItem(STORAGE_KEY_PROMOS, JSON.stringify(promos))
 
-// Save promos to localStorage
-const savePromos = () => {
-  localStorage.setItem(STORAGE_KEY_PROMOS, JSON.stringify(promos))
-}
-
-// Render promos list
 const renderPromos = (list = promos) => {
-  const promoListEl = qs('#promoList')
-  if (!promoListEl) return
-
-  promoListEl.innerHTML = ''
+  const el = qs('#promoList')
+  if (!el) return
+  el.innerHTML = ''
 
   if (!list.length) {
-    promoListEl.innerHTML = `
+    el.innerHTML = `
       <div class="empty-state">
-        <i class="fas fa-inbox"></i>
-        <p>No promos found</p>
-      </div>
-    `
+        <div class="empty-icon-wrap"><i class="fas fa-gift"></i></div>
+        <p class="empty-title">No promos yet</p>
+        <p class="empty-sub">Create a promo to start offering deals to guests.</p>
+      </div>`
     return
   }
 
-  list.forEach((p) => {
+  list.forEach(p => {
     const card = document.createElement('div')
     card.className = 'promo-card'
     card.innerHTML = `
-      <div class="promo-content">
-        <div>
-          <div class="promo-title">${escapeHtml(p.code)}</div>
-          <div class="promo-desc">${escapeHtml(p.description || '')}</div>
-        </div>
-        <div class="promo-value">${p.type === 'percent' ? p.value + '%' : '$' + p.value}</div>
+      <div class="pc-header">
+        <span class="pc-code">${escapeHtml(p.code)}</span>
+        <span class="pc-value">${p.type === 'percent' ? p.value + '%' : '₱' + p.value} off</span>
       </div>
-      <div class="promo-dates">
-        <small>${p.start || '—'} to ${p.end || '—'}</small>
+      <div class="pc-body">
+        <p class="pc-desc">${escapeHtml(p.description || '')}</p>
+        <div class="pc-dates"><i class="fas fa-calendar-alt"></i> ${p.start || '—'} → ${p.end || '—'}</div>
       </div>
-      <div class="promo-actions">
-        <button class="btn-action edit-promo" data-id="${p.id}" title="Edit">
-          <i class="fas fa-edit"></i>
-        </button>
-        <button class="btn-action delete-promo" data-id="${p.id}" title="Delete">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    `
-    promoListEl.appendChild(card)
+      <div class="pc-foot">
+        <button class="act-btn ebtn edit-promo" data-id="${p.id}" title="Edit"><i class="fas fa-edit"></i></button>
+        <button class="act-btn dbtn delete-promo" data-id="${p.id}" title="Delete"><i class="fas fa-trash"></i></button>
+      </div>`
+    el.appendChild(card)
   })
 
-  // Attach event listeners
-  qsa('.edit-promo').forEach((btn) =>
-    btn.addEventListener('click', (e) => openPromoForEdit(e.currentTarget.dataset.id))
-  )
-  qsa('.delete-promo').forEach((btn) =>
-    btn.addEventListener('click', (e) => {
-      if (confirm('Delete this promo?')) {
-        promos = promos.filter((x) => x.id !== e.currentTarget.dataset.id)
-        savePromos()
-        renderPromos()
-      }
-    })
-  )
+  qsa('.edit-promo').forEach(btn => btn.addEventListener('click', e => openPromoForEdit(e.currentTarget.dataset.id)))
+  qsa('.delete-promo').forEach(btn => btn.addEventListener('click', e => {
+    if (confirm('Delete this promo?')) {
+      promos = promos.filter(x => x.id !== e.currentTarget.dataset.id)
+      savePromos(); renderPromos()
+    }
+  }))
 }
 
-// Filter promos
-const filterPromosBy = (query) => {
-  if (!query) {
-    renderPromos(promos)
-    return
-  }
-  const filtered = promos.filter(
-    (p) =>
-      p.code.toLowerCase().includes(query) ||
-      (p.description || '').toLowerCase().includes(query) ||
-      (p.type || '').toLowerCase().includes(query)
-  )
-  renderPromos(filtered)
+const filterPromosBy = q => {
+  if (!q) { renderPromos(promos); return }
+  renderPromos(promos.filter(p =>
+    p.code.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)
+  ))
 }
 
-// Open promo for edit
-const openPromoForEdit = (id) => {
-  const p = promos.find((x) => x.id === id)
+const openPromoForEdit = id => {
+  const p = promos.find(x => x.id === id)
   if (!p) return
-
   editingPromoId = id
   qs('#promoModalTitle').textContent = 'Edit Promo'
-  qs('#promoCode').value = p.code || ''
-  qs('#promoType').value = p.type || 'percent'
+  qs('#promoCode').value  = p.code  || ''
+  qs('#promoType').value  = p.type  || 'percent'
   qs('#promoValue').value = p.value || ''
-  qs('#promoDesc').value = p.description || ''
+  qs('#promoDesc').value  = p.description || ''
   qs('#promoStart').value = p.start || ''
-  qs('#promoEnd').value = p.end || ''
+  qs('#promoEnd').value   = p.end   || ''
   qs('#promoUsage').value = p.usageLimit || ''
-
   showModal('promoModal')
 }
 
-// Filter rooms
-const filterRoomsBy = (query) => {
-  const cards = qsa('.room-card')
-  cards.forEach((c) => {
-    const title = (c.getAttribute('data-title') || '').toLowerCase()
-    const type = (c.getAttribute('data-type') || '').toLowerCase()
-    const status = (c.getAttribute('data-status') || '').toLowerCase()
-    const match = !query || title.includes(query) || type.includes(query) || status.includes(query)
+const filterRoomsBy = q => {
+  qsa('.room-card').forEach(c => {
+    const match = !q ||
+      (c.getAttribute('data-title') || '').toLowerCase().includes(q) ||
+      (c.getAttribute('data-type')  || '').toLowerCase().includes(q) ||
+      (c.getAttribute('data-status')|| '').toLowerCase().includes(q)
     c.style.display = match ? '' : 'none'
   })
 }
 
 onMounted(() => {
-  // Load initial data
   loadPromos()
   if (!promos.length) {
     promos = [
-      {
-        id: 'demo1',
-        code: 'SUMMER25',
-        type: 'percent',
-        value: 25,
-        description: 'Summer discount 25%'
-      },
-      {
-        id: 'demo2',
-        code: 'WELCOME50',
-        type: 'fixed',
-        value: 50,
-        description: 'First-time guests $50 off',
-        usageLimit: 100
-      }
+      { id:'demo1', code:'SUMMER25',  type:'percent', value:25, description:'Summer season 25% discount for all rooms.' },
+      { id:'demo2', code:'WELCOME50', type:'fixed',   value:50, description:'First-time guests ₱50 off their booking.', usageLimit:100 },
+      { id:'demo3', code:'EARLY15',   type:'percent', value:15, description:'Early bird promo — book 30 days in advance.' }
     ]
     savePromos()
   }
   renderPromos()
 
-  // Modal event listeners
-  qsa('.close-modal').forEach((btn) => {
+  // Close modal listeners
+  qsa('.close-modal, [data-close]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const modalId = btn.getAttribute('data-close')
-      if (modalId) hideModal(modalId)
-      else btn.closest('.modal').classList.remove('show')
+      const id = btn.getAttribute('data-close')
+      if (id) hideModal(id)
+      else btn.closest('.modal')?.classList.remove('show')
     })
   })
+  qsa('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show') }))
 
-  qsa('.modal').forEach((m) => {
-    m.addEventListener('click', (e) => {
-      if (e.target === m) m.classList.remove('show')
-    })
+  // Search
+  qs('#globalSearch')?.addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase()
+    filterRoomsBy(q); filterPromosBy(q)
   })
 
-  // Search events
-  const globalSearch = qs('#globalSearch')
-
-  if (globalSearch) {
-    globalSearch.addEventListener('input', (e) => {
-      const q = e.target.value.trim().toLowerCase()
-      filterRoomsBy(q)
-      filterPromosBy(q)
-    })
-  }
-
-  // Room management
-  const addRoomBtn = qs('#addRoomBtn')
-  const roomGrid = qs('#roomGrid')
+  // Add Room
+  const roomGrid   = qs('#roomGrid')
   const saveRoomBtn = qs('#saveRoomBtn')
 
-  if (addRoomBtn) {
-    addRoomBtn.addEventListener('click', () => {
-      editingRoomCard = null
-      qs('#roomModalTitle').textContent = 'Add New Room'
-      qs('#roomName').value = ''
-      qs('#roomType').value = 'Standard Room'
-      qs('#roomCapacity').value = ''
-      qs('#roomPrice').value = ''
-      qs('#roomDescription').value = ''
-      qs('#promoSwitch').checked = false
-      qs('#roomStatus').value = 'Available'
-      showModal('roomModal')
-    })
-  }
-
-  // Edit room listeners
-  qsa('.edit-room').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      const card = e.currentTarget.closest('.room-card')
-      editingRoomCard = card
-      qs('#roomModalTitle').textContent = 'Edit Room'
-      qs('#roomName').value = card.querySelector('.room-title').textContent.trim()
-      qs('#roomType').value = card.getAttribute('data-type') || 'Standard Room'
-      const price = (card.querySelector('.room-price')?.textContent || '').replace(/\D/g, '')
-      qs('#roomPrice').value = price || ''
-      qs('#roomDescription').value = card.querySelector('p')?.textContent || ''
-      qs('#roomStatus').value = card.getAttribute('data-status') || 'Available'
-      showModal('roomModal')
-    })
+  qs('#addRoomBtn')?.addEventListener('click', () => {
+    editingRoomCard = null
+    qs('#roomModalTitle').textContent = 'Add New Room'
+    qs('#roomName').value = ''; qs('#roomType').value = 'Standard Room'
+    qs('#roomCapacity').value = ''; qs('#roomPrice').value = ''
+    qs('#roomDescription').value = ''; qs('#promoSwitch').checked = false
+    qs('#roomStatus').value = 'Available'
+    showModal('roomModal')
   })
 
-  // Delete room listeners
-  qsa('.delete-room').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      if (confirm('Delete this room?')) {
-        e.currentTarget.closest('.room-card').remove()
-      }
-    })
+  saveRoomBtn?.addEventListener('click', () => {
+    const name   = qs('#roomName').value.trim()
+    const type   = qs('#roomType').value
+    const price  = qs('#roomPrice').value
+    const desc   = qs('#roomDescription').value
+    const status = qs('#roomStatus').value
+    const limited = qs('#promoSwitch').checked
+    if (!name) return alert('Room name required')
+
+    const statusClass = status === 'Available' ? 's-a' : status === 'Occupied' ? 's-o' : 's-m'
+
+    if (!editingRoomCard) {
+      const card = document.createElement('div')
+      card.className = 'room-card'
+      card.setAttribute('data-title', name)
+      card.setAttribute('data-type',  type)
+      card.setAttribute('data-status',status)
+      card.innerHTML = `
+        <div class="rc-header">
+          <div>
+            <div class="rc-name">${escapeHtml(name)}</div>
+            <div class="rc-type">${escapeHtml(type)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+            <div class="rc-price">₱${escapeHtml(price)}<span>/night</span></div>
+            ${limited ? '<span class="rc-badge-promo">Limited Offer</span>' : ''}
+          </div>
+        </div>
+        <div class="rc-body">
+          <span class="rc-status ${statusClass}">${escapeHtml(status)}</span>
+          <p class="rc-desc">${escapeHtml(desc)}</p>
+        </div>
+        <div class="rc-foot">
+          <button class="act-btn ebtn edit-room"><i class="fas fa-edit"></i></button>
+          <button class="act-btn dbtn delete-room"><i class="fas fa-trash"></i></button>
+        </div>`
+
+      card.querySelector('.edit-room').addEventListener('click', () => openRoomForEdit(card))
+      card.querySelector('.delete-room').addEventListener('click', () => { if (confirm('Delete this room?')) card.remove() })
+      roomGrid.prepend(card)
+    } else {
+      editingRoomCard.setAttribute('data-title', name)
+      editingRoomCard.setAttribute('data-type',  type)
+      editingRoomCard.setAttribute('data-status',status)
+      editingRoomCard.querySelector('.rc-name').textContent = name
+      editingRoomCard.querySelector('.rc-type').textContent = type
+      editingRoomCard.querySelector('.rc-price').innerHTML  = `₱${escapeHtml(price)}<span>/night</span>`
+      editingRoomCard.querySelector('.rc-desc').textContent = desc
+      const s = editingRoomCard.querySelector('.rc-status')
+      if (s) { s.textContent = status; s.className = `rc-status ${status === 'Available' ? 's-a' : status === 'Occupied' ? 's-o' : 's-m'}` }
+    }
+
+    hideModal('roomModal')
   })
 
-  // Save room
-  if (saveRoomBtn) {
-    saveRoomBtn.addEventListener('click', () => {
-      const name = qs('#roomName').value.trim()
-      const type = qs('#roomType').value
-      const price = qs('#roomPrice').value
-      const desc = qs('#roomDescription').value
-      const status = qs('#roomStatus').value
-      const limited = qs('#promoSwitch').checked
-
-      if (!name) return alert('Room name required')
-
-      if (!editingRoomCard) {
-        const card = document.createElement('div')
-        card.className = 'room-card'
-        card.setAttribute('data-title', name)
-        card.setAttribute('data-type', type)
-        card.setAttribute('data-status', status)
-        card.innerHTML = `
-          <div class="room-image" style="background-image:url('https://images.unsplash.com/photo-1505691723518-36a4f7b4fdf3?auto=format&fit=crop&w=600&q=80')">
-            ${limited ? '<div class="room-promo">Limited Offer</div>' : ''}
-          </div>
-          <div class="room-details">
-            <div class="room-header">
-              <div>
-                <div class="room-title">${escapeHtml(name)}</div>
-                <div class="room-type">${escapeHtml(type)}</div>
-              </div>
-              <div class="room-price">$${escapeHtml(price)}<span>/night</span></div>
-            </div>
-            <p>${escapeHtml(desc)}</p>
-            <div class="room-actions">
-              <button class="btn btn-sm btn-outline edit-room">
-                <i class="fas fa-edit"></i> Edit
-              </button>
-              <button class="btn btn-sm btn-outline">
-                <i class="fas fa-images"></i> Images
-              </button>
-              <button class="btn btn-sm btn-danger delete-room">
-                <i class="fas fa-trash"></i> Delete
-              </button>
-            </div>
-          </div>
-        `
-        roomGrid.prepend(card)
-
-        // Re-attach listeners to new card
-        card.querySelector('.edit-room').addEventListener('click', (e) => {
-          const c = e.currentTarget.closest('.room-card')
-          editingRoomCard = c
-          qs('#roomModalTitle').textContent = 'Edit Room'
-          qs('#roomName').value = c.querySelector('.room-title').textContent.trim()
-          qs('#roomType').value = c.getAttribute('data-type')
-          const pr = (c.querySelector('.room-price')?.textContent || '').replace(/\D/g, '')
-          qs('#roomPrice').value = pr || ''
-          qs('#roomDescription').value = c.querySelector('p')?.textContent || ''
-          qs('#roomStatus').value = c.getAttribute('data-status')
-          showModal('roomModal')
-        })
-
-        card.querySelector('.delete-room').addEventListener('click', () => {
-          if (confirm('Delete this room?')) card.remove()
-        })
-      } else {
-        editingRoomCard.setAttribute('data-title', name)
-        editingRoomCard.setAttribute('data-type', type)
-        editingRoomCard.setAttribute('data-status', status)
-        editingRoomCard.querySelector('.room-title').textContent = name
-        editingRoomCard.querySelector('.room-type').textContent = type
-        editingRoomCard.querySelector('.room-price').innerHTML = `$${escapeHtml(price)}<span>/night</span>`
-        editingRoomCard.querySelector('p').textContent = desc
-
-        const badge = editingRoomCard.querySelector('.room-promo')
-        if (limited && !badge) {
-          editingRoomCard.querySelector('.room-image').insertAdjacentHTML(
-            'beforeend',
-            '<div class="room-promo">Limited Offer</div>'
-          )
-        } else if (!limited && badge) {
-          badge.remove()
-        }
-      }
-
-      hideModal('roomModal')
-    })
+  const openRoomForEdit = card => {
+    editingRoomCard = card
+    qs('#roomModalTitle').textContent = 'Edit Room'
+    qs('#roomName').value   = card.querySelector('.rc-name')?.textContent || ''
+    qs('#roomType').value   = card.getAttribute('data-type')  || 'Standard Room'
+    qs('#roomStatus').value = card.getAttribute('data-status')|| 'Available'
+    qs('#roomPrice').value  = (card.querySelector('.rc-price')?.textContent || '').replace(/[^\d]/g, '')
+    qs('#roomDescription').value = card.querySelector('.rc-desc')?.textContent || ''
+    showModal('roomModal')
   }
 
-  // Promo management
-  const savePromoBtn = qs('#savePromoBtn')
-  const openAddPromoBtn = qs('#openAddPromo')
+  // Promo modal
+  qs('#openAddPromo')?.addEventListener('click', () => {
+    editingPromoId = null
+    qs('#promoModalTitle').textContent = 'Add New Promo'
+    ;['promoCode','promoValue','promoDesc','promoStart','promoEnd','promoUsage'].forEach(id => { qs('#'+id).value = '' })
+    qs('#promoType').value = 'percent'
+    showModal('promoModal')
+  })
+  qs('#addPromoBtn')?.addEventListener('click', () => qs('#openAddPromo').click())
 
-  if (openAddPromoBtn) {
-    openAddPromoBtn.addEventListener('click', () => {
-      editingPromoId = null
-      qs('#promoModalTitle').textContent = 'Add New Promo'
-      qs('#promoCode').value = ''
-      qs('#promoType').value = 'percent'
-      qs('#promoValue').value = ''
-      qs('#promoDesc').value = ''
-      qs('#promoStart').value = ''
-      qs('#promoEnd').value = ''
-      qs('#promoUsage').value = ''
-      showModal('promoModal')
-    })
-  }
+  qs('#savePromoBtn')?.addEventListener('click', () => {
+    const code  = qs('#promoCode').value.trim()
+    const value = Number(qs('#promoValue').value)
+    if (!code)              return alert('Promo code required')
+    if (!value || value<=0) return alert('Enter a valid promo value')
 
-  if (savePromoBtn) {
-    savePromoBtn.addEventListener('click', () => {
-      const code = qs('#promoCode').value.trim()
-      const type = qs('#promoType').value
-      const value = Number(qs('#promoValue').value)
+    const obj = {
+      id: editingPromoId || 'promo_' + Date.now(),
+      code, type: qs('#promoType').value, value,
+      description: qs('#promoDesc').value.trim(),
+      start: qs('#promoStart').value || null,
+      end:   qs('#promoEnd').value   || null,
+      usageLimit: qs('#promoUsage').value ? Number(qs('#promoUsage').value) : null
+    }
 
-      if (!code) return alert('Promo code required')
-      if (!value || value <= 0) return alert('Enter a valid promo value')
+    promos = editingPromoId ? promos.map(p => p.id === editingPromoId ? obj : p) : [obj, ...promos]
+    savePromos(); renderPromos(); hideModal('promoModal')
+  })
 
-      const obj = {
-        id: editingPromoId || 'promo_' + Date.now(),
-        code,
-        type,
-        value,
-        description: qs('#promoDesc').value.trim(),
-        start: qs('#promoStart').value || null,
-        end: qs('#promoEnd').value || null,
-        usageLimit: qs('#promoUsage').value ? Number(qs('#promoUsage').value) : null
-      }
+  // Seasonal modal
+  qs('#openSeasonalBtn')?.addEventListener('click', () => {
+    qs('#seasonName').value = ''; qs('#seasonMultiplier').value = '1.2'
+    qs('#seasonStart').value = ''; qs('#seasonEnd').value = ''; qs('#applyToRooms').value = 'all'
+    showModal('seasonalModal')
+  })
 
-      if (editingPromoId) {
-        promos = promos.map((p) => (p.id === editingPromoId ? obj : p))
-      } else {
-        promos.unshift(obj)
-      }
+  qs('#saveSeasonBtn')?.addEventListener('click', () => {
+    const name = qs('#seasonName').value.trim()
+    const mult = Number(qs('#seasonMultiplier').value)
+    if (!name)        return alert('Season name required')
+    if (!mult||mult<=0) return alert('Multiplier must be > 0')
 
-      savePromos()
-      renderPromos()
-      hideModal('promoModal')
-    })
-  }
-
-  // Seasonal pricing
-  const openSeasonalBtn = qs('#openSeasonalBtn')
-  const saveSeasonBtn = qs('#saveSeasonBtn')
-
-  if (openSeasonalBtn) {
-    openSeasonalBtn.addEventListener('click', () => {
-      qs('#seasonName').value = ''
-      qs('#seasonMultiplier').value = '1.2'
-      qs('#seasonStart').value = ''
-      qs('#seasonEnd').value = ''
-      qs('#applyToRooms').value = 'all'
-      showModal('seasonalModal')
-    })
-  }
-
-  if (saveSeasonBtn) {
-    saveSeasonBtn.addEventListener('click', () => {
-      const name = qs('#seasonName').value.trim()
-      const mult = Number(qs('#seasonMultiplier').value)
-
-      if (!name) return alert('Season name required')
-      if (!mult || mult <= 0) return alert('Multiplier must be > 0')
-
-      const all = JSON.parse(localStorage.getItem(STORAGE_KEY_SEASONS) || '[]')
-      all.push({
-        id: 'season_' + Date.now(),
-        name,
-        multiplier: mult,
-        start: qs('#seasonStart').value,
-        end: qs('#seasonEnd').value,
-        applyTo: qs('#applyToRooms').value.trim() || 'all'
-      })
-
-      localStorage.setItem(STORAGE_KEY_SEASONS, JSON.stringify(all))
-      alert('Season saved locally')
-      hideModal('seasonalModal')
-    })
-  }
+    const all = JSON.parse(localStorage.getItem(STORAGE_KEY_SEASONS) || '[]')
+    all.push({ id:'season_'+Date.now(), name, multiplier:mult,
+      start: qs('#seasonStart').value, end: qs('#seasonEnd').value,
+      applyTo: qs('#applyToRooms').value.trim() || 'all' })
+    localStorage.setItem(STORAGE_KEY_SEASONS, JSON.stringify(all))
+    alert('Season saved'); hideModal('seasonalModal')
+  })
 })
 </script>
 
 <style scoped>
-@import '../../assets/admin-styles.css';
-
-/* Room & Cottage Management Specific Styles */
-.header-container {
-  margin-bottom: 2rem;
+/* ── Eduardo's Resort Color Palette ── */
+.admin-layout {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-gray-bg:       #EEF5FB;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
 }
 
+/* ── Keyframes ── */
+@keyframes fadeUp  { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
+@keyframes slideUp { from { opacity:0; transform:translateY(18px)} to { opacity:1; transform:translateY(0) } }
+@keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+
+/* ── Layout ── */
+.admin-layout {
+  min-height: 100vh;
+  background: var(--color-gray-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.main-content {
+  margin-left: 0;
+  padding-top: 64px;
+  transition: margin-left 0.3s ease;
+}
+.main-content.shifted { margin-left: 72px; }
+@media (min-width: 768px) { .main-content { margin-left: 262px; } }
+
+.content-container {
+  padding: 1.5rem 1.75rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+@media (max-width: 768px) { .content-container { padding: 0.85rem; gap: 1rem; } }
+
+/* ── Stats Grid ── */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  animation: fadeUp .3s ease both;
 }
+@media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px)  { .stats-grid { grid-template-columns: 1fr 1fr; gap: .75rem; } }
 
 .stat-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(43, 108, 176, 0.08);
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+  gap: 1rem;
+  padding: 1.25rem 1.4rem;
+  background: var(--color-white);
+  border-radius: 16px;
+  border: 0.5px solid var(--color-gray-border);
+  box-shadow: 0 2px 10px rgba(3,105,161,.07);
   overflow: hidden;
+  transition: transform .22s ease, box-shadow .22s ease;
 }
-
+.stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(3,105,161,.14); }
 .stat-card::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #2b6cb0, transparent);
-  opacity: 0;
-  transition: opacity 0.35s ease;
+  border-radius: 16px 16px 0 0;
 }
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  border-color: rgba(43, 108, 176, 0.15);
-}
-
-.stat-card:hover::before {
-  opacity: 1;
-}
+.stat-card:nth-child(1)::before { background: var(--color-primary-light); }
+.stat-card:nth-child(2)::before { background: #16a34a; }
+.stat-card:nth-child(3)::before { background: #ea580c; }
+.stat-card:nth-child(4)::before { background: #dc2626; }
 
 .stat-icon {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 0.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  background: rgba(43, 108, 176, 0.12);
-  color: #2b6cb0;
-  transition: all 0.35s ease;
-  flex-shrink: 0;
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; flex-shrink: 0;
+  transition: transform .22s ease;
 }
+.stat-card:hover .stat-icon { transform: scale(1.1) rotate(-4deg); }
+.si-blue   { background: rgba(31,141,191,.12); color: var(--color-primary-light); }
+.si-green  { background: rgba(22,163,74,.12);  color: #16a34a; }
+.si-orange { background: rgba(234,88,12,.1);   color: #ea580c; }
+.si-red    { background: rgba(220,38,38,.1);   color: #dc2626; }
 
-.stat-card:hover .stat-icon {
-  transform: scale(1.1);
-  background: rgba(43, 108, 176, 0.18);
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1;
-}
-
+.stat-content { flex: 1; min-width: 0; position: relative; z-index: 1; }
+.stat-value { font-size: 1.85rem; font-weight: 800; line-height: 1; }
+.sv-blue   { color: var(--color-primary-light); }
+.sv-green  { color: #16a34a; }
+.sv-orange { color: #ea580c; }
+.sv-red    { color: #dc2626; }
 .stat-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
+  font-size: .7rem; color: var(--color-text-light);
+  margin-top: .3rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .6px;
 }
-
-.filters-container {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafb 100%);
-  border-radius: 1rem;
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(43, 108, 176, 0.08);
-  transition: all 0.3s ease;
+.stat-wm {
+  position: absolute; right: -10px; bottom: -10px;
+  font-size: 4rem; opacity: .04; pointer-events: none;
+  transition: opacity .22s;
 }
+.stat-card:hover .stat-wm { opacity: .08; }
 
-.filter-row {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
+/* ── Section Card ── */
+.section-card {
+  background: var(--color-white);
+  border-radius: 20px;
+  padding: 1.5rem 1.75rem;
+  border: 0.5px solid var(--color-gray-border);
+  box-shadow: 0 2px 16px rgba(3,105,161,.07);
+  animation: fadeUp .3s .1s ease both;
 }
+@media (max-width: 768px) { .section-card { padding: 1rem; border-radius: 14px; } }
 
-.search-input {
-  flex: 1;
-  min-width: 200px;
-  padding: 0.75rem 1.25rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.625rem;
-  font-size: 0.875rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: white;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #2b6cb0;
-  box-shadow: 0 0 0 4px rgba(43, 108, 176, 0.12), inset 0 1px 2px rgba(0, 0, 0, 0.04);
-  background: white;
-}
-
-.filter-select {
-  padding: 0.75rem 1.25rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.625rem;
-  background: white;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.filter-select:focus {
-  outline: none;
-  border-color: #2b6cb0;
-  box-shadow: 0 0 0 4px rgba(43, 108, 176, 0.12), inset 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.btn {
-  padding: 0.75rem 1.25rem;
-  border: none;
-  border-radius: 0.625rem;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.875rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-}
-
-.btn:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #2b6cb0 0%, #1e40af 100%);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
-  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.3);
-}
-
-.btn-secondary {
-  background: linear-gradient(135deg, #c2a68c 0%, #a68768 100%);
-  color: white;
-  font-weight: 600;
-}
-
-.btn-secondary:hover {
-  background: linear-gradient(135deg, #a68768 0%, #8b6f4e 100%);
-  box-shadow: 0 6px 20px rgba(165, 135, 104, 0.3);
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1.5px solid #d1d5db;
-  color: #6b7280;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.btn-outline:hover {
-  background: #f9fafb;
-  border-color: #2b6cb0;
-  color: #2b6cb0;
-  box-shadow: 0 2px 8px rgba(43, 108, 176, 0.1);
-}
-
-.btn-sm {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
-}
-
-.btn-danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-}
-
-.btn-danger:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  box-shadow: 0 6px 20px rgba(220, 38, 38, 0.3);
-}
-
-.rooms-section {
-  margin-bottom: 2rem;
-}
-
-.promos-section {
-  margin-bottom: 1rem;
-}
-
+/* ── Section Header ── */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid rgba(244,196,0,.3);
+}
+.section-header-left { flex: 1; min-width: 0; }
+.section-title {
+  font-size: 1.15rem; font-weight: 800; color: var(--color-navy);
+  margin: 0 0 .2rem;
+  display: flex; align-items: center; gap: .65rem;
+}
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px; height: 1.1em;
+  background: var(--color-gold);
+  border-radius: 3px; flex-shrink: 0;
+}
+.section-subtitle { font-size: .8rem; color: var(--color-text-light); margin: 0; padding-left: .75rem; }
+
+.header-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+
+/* ── Buttons ── */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: 0 1.2rem; height: 38px;
+  background: var(--color-navy); color: var(--color-white);
+  border: none; border-radius: 12px;
+  font-size: .875rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(12,59,94,.22);
+  transition: all .18s ease;
+}
+.btn-primary:hover { background: var(--color-primary); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(3,105,161,.28); }
+.btn-primary i    { color: var(--color-gold); font-size: .8rem; transition: transform .2s; }
+.btn-primary:hover i { transform: rotate(90deg); }
+
+.btn-gold { background: #92700a; }
+.btn-gold:hover { background: #7a5200; }
+.btn-gold i { color: #fde68a; }
+
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: 0 1.2rem; height: 38px;
+  background: var(--color-primary-light); color: var(--color-white);
+  border: none; border-radius: 12px;
+  font-size: .875rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(31,141,191,.25);
+  transition: all .18s ease;
+}
+.btn-secondary:hover { background: var(--color-primary); transform: translateY(-1px); }
+.btn-secondary i { font-size: .8rem; }
+
+.btn-outline {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: 0 1.2rem; height: 38px;
+  background: var(--color-white); color: var(--color-primary);
+  border: 1.5px solid rgba(3,105,161,.3); border-radius: 12px;
+  font-size: .875rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  transition: all .18s ease;
+}
+.btn-outline:hover { background: var(--color-gray-bg); border-color: var(--color-gold); color: var(--color-navy); transform: translateY(-1px); }
+.btn-outline i { font-size: .8rem; }
+
+/* ── Controls Bar ── */
+.controls-bar {
+  display: flex; flex-wrap: wrap; gap: .75rem;
+  align-items: center;
+  padding: .85rem 1rem;
+  background: var(--color-gray-bg);
+  border-radius: 14px;
+  border: 0.5px solid var(--color-gray-border);
   margin-bottom: 1rem;
 }
-
-.section-header h3 {
-  margin: 0;
-  font-size: 1.375rem;
-  font-weight: 800;
-  color: #111827;
-  letter-spacing: -0.02em;
+.search-wrapper {
+  position: relative; flex: 2; min-width: 200px;
+  display: flex; align-items: center;
 }
-
-.room-count {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #2b6cb0;
-  background: linear-gradient(135deg, rgba(43, 108, 176, 0.1), rgba(43, 108, 176, 0.05));
-  padding: 0.375rem 0.875rem;
-  border-radius: 1.5rem;
-  border: 1px solid rgba(43, 108, 176, 0.2);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.search-icon { position: absolute; left: 12px; color: var(--color-text-light); font-size: .82rem; pointer-events: none; }
+.search-input {
+  width: 100%; height: 38px;
+  padding: 0 36px;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 10px;
+  font-size: .875rem; color: var(--color-text-dark);
+  background: var(--color-white);
+  outline: none; transition: all .15s;
 }
+.search-input:focus { border-color: var(--color-primary-light); box-shadow: 0 0 0 3px rgba(31,141,191,.1); }
+.search-input::placeholder { color: var(--color-text-light); }
+.filter-select {
+  height: 38px; padding: 0 .9rem;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 10px;
+  background: var(--color-white); color: var(--color-text-dark);
+  font-size: .875rem; font-weight: 500;
+  cursor: pointer; min-width: 145px; transition: border-color .15s;
+}
+.filter-select:focus { outline: none; border-color: var(--color-primary-light); box-shadow: 0 0 0 3px rgba(31,141,191,.08); }
 
+/* ── Rooms Summary ── */
+.rooms-summary {
+  display: inline-flex; align-items: center; gap: .5rem;
+  margin-bottom: 1rem;
+  padding: .45rem 1.1rem;
+  background: var(--color-gray-bg);
+  border-radius: 30px; border: 0.5px solid var(--color-gray-border);
+  color: var(--color-text-dark); font-size: .875rem; font-weight: 500;
+}
+.summary-icon { color: var(--color-gold); font-size: .9rem; }
+
+/* ── Room Grid ── */
 .room-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.75rem;
+  gap: 1.25rem;
 }
 
-.room-card {
-  background: white;
-  border-radius: 0.875rem;
+/* ── Room Card (JS-generated) ── */
+:global(.room-card) {
+  background: var(--color-white);
+  border-radius: 16px;
+  border: 0.5px solid var(--color-gray-border);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  position: relative;
+  box-shadow: 0 2px 10px rgba(3,105,161,.07);
+  transition: transform .22s, box-shadow .22s, border-color .22s;
+}
+:global(.room-card:hover) { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(3,105,161,.14); border-color: rgba(244,196,0,.4); }
+:global(.rc-header) {
+  background: var(--color-navy);
+  border-bottom: 3px solid var(--color-gold);
+  padding: .9rem 1rem;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem;
+}
+:global(.rc-name)  { color: var(--color-white); font-size: .95rem; font-weight: 700; }
+:global(.rc-type)  { color: rgba(255,255,255,.55); font-size: .75rem; margin-top: 2px; }
+:global(.rc-price) { color: var(--color-gold); font-size: .95rem; font-weight: 700; white-space: nowrap; }
+:global(.rc-price span) { display: block; font-size: .7rem; font-weight: 400; color: rgba(255,255,255,.5); text-align: right; }
+:global(.rc-badge-promo) {
+  display: inline-block;
+  background: #dc2626; color: var(--color-white);
+  font-size: .65rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px;
+  letter-spacing: .3px;
+}
+:global(.rc-body) { padding: .85rem 1rem; }
+:global(.rc-status) {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 10px; font-weight: 700; letter-spacing: .3px;
+  margin-bottom: .55rem;
+}
+:global(.s-a) { background: rgba(22,163,74,.1);  color: #15803d; border: 1px solid rgba(22,163,74,.25); }
+:global(.s-o) { background: rgba(31,141,191,.1); color: var(--color-primary-light); border: 1px solid rgba(31,141,191,.25); }
+:global(.s-m) { background: rgba(239,68,68,.1);  color: #dc2626; border: 1px solid rgba(239,68,68,.22); }
+:global(.rc-desc) { font-size: .8rem; color: var(--color-text-dark); line-height: 1.5; margin: 0; }
+:global(.rc-foot) {
+  border-top: 1px solid var(--color-gray-border);
+  background: var(--color-gray-bg);
+  padding: .65rem 1rem;
+  display: flex; justify-content: flex-end; gap: .4rem;
 }
 
-.room-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(43, 108, 176, 0), rgba(43, 108, 176, 0));
-  pointer-events: none;
-  border-radius: 0.875rem;
-  transition: all 0.35s ease;
-}
-
-.room-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-  border-color: rgba(43, 108, 176, 0.1);
-}
-
-.room-image {
-  width: 100%;
-  height: 200px;
-  background-size: cover;
-  background-position: center;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.room-card:hover .room-image {
-  transform: scale(1.08);
-}
-
-.room-promo {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.room-details {
-  padding: 1.25rem;
-  position: relative;
-  z-index: 1;
-}
-
-.room-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.75rem;
-  gap: 0.5rem;
-}
-
-.room-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #2b6cb0;
-  letter-spacing: -0.01em;
-}
-
-.room-type {
-  font-size: 0.8125rem;
-  color: #9ca3af;
-  margin-top: 0.375rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-}
-
-.room-price {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #2b6cb0;
-  text-align: right;
-  letter-spacing: -0.01em;
-}
-
-.room-price span {
-  font-size: 0.75rem;
-  font-weight: 400;
-  color: #6b7280;
-  display: block;
-}
-
-.room-details > p {
-  font-size: 0.8125rem;
-  color: #9ca3af;
-  margin: 0.75rem 0 1rem 0;
-  line-height: 1.6;
-}
-
-.room-actions {
-  display: flex;
-  gap: 0.625rem;
-  margin-top: 1rem;
-  padding-top: 0.875rem;
-  border-top: 1px solid #f3f4f6;
-}
-
+/* ── Promo List & Card ── */
 .promo-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.25rem;
-}
-
-.promo-card {
-  background: white;
-  border: 1px solid rgba(194, 166, 140, 0.15);
-  border-radius: 0.875rem;
-  padding: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-}
-
-.promo-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #c2a68c, transparent);
-  opacity: 0;
-  transition: opacity 0.35s ease;
-}
-
-.promo-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(194, 166, 140, 0.15);
-  border-color: rgba(194, 166, 140, 0.3);
-}
-
-.promo-card:hover::before {
-  opacity: 1;
-}
-
-.promo-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
-  margin-bottom: 1rem;
 }
-
-.promo-title {
-  font-weight: 800;
-  color: #2b6cb0;
-  margin-bottom: 0.375rem;
-  font-size: 0.9875rem;
-  letter-spacing: -0.005em;
-}
-
-.promo-desc {
-  font-size: 0.8125rem;
-  color: #6b7280;
-  line-height: 1.5;
-}
-
-.promo-value {
-  background: linear-gradient(135deg, #c2a68c 0%, #a68768 100%);
-  color: white;
-  padding: 0.625rem 1.125rem;
-  border-radius: 0.625rem;
-  font-weight: 700;
-  font-size: 0.9375rem;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(194, 166, 140, 0.2);
-  transition: all 0.3s ease;
-}
-
-.promo-card:hover .promo-value {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(194, 166, 140, 0.3);
-}
-
-.promo-dates {
-  font-size: 0.75rem;
-  color: #d1d5db;
-  margin-bottom: 1rem;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-}
-
-.promo-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: auto;
-}
-
-.btn-action {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.625rem;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: #f3f4f6;
-  color: #6b7280;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.btn-action:hover {
-  background: #2b6cb0;
-  color: white;
-  transform: scale(1.08);
-  box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem 2rem;
-  color: #9ca3af;
-}
-
-.empty-state i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  opacity: 0.4;
-  display: block;
-}
-
-.empty-state p {
-  margin: 0.75rem 0 0 0;
-  font-size: 0.9375rem;
-  line-height: 1.6;
-}
-
-/* Modals */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  visibility: hidden;
-  opacity: 0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 999;
-  backdrop-filter: blur(2px);
-}
-
-.modal.show {
-  visibility: visible;
-  opacity: 1;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 1rem;
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
+:global(.promo-card) {
+  background: var(--color-white);
+  border-radius: 14px;
+  border: 0.5px solid var(--color-gray-border);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(3,105,161,.06);
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+:global(.promo-card:hover) { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(3,105,161,.12); border-color: rgba(244,196,0,.35); }
+:global(.pc-header) {
+  background: var(--color-navy);
+  border-bottom: 3px solid var(--color-gold);
+  padding: .85rem 1rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+:global(.pc-code)  { color: var(--color-gold); font-size: 1rem; font-weight: 800; letter-spacing: 1px; }
+:global(.pc-value) {
+  background: rgba(244,196,0,.2); color: var(--color-gold);
+  font-size: .75rem; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px;
+  border: 1px solid rgba(244,196,0,.35);
+}
+:global(.pc-body) { padding: .85rem 1rem; }
+:global(.pc-desc) { font-size: .8rem; color: var(--color-text-dark); line-height: 1.5; margin: 0 0 .5rem; }
+:global(.pc-dates) {
+  font-size: .75rem; color: var(--color-text-light);
+  display: flex; align-items: center; gap: .4rem;
+}
+:global(.pc-dates i) { color: var(--color-primary-light); font-size: .7rem; }
+:global(.pc-foot) {
+  border-top: 1px solid var(--color-gray-border);
+  background: var(--color-gray-bg);
+  padding: .6rem 1rem;
+  display: flex; justify-content: flex-end; gap: .4rem;
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+/* ── Action buttons (shared) ── */
+:global(.act-btn) {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--color-gray-border);
+  background: var(--color-white);
+  font-size: .78rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-light);
+  transition: all .15s ease;
+}
+:global(.act-btn:hover) { transform: translateY(-1px); }
+:global(.ebtn) { color: var(--color-primary-light); }
+:global(.ebtn:hover) { background: var(--color-primary-light); color: var(--color-white); border-color: var(--color-primary-light); }
+:global(.dbtn) { color: #ef4444; }
+:global(.dbtn:hover) { background: #ef4444; color: var(--color-white); border-color: #ef4444; }
+
+/* ── Empty State ── */
+:global(.empty-state) {
+  grid-column: 1 / -1;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: .75rem;
+  padding: 3.5rem 2rem; text-align: center;
+  border: 2px dashed rgba(244,196,0,.4);
+  border-radius: 16px;
+  background: rgba(244,196,0,.02);
+}
+:global(.empty-icon-wrap) {
+  width: 60px; height: 60px; border-radius: 16px;
+  background: rgba(3,105,161,.08); color: var(--color-primary-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+}
+:global(.empty-title) { font-size: .95rem; font-weight: 700; color: var(--color-text-dark); margin: 0; }
+:global(.empty-sub)   { font-size: .8rem; color: var(--color-text-light); margin: 0; }
+
+/* ── Modals ── */
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(12,59,94,.55); backdrop-filter: blur(5px);
+  display: flex; align-items: center; justify-content: center;
+  visibility: hidden; opacity: 0;
+  transition: all .25s ease; z-index: 1000; padding: 1rem;
+}
+.modal.show { visibility: visible; opacity: 1; }
+
+.modal-box {
+  background: var(--color-white);
+  border-radius: 20px;
+  width: 100%; max-width: 520px;
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 60px rgba(12,59,94,.22);
+  animation: slideUp .22s ease;
+  overflow: hidden;
 }
 
-.modal-header {
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #2b6cb0 0%, #1e40af 100%);
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.modal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.1rem 1.4rem;
+  background: var(--color-navy);
+  border-bottom: 3px solid var(--color-gold);
+  flex-shrink: 0;
 }
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+.modal-head-left { display: flex; align-items: center; gap: .8rem; }
+.modal-head-icon {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: rgba(255,255,255,.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; color: var(--color-white); flex-shrink: 0;
 }
-
-.close-modal {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.9;
-  transition: all 0.2s ease;
-  border-radius: 0.5rem;
+.modal-head-icon--gold { background: rgba(244,196,0,.2); color: var(--color-gold); }
+.modal-title { font-size: 1rem; font-weight: 700; color: var(--color-white); margin: 0; }
+.modal-sub   { font-size: .72rem; color: rgba(255,255,255,.6); margin: 2px 0 0; }
+.modal-close-btn {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+  color: var(--color-white); font-size: .85rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
 }
-
-.close-modal:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.2);
-}
+.modal-close-btn:hover { background: rgba(255,255,255,.28); }
 
 .modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-  flex: 1;
+  padding: 1.4rem; overflow-y: auto; flex: 1;
+}
+.modal-foot {
+  display: flex; gap: .6rem; justify-content: flex-end;
+  padding: 1rem 1.4rem;
+  border-top: 1px solid var(--color-gray-border);
+  background: var(--color-gray-bg);
+  border-radius: 0 0 20px 20px;
+  flex-shrink: 0;
 }
 
-.modal-footer {
-  padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.625rem;
-  font-weight: 700;
-  color: #111827;
-  font-size: 0.9375rem;
-  letter-spacing: -0.005em;
-}
-
-.form-control {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.625rem;
-  font-size: 0.875rem;
+.form-group     { margin-bottom: 1rem; }
+.form-row       { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.form-label     { display: block; margin-bottom: .4rem; font-size: .72rem; font-weight: 700; color: var(--color-text-light); text-transform: uppercase; letter-spacing: .4px; }
+.form-hint      { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: .72rem; }
+.req            { color: #ef4444; margin-left: 2px; }
+.form-input {
+  width: 100%; padding: .65rem .9rem;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 10px; font-size: .9rem;
+  color: var(--color-text-dark);
+  background: var(--color-white);
+  transition: all .15s; box-sizing: border-box;
   font-family: inherit;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
 }
+.form-input:focus { outline: none; border-color: var(--color-primary-light); box-shadow: 0 0 0 3px rgba(31,141,191,.1); }
+textarea.form-input { resize: vertical; }
 
-.form-control:focus {
-  outline: none;
-  border-color: #2b6cb0;
-  box-shadow: 0 0 0 4px rgba(43, 108, 176, 0.12), inset 0 1px 2px rgba(0, 0, 0, 0.04);
+.form-checkbox-row { display: flex; align-items: center; gap: .6rem; padding-top: 1.6rem; }
+.form-checkbox     { width: 16px; height: 16px; accent-color: var(--color-primary-light); cursor: pointer; flex-shrink: 0; }
+.checkbox-label    { margin: 0; text-transform: none; letter-spacing: 0; font-size: .875rem; color: var(--color-text-dark); font-weight: 500; }
+
+.btn-cancel {
+  padding: .55rem 1.1rem; border-radius: 10px;
+  background: var(--color-white); color: var(--color-text-light);
+  border: 1.5px solid var(--color-gray-border);
+  font-size: .875rem; font-weight: 600; cursor: pointer;
+  transition: all .15s;
 }
+.btn-cancel:hover { border-color: var(--color-primary-light); color: var(--color-primary); }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-}
-
-/* Responsive */
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .stat-card {
-    padding: 1.25rem 1rem;
-  }
-
-  .stat-icon {
-    width: 3rem;
-    height: 3rem;
-    font-size: 1.25rem;
-  }
-
-  .stat-value {
-    font-size: 1.5rem;
-  }
-
-  .filter-row {
-    flex-direction: column;
-  }
-
-  .search-input,
-  .filter-select {
-    width: 100%;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-  }
-
-  .action-buttons .btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .room-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .promo-list {
-    grid-template-columns: 1fr;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .room-count {
-    margin-top: 0.5rem;
-  }
-
-  .modal-content {
-    width: 95%;
-    max-width: none;
-  }
-
-  .modal-body {
-    padding: 1.25rem;
-  }
+  .section-header { flex-direction: column; align-items: flex-start; }
+  .header-actions { width: 100%; }
+  .btn-primary, .btn-secondary, .btn-outline { flex: 1; justify-content: center; }
+  .controls-bar { flex-direction: column; }
+  .filter-select { width: 100%; }
+  .form-row { grid-template-columns: 1fr; }
+  .room-grid, .promo-list { grid-template-columns: 1fr; }
+  .modal-box { max-width: none; }
+  .modal-body { padding: 1rem; }
 }
-
-@media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .stat-card {
-    padding: 1rem;
-  }
-
-  .stat-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    font-size: 1rem;
-  }
-
-  .stat-content {
-    flex: 1;
-  }
-
-  .stat-value {
-    font-size: 1.25rem;
-  }
-
-  .stat-label {
-    font-size: 0.8125rem;
-  }
-
-  .section-header h3 {
-    font-size: 1.125rem;
-  }
-
-  .room-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .promo-list {
-    grid-template-columns: 1fr;
-    gap: 0.875rem;
-  }
-
-  .promo-card {
-    padding: 1rem;
-  }
-
-  .promo-title {
-    font-size: 0.9375rem;
-  }
-
-  .promo-value {
-    padding: 0.5rem 0.875rem;
-    font-size: 0.875rem;
-  }
-
-  .btn {
-    padding: 0.625rem 1rem;
-    font-size: 0.8125rem;
-  }
-
-  .btn-sm {
-    padding: 0.5rem 0.625rem;
-    font-size: 0.75rem;
-  }
-
-  .room-actions {
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-
-  .room-actions .btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-  .modal-content {
-    width: 95%;
-  }
-
 </style>

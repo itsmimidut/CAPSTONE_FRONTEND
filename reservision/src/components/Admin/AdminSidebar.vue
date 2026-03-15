@@ -9,39 +9,46 @@
 
   <!-- Sidebar -->
   <aside class="sidebar" :class="{ active: isOpen, collapsed: isCollapsed }">
-    <!-- Subtle wave pattern overlay -->
-    <div class="sidebar-wave"></div>
 
-    <!-- Header -->
+    <!-- ── Decorative backgrounds ── -->
+    <div class="sb-wave"></div>
+    <div class="sb-particles">
+      <span v-for="i in 6" :key="i" class="particle" :style="`--i:${i}`"></span>
+    </div>
+
+    <!-- ── Header ── -->
     <div class="sidebar-header">
       <div class="logo-container">
-        <span class="logo-text w-full">
+        <div class="logo-text">
           <img
             src="/Eduardos Resort Logo.jpg"
-            alt="Reservision"
+            alt="Eduardo's Resort"
             class="logo-image"
           />
-        </span>
+        </div>
       </div>
-
-      <button class="md:hidden header-icon-btn" @click="emit('close')">
-        <i class="fas fa-bars"></i>
+      <button class="md:hidden header-close-btn" @click="emit('close')">
+        <i class="fas fa-times"></i>
       </button>
     </div>
 
-    <!-- User Info -->
+    <!-- ── User Info ── -->
     <div class="user-info">
       <div class="user-avatar">
-        <span>{{ userInitial }}</span>
-        <div class="avatar-glow"></div>
+        <span class="avatar-initial">{{ userInitial }}</span>
+        <span class="avatar-ring"></span>
+        <span class="avatar-online-dot"></span>
       </div>
       <div class="user-details">
-        <div class="font-medium text-white">{{ userDisplayName }}</div>
-        <div class="text-xs text-white/80">{{ userRoleLabel }}</div>
+        <div class="user-name">{{ userDisplayName }}</div>
+        <div class="user-role-badge">
+          <span class="badge-dot"></span>
+          {{ userRoleLabel }}
+        </div>
       </div>
     </div>
 
-    <!-- Navigation -->
+    <!-- ── Navigation ── -->
     <div class="nav-container">
       <ul class="nav-list">
         <li
@@ -49,72 +56,64 @@
           :key="item.path || item.label"
           class="nav-item"
         >
+
           <!-- Regular Link -->
-          <router-link
-            v-if="!item.children"
-            :to="item.path"
-            class="nav-link"
-            :class="{ active: activePath === item.path }"
-            @click="emit('close')"
-          >
-            <div class="nav-icon-wrapper">
-              <i :class="['nav-icon', item.icon]"></i>
-            </div>
-
-            <span class="nav-text">{{ item.label }}</span>
-
-            <!-- Notifications -->
-            <span
-              v-if="item.path === '/admin/swimming' && notifications.swimmingPendingCount > 0"
-              class="notification-badge-sidebar"
-              aria-label="Pending swimming requests"
-            >
-              {{ notifications.swimmingPendingCount > 9 ? '9+' : notifications.swimmingPendingCount }}
-            </span>
-
-            <span
-              v-if="item.path === '/admin/reservations' && notifications.reservationPendingCount > 0"
-              class="notification-badge-sidebar"
-              aria-label="Pending reservations"
-            >
-              {{ notifications.reservationPendingCount > 9 ? '9+' : notifications.reservationPendingCount }}
-            </span>
-
-            <span
-              v-if="item.path === '/pos' && notifications.eshopPendingCount > 0"
-              class="notification-badge-sidebar"
-              aria-label="Pending e-shop orders"
-            >
-              {{ notifications.eshopPendingCount > 9 ? '9+' : notifications.eshopPendingCount }}
-            </span>
-          </router-link>
-
-          <!-- Dropdown -->
-          <div v-else class="nav-dropdown">
-            <button
-              class="nav-link dropdown-trigger"
-              :class="{
-                active: item.children.some(child => activePath === child.path),
-                open: openDropdown === item.label
-              }"
-              @click="toggleDropdown(item.label)"
-              type="button"
+          <div class="nav-item-wrap" v-if="!item.children">
+            <router-link
+              :to="item.path"
+              class="nav-link"
+              :class="{ active: activePath === item.path }"
+              @click="emit('close')"
             >
               <div class="nav-icon-wrapper">
                 <i :class="['nav-icon', item.icon]"></i>
+                <span class="nav-icon-glow"></span>
               </div>
-
               <span class="nav-text">{{ item.label }}</span>
+              <span
+                v-if="item.path === '/admin/swimming' && notifications.swimmingPendingCount > 0"
+                class="nav-badge"
+              >{{ notifications.swimmingPendingCount > 9 ? '9+' : notifications.swimmingPendingCount }}</span>
+              <span
+                v-if="item.path === '/admin/reservations' && notifications.reservationPendingCount > 0"
+                class="nav-badge"
+              >{{ notifications.reservationPendingCount > 9 ? '9+' : notifications.reservationPendingCount }}</span>
+              <span
+                v-if="item.path === '/pos' && notifications.eshopPendingCount > 0"
+                class="nav-badge"
+              >{{ notifications.eshopPendingCount > 9 ? '9+' : notifications.eshopPendingCount }}</span>
+            </router-link>
+            <div class="nav-tooltip">{{ item.label }}</div>
+          </div>
 
-              <i
-                class="fas fa-chevron-down dropdown-arrow"
-                :class="{ rotate: openDropdown === item.label }"
-              ></i>
-            </button>
+          <!-- Dropdown -->
+          <div v-else class="nav-dropdown">
+            <div class="nav-item-wrap">
+              <button
+                class="nav-link dropdown-trigger"
+                :class="{
+                  active: item.children.some(child => activePath === child.path),
+                  open: openDropdown === item.label
+                }"
+                @click="toggleDropdown(item.label)"
+                type="button"
+              >
+                <div class="nav-icon-wrapper">
+                  <i :class="['nav-icon', item.icon]"></i>
+                  <span class="nav-icon-glow"></span>
+                </div>
+                <span class="nav-text">{{ item.label }}</span>
+                <i
+                  class="fas fa-chevron-down dropdown-arrow"
+                  :class="{ rotate: openDropdown === item.label }"
+                ></i>
+              </button>
+              <div class="nav-tooltip">{{ item.label }}</div>
+            </div>
 
             <transition name="dropdown">
               <ul v-show="openDropdown === item.label" class="dropdown-menu">
-                <li v-for="child in item.children" :key="child.path">
+                <li v-for="child in item.children" :key="child.path" class="dropdown-li">
                   <router-link
                     :to="child.path"
                     class="nav-link dropdown-item"
@@ -130,19 +129,21 @@
               </ul>
             </transition>
           </div>
+
         </li>
       </ul>
     </div>
 
-    <!-- Logout -->
+    <!-- ── Logout ── -->
     <div class="logout-container">
-      <button @click="handleLogout" class="nav-link logout-link" type="button">
+      <button @click="handleLogout" class="logout-btn" type="button">
         <div class="nav-icon-wrapper">
           <i class="fas fa-sign-out-alt nav-icon"></i>
         </div>
         <span class="nav-text">Logout</span>
       </button>
     </div>
+
   </aside>
 </template>
 
@@ -153,32 +154,25 @@ import { useAuthStore } from '../../stores/auth'
 import { useNotificationStore } from '../../stores/notifications'
 
 const props = defineProps({
-  isOpen: Boolean,
+  isOpen:      Boolean,
   isCollapsed: Boolean,
-  currentPath: {
-    type: String,
-    default: ''
-  }
+  currentPath: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close'])
 
-const route = useRoute()
-const router = useRouter()
-const auth = useAuthStore()
+const route         = useRoute()
+const router        = useRouter()
+const auth          = useAuthStore()
 const notifications = useNotificationStore()
 
 const getStoredUser = () => {
-  try {
-    return JSON.parse(localStorage.getItem('user') || '{}')
-  } catch {
-    return {}
-  }
+  try { return JSON.parse(localStorage.getItem('user') || '{}') }
+  catch { return {} }
 }
 
 const resolvedUser = computed(() => auth.user || getStoredUser())
 
-// Logout handler
 const handleLogout = () => {
   auth.logout()
   localStorage.clear()
@@ -187,465 +181,580 @@ const handleLogout = () => {
 
 const userDisplayName = computed(() => {
   const u = resolvedUser.value || {}
-  const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim()
-  return fullName || u.name || u.email || 'Guest'
+  return `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name || u.email || 'Guest'
 })
 
 const userRoleLabel = computed(() => {
-  const role = resolvedUser.value?.role
   const roleLabels = {
-    admin: 'Admin',
-    restaurantstaff: 'Restaurant Staff',
+    admin:            'Admin',
+    restaurantstaff:  'Restaurant Staff',
     restaurant_staff: 'Restaurant Staff',
-    receptionist: 'Receptionist',
-    customer: 'Customer'
+    receptionist:     'Receptionist',
+    customer:         'Customer'
   }
-  return roleLabels[role] || 'User'
+  return roleLabels[resolvedUser.value?.role] || 'User'
 })
-const userInitial = computed(() => (userDisplayName.value?.charAt(0) || 'G').toUpperCase())
 
-// Use actual route path or fallback to prop
-const activePath = computed(() => props.currentPath || route.path)
-
+const userInitial  = computed(() => (userDisplayName.value?.charAt(0) || 'G').toUpperCase())
+const activePath   = computed(() => props.currentPath || route.path)
 const openDropdown = ref(null)
 
 const toggleDropdown = (label) => {
-  // Simple toggle without any extra logic that could cause blinking
-  if (openDropdown.value === label) {
-    openDropdown.value = null
-  } else {
-    openDropdown.value = label
-  }
+  openDropdown.value = openDropdown.value === label ? null : label
 }
 
 const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: 'fas fa-tachometer-alt', roles: ['admin', 'restaurantstaff', 'receptionist'] },
-  { path: '/admin/reservations', label: 'Reservations', icon: 'fas fa-calendar-check', roles: ['admin', 'receptionist'] },
+  { path: '/dashboard',          label: 'Dashboard',       icon: 'fas fa-tachometer-alt', roles: ['admin', 'restaurantstaff', 'receptionist'] },
+  { path: '/admin/reservations', label: 'Reservations',    icon: 'fas fa-calendar-check', roles: ['admin', 'receptionist'] },
   {
-    label: 'Rooms & Cottages',
-    icon: 'fas fa-bed',
-    roles: ['admin'],
+    label: 'Rooms & Cottages', icon: 'fas fa-bed', roles: ['admin'],
     children: [
-      { path: '/admin/rooms/rooms', label: 'Rooms', icon: 'fas fa-door-open', roles: ['admin'] },
-      { path: '/admin/rooms/cottages', label: 'Cottages', icon: 'fas fa-home', roles: ['admin'] },
-      { path: '/admin/rooms/events', label: 'Events', icon: 'fas fa-calendar', roles: ['admin'] }
+      { path: '/admin/rooms/rooms',    label: 'Rooms',    icon: 'fas fa-door-open', roles: ['admin'] },
+      { path: '/admin/rooms/cottages', label: 'Cottages', icon: 'fas fa-home',      roles: ['admin'] },
+      { path: '/admin/rooms/events',   label: 'Events',   icon: 'fas fa-calendar',  roles: ['admin'] }
     ]
   },
   {
-    label: 'Restaurants',
-    icon: 'fas fa-utensils',
-    roles: ['admin', 'restaurantstaff'],
+    label: 'Restaurants', icon: 'fas fa-utensils', roles: ['admin', 'restaurantstaff'],
     children: [
-      // { path: '/admin/restaurants/tables', label: 'Tables', icon: 'fas fa-table', roles: ['admin', 'restaurantstaff'] },
-      { path: '/admin/restaurants/menu', label: 'Menu', icon: 'fas fa-book-open', roles: ['admin', 'restaurantstaff'] },
-      { path: '/admin/restaurants/inventory', label: 'Inventory', icon: 'fas fa-boxes', roles: ['admin', 'restaurantstaff'] }
+      { path: '/admin/restaurants/menu',      label: 'Menu',      icon: 'fas fa-book-open', roles: ['admin', 'restaurantstaff'] },
+      { path: '/admin/restaurants/inventory', label: 'Inventory', icon: 'fas fa-boxes',     roles: ['admin', 'restaurantstaff'] }
     ]
   },
-  { path: '/pos', label: 'Point of Sale', icon: 'fas fa-cash-register', roles: ['admin', 'restaurantstaff', 'receptionist'] },
-  { path: '/admin/swimming', label: 'Swimming Pools', icon: 'fas fa-swimming-pool', roles: ['admin', 'receptionist'] },
-  { path: '/admin/users', label: 'User Management', icon: 'fas fa-users', roles: ['admin'] }
+  { path: '/pos',            label: 'Point of Sale',   icon: 'fas fa-cash-register', roles: ['admin', 'restaurantstaff', 'receptionist'] },
+  { path: '/admin/swimming', label: 'Swimming Pools',  icon: 'fas fa-swimming-pool', roles: ['admin', 'receptionist'] },
+  { path: '/admin/users',    label: 'User Management', icon: 'fas fa-users',         roles: ['admin'] }
 ]
 
-const isRoleAllowed = (item, role) => {
-  if (!item.roles || item.roles.length === 0) return true
-  return item.roles.includes(role)
-}
+const isRoleAllowed = (item, role) =>
+  !item.roles || item.roles.length === 0 || item.roles.includes(role)
 
 const filteredNavItems = computed(() => {
   const rawRole = resolvedUser.value?.role || auth.role || ''
   const role = rawRole === 'restaurant_staff' ? 'restaurantstaff' : rawRole
-
   return navItems
     .filter(item => isRoleAllowed(item, role))
     .map(item => {
       if (!item.children) return item
-      const filteredChildren = item.children.filter(child => isRoleAllowed(child, role))
-      return { ...item, children: filteredChildren }
+      return { ...item, children: item.children.filter(c => isRoleAllowed(c, role)) }
     })
     .filter(item => !item.children || item.children.length > 0)
 })
 
-// Auto-open dropdown if current path matches a child - only on mount and route change
 const autoOpenDropdown = () => {
   for (const item of filteredNavItems.value) {
-    if (item.children) {
-      const isChildActive = item.children.some(child => activePath.value === child.path)
-      if (isChildActive) {
-        openDropdown.value = item.label
-        return
-      }
+    if (item.children?.some(c => activePath.value === c.path)) {
+      openDropdown.value = item.label
+      return
     }
   }
-  // Don't auto-close if nothing is active - keep current dropdown state
 }
 
-// Only auto-open on mount and when route changes, but don't force close
-watch(() => activePath.value, () => {
-  autoOpenDropdown()
-})
-
-onMounted(() => {
-  auth.initFromStorage()
-  autoOpenDropdown()
-})
+watch(() => activePath.value, autoOpenDropdown)
+onMounted(() => { auth.initFromStorage(); autoOpenDropdown() })
 </script>
 
 <style scoped>
-/* ========================================
-   ORIGINAL COLOR PALETTE RESTORED
-   ======================================== */
+/* ── Eduardo's Resort Color Palette ── */
+.overlay, .sidebar {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-white-soft:    rgba(255, 255, 255, 0.1);
+  --color-gray-bg:       #f9fafb;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
+}
 
+/* ── Keyframes ── */
+@keyframes ringPulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%       { opacity: 0.95; transform: scale(1.07); }
+}
+@keyframes shimmer {
+  0%   { left: -60%; }
+  100% { left: 110%; }
+}
+@keyframes badgePop {
+  0%   { transform: scale(0.7); opacity: 0; }
+  70%  { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1);     box-shadow: 0 0 8px  rgba(220, 38, 38, 0.4); }
+  50%       { transform: scale(1.12); box-shadow: 0 0 14px rgba(220, 38, 38, 0.65); }
+}
+@keyframes dotBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+@keyframes particleDrift {
+  0%,100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.2; }
+  50%      { transform: translateY(-18px) translateX(6px) scale(1.2); opacity: 0.08; }
+}
+@keyframes iconGlow {
+  0%, 100% { opacity: 0; transform: scale(0.8); }
+  50%       { opacity: 1; transform: scale(1.4); }
+}
+
+/* ── Overlay ── */
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(31, 141, 191, 0.7);
+  background: rgba(12, 59, 94, 0.55);
   backdrop-filter: blur(4px);
   z-index: 39;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
 }
+.overlay.active { opacity: 1; visibility: visible; }
 
-.overlay.active {
-  opacity: 1;
-  visibility: visible;
-}
-
+/* ── Sidebar Shell ── */
 .sidebar {
   position: fixed;
   top: 0;
   left: 0;
-  width: 260px;
+  width: 262px;
   height: 100vh;
-
-  background: linear-gradient(165deg, #1F8DBF 0%, #1E88B6 60%, #1F8DBF 100%);
-  color: #ffffff;
-
+  background: var(--color-navy);
+  color: var(--color-white);
   z-index: 50;
   overflow: hidden;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-  border-right: 2px solid #F4C400;
-
-  transition: transform 0.3s ease, width 0.3s ease;
+  border-right: 3px solid var(--color-gold);
+  border-radius: 0 10px 10px 0;
+  box-shadow: 4px 0 32px rgba(12, 59, 94, 0.45);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s ease;
   transform: translateX(-100%);
   display: flex;
   flex-direction: column;
 }
+.sidebar.active { transform: translateX(0); }
 
-.sidebar.active {
-  transform: translateX(0);
-}
-
-/* Desktop: keep visible; allow collapse */
 @media (min-width: 768px) {
-  .sidebar {
-    transform: translateX(0) !important;
-  }
-  .sidebar.collapsed {
-    width: 70px;
-  }
+  .sidebar { transform: translateX(0) !important; }
+  .sidebar.collapsed { width: 72px; }
 }
 
-/* Wave overlay - subtle */
-.sidebar-wave {
+/* ── Decorative Backgrounds ── */
+.sb-wave {
   position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(244, 196, 0, 0.05) 0%, transparent 40%),
-    repeating-linear-gradient(
-      45deg,
-      rgba(244, 196, 0, 0.01) 0px,
-      rgba(244, 196, 0, 0.01) 2px,
-      transparent 2px,
-      transparent 10px
-    );
+  bottom: 0; left: 0; right: 0;
+  height: 160px;
+  background: rgba(3, 105, 161, 0.18);
+  clip-path: ellipse(140% 60% at 50% 100%);
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 }
 
-/* HEADER - rectangular */
+.sb-particles { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.particle {
+  position: absolute;
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  opacity: 0.2;
+  animation: particleDrift calc(3s + var(--i) * 0.7s) ease-in-out infinite;
+  top:  calc(20% + var(--i) * 11%);
+  left: calc(10% + var(--i) * 14%);
+}
+
+/* ── Header ──
+   Uses the same navy as the sidebar body, unified with a gold accent border
+   and a very subtle inner glow so the logo area feels part of the sidebar
+   rather than a separate contrasting section.
+── */
 .sidebar-header {
   position: relative;
-  z-index: 2;
-  padding: 1rem 1.25rem;
-  border-bottom: 2px solid #F4C400;
+  z-index: 1;
+  /* Navy base — same as sidebar, slightly lighter via transparency */
+  background: rgba(12, 59, 94, 0.85);
+  /* Gold bottom border ties it visually to the sidebar's right border */
+  border-bottom: 2px solid rgba(244, 196, 0, 0.55);
+  /* Soft top highlight so the area reads as "elevated" without being jarring */
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+              0 4px 16px rgba(0, 0, 0, 0.18);
+  padding: 0.75rem 1.1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(30, 136, 182, 0.3);
-  backdrop-filter: blur(4px);
-  min-height: 64px;
+  min-height: 66px;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
-.header-icon-btn {
-  color: #ffffff;
-  background: transparent;
-  border: none;
-  padding: 0.25rem 0.5rem;
-  cursor: pointer;
-}
-
-.logo-text {
-  font-family: 'Playfair Display', serif;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.logo-image {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* USER INFO - rectangular */
-.user-info {
-  position: relative;
-  z-index: 2;
-  padding: 1rem 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  background: rgba(244, 196, 0, 0.08);
-  border-bottom: 1px solid rgba(244, 196, 0, 0.2);
-}
-
-.user-avatar {
-  width: 2.75rem;
-  height: 2.75rem;
-  background: #F4C400;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #1F8DBF;
-  border: 2px solid #ffffff;
-  position: relative;
-}
-
-.avatar-glow {
+/* Shimmer sweep — now very faint so it doesn't clash on navy */
+.sidebar-header::after {
+  content: '';
   position: absolute;
-  inset: -6px;
-  background: radial-gradient(circle, rgba(244, 196, 0, 0.25) 0%, transparent 60%);
+  top: 0; left: -60%;
+  width: 40%; height: 100%;
+  background: rgba(244, 196, 0, 0.05);
+  transform: skewX(-15deg);
+  animation: shimmer 5s ease-in-out infinite;
   pointer-events: none;
 }
 
-.user-details .font-medium,
-.user-details .text-xs {
-  color: #ffffff;
+/* Subtle gold left accent strip — echoes the sidebar's gold border-right */
+.sidebar-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 15%; bottom: 15%;
+  width: 3px;
+  background: linear-gradient(to bottom, transparent, var(--color-gold), transparent);
+  border-radius: 0 2px 2px 0;
+  opacity: 0.7;
 }
 
-/* NAV */
-.nav-container {
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.logo-text { min-width: 0; flex: 1; overflow: hidden; }
+.logo-image {
+  width: 100%; height: auto; display: block;
+  max-height: 42px; object-fit: contain;
+  object-position: left center;
+  /* Gentle drop shadow so the logo pops on the dark navy background */
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.35));
+}
+.sidebar.collapsed .logo-text { display: none; }
+
+.header-close-btn {
+  width: 30px; height: 30px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--color-white);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0; margin-left: 0.5rem;
+}
+.header-close-btn:hover {
+  background: rgba(244, 196, 0, 0.18);
+  border-color: rgba(244, 196, 0, 0.5);
+}
+
+/* ── User Info ── */
+.user-info {
   position: relative;
+  z-index: 1;
+  background: rgba(3, 105, 161, 0.35);
+  border-bottom: 1px solid rgba(244, 196, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.user-info:hover { background: rgba(3, 105, 161, 0.5); }
+
+.user-avatar {
+  position: relative;
+  width: 2.7rem; height: 2.7rem;
+  border-radius: 8px;
+  background: var(--color-gold);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.05rem;
+  color: var(--color-navy);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.user-info:hover .user-avatar { transform: scale(1.06); }
+
+.avatar-initial { position: relative; z-index: 1; }
+
+.avatar-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 10px;
+  border: 2px solid var(--color-gold-dark);
+  opacity: 0.6;
+  animation: ringPulse 3s ease-in-out infinite;
+}
+
+.avatar-online-dot {
+  position: absolute;
+  bottom: -2px; right: -2px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #4ade80;
+  border: 2px solid var(--color-navy);
   z-index: 2;
+  animation: dotBlink 2.5s ease-in-out infinite;
+}
+
+.user-details { min-width: 0; flex: 1; }
+.user-name {
+  font-size: 0.875rem; font-weight: 700;
+  color: var(--color-white);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.2;
+}
+.user-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 0.15rem 0.55rem;
+  background: rgba(244, 196, 0, 0.18);
+  border: 1px solid rgba(244, 196, 0, 0.38);
+  border-radius: 20px;
+  font-size: 0.65rem; font-weight: 700;
+  color: var(--color-gold);
+  letter-spacing: 0.3px;
+  animation: badgePop 0.4s ease both;
+}
+.badge-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #4ade80;
+  flex-shrink: 0;
+  animation: dotBlink 2s ease-in-out infinite;
+}
+
+.sidebar.collapsed .user-details { display: none; }
+.sidebar.collapsed .user-info    { justify-content: center; padding: 0.9rem 0; }
+
+/* ── Nav Container ── */
+.nav-container {
   flex: 1;
   overflow-y: auto;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0.6rem;
   scrollbar-width: none;
+  position: relative;
+  z-index: 1;
 }
-.nav-container::-webkit-scrollbar {
-  display: none;
-}
+.nav-container::-webkit-scrollbar { display: none; }
 
-.nav-list {
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
+.nav-list { padding: 0; margin: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.nav-item { margin: 0; }
+.nav-item-wrap { position: relative; }
 
-.nav-item {
-  margin: 0;
-}
-
-/* Links - rectangular (no radius) */
+/* ── Nav Links ── */
 .nav-link {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.7rem 1rem;
-  color: #ffffff;
-  text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  overflow: hidden;
-  border-radius: 0;
+  gap: 0.7rem;
+  padding: 0.68rem 0.85rem;
+  color: rgba(255, 255, 255, 0.65) !important;
+  text-decoration: none !important;
+  font-size: 0.875rem; font-weight: 500;
   border: none;
   background: transparent;
   width: 100%;
   white-space: nowrap;
   cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: background 0.18s ease, transform 0.15s ease, color 0.18s ease;
 }
-
 .nav-link:hover {
-  background: rgba(244, 196, 0, 0.1);
-  color: #ffffff;
-}
-
-.nav-link.active {
-  background: rgba(244, 196, 0, 0.2);
-  font-weight: 600;
-}
-
-.nav-icon-wrapper {
-  width: 1.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-icon {
-  font-size: 0.9rem;
-  color: #ffffff;
-}
-
-.nav-link:hover .nav-icon {
-  color: #F4C400;
-}
-
-.nav-link.active .nav-icon {
-  color: #F4C400;
-}
-
-.nav-text {
-  margin-left: 0;
-  color: #ffffff;
-}
-
-/* Dropdown */
-.nav-dropdown {
-  margin: 0;
-}
-
-.dropdown-trigger {
-  justify-content: flex-start;
-}
-
-.dropdown-trigger.open {
-  background: rgba(244, 196, 0, 0.12);
-}
-
-.dropdown-arrow {
-  position: absolute;
-  right: 1rem;
-  font-size: 0.75rem;
-  transition: transform 0.3s ease;
-  color: rgba(255, 255, 255, 0.9);
-}
-.dropdown-arrow.rotate {
-  transform: rotate(180deg);
-}
-
-/* Dropdown menu - rectangular (no radius) */
-.dropdown-menu {
-  list-style: none;
-  padding: 0.35rem 0;
-  margin: 0;
-  background: rgba(0, 0, 0, 0.18);
-  border-top: 1px solid rgba(244, 196, 0, 0.15);
-  border-bottom: 1px solid rgba(244, 196, 0, 0.15);
-  border-left: 3px solid rgba(244, 196, 0, 0.35);
-  border-radius: 0;
-  overflow: hidden;
-}
-
-.dropdown-item {
-  padding-left: 1.5rem;
-  padding-right: 1rem;
-  font-size: 0.92rem;
-}
-
-.dropdown-item .nav-icon-wrapper {
-  width: 1.75rem;
-}
-
-/* Dropdown animation - smooth without flicker */
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: opacity 0.2s ease;
-  opacity: 1;
-}
-.dropdown-enter-from,
-.dropdown-leave-to {
-  opacity: 0;
-}
-
-/* Logout container */
-.logout-container {
-  position: relative;
-  z-index: 2;
-  padding: 0.5rem 0;
-  border-top: 1px solid rgba(244, 196, 0, 0.2);
-}
-
-.logout-link {
   background: rgba(255, 255, 255, 0.1);
-  margin: 0.5rem 1rem;
-  width: calc(100% - 2rem);
+  color: var(--color-white) !important;
+  transform: translateX(3px);
+}
+.nav-link:hover .nav-icon {
+  color: var(--color-gold);
+  transform: scale(1.2);
+}
+.nav-link:hover .nav-icon-glow {
+  animation: iconGlow 0.6s ease forwards;
 }
 
-.logout-link:hover {
-  background: rgba(244, 196, 0, 0.2) !important;
+/* Active state */
+.nav-link.active {
+  background: rgba(12, 59, 94, 0.75);
+  color: var(--color-white) !important;
+  font-weight: 600;
+  box-shadow: 0 2px 12px rgba(12, 59, 94, 0.4);
 }
-
-/* Notification badge - rectangular */
-.notification-badge-sidebar {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.6rem;
-  height: 1.35rem;
-  padding: 0 0.35rem;
-  background: #DC2626;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  font-size: 0.65rem;
-  font-weight: 800;
-  border-radius: 0;
-  box-shadow: 0 0 10px rgba(220, 38, 38, 0.45);
-  animation: badgePulseSidebar 2s ease-in-out infinite;
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 3px;
+  background: var(--color-gold);
+  border-radius: 0 3px 3px 0;
 }
+.nav-link.active .nav-icon      { color: var(--color-gold); }
+.nav-link.active:hover           { transform: none; }
+.nav-link.active:hover .nav-icon { transform: none; }
 
-@keyframes badgePulseSidebar {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 10px rgba(220, 38, 38, 0.45);
-  }
-  50% {
-    transform: scale(1.12);
-    box-shadow: 0 0 18px rgba(220, 38, 38, 0.65);
-  }
-}
-
-/* COLLAPSED behavior */
-.sidebar.collapsed .nav-text,
-.sidebar.collapsed .user-details,
-.sidebar.collapsed .logo-text {
-  opacity: 0;
-  width: 0;
-  overflow: hidden;
-  visibility: hidden;
-}
-
+/* Collapsed center-align */
 .sidebar.collapsed .nav-link {
   justify-content: center;
   padding: 0.7rem 0;
+  transform: none !important;
 }
 
-.sidebar.collapsed .nav-icon-wrapper {
-  width: auto;
+/* ── Nav Icon ── */
+.nav-icon-wrapper {
+  width: 1.6rem;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+.nav-icon {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.75);
+  transition: color 0.18s, transform 0.2s;
+  position: relative; z-index: 1;
+}
+.nav-icon-glow {
+  position: absolute;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: rgba(244, 196, 0, 0.3);
+  opacity: 0; transform: scale(0.8);
+  pointer-events: none;
 }
 
-.sidebar.collapsed .user-avatar {
-  margin: 0 auto;
+.nav-text { color: var(--color-white); font-size: 0.875rem; flex: 1; }
+.sidebar.collapsed .nav-text { opacity: 0; width: 0; overflow: hidden; visibility: hidden; }
+
+/* ── Notification Badge ── */
+.nav-badge {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  min-width: 1.35rem; height: 1.15rem;
+  padding: 0 0.28rem;
+  background: #DC2626;
+  color: var(--color-white);
+  border-radius: 20px;
+  font-size: 0.6rem; font-weight: 800;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.45);
+  animation: badgePulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.sidebar.collapsed .nav-badge { display: none; }
+
+/* ── Tooltip (collapsed mode) ── */
+.nav-tooltip {
+  display: none;
+  position: absolute;
+  left: 72px; top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-navy);
+  border: 1px solid var(--color-gold);
+  color: var(--color-white);
+  font-size: 12px; font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 999;
+  pointer-events: none;
+  box-shadow: 2px 2px 12px rgba(12, 59, 94, 0.3);
+}
+.nav-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -5px; top: 50%;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 5px solid var(--color-gold);
+}
+.sidebar.collapsed .nav-item-wrap:hover .nav-tooltip { display: block; }
+
+/* ── Dropdown ── */
+.nav-dropdown { margin: 0; }
+
+.dropdown-trigger {
+  padding-left: 0.85rem;
+}
+
+.dropdown-trigger .nav-text {
+  text-align: left;
+}
+
+.dropdown-arrow {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.dropdown-menu {
+  list-style: none;
+  padding: 0.25rem 0 0.25rem 0.4rem;
+  margin: 3px 0 3px 0;
+  background: rgba(3, 105, 161, 0.3);
+  border-radius: 6px;
+  border-left: 3px solid rgba(244, 196, 0, 0.45);
+  overflow: hidden;
+}
+
+.dropdown-li { margin: 1px 0; }
+
+.dropdown-item {
+  padding: 0.55rem 0.75rem 0.55rem 1rem;
+  font-size: 0.845rem;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border-radius: 4px;
+}
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-white) !important;
+}
+.dropdown-item.active {
+  background: rgba(12, 59, 94, 0.75);
+  color: var(--color-white) !important;
 }
 
 .sidebar.collapsed .dropdown-arrow,
-.sidebar.collapsed .notification-badge-sidebar {
-  display: none;
+.sidebar.collapsed .dropdown-menu { display: none; }
+
+.dropdown-enter-active,
+.dropdown-leave-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.dropdown-enter-from   { opacity: 0; transform: translateY(-6px); }
+.dropdown-leave-to     { opacity: 0; transform: translateY(-4px); }
+
+/* ── Logout ── */
+.logout-container {
+  position: relative;
+  z-index: 1;
+  padding: 0.5rem 0.6rem 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
 }
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.85rem;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.875rem; font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  white-space: nowrap; overflow: hidden;
+}
+.logout-btn:hover {
+  background: rgba(3, 105, 161, 0.35);
+  border-color: var(--color-primary-light);
+  color: var(--color-white);
+}
+.logout-btn .nav-icon       { color: rgba(255, 255, 255, 0.6); transition: color 0.18s; }
+.logout-btn:hover .nav-icon { color: var(--color-gold); }
+
+.sidebar.collapsed .logout-btn {
+  justify-content: center;
+  padding: 0.7rem 0;
+}
+.sidebar.collapsed .logout-btn .nav-text { opacity: 0; width: 0; overflow: hidden; visibility: hidden; }
 </style>

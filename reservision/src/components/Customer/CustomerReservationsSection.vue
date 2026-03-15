@@ -1,301 +1,337 @@
 <template>
-  <section>
-    <!-- Header -->
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-      <div class="text-sm text-gray-500">
-        Showing <span class="font-semibold text-gray-800">{{ filteredBookings.length }}</span>
-        <span v-if="filteredBookings.length !== bookings.length" class="text-blue-600"> of {{ bookings.length }}</span>
+  <section class="reservations-section">
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- TOP BAR — count + filter toggle            -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="top-bar">
+      <p class="results-count">
+        Showing
+        <strong>{{ filteredBookings.length }}</strong>
+        <span v-if="filteredBookings.length !== bookings.length" class="of-total">
+          of {{ bookings.length }}
+        </span>
         reservation{{ bookings.length !== 1 ? 's' : '' }}
-      </div>
+      </p>
+
       <button
+        class="filter-toggle-btn"
+        :class="{ active: showFilters || hasActiveFilters }"
         @click="showFilters = !showFilters"
-        :class="['flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition border', hasActiveFilters ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400']"
       >
-        <i class="fas fa-filter text-xs"></i>
+        <i class="fas fa-sliders-h"></i>
         Filters
-        <span v-if="hasActiveFilters" class="bg-white text-blue-600 rounded-full w-4 h-4 text-xs flex items-center justify-center font-bold">{{ activeFilterCount }}</span>
+        <span v-if="hasActiveFilters" class="filter-badge">{{ activeFilterCount }}</span>
       </button>
     </div>
 
-    <!-- Filter Panel -->
+    <!-- ══════════════════════════════════════════ -->
+    <!-- FILTER PANEL                               -->
+    <!-- ══════════════════════════════════════════ -->
     <transition name="filter-slide">
-      <div v-show="showFilters" class="bg-white border border-blue-100 rounded-2xl shadow-sm p-4 mb-5 space-y-4">
+      <div v-show="showFilters" class="filter-panel">
+
         <!-- Row 1: Search + Status -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <!-- Search -->
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fas fa-search mr-1 text-blue-500"></i>Search</label>
-            <input
-              v-model="filters.search"
-              type="text"
-              placeholder="Reference, item name…"
-              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition"
-            />
+        <div class="filter-grid-2">
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-search"></i> Search</label>
+            <div class="input-wrap">
+              <i class="fas fa-search fi"></i>
+              <input v-model="filters.search" type="text" class="filter-input" placeholder="Reference, item name…" />
+              <button v-if="filters.search" class="input-clear" @click="filters.search = ''"><i class="fas fa-times"></i></button>
+            </div>
           </div>
-          <!-- Status -->
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fas fa-tag mr-1 text-blue-500"></i>Booking Status</label>
-            <select v-model="filters.status" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition bg-white">
-              <option value="">All Statuses</option>
-              <option v-for="s in uniqueStatuses" :key="s" :value="s">{{ s }}</option>
-            </select>
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-tag"></i> Booking Status</label>
+            <div class="input-wrap">
+              <i class="fas fa-tag fi"></i>
+              <select v-model="filters.status" class="filter-input filter-select">
+                <option value="">All Statuses</option>
+                <option v-for="s in uniqueStatuses" :key="s" :value="s">{{ s }}</option>
+              </select>
+            </div>
           </div>
         </div>
 
         <!-- Row 2: Date Range -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fas fa-calendar-alt mr-1 text-blue-500"></i>Check-in From</label>
-            <input type="date" v-model="filters.dateFrom" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition" />
+        <div class="filter-grid-2">
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-calendar-alt"></i> Check-in From</label>
+            <div class="input-wrap">
+              <i class="fas fa-calendar-alt fi"></i>
+              <input type="date" v-model="filters.dateFrom" class="filter-input date-input" />
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fas fa-calendar-check mr-1 text-blue-500"></i>Check-in To</label>
-            <input type="date" v-model="filters.dateTo" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition" />
-          </div>
-        </div>
-
-        <!-- Row 3: Amount Range + Sort -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fas fa-peso-sign mr-1 text-blue-500"></i>Min Amount (₱)</label>
-            <input type="number" v-model.number="filters.amountMin" placeholder="0" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fas fa-peso-sign mr-1 text-blue-500"></i>Max Amount (₱)</label>
-            <input type="number" v-model.number="filters.amountMax" placeholder="Any" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fas fa-sort mr-1 text-blue-500"></i>Sort By</label>
-            <select v-model="filters.sortBy" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-400 transition bg-white">
-              <option value="date_desc">Newest First</option>
-              <option value="date_asc">Oldest First</option>
-              <option value="amount_desc">Amount: High → Low</option>
-              <option value="amount_asc">Amount: Low → High</option>
-            </select>
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-calendar-check"></i> Check-in To</label>
+            <div class="input-wrap">
+              <i class="fas fa-calendar-check fi"></i>
+              <input type="date" v-model="filters.dateTo" class="filter-input date-input" />
+            </div>
           </div>
         </div>
 
-        <!-- Active filter tags + Clear -->
-        <div v-if="hasActiveFilters" class="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-100">
-          <span class="text-xs text-gray-500 font-medium">Active:</span>
-          <span v-if="filters.search" class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-200">
-            "{{ filters.search }}" <button @click="filters.search = ''" class="hover:text-blue-900"><i class="fas fa-times"></i></button>
+        <!-- Row 3: Amount + Sort -->
+        <div class="filter-grid-3">
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-peso-sign"></i> Min Amount</label>
+            <div class="input-wrap">
+              <i class="fas fa-peso-sign fi"></i>
+              <input type="number" v-model.number="filters.amountMin" placeholder="0" min="0" class="filter-input" />
+            </div>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-peso-sign"></i> Max Amount</label>
+            <div class="input-wrap">
+              <i class="fas fa-peso-sign fi"></i>
+              <input type="number" v-model.number="filters.amountMax" placeholder="Any" min="0" class="filter-input" />
+            </div>
+          </div>
+          <div class="filter-group">
+            <label class="filter-label"><i class="fas fa-sort"></i> Sort By</label>
+            <div class="input-wrap">
+              <i class="fas fa-sort fi"></i>
+              <select v-model="filters.sortBy" class="filter-input filter-select">
+                <option value="date_desc">Newest First</option>
+                <option value="date_asc">Oldest First</option>
+                <option value="amount_desc">Amount: High → Low</option>
+                <option value="amount_asc">Amount: Low → High</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active filter tags -->
+        <div v-if="hasActiveFilters" class="active-tags">
+          <span class="tags-label">Active:</span>
+          <span v-if="filters.search" class="filter-tag">
+            "{{ filters.search }}"
+            <button @click="filters.search = ''"><i class="fas fa-times"></i></button>
           </span>
-          <span v-if="filters.status" class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-200">
-            {{ filters.status }} <button @click="filters.status = ''" class="hover:text-blue-900"><i class="fas fa-times"></i></button>
+          <span v-if="filters.status" class="filter-tag">
+            {{ filters.status }}
+            <button @click="filters.status = ''"><i class="fas fa-times"></i></button>
           </span>
-          <span v-if="filters.dateFrom" class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-200">
-            From {{ filters.dateFrom }} <button @click="filters.dateFrom = ''" class="hover:text-blue-900"><i class="fas fa-times"></i></button>
+          <span v-if="filters.dateFrom" class="filter-tag">
+            From {{ filters.dateFrom }}
+            <button @click="filters.dateFrom = ''"><i class="fas fa-times"></i></button>
           </span>
-          <span v-if="filters.dateTo" class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-200">
-            To {{ filters.dateTo }} <button @click="filters.dateTo = ''" class="hover:text-blue-900"><i class="fas fa-times"></i></button>
+          <span v-if="filters.dateTo" class="filter-tag">
+            To {{ filters.dateTo }}
+            <button @click="filters.dateTo = ''"><i class="fas fa-times"></i></button>
           </span>
-          <span v-if="filters.amountMin" class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-200">
-            ≥ ₱{{ filters.amountMin.toLocaleString() }} <button @click="filters.amountMin = null" class="hover:text-blue-900"><i class="fas fa-times"></i></button>
+          <span v-if="filters.amountMin" class="filter-tag">
+            ≥ ₱{{ filters.amountMin.toLocaleString() }}
+            <button @click="filters.amountMin = null"><i class="fas fa-times"></i></button>
           </span>
-          <span v-if="filters.amountMax" class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-200">
-            ≤ ₱{{ filters.amountMax.toLocaleString() }} <button @click="filters.amountMax = null" class="hover:text-blue-900"><i class="fas fa-times"></i></button>
+          <span v-if="filters.amountMax" class="filter-tag">
+            ≤ ₱{{ filters.amountMax.toLocaleString() }}
+            <button @click="filters.amountMax = null"><i class="fas fa-times"></i></button>
           </span>
-          <button @click="clearFilters" class="ml-auto text-xs text-red-500 hover:text-red-700 font-medium transition">
-            <i class="fas fa-times-circle mr-1"></i>Clear All
+          <button class="clear-all-btn" @click="clearFilters">
+            <i class="fas fa-times-circle"></i> Clear All
           </button>
         </div>
+
       </div>
     </transition>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="bg-white shadow-sm rounded-2xl border border-blue-100 p-8 text-center">
-      <div class="inline-block">
-        <div class="animate-spin h-8 w-8 border-4 border-blue-300 border-t-blue-600 rounded-full"></div>
+    <!-- ══════════════════════════════════════════ -->
+    <!-- STATES                                     -->
+    <!-- ══════════════════════════════════════════ -->
+
+    <!-- Loading -->
+    <div v-if="loading" class="state-container">
+      <div class="resort-spinner">
+        <div v-for="n in 4" :key="n" class="spinner-wave" :style="`animation-delay:${(n-1)*0.15}s`"></div>
       </div>
-      <p class="text-gray-500 mt-4">Loading your reservations...</p>
+      <p class="state-text">Loading your reservations…</p>
     </div>
 
-    <!-- Error State -->
-    <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
-      <p class="text-red-700 text-sm"><i class="fas fa-exclamation-circle mr-2"></i>{{ error }}</p>
+    <!-- Error -->
+    <div v-else-if="error" class="state-container">
+      <div class="state-icon error-icon"><i class="fas fa-exclamation-circle"></i></div>
+      <p class="state-title">Something went wrong</p>
+      <p class="state-text">{{ error }}</p>
     </div>
 
-    <!-- Bookings List -->
-    <div v-else class="space-y-4">
-      <!-- No Bookings -->
-      <div v-if="bookings.length === 0" class="bg-white shadow-sm rounded-2xl border border-blue-100 p-8 text-center">
-        <i class="fas fa-inbox text-4xl text-gray-300 mb-3"></i>
-        <p class="text-gray-500">No reservations found. Start your adventure!</p>
-      </div>
+    <!-- No bookings -->
+    <div v-else-if="bookings.length === 0" class="state-container">
+      <div class="state-icon"><i class="fas fa-suitcase-rolling"></i></div>
+      <p class="state-title">No reservations yet</p>
+      <p class="state-text">Start your adventure at Eduardo's Resort!</p>
+    </div>
 
-      <!-- No Results after filtering -->
-      <div v-else-if="filteredBookings.length === 0" class="bg-white shadow-sm rounded-2xl border border-blue-100 p-8 text-center">
-        <i class="fas fa-filter text-4xl text-gray-300 mb-3"></i>
-        <p class="text-gray-500 font-medium">No reservations match your filters.</p>
-        <button @click="clearFilters" class="mt-3 text-sm text-blue-600 hover:underline font-medium">
-          <i class="fas fa-times-circle mr-1"></i>Clear Filters
-        </button>
-      </div>
+    <!-- No filter results -->
+    <div v-else-if="filteredBookings.length === 0" class="state-container">
+      <div class="state-icon"><i class="fas fa-filter"></i></div>
+      <p class="state-title">No matching reservations</p>
+      <p class="state-text">Try adjusting or clearing your filters.</p>
+      <button class="ghost-btn" @click="clearFilters">
+        <i class="fas fa-times-circle"></i> Clear Filters
+      </button>
+    </div>
 
-      <!-- Booking Cards -->
-      <div v-for="booking in filteredBookings" :key="booking.booking_id" class="bg-white shadow-sm rounded-2xl border border-blue-100 overflow-hidden hover:shadow-md transition">
-        
-        <!-- Booking Header -->
-        <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 border-b border-blue-200">
-          <div class="flex items-center justify-between mb-2">
-            <div>
-              <p class="text-xs text-blue-600 font-semibold uppercase">Booking Reference</p>
-              <p class="text-lg font-bold text-gray-800">{{ booking.booking_reference }}</p>
+    <!-- ══════════════════════════════════════════ -->
+    <!-- BOOKING CARDS                              -->
+    <!-- ══════════════════════════════════════════ -->
+    <div v-else class="bookings-list">
+      <div
+        v-for="(booking, idx) in filteredBookings"
+        :key="booking.booking_id"
+        class="booking-card"
+        :style="`animation-delay:${idx * 0.06}s`"
+      >
+
+        <!-- Card Header -->
+        <div class="booking-card-header">
+          <div class="header-left">
+            <div class="ref-icon-wrap"><i class="fas fa-file-invoice"></i></div>
+            <div class="ref-info">
+              <p class="ref-label">Booking Reference</p>
+              <p class="ref-value">{{ booking.booking_reference }}</p>
             </div>
-            <span 
-              :class="['px-3 py-1 rounded-full text-xs font-semibold', getStatusClass(booking.booking_status)]"
-            >
+          </div>
+          <div class="header-right">
+            <span class="status-chip" :class="getStatusChipClass(booking.booking_status)">
+              <span class="status-dot"></span>
               {{ booking.booking_status }}
             </span>
           </div>
         </div>
 
-        <!-- Booking Details Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-gray-200">
-          <!-- Left Column: Dates and Items -->
-          <div class="space-y-4">
-            <!-- Check-in/Check-out -->
-            <div v-if="booking.check_in_date" class="space-y-2">
-              <p class="text-xs font-semibold text-gray-600 uppercase">📅 Dates</p>
-              <div class="flex items-center gap-2">
-                <div class="flex-1">
-                  <p class="text-xs text-gray-600">Check-in</p>
-                  <p class="font-medium text-gray-800">{{ formatDate(booking.check_in_date) }}</p>
+        <!-- Card Body — 2-column: details + QR -->
+        <div class="booking-card-body">
+
+          <!-- LEFT: Dates + Items + Total -->
+          <div class="detail-col">
+
+            <!-- Dates -->
+            <div v-if="booking.check_in_date" class="detail-block">
+              <p class="detail-block-label"><i class="fas fa-calendar-alt"></i> Dates</p>
+              <div class="dates-strip">
+                <div class="date-item">
+                  <p class="date-sub">Check-in</p>
+                  <p class="date-val">{{ formatDate(booking.check_in_date) }}</p>
                 </div>
-                <i class="fas fa-arrow-right text-gray-400"></i>
-                <div class="flex-1">
-                  <p class="text-xs text-gray-600">Check-out</p>
-                  <p class="font-medium text-gray-800">{{ formatDate(booking.check_out_date) }}</p>
+                <div class="dates-arrow"><i class="fas fa-arrow-right"></i></div>
+                <div class="date-item">
+                  <p class="date-sub">Check-out</p>
+                  <p class="date-val">{{ formatDate(booking.check_out_date) }}</p>
                 </div>
               </div>
             </div>
 
             <!-- Items -->
-            <div class="space-y-2">
-              <p class="text-xs font-semibold text-gray-600 uppercase">🏠 Items Booked</p>
-              <div class="space-y-1">
-                <div v-for="(item, idx) in booking.items" :key="idx" class="text-sm text-gray-700 flex justify-between">
-                  <div>
-                    <span class="font-medium">{{ item.item_name }}</span>
-                    <span class="text-gray-500 text-xs"> (×{{ item.quantity }})</span>
-                  </div>
-                  <span class="text-gray-600 font-medium">₱{{ item.total_price?.toLocaleString() }}</span>
+            <div class="detail-block">
+              <p class="detail-block-label"><i class="fas fa-concierge-bell"></i> Items Booked</p>
+              <div class="items-list">
+                <div v-for="(item, i) in booking.items" :key="i" class="item-row">
+                  <div class="item-avatar">{{ item.item_name?.charAt(0) || '?' }}</div>
+                  <span class="item-name">{{ item.item_name }}</span>
+                  <span class="item-qty">×{{ item.quantity }}</span>
+                  <span class="item-price">₱{{ item.total_price?.toLocaleString() }}</span>
                 </div>
               </div>
             </div>
 
             <!-- Total -->
-            <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
-              <p class="text-sm text-blue-700 font-semibold">
-                Total: <span class="text-lg">₱{{ booking.total.toLocaleString() }}</span>
-              </p>
+            <div class="total-pill">
+              <span class="total-label">Total</span>
+              <span class="total-val">₱{{ booking.total.toLocaleString() }}</span>
             </div>
+
           </div>
 
-          <!-- Right Column: QR Code -->
-          <div class="flex flex-col items-center justify-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p class="text-xs font-semibold text-blue-700 mb-3">📱 QR Code</p>
-            
-            <!-- QR Code Display -->
-            <div v-if="getQRCode(booking.booking_reference)" class="mb-3">
-              <img 
+          <!-- RIGHT: QR Code -->
+          <div class="qr-col">
+            <p class="qr-label"><i class="fas fa-qrcode"></i> QR Code</p>
+
+            <div class="qr-frame" v-if="getQRCode(booking.booking_reference)">
+              <img
                 :src="getQRCode(booking.booking_reference)"
-                :alt="`QR Code for ${booking.booking_reference}`"
-                class="w-32 h-32 border-2 border-white rounded-lg shadow-sm"
+                :alt="`QR ${booking.booking_reference}`"
+                class="qr-image"
                 @error="onQRError($event, booking.booking_reference)"
-              >
+              />
             </div>
-            <p class="text-xs text-blue-600 text-center mb-3">Show at check-in</p>
-            
-            <!-- QR Actions -->
-            <div class="flex gap-2 w-full">
-              <button 
-                class="flex-1 text-xs px-2 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-                @click="downloadQRCode(booking.booking_reference)"
-              >
-                <i class="fas fa-download mr-1"></i>Save
+            <div v-else class="qr-placeholder">
+              <i class="fas fa-qrcode"></i>
+            </div>
+
+            <p class="qr-hint">Show at check-in</p>
+
+            <div class="qr-actions">
+              <button class="qr-btn primary-qr" @click="downloadQRCode(booking.booking_reference)">
+                <i class="fas fa-download"></i> Save
               </button>
-              <button 
-                class="flex-1 text-xs px-2 py-1.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition"
-                @click="viewQRCode(booking.booking_reference)"
-              >
-                <i class="fas fa-eye mr-1"></i>View
+              <button class="qr-btn ghost-qr" @click="viewQRCode(booking.booking_reference)">
+                <i class="fas fa-eye"></i> View
               </button>
             </div>
           </div>
+
         </div>
 
-        <!-- Payment Info -->
-        <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-sm">
-          <div class="text-gray-600">
-            <span v-if="booking.payment_status" :class="getPaymentStatusClass(booking.payment_status)">
-              <i :class="getPaymentIcon(booking.payment_status)" class="mr-1"></i>
-              {{ booking.payment_status }}
-            </span>
+        <!-- Card Footer — payment info -->
+        <div class="booking-card-footer">
+          <span v-if="booking.payment_status" class="payment-status" :class="getPaymentStatusClass(booking.payment_status)">
+            <i :class="getPaymentIcon(booking.payment_status)"></i>
+            {{ booking.payment_status }}
+          </span>
+          <span class="booked-on">Booked on {{ formatDate(booking.created_at) }}</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- QR VIEWER MODAL                            -->
+    <!-- ══════════════════════════════════════════ -->
+    <transition name="modal-fade">
+      <div v-if="showQRViewer" class="modal-overlay" @click.self="showQRViewer = false">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3 class="modal-title">Booking QR Code</h3>
+            <button class="modal-close" @click="showQRViewer = false">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
-          <span class="text-xs text-gray-500">Booked on {{ formatDate(booking.created_at) }}</span>
+
+          <div class="modal-qr-wrap">
+            <img :src="currentQRCode" :alt="currentQRReference" class="modal-qr-img" />
+          </div>
+
+          <div class="modal-ref">
+            <p class="modal-ref-label">Reference</p>
+            <p class="modal-ref-val">{{ currentQRReference }}</p>
+          </div>
+
+          <div class="modal-actions">
+            <button class="modal-primary-btn" @click="downloadQRCode(currentQRReference)">
+              <i class="fas fa-download"></i> Download
+            </button>
+            <button class="modal-ghost-btn" @click="showQRViewer = false">Close</button>
+          </div>
         </div>
       </div>
-    </div>
+    </transition>
 
-    <!-- QR Viewer Modal -->
-    <div v-if="showQRViewer" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-lg">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-bold text-gray-800">Booking QR Code</h3>
-          <button @click="showQRViewer = false" class="text-gray-500 hover:text-gray-700">
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-        
-        <div class="bg-blue-50 p-6 rounded-lg flex justify-center mb-4">
-          <img 
-            :src="currentQRCode"
-            :alt="currentQRReference"
-            class="w-48 h-48 border-2 border-white rounded-lg"
-          >
-        </div>
-
-        <div class="bg-gray-100 rounded-lg p-3 mb-4 text-center">
-          <p class="text-xs text-gray-600">Reference</p>
-          <p class="font-bold text-gray-800">{{ currentQRReference }}</p>
-        </div>
-
-        <div class="flex gap-2">
-          <button 
-            @click="downloadQRCode(currentQRReference)"
-            class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm"
-          >
-            <i class="fas fa-download mr-2"></i>Download
-          </button>
-          <button 
-            @click="showQRViewer = false"
-            class="flex-1 px-4 py-2.5 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium text-sm"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
   </section>
 </template>
 
 <script>
-import QRCode from 'qrcode';
-import { useAuthStore } from '../../stores/auth';
+import QRCode from 'qrcode'
+import { useAuthStore } from '../../stores/auth'
 
 export default {
   name: 'CustomerReservationsSection',
   setup() {
-    const auth = useAuthStore();
-    return { auth };
+    const auth = useAuthStore()
+    return { auth }
   },
   props: {
-    customerId: {
-      type: [String, Number],
-      default: null
-    }
+    customerId: { type: [String, Number], default: null }
   },
   data() {
     return {
@@ -308,314 +344,652 @@ export default {
       qrCodeCache: {},
       showFilters: false,
       filters: {
-        search: '',
-        status: '',
-        dateFrom: '',
-        dateTo: '',
-        amountMin: null,
-        amountMax: null,
+        search: '', status: '',
+        dateFrom: '', dateTo: '',
+        amountMin: null, amountMax: null,
         sortBy: 'date_desc'
       }
-    };
+    }
   },
   computed: {
     uniqueStatuses() {
-      const statuses = this.bookings.map(b => b.booking_status).filter(Boolean);
-      return [...new Set(statuses)].sort();
+      return [...new Set(this.bookings.map(b => b.booking_status).filter(Boolean))].sort()
     },
     hasActiveFilters() {
-      const f = this.filters;
-      return !!(f.search || f.status || f.dateFrom || f.dateTo || f.amountMin || f.amountMax);
+      const f = this.filters
+      return !!(f.search || f.status || f.dateFrom || f.dateTo || f.amountMin || f.amountMax)
     },
     activeFilterCount() {
-      const f = this.filters;
-      return [f.search, f.status, f.dateFrom, f.dateTo, f.amountMin, f.amountMax].filter(Boolean).length;
+      const f = this.filters
+      return [f.search, f.status, f.dateFrom, f.dateTo, f.amountMin, f.amountMax].filter(Boolean).length
     },
     filteredBookings() {
-      const f = this.filters;
-      let result = [...this.bookings];
+      const f = this.filters
+      let result = [...this.bookings]
 
-      // Search: booking reference OR any item name
       if (f.search) {
-        const q = f.search.toLowerCase();
+        const q = f.search.toLowerCase()
         result = result.filter(b =>
           (b.booking_reference || '').toLowerCase().includes(q) ||
-          (b.items || []).some(item => (item.item_name || '').toLowerCase().includes(q))
-        );
+          (b.items || []).some(i => (i.item_name || '').toLowerCase().includes(q))
+        )
       }
-
-      // Booking status
-      if (f.status) {
-        result = result.filter(b => b.booking_status === f.status);
-      }
-
-      // Date from (check-in >= dateFrom)
+      if (f.status) result = result.filter(b => b.booking_status === f.status)
       if (f.dateFrom) {
-        const from = new Date(f.dateFrom);
-        result = result.filter(b => b.check_in_date && new Date(b.check_in_date) >= from);
+        const from = new Date(f.dateFrom)
+        result = result.filter(b => b.check_in_date && new Date(b.check_in_date) >= from)
       }
-
-      // Date to (check-in <= dateTo)
       if (f.dateTo) {
-        const to = new Date(f.dateTo);
-        to.setHours(23, 59, 59, 999);
-        result = result.filter(b => b.check_in_date && new Date(b.check_in_date) <= to);
+        const to = new Date(f.dateTo); to.setHours(23,59,59,999)
+        result = result.filter(b => b.check_in_date && new Date(b.check_in_date) <= to)
       }
+      if (f.amountMin !== null && f.amountMin !== '') result = result.filter(b => (b.total || 0) >= f.amountMin)
+      if (f.amountMax !== null && f.amountMax !== '') result = result.filter(b => (b.total || 0) <= f.amountMax)
 
-      // Amount min
-      if (f.amountMin !== null && f.amountMin !== '') {
-        result = result.filter(b => (b.total || 0) >= f.amountMin);
-      }
-
-      // Amount max
-      if (f.amountMax !== null && f.amountMax !== '') {
-        result = result.filter(b => (b.total || 0) <= f.amountMax);
-      }
-
-      // Sort
       result.sort((a, b) => {
         switch (f.sortBy) {
-          case 'date_asc':    return new Date(a.created_at) - new Date(b.created_at);
-          case 'amount_desc': return (b.total || 0) - (a.total || 0);
-          case 'amount_asc':  return (a.total || 0) - (b.total || 0);
-          default:            return new Date(b.created_at) - new Date(a.created_at); // date_desc
+          case 'date_asc':    return new Date(a.created_at) - new Date(b.created_at)
+          case 'amount_desc': return (b.total || 0) - (a.total || 0)
+          case 'amount_asc':  return (a.total || 0) - (b.total || 0)
+          default:            return new Date(b.created_at) - new Date(a.created_at)
         }
-      });
-
-      return result;
+      })
+      return result
     }
   },
   methods: {
     clearFilters() {
-      this.filters = {
-        search: '',
-        status: '',
-        dateFrom: '',
-        dateTo: '',
-        amountMin: null,
-        amountMax: null,
-        sortBy: 'date_desc'
-      };
+      this.filters = { search: '', status: '', dateFrom: '', dateTo: '', amountMin: null, amountMax: null, sortBy: 'date_desc' }
     },
+
     async fetchBookingHistory() {
       try {
-        this.loading = true;
-        this.error = null;
-
-        // Priority 1: use Pinia auth store (set at login, always in sync)
-        // Priority 2: fall back to localStorage 'user' key (set by LoginForm.vue)
-        const userId = this.auth?.user?.id || null;
-        let email = this.auth?.user?.email || null;
-
+        this.loading = true; this.error = null
+        const userId = this.auth?.user?.id || null
+        let email = this.auth?.user?.email || null
         if (!email) {
-          try {
-            const stored = JSON.parse(localStorage.getItem('user') || '{}');
-            email = stored.email || null;
-          } catch (e) { /* ignore parse errors */ }
+          try { email = JSON.parse(localStorage.getItem('user') || '{}').email || null } catch {}
         }
+        let url
+        if (userId)      url = `http://localhost:8000/api/bookings/user/${userId}/history`
+        else if (email)  url = `http://localhost:8000/api/bookings/email/${encodeURIComponent(email)}/history`
+        else { this.error = 'Please log in to view your reservations.'; this.loading = false; return }
 
-        let url;
-        if (userId) {
-          // Best path: query directly by user_id — no email ambiguity
-          url = `http://localhost:8000/api/bookings/user/${userId}/history`;
-        } else if (email) {
-          // Fallback: query by email
-          url = `http://localhost:8000/api/bookings/email/${encodeURIComponent(email)}/history`;
-        } else {
-          this.error = 'Please log in to view your reservations.';
-          this.loading = false;
-          return;
-        }
-
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to load bookings');
-        }
-
-        this.bookings = data.data.bookings || [];
-        await this.preloadQRCodes(this.bookings);
-
-      } catch (error) {
-        console.error('Error fetching bookings:', error);
-        this.error = error.message || 'Failed to load your reservations. Please try again.';
+        const res  = await fetch(url)
+        const data = await res.json()
+        if (!data.success) throw new Error(data.error || 'Failed to load bookings')
+        this.bookings = data.data.bookings || []
+        await this.preloadQRCodes(this.bookings)
+      } catch (err) {
+        this.error = err.message || 'Failed to load your reservations. Please try again.'
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
-    async generateQRCode(bookingReference) {
+    async generateQRCode(ref) {
       try {
-        // Generate QR code on frontend from booking reference
-        return await QRCode.toDataURL(bookingReference, {
-          errorCorrectionLevel: 'H',
-          type: 'image/png',
-          width: 200,
-          margin: 1,
-          color: {
-            dark: '#2B6CB0',
-            light: '#FFFFFF'
-          }
-        });
-      } catch (error) {
-        console.warn('Failed to generate QR code for', bookingReference, error);
-        return null;
-      }
+        return await QRCode.toDataURL(ref, {
+          errorCorrectionLevel: 'H', type: 'image/png', width: 200, margin: 1,
+          color: { dark: '#0C3B5E', light: '#FFFFFF' }
+        })
+      } catch { return null }
     },
 
     async preloadQRCodes(bookings = []) {
-      const tasks = bookings
-        .map(b => b?.booking_reference)
-        .filter(Boolean)
-        .filter(ref => !this.qrCodeCache[ref])
-        .map(async (ref) => {
-          const qr = await this.generateQRCode(ref);
-          if (qr) {
-            this.qrCodeCache[ref] = qr;
-          }
-        });
-
-      if (tasks.length > 0) {
-        await Promise.all(tasks);
-      }
+      await Promise.all(
+        bookings.map(b => b?.booking_reference).filter(Boolean).filter(r => !this.qrCodeCache[r])
+          .map(async ref => { const qr = await this.generateQRCode(ref); if (qr) this.qrCodeCache[ref] = qr })
+      )
     },
 
-    getQRCode(bookingReference) {
-      return this.qrCodeCache[bookingReference] || null;
+    getQRCode(ref) { return this.qrCodeCache[ref] || null },
+
+    onQRError(event, ref) { if (ref) delete this.qrCodeCache[ref]; event.target.style.display = 'none' },
+
+    async viewQRCode(ref) {
+      this.currentQRReference = ref
+      let qr = this.getQRCode(ref)
+      if (!qr) { qr = await this.generateQRCode(ref); if (qr) this.qrCodeCache[ref] = qr }
+      this.currentQRCode = qr
+      this.showQRViewer = true
     },
 
-    onQRError(event, bookingReference) {
-      if (bookingReference && this.qrCodeCache[bookingReference]) {
-        delete this.qrCodeCache[bookingReference];
-      }
-      event.target.style.display = 'none';
+    async downloadQRCode(ref) {
+      let qr = this.getQRCode(ref)
+      if (!qr) { qr = await this.generateQRCode(ref); if (qr) this.qrCodeCache[ref] = qr }
+      if (!qr) { alert('QR code not available'); return }
+      const a = document.createElement('a'); a.href = qr; a.download = `${ref}-qr-code.png`; a.click()
     },
 
-    async viewQRCode(bookingReference) {
-      this.currentQRReference = bookingReference;
-      let qr = this.getQRCode(bookingReference);
-      if (!qr) {
-        qr = await this.generateQRCode(bookingReference);
-        if (qr) {
-          this.qrCodeCache[bookingReference] = qr;
-        }
-      }
-      this.currentQRCode = qr;
-      this.showQRViewer = true;
+    formatDate(d) {
+      if (!d) return 'N/A'
+      return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     },
 
-    async downloadQRCode(bookingReference) {
-      try {
-        let qrCodeData = this.getQRCode(bookingReference);
-        if (!qrCodeData) {
-          qrCodeData = await this.generateQRCode(bookingReference);
-          if (qrCodeData) {
-            this.qrCodeCache[bookingReference] = qrCodeData;
-          }
-        }
-        
-        if (!qrCodeData) {
-          alert('QR code not available');
-          return;
-        }
-
-        // Create download link
-        const link = document.createElement('a');
-        link.href = qrCodeData;
-        link.download = `${bookingReference}-qr-code.png`;
-        link.click();
-      } catch (error) {
-        console.error('Error downloading QR code:', error);
-        alert('Failed to download QR code');
-      }
-    },
-
-    formatDate(dateString) {
-      if (!dateString) return 'N/A';
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-    },
-
-    getStatusClass(status) {
-      const classes = {
-        'Pending': 'bg-yellow-100 text-yellow-800',
-        'Confirmed': 'bg-green-100 text-green-800',
-        'Completed': 'bg-blue-100 text-blue-800',
-        'Cancelled': 'bg-red-100 text-red-800'
-      };
-      return classes[status] || 'bg-gray-100 text-gray-800';
+    getStatusChipClass(status) {
+      return {
+        'Pending':   'chip-pending',
+        'Confirmed': 'chip-confirmed',
+        'Completed': 'chip-completed',
+        'Cancelled': 'chip-cancelled'
+      }[status] || 'chip-default'
     },
 
     getPaymentIcon(status) {
-      const icons = {
-        'paid': 'fas fa-check-circle text-green-600',
-        'pending': 'fas fa-clock text-yellow-600',
-        'failed': 'fas fa-times-circle text-red-600'
-      };
-      return icons[status] || 'fas fa-question-circle text-gray-600';
+      return { paid: 'fas fa-check-circle', pending: 'fas fa-clock', failed: 'fas fa-times-circle' }[status] || 'fas fa-question-circle'
     },
 
     getPaymentStatusClass(status) {
-      const classes = {
-        'paid': 'text-green-700 font-semibold',
-        'pending': 'text-yellow-700 font-semibold',
-        'failed': 'text-red-700 font-semibold'
-      };
-      return classes[status] || 'text-gray-700';
+      return { paid: 'pay-paid', pending: 'pay-pending', failed: 'pay-failed' }[status] || 'pay-default'
     }
   },
 
   mounted() {
-    this.fetchBookingHistory();
-    // Auto-poll every 60 seconds while tab is visible.
-    if (this._pollInterval) {
-      clearInterval(this._pollInterval);
-    }
-    this._pollInterval = setInterval(() => {
-      if (!document.hidden) {
-        this.fetchBookingHistory();
-      }
-    }, 60000);
+    this.fetchBookingHistory()
+    this._pollInterval = setInterval(() => { if (!document.hidden) this.fetchBookingHistory() }, 60000)
   },
-  beforeUnmount() {
-    if (this._pollInterval) {
-      clearInterval(this._pollInterval);
-      this._pollInterval = null;
-    }
-  }
-};
+  beforeUnmount() { clearInterval(this._pollInterval); this._pollInterval = null }
+}
 </script>
 
 <style scoped>
-.animate-spin {
-  animation: spin 1s linear infinite;
+/* ── Design Tokens ──────────────────────────────────────────── */
+:root {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-gray-bg:       #f9fafb;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.reservations-section {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #1f2937;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
+/* ── Top Bar ────────────────────────────────────────────────── */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.results-count { font-size: 0.83rem; color: #6b7280; }
+.results-count strong { color: #0C3B5E; font-weight: 800; }
+.of-total { color: #0369a1; font-weight: 600; }
+
+.filter-toggle-btn {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  padding: 0.48rem 1rem;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 50px;
+  font-family: inherit; font-size: 0.8rem; font-weight: 700;
+  color: #6b7280; cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-toggle-btn:hover { border-color: #0369a1; color: #0369a1; background: #eff6ff; }
+
+.filter-toggle-btn.active {
+  background: #0369a1; border-color: #0369a1; color: #fff;
+}
+
+.filter-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  background: #F4C400; color: #0C3B5E;
+  border-radius: 50%; font-size: 0.65rem; font-weight: 800;
+}
+
+/* ── Filter Panel ───────────────────────────────────────────── */
+.filter-panel {
+  background: #fff;
+  border: 1px solid #dbeafe;
+  border-top: 2px solid #F4C400;
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: 0 2px 8px rgba(3,105,161,0.06);
+}
+
+.filter-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.filter-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+
+.filter-group { display: flex; flex-direction: column; gap: 0.32rem; }
+
+.filter-label {
+  font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: #0C3B5E;
+  display: flex; align-items: center; gap: 0.3rem;
+}
+
+.input-wrap { position: relative; display: flex; align-items: center; }
+
+.fi {
+  position: absolute; left: 0.72rem;
+  color: #0369a1; font-size: 0.7rem; pointer-events: none;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 0.52rem 0.8rem 0.52rem 2.1rem;
+  border: 1.5px solid #dbeafe;
+  border-radius: 8px;
+  font-family: inherit; font-size: 0.83rem;
+  color: #1f2937; background: #f0f7ff;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+
+.filter-input:focus {
+  border-color: #0369a1; background: #fff;
+  box-shadow: 0 0 0 3px rgba(3,105,161,0.1);
+}
+
+.filter-select { appearance: none; cursor: pointer; }
+.date-input    { cursor: pointer; }
+
+.input-clear {
+  position: absolute; right: 0.6rem;
+  background: none; border: none;
+  color: #9ca3af; font-size: 0.7rem; cursor: pointer;
+  transition: color 0.15s; padding: 2px;
+}
+.input-clear:hover { color: #0369a1; }
+
+/* Active tags */
+.active-tags {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+  padding-top: 0.65rem; border-top: 1px solid #dbeafe;
+}
+
+.tags-label { font-size: 0.72rem; font-weight: 700; color: #6b7280; }
+
+.filter-tag {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: #eff6ff; color: #0369a1;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px; padding: 0.18rem 0.6rem;
+  font-size: 0.72rem; font-weight: 600;
+}
+
+.filter-tag button {
+  background: none; border: none; color: #93c5fd;
+  font-size: 0.6rem; cursor: pointer; padding: 0;
+  transition: color 0.15s;
+}
+.filter-tag button:hover { color: #0369a1; }
+
+.clear-all-btn {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: none; border: none;
+  font-family: inherit; font-size: 0.75rem; font-weight: 600;
+  color: #ef4444; cursor: pointer; transition: color 0.15s;
+}
+.clear-all-btn:hover { color: #dc2626; }
+
+/* Filter slide transition */
 .filter-slide-enter-active,
-.filter-slide-leave-active {
-  transition: all 0.25s ease;
-  overflow: hidden;
-}
+.filter-slide-leave-active { transition: all 0.25s ease; overflow: hidden; }
 .filter-slide-enter-from,
-.filter-slide-leave-to {
-  opacity: 0;
-  max-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-}
+.filter-slide-leave-to { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
 .filter-slide-enter-to,
-.filter-slide-leave-from {
-  opacity: 1;
-  max-height: 600px;
+.filter-slide-leave-from { opacity: 1; max-height: 600px; }
+
+/* ── State containers ───────────────────────────────────────── */
+.state-container {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 4rem 1.5rem; gap: 0.85rem; text-align: center;
+  background: #fff; border-radius: 14px; border: 1px solid #dbeafe;
+}
+
+.state-icon {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: #eff6ff; color: #0369a1; font-size: 1.4rem;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.state-icon.error-icon { background: #fef2f2; color: #ef4444; }
+
+.state-title { font-size: 1rem; font-weight: 800; color: #0C3B5E; }
+.state-text  { font-size: 0.83rem; color: #6b7280; max-width: 260px; line-height: 1.5; }
+
+/* Wave spinner */
+.resort-spinner { display: flex; gap: 5px; align-items: flex-end; height: 36px; }
+.spinner-wave {
+  width: 7px; background: #0369a1; border-radius: 4px;
+  animation: waveAnim 0.9s ease-in-out infinite alternate;
+}
+.spinner-wave:nth-child(1) { height: 18px; }
+.spinner-wave:nth-child(2) { height: 30px; }
+.spinner-wave:nth-child(3) { height: 24px; }
+.spinner-wave:nth-child(4) { height: 36px; }
+
+@keyframes waveAnim {
+  from { opacity: 0.4; transform: scaleY(0.6); }
+  to   { opacity: 1;   transform: scaleY(1); }
+}
+
+.ghost-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 1.25rem;
+  background: #fff; border: 1.5px solid #e5e7eb; border-radius: 8px;
+  font-family: inherit; font-size: 0.83rem; font-weight: 600;
+  color: #6b7280; cursor: pointer; transition: all 0.2s;
+}
+.ghost-btn:hover { border-color: #0369a1; color: #0369a1; background: #eff6ff; }
+
+/* ── Bookings List ──────────────────────────────────────────── */
+.bookings-list { display: flex; flex-direction: column; gap: 0.9rem; }
+
+.booking-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  animation: cardIn 0.35s ease both;
+}
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.booking-card:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 4px 16px rgba(3,105,161,0.1);
+  transform: translateY(-2px);
+}
+
+/* Card Header */
+.booking-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  background: linear-gradient(135deg, #f0f7ff, #eff6ff);
+  border-bottom: 2px solid #F4C400;
+}
+
+.header-left { display: flex; align-items: center; gap: 0.75rem; }
+
+.ref-icon-wrap {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: #0369a1; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.88rem; flex-shrink: 0;
+}
+
+.ref-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; }
+.ref-value { font-size: 0.95rem; font-weight: 800; color: #0C3B5E; margin-top: 1px; }
+
+/* Status chips */
+.status-chip {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px; font-size: 0.72rem; font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+
+.chip-pending   { background: #fef9c3; color: #854d0e; }
+.chip-pending .status-dot { background: #eab308; }
+
+.chip-confirmed { background: #d1fae5; color: #065f46; }
+.chip-confirmed .status-dot { background: #10b981; }
+
+.chip-completed { background: #eff6ff; color: #0369a1; }
+.chip-completed .status-dot { background: #0369a1; }
+
+.chip-cancelled { background: #fee2e2; color: #991b1b; }
+.chip-cancelled .status-dot { background: #ef4444; }
+
+.chip-default   { background: #f3f4f6; color: #6b7280; }
+.chip-default .status-dot { background: #9ca3af; }
+
+/* Card body — 2-col */
+.booking-card-body {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 0;
+}
+
+.detail-col {
+  padding: 1.1rem 1.25rem;
+  border-right: 1px solid #e5e7eb;
+  display: flex; flex-direction: column; gap: 0.9rem;
+}
+
+/* Detail blocks */
+.detail-block { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.detail-block-label {
+  font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: #0369a1;
+  display: flex; align-items: center; gap: 0.35rem;
+}
+
+/* Dates strip */
+.dates-strip {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: #f9fafb; border: 1px solid #e5e7eb;
+  border-radius: 8px; padding: 0.6rem 0.9rem;
+}
+
+.date-item { flex: 1; }
+.date-sub  { font-size: 0.65rem; color: #6b7280; margin-bottom: 2px; }
+.date-val  { font-size: 0.85rem; font-weight: 700; color: #0C3B5E; }
+.dates-arrow { color: #9ca3af; font-size: 0.75rem; flex-shrink: 0; }
+
+/* Items list */
+.items-list { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.item-row {
+  display: flex; align-items: center; gap: 0.65rem;
+  padding: 0.5rem 0.7rem;
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 7px;
+  transition: background 0.15s;
+}
+.item-row:hover { background: #eff6ff; border-color: #bfdbfe; }
+
+.item-avatar {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: linear-gradient(135deg, #0369a1, #1F8DBF);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.72rem; flex-shrink: 0;
+}
+
+.item-name  { flex: 1; font-size: 0.82rem; font-weight: 600; color: #1f2937; }
+.item-qty   { font-size: 0.72rem; color: #6b7280; min-width: 28px; text-align: center; }
+.item-price { font-size: 0.82rem; font-weight: 700; color: #0369a1; min-width: 70px; text-align: right; }
+
+/* Total pill */
+.total-pill {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #eff6ff; border: 1px solid #dbeafe;
+  border-radius: 8px; padding: 0.6rem 0.9rem;
+}
+
+.total-label { font-size: 0.8rem; font-weight: 700; color: #0C3B5E; }
+.total-val   { font-size: 1.05rem; font-weight: 800; color: #0369a1; }
+
+/* QR Column */
+.qr-col {
+  padding: 1.1rem;
+  background: #f9fafb;
+  display: flex; flex-direction: column; align-items: center; gap: 0.55rem;
+}
+
+.qr-label {
+  font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: #0369a1;
+  display: flex; align-items: center; gap: 0.35rem;
+}
+
+.qr-frame {
+  background: #fff; border: 2px solid #dbeafe;
+  border-radius: 10px; padding: 6px;
+  box-shadow: 0 2px 6px rgba(3,105,161,0.08);
+}
+
+.qr-image { width: 120px; height: 120px; display: block; border-radius: 6px; }
+
+.qr-placeholder {
+  width: 120px; height: 120px;
+  background: #eff6ff; border: 2px dashed #bfdbfe; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; color: #93c5fd;
+}
+
+.qr-hint { font-size: 0.7rem; color: #6b7280; text-align: center; }
+
+.qr-actions { display: flex; gap: 0.45rem; width: 100%; }
+
+.qr-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.3rem;
+  padding: 0.45rem 0.5rem;
+  border: none; border-radius: 7px;
+  font-family: inherit; font-size: 0.72rem; font-weight: 700;
+  cursor: pointer; transition: all 0.18s;
+}
+
+.primary-qr { background: #0369a1; color: #fff; }
+.primary-qr:hover { background: #0C3B5E; transform: translateY(-1px); }
+
+.ghost-qr { background: #fff; color: #6b7280; border: 1.5px solid #e5e7eb; }
+.ghost-qr:hover { border-color: #0369a1; color: #0369a1; background: #eff6ff; }
+
+/* Card footer */
+.booking-card-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.6rem 1.25rem;
+  background: #fafafa; border-top: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+}
+
+.payment-status {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-weight: 600;
+}
+
+.pay-paid    { color: #059669; }
+.pay-pending { color: #d97706; }
+.pay-failed  { color: #ef4444; }
+.pay-default { color: #6b7280; }
+
+.booked-on { color: #9ca3af; font-size: 0.72rem; }
+
+/* ── QR Viewer Modal ────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(12,59,94,0.55); backdrop-filter: blur(5px);
+  z-index: 100; display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+
+.modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.22s ease; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+
+.modal-box {
+  background: #fff; border-radius: 16px;
+  width: 100%; max-width: 380px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 50px rgba(12,59,94,0.25);
+  border-top: 4px solid #F4C400;
+  animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+
+.modal-title { font-size: 1rem; font-weight: 800; color: #0C3B5E; }
+
+.modal-close {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: #f3f4f6; border: none; color: #6b7280;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 0.78rem; transition: all 0.15s;
+}
+.modal-close:hover { background: #fee2e2; color: #ef4444; }
+
+.modal-qr-wrap {
+  background: #eff6ff; border: 2px solid #dbeafe;
+  border-radius: 12px; padding: 1.25rem;
+  display: flex; justify-content: center; margin-bottom: 0.85rem;
+}
+
+.modal-qr-img { width: 160px; height: 160px; border-radius: 8px; }
+
+.modal-ref {
+  background: #f9fafb; border: 1px solid #e5e7eb;
+  border-radius: 8px; padding: 0.65rem 0.9rem;
+  text-align: center; margin-bottom: 1rem;
+}
+
+.modal-ref-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #6b7280; }
+.modal-ref-val   { font-size: 0.95rem; font-weight: 800; color: #0C3B5E; margin-top: 2px; }
+
+.modal-actions { display: flex; gap: 0.65rem; }
+
+.modal-primary-btn {
+  flex: 1; padding: 0.72rem;
+  background: #0369a1; color: #fff;
+  border: none; border-radius: 9px;
+  font-family: inherit; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  transition: background 0.2s, transform 0.15s;
+}
+.modal-primary-btn:hover { background: #0C3B5E; transform: translateY(-1px); }
+
+.modal-ghost-btn {
+  flex: 1; padding: 0.72rem;
+  background: #fff; color: #6b7280;
+  border: 1.5px solid #e5e7eb; border-radius: 9px;
+  font-family: inherit; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.modal-ghost-btn:hover { border-color: #0369a1; color: #0369a1; }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .filter-grid-2 { grid-template-columns: 1fr; }
+  .filter-grid-3 { grid-template-columns: 1fr 1fr; }
+  .booking-card-body { grid-template-columns: 1fr; }
+  .detail-col { border-right: none; border-bottom: 1px solid #e5e7eb; }
+  .qr-col { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 0.75rem; }
+}
+
+@media (max-width: 480px) {
+  .filter-grid-3 { grid-template-columns: 1fr; }
+  .qr-image { width: 100px; height: 100px; }
 }
 </style>

@@ -1,368 +1,372 @@
 <template>
   <div class="eshop-container">
+
     <!-- ══════════════════════════════════════════ -->
-    <!-- HEADER -->
+    <!-- HEADER                                     -->
     <!-- ══════════════════════════════════════════ -->
     <header class="eshop-header">
-      <div class="header-left">
-        <span class="header-icon">🏝️</span>
-        <h1 class="header-title">Eduardo's Market</h1>
+      <div class="header-brand">
+        <span class="brand-icon">🍽️</span>
+        <div class="brand-text">
+          <h1 class="header-title">Eduardo's Restaurant</h1>
+          <p class="header-sub">Order from the resort kitchen</p>
+        </div>
       </div>
 
-      <!-- Stage Tabs -->
       <div class="stage-tabs-container">
-        <button class="stage-tab-btn" :class="{ active: currentStage === 1, completed: currentStage > 1 }" @click="goToStage(1)">
-          <span class="stage-icon">{{ currentStage > 1 ? '✓' : '1' }}</span>
-          <span class="stage-label">Browse Menu</span>
-        </button>
-        <button class="stage-tab-btn" :class="{ active: currentStage === 2, completed: currentStage > 2 }" @click="cart.length > 0 ? goToStage(2) : null">
-          <span class="stage-icon">{{ currentStage > 2 ? '✓' : '2' }}</span>
-          <span class="stage-label">Review Cart</span>
-        </button>
-        <button class="stage-tab-btn" :class="{ active: currentStage === 3 }" @click="cart.length > 0 ? goToStage(3) : null">
-          <span class="stage-icon">3</span>
-          <span class="stage-label">Checkout</span>
+        <button
+          v-for="(tab, i) in stageTabs"
+          :key="i"
+          class="stage-tab-btn"
+          :class="{ active: currentStage === i + 1, completed: currentStage > i + 1 }"
+          @click="i === 0 ? goToStage(1) : i === 1 && cart.length > 0 ? goToStage(2) : i === 2 && cart.length > 0 ? goToStage(3) : null"
+        >
+          <span class="stage-num">{{ currentStage > i + 1 ? '✓' : i + 1 }}</span>
+          <span class="stage-label">{{ tab }}</span>
         </button>
       </div>
 
       <div class="header-right">
-        <button class="cart-header-btn" @click="currentStage === 1 && cart.length > 0 ? proceedToCart() : null">
-          <span class="cart-icon-header">🛒</span>
-          <span>Cart</span>
-          <span v-if="totalItems > 0" class="cart-badge-header">{{ totalItems }}</span>
+        <button
+          class="cart-header-btn"
+          :class="{ 'has-items': totalItems > 0 }"
+          @click="currentStage === 1 && cart.length > 0 ? proceedToCart() : null"
+        >
+          <span class="cart-icon-wrap">
+            <i class="fas fa-shopping-basket"></i>
+            <span v-if="totalItems > 0" class="cart-badge-header">{{ totalItems }}</span>
+          </span>
+          <span class="cart-btn-label">Cart</span>
         </button>
       </div>
     </header>
 
     <!-- ══════════════════════════════════════════ -->
-    <!-- MAIN CONTENT -->
+    <!-- MAIN CONTENT                               -->
     <!-- ══════════════════════════════════════════ -->
     <div class="main-wrapper">
-      <!-- ========================================== -->
-      <!-- STAGE 1: BROWSE PRODUCTS -->
-      <!-- ========================================== -->
-      <div v-if="currentStage === 1" class="stage-content">
-        <div class="menu-container">
-          <div class="menu-header">
-            <div class="menu-title-section">
-              <span class="menu-icon">🍽️</span>
-              <h2 class="menu-title">Our Menus</h2>
-            </div>
 
-            <div class="search-box">
-              <span class="search-icon">🔍</span>
-              <input
-                type="text"
-                placeholder="Search dishes..."
-                class="search-input"
-                v-model="searchQuery"
-              />
-            </div>
-          </div>
+      <!-- ─────────────────────────────────────── -->
+      <!-- STAGE 1 · BROWSE MENU                   -->
+      <!-- ─────────────────────────────────────── -->
+      <transition name="stage-fade" mode="out-in">
+        <div v-if="currentStage === 1" key="stage1" class="stage-content">
+          <div class="menu-container">
 
-          <!-- Products Area - Grouped by Menu Type in 2 Columns -->
-          <div class="products-section">
-            <div v-if="isLoading" class="loading-container">
-              <div class="spinner"></div>
-              <p>Loading items...</p>
-            </div>
-            <div v-else-if="loadError" class="error-container">
-              <span class="error-emoji">😢</span>
-              <p>{{ loadError }}</p>
-              <button class="retry-button" @click="fetchProducts">Try Again</button>
-            </div>
-            <div v-else-if="filteredProducts.length === 0" class="no-results">
-              <span class="no-results-emoji">🔍</span>
-              <h3>No items found</h3>
-              <p>Try adjusting your search</p>
-            </div>
-            <div v-else>
-              <!-- Group products by menu type (desc) and sort by item count -->
-              <div v-for="(group, groupIndex) in sortedGroups" :key="groupIndex" class="menu-type-group">
-                <h3 class="menu-type-heading">
-                  <span class="menu-type-icon">🍽️</span>
-                  {{ group.type }}
-                </h3>
-                <div class="products-two-column">
-                  <div
-                    v-for="(product, idx) in group.items"
-                    :key="groupIndex + '-' + idx"
-                    class="product-card-two-col"
-                  >
-                    <div class="product-info-row">
-                      <div class="product-name-type">
-                        <h4 class="product-title">{{ product.name }}</h4>
-                        <p class="product-type">{{ group.type }}</p>
-                      </div>
-                      <div class="product-price">₱{{ product.price }}</div>
-                    </div>
-                    <div class="product-action-row">
-                      <button
-                        class="product-add-btn"
-                        :class="{ added: isProductAdded(product.name) }"
-                        @click="addToCart(product)"
-                      >
-                        ✓ Add
-                      </button>
-                    </div>
-                  </div>
+            <!-- Menu Header Bar -->
+            <div class="menu-header">
+              <div class="menu-title-section">
+                <span class="menu-emoji">🍽️</span>
+                <div>
+                  <h2 class="menu-title">Our Menu</h2>
+                  <p class="menu-sub">{{ filteredProducts.length }} items available</p>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ========================================== -->
-      <!-- STAGE 2: REVIEW CART -->
-      <!-- ========================================== -->
-      <div v-if="currentStage === 2" class="stage-content">
-        <div class="cart-container">
-          <div class="cart-header">
-            <div class="cart-title-section">
-              <span class="cart-icon">🛒</span>
-              <h2 class="cart-title">Review Your Order</h2>
-            </div>
-            <span class="item-count-badge">{{ totalItems }} item{{ totalItems !== 1 ? 's' : '' }}</span>
-          </div>
-
-          <div v-if="cart.length === 0" class="empty-cart">
-            <div class="empty-illustration">
-              <span class="empty-icon">🛒</span>
-              <span class="empty-emoji">😋</span>
-            </div>
-            <h3>Your cart is empty</h3>
-            <p>Looks like you haven't added anything yet</p>
-            <button class="back-to-menu-btn" @click="goToStage(1)">
-              ← Back to Menu
-            </button>
-          </div>
-
-          <div v-else class="cart-review-content">
-            <div class="cart-items">
-              <div v-for="(item, idx) in cart" :key="idx" class="cart-item">
-                <div class="cart-item-left">
-                  <span class="cart-item-emoji">{{ item.emoji }}</span>
-                  <div class="cart-item-details">
-                    <h4 class="cart-item-name">{{ item.name }}</h4>
-                    <p class="cart-item-price-per">₱{{ item.price }} each</p>
-                  </div>
-                </div>
-                <div class="cart-item-right">
-                  <div class="quantity-controls">
-                    <button class="qty-btn" @click="changeQty(idx, -1)">−</button>
-                    <span class="qty-value">× {{ item.qty }}</span>
-                    <button class="qty-btn" @click="changeQty(idx, 1)">+</button>
-                  </div>
-                  <div class="cart-item-total">₱{{ item.price * item.qty }}</div>
-                  <button class="remove-btn" @click="removeItem(idx)">✕</button>
-                </div>
+              <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input
+                  type="text"
+                  placeholder="Search dishes..."
+                  class="search-input"
+                  v-model="searchQuery"
+                />
+                <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
+                  <i class="fas fa-times"></i>
+                </button>
               </div>
             </div>
 
-            <div class="cart-summary">
-              <h3 class="summary-heading">Order Summary</h3>
-              <div class="summary-rows">
-                <div class="summary-row">
-                  <span>Subtotal ({{ totalItems }} items)</span>
-                  <span class="row-value price-bright-blue">₱{{ cartTotal }}</span>
+            <!-- Products Area -->
+            <div class="products-section">
+
+              <div v-if="isLoading" class="state-container">
+                <div class="resort-spinner">
+                  <div v-for="n in 4" :key="n" class="spinner-wave" :style="`animation-delay:${(n-1)*0.15}s`"></div>
                 </div>
-                <div class="summary-row">
-                  <span>Delivery Fee</span>
-                  <span class="row-value free">FREE</span>
-                </div>
-                <div v-if="cartTotal > 500" class="summary-row discount">
-                  <span>Island Discount</span>
-                  <span class="row-value discount price-bright-blue">-₱50</span>
-                </div>
-                <div class="summary-divider"></div>
-                <div class="summary-row total">
-                  <span>Tentative Total</span>
-                  <span class="row-total price-bright-blue">₱{{ calculateTotalWithDiscount }}</span>
-                </div>
+                <p class="state-text">Loading the menu…</p>
               </div>
-            </div>
 
-            <div class="navigation-buttons">
-              <button class="nav-button back" @click="previousStage">
-                ← Back to Menu
-              </button>
-              <button class="nav-button proceed" @click="proceedToCheckout">
-                Proceed to Checkout →
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+              <div v-else-if="loadError" class="state-container">
+                <span class="state-emoji">😢</span>
+                <p class="state-text">{{ loadError }}</p>
+                <button class="retry-btn" @click="fetchProducts">
+                  <i class="fas fa-redo"></i> Try Again
+                </button>
+              </div>
 
-      <!-- ========================================== -->
-      <!-- STAGE 3: CHECKOUT -->
-      <!-- ========================================== -->
-      <div v-if="currentStage === 3" class="stage-content">
-        <div class="checkout-container">
-          <div class="checkout-header">
-            <div class="checkout-title-section">
-              <span class="checkout-icon">📍</span>
-              <h2 class="checkout-title">Delivery & Checkout</h2>
-            </div>
-          </div>
+              <div v-else-if="filteredProducts.length === 0" class="state-container">
+                <span class="state-emoji">🔍</span>
+                <h3 class="state-heading">No items found</h3>
+                <p class="state-text">Try a different search term</p>
+              </div>
 
-          <div class="checkout-body">
-            <!-- Two Column Layout -->
-            <div class="checkout-columns">
-              <!-- LEFT COLUMN: Delivery Location -->
-              <div class="checkout-left">
-                <div class="checkout-section">
-                  <h3 class="section-heading">
-                    <span class="section-icon">📍</span>
-                    Delivery Location
-                  </h3>
-
-                  <div class="location-types">
+              <div v-else class="categories-list">
+                <div v-for="(group, gi) in sortedGroups" :key="gi" class="category-block">
+                  <div class="category-heading">
+                    <span class="category-dot"></span>
+                    <h3 class="category-title">{{ group.type }}</h3>
+                    <span class="category-count">{{ group.items.length }}</span>
+                  </div>
+                  <div class="products-grid">
                     <div
-                      v-for="type in locationTypes"
-                      :key="type"
-                      class="location-type-option"
-                      :class="{ selected: currentLocType === type }"
-                      @click="selectLocType(type)"
+                      v-for="(product, pi) in group.items"
+                      :key="gi + '-' + pi"
+                      class="product-card"
+                      :class="{ 'is-added': isProductAdded(product.name) }"
+                      @click="addToCart(product)"
                     >
-                      <span class="location-emoji">{{ locationEmojis[type] }}</span>
-                      <span class="location-name">{{ type }}</span>
+                      <div class="product-body">
+                        <div class="product-info">
+                          <h4 class="product-name">{{ product.name }}</h4>
+                          <p class="product-cat">{{ group.type }}</p>
+                        </div>
+                        <div class="product-right">
+                          <span class="product-price">₱{{ product.price }}</span>
+                          <button
+                            class="add-btn"
+                            :class="{ added: isProductAdded(product.name) }"
+                            @click.stop="addToCart(product)"
+                          >
+                            <i :class="isProductAdded(product.name) ? 'fas fa-check' : 'fas fa-plus'"></i>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  <div v-if="currentLocType !== 'Day Guest'" class="form-field">
-                    <label class="field-label">
-                      {{ currentLocType }} Number
-                      <span class="required">*</span>
-                    </label>
-                    <div class="field-input-wrapper">
-                      <span class="field-icon">🏷️</span>
-                      <input
-                        v-model="locationNumber"
-                        class="field-input"
-                        type="text"
-                        :placeholder="`Enter your ${currentLocType.toLowerCase()} number`"
-                      />
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label class="field-label">Special Instructions (optional)</label>
-                    <div class="field-input-wrapper">
-                      <span class="field-icon">📝</span>
-                      <textarea
-                        v-model="locationNotes"
-                        class="field-textarea"
-                        placeholder="e.g., Please knock gently, baby sleeping..."
-                        rows="3"
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <button class="confirm-location-btn" @click="saveLocation">
-                    <span class="icon-inline">📍</span>
-                    {{ locationSaved ? 'Update Location' : 'Confirm Location' }}
-                  </button>
-
-                  <transition name="slide-down">
-                    <div v-if="showLocationSaved" class="success-alert">
-                      <span class="success-icon-inline">✅</span>
-                      Location confirmed!
-                    </div>
-                  </transition>
                 </div>
               </div>
 
-              <!-- RIGHT COLUMN: Order Review -->
-              <div class="checkout-right">
-                <div class="checkout-section">
-                  <h3 class="section-heading">
-                    <span class="section-icon">📋</span>
-                    Order Review
-                  </h3>
-
-                  <div class="order-items-list">
-                    <div v-for="(item, idx) in cart" :key="idx" class="order-item">
-                      <span class="order-item-name">{{ item.name }}</span>
-                      <span class="order-item-qty">× {{ item.qty }}</span>
-                      <span class="order-item-price">₱{{ item.price * item.qty }}</span>
-                    </div>
-                  </div>
-
-                  <div class="order-totals">
-                    <div class="order-total-row">
-                      <span>Subtotal</span>
-                      <span class="price-bright-blue">₱{{ cartTotal }}</span>
-                    </div>
-                    <div class="order-total-row">
-                      <span>Delivery</span>
-                      <span class="free-label">FREE</span>
-                    </div>
-                    <div v-if="cartTotal > 500" class="order-total-row discount">
-                      <span>Discount</span>
-                      <span class="price-bright-blue">-₱50</span>
-                    </div>
-                    <div class="order-total-divider"></div>
-                    <div class="order-total-row final">
-                      <span>Total Amount</span>
-                      <span class="final-amount price-bright-blue">₱{{ calculateTotalWithDiscount }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="info-box">
-                  <span class="info-box-icon">ℹ️</span>
-                  <div class="info-box-text">
-                    <strong>Delivery Time:</strong> 30-45 minutes<br>
-                    <strong>Payment:</strong> Cash on delivery
-                  </div>
-                </div>
-
-                <div v-if="!locationSaved" class="warning-box">
-                  <span class="warning-box-icon">⚠️</span>
-                  Please confirm your delivery location before placing order
-                </div>
-              </div>
-            </div>
-
-            <!-- Navigation Buttons -->
-            <div class="navigation-buttons">
-              <button class="nav-button back" @click="previousStage">
-                ← Back to Cart
-              </button>
-              <button
-                class="nav-button submit"
-                :disabled="!locationSaved"
-                @click="placeOrder"
-              >
-                <span class="icon-inline">🛵</span>
-                Place Order • ₱{{ calculateTotalWithDiscount }}
-              </button>
             </div>
           </div>
         </div>
-      </div>
+      </transition>
+
+      <!-- ─────────────────────────────────────── -->
+      <!-- STAGE 2 · REVIEW CART                   -->
+      <!-- ─────────────────────────────────────── -->
+      <transition name="stage-fade" mode="out-in">
+        <div v-if="currentStage === 2" key="stage2" class="stage-content">
+          <div class="panel-container">
+            <div class="panel-header">
+              <div class="panel-title-wrap">
+                <i class="fas fa-shopping-basket panel-icon"></i>
+                <div>
+                  <h2 class="panel-title">Review Your Order</h2>
+                  <p class="panel-sub">{{ totalItems }} item{{ totalItems !== 1 ? 's' : '' }} selected</p>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="cart.length === 0" class="state-container padded">
+              <span class="state-emoji">🛒</span>
+              <h3 class="state-heading">Your cart is empty</h3>
+              <p class="state-text">Go back and add some items</p>
+              <button class="primary-btn mt-sm" @click="goToStage(1)">
+                <i class="fas fa-arrow-left"></i> Back to Menu
+              </button>
+            </div>
+
+            <div v-else class="cart-body">
+              <div class="cart-items-wrap">
+                <transition-group name="cart-item-anim" tag="div" class="cart-items-list">
+                  <div v-for="(item, idx) in cart" :key="item.name" class="cart-item">
+                    <div class="ci-avatar">{{ item.name.charAt(0) }}</div>
+                    <div class="ci-info">
+                      <h4 class="ci-name">{{ item.name }}</h4>
+                      <p class="ci-unit">₱{{ item.price }} each</p>
+                    </div>
+                    <div class="ci-controls">
+                      <button class="qty-btn" @click="changeQty(idx, -1)"><i class="fas fa-minus"></i></button>
+                      <span class="qty-val">{{ item.qty }}</span>
+                      <button class="qty-btn" @click="changeQty(idx, 1)"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <span class="ci-total">₱{{ item.price * item.qty }}</span>
+                    <button class="ci-remove" @click="removeItem(idx)"><i class="fas fa-times"></i></button>
+                  </div>
+                </transition-group>
+              </div>
+
+              <div class="order-summary-card">
+                <h3 class="summary-title">Order Summary</h3>
+                <div class="summary-lines">
+                  <div class="summary-line">
+                    <span>Subtotal ({{ totalItems }} items)</span>
+                    <span class="summary-val">₱{{ cartTotal }}</span>
+                  </div>
+                  <div class="summary-line">
+                    <span>Delivery Fee</span>
+                    <span class="summary-free">FREE</span>
+                  </div>
+                  <div class="summary-divider"></div>
+                  <div class="summary-line total-line">
+                    <span>Total</span>
+                    <span class="summary-total">₱{{ cartTotal }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="nav-btns">
+                <button class="ghost-btn" @click="previousStage">
+                  <i class="fas fa-arrow-left"></i> Back to Menu
+                </button>
+                <button class="primary-btn" @click="proceedToCheckout">
+                  Proceed to Checkout <i class="fas fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- ─────────────────────────────────────── -->
+      <!-- STAGE 3 · CHECKOUT                      -->
+      <!-- ─────────────────────────────────────── -->
+      <transition name="stage-fade" mode="out-in">
+        <div v-if="currentStage === 3" key="stage3" class="stage-content">
+          <div class="panel-container">
+            <div class="panel-header navy-header">
+              <div class="panel-title-wrap">
+                <i class="fas fa-map-marker-alt panel-icon gold-icon"></i>
+                <div>
+                  <h2 class="panel-title white-title">Delivery &amp; Checkout</h2>
+                  <p class="panel-sub light-sub">Confirm your delivery details</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="checkout-body">
+              <div class="checkout-cols">
+
+                <!-- LEFT: Delivery -->
+                <div class="checkout-col">
+                  <div class="checkout-card">
+                    <h3 class="card-title"><span class="card-icon">📍</span> Delivery Location</h3>
+
+                    <div class="loc-type-grid">
+                      <div
+                        v-for="type in locationTypes"
+                        :key="type"
+                        class="loc-card"
+                        :class="{ selected: currentLocType === type }"
+                        @click="currentLocType = type"
+                      >
+                        <span class="loc-emoji">{{ locationEmojis[type] }}</span>
+                        <span class="loc-name">{{ type }}</span>
+                        <span v-if="currentLocType === type" class="loc-check">
+                          <i class="fas fa-check"></i>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div v-if="currentLocType !== 'Day Guest'" class="form-field">
+                      <label class="field-label">{{ currentLocType }} Number <span class="req">*</span></label>
+                      <div class="input-wrap">
+                        <i class="fas fa-hashtag input-icon"></i>
+                        <input v-model="locationNumber" class="field-input" type="text" :placeholder="`Enter your ${currentLocType.toLowerCase()} number`" />
+                      </div>
+                    </div>
+
+                    <div class="form-field">
+                      <label class="field-label">Special Instructions <span class="opt">(optional)</span></label>
+                      <div class="input-wrap">
+                        <i class="fas fa-pencil-alt input-icon ta-icon"></i>
+                        <textarea v-model="locationNotes" class="field-textarea" placeholder="e.g., Please knock gently…" rows="3"></textarea>
+                      </div>
+                    </div>
+
+                    <button class="confirm-loc-btn" :class="{ saved: locationSaved }" @click="saveLocation">
+                      <i :class="locationSaved ? 'fas fa-check-circle' : 'fas fa-map-marker-alt'"></i>
+                      {{ locationSaved ? '✓ Location Confirmed' : 'Confirm Location' }}
+                    </button>
+
+                    <transition name="pop-in">
+                      <div v-if="showLocationSaved" class="success-inline">
+                        <i class="fas fa-check-circle"></i> Location saved!
+                      </div>
+                    </transition>
+                  </div>
+
+                  <div class="info-card">
+                    <div class="info-row"><i class="fas fa-clock info-ic"></i><span><strong>Delivery Time:</strong> 30–45 minutes</span></div>
+                    <div class="info-row"><i class="fas fa-money-bill-wave info-ic"></i><span><strong>Payment:</strong> Cash on delivery</span></div>
+                  </div>
+                </div>
+
+                <!-- RIGHT: Order Review -->
+                <div class="checkout-col">
+                  <div class="checkout-card">
+                    <h3 class="card-title"><span class="card-icon">📋</span> Order Review</h3>
+
+                    <div class="order-items">
+                      <div v-for="(item, idx) in cart" :key="idx" class="oi-row">
+                        <span class="oi-name">{{ item.name }}</span>
+                        <span class="oi-qty">× {{ item.qty }}</span>
+                        <span class="oi-price">₱{{ item.price * item.qty }}</span>
+                      </div>
+                    </div>
+
+                    <div class="order-totals">
+                      <div class="total-row"><span>Subtotal</span><span class="tv">₱{{ cartTotal }}</span></div>
+                      <div class="total-row"><span>Delivery</span><span class="tv free-green">FREE</span></div>
+                      <div class="total-divider"></div>
+                      <div class="total-row final-row">
+                        <span>Total Amount</span>
+                        <span class="final-val">₱{{ cartTotal }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="!locationSaved" class="warning-card">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Please confirm your delivery location before placing your order.
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="nav-btns">
+                <button class="ghost-btn" @click="previousStage">
+                  <i class="fas fa-arrow-left"></i> Back to Cart
+                </button>
+                <button
+                  class="submit-btn"
+                  :class="{ ready: locationSaved }"
+                  :disabled="!locationSaved"
+                  @click="placeOrder"
+                >
+                  <i class="fas fa-motorcycle"></i>
+                  Place Order · ₱{{ cartTotal }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+
     </div>
 
-    <!-- Toast Notification -->
-    <div class="toast-notification" :class="{ visible: showToast }">
-      <span class="toast-icon-emoji">🎉</span>
-      <div class="toast-message">
-        <strong>Order placed successfully!</strong>
-        <span>Your food is on the way</span>
+    <!-- Toast -->
+    <transition name="toast-slide">
+      <div v-if="showToast" class="global-toast">
+        <div class="toast-inner">
+          <span class="toast-emoji">🎉</span>
+          <div>
+            <strong>Order placed!</strong>
+            <span>Your food is on its way</span>
+          </div>
+        </div>
       </div>
-    </div>
+    </transition>
 
-    <!-- Floating Cart -->
-    <button
-      class="floating-cart-button"
-      @click="proceedToCart"
-      v-show="currentStage === 1 && totalItems > 0"
-    >
-      <span class="float-cart-icon">🛒</span>
-      <span class="float-cart-badge">{{ totalItems }}</span>
-    </button>
+    <!-- Floating Cart FAB -->
+    <transition name="fab-pop">
+      <button v-show="currentStage === 1 && totalItems > 0" class="fab-cart" @click="proceedToCart">
+        <i class="fas fa-shopping-basket"></i>
+        <span class="fab-badge">{{ totalItems }}</span>
+        <span class="fab-label">View Cart · ₱{{ cartTotal }}</span>
+      </button>
+    </transition>
+
   </div>
 </template>
 
@@ -370,1773 +374,789 @@
 import { ref, computed, onMounted } from 'vue'
 
 const API_BASE = 'http://localhost:8000/api/pos'
+const stageTabs = ['Browse Menu', 'Review Cart', 'Checkout']
 
-// State
-const activeTab = ref('restaurant')
-const cart = ref([])
-const currentLocType = ref('Room')
-const locationNumber = ref('')
-const locationNotes = ref('')
-const locationSaved = ref(false)
+const cart              = ref([])
+const currentLocType    = ref('Room')
+const locationNumber    = ref('')
+const locationNotes     = ref('')
+const locationSaved     = ref(false)
 const showLocationSaved = ref(false)
-const showToast = ref(false)
-const addedProducts = ref(new Set())
-const searchQuery = ref('')
+const showToast         = ref(false)
+const addedProducts     = ref(new Set())
+const searchQuery       = ref('')
+const currentStage      = ref(1)
+const isLoading         = ref(false)
+const loadError         = ref('')
 
-// Stage
-const currentStage = ref(1)
+const locationTypes  = ['Room', 'Cottage']
+const locationEmojis = { Room: '🛏️', Cottage: '🏡' }
 
-// Location Data
-const locationTypes = ['Room', 'Cottage']
-const locationEmojis = {
-  'Room': '🛏️',
-  'Cottage': '🏡'
-}
+const fallbackRestaurant = [
+  { name: 'Beef Mami Noodle Soup',  price: 185, desc: 'Noodles' },
+  { name: 'Creamy Pasta Carbonara', price: 220, desc: 'Pasta' },
+  { name: 'Crispy Calamari',        price: 240, desc: 'Appetizer' },
+  { name: 'Seafood Sinuglaw Bowl',  price: 295, desc: 'Seafood' },
+  { name: 'Mango Shake (Large)',    price: 95,  desc: 'Shakes' },
+  { name: 'Iced Café Latte',        price: 110, desc: 'Coffee' },
+  { name: 'Americano',              price: 120, desc: 'Coffee' },
+  { name: 'Ampalaya Con Carne',     price: 300, desc: 'Vegetables' },
+  { name: 'Banana Smoothie',        price: 180, desc: 'Smoothies' },
+  { name: 'Beef Steak',             price: 100, desc: 'Mains' },
+  { name: 'Blueberry Cheesecake',   price: 185, desc: 'Pastries' },
+  { name: 'Butter Almond Frappe',   price: 180, desc: 'Frappe' },
+  { name: 'Buttered Veggies',       price: 250, desc: 'Vegetables' },
+  { name: 'Cafe Latte',             price: 150, desc: 'Coffee' },
+  { name: 'Chicken Buffalo Wings',  price: 350, desc: 'Chicken' },
+  { name: 'Cappuccino',             price: 150, desc: 'Coffee' },
+  { name: 'Espresso',               price: 100, desc: 'Coffee' },
+]
 
-// Fallback Products
-const fallbackProducts = {
-  restaurant: [
-    { name: 'Beef Mami Noodle Soup', price: 185, emoji: '🍜', desc: 'Noodles' },
-    { name: 'Creamy Pasta Carbonara', price: 220, emoji: '🍝', desc: 'Pasta' },
-    { name: 'Crispy Calamari', price: 240, emoji: '🦑', desc: 'Appetizer' },
-    { name: 'Seafood Sinuglaw Bowl', price: 295, emoji: '🍚', desc: 'Seafood' },
-    { name: 'Mango Shake (Large)', price: 95, emoji: '🥭', desc: 'Shakes' },
-    { name: 'Iced Café Latte', price: 110, emoji: '☕', desc: 'Coffee' },
-    { name: 'Americano', price: 120, emoji: '☕', desc: 'Coffee' },
-    { name: 'Ampalaya Con Carne', price: 300, emoji: '🥬', desc: 'Vegetables' },
-    { name: 'Banana Smoothie', price: 180, emoji: '🍌', desc: 'Smoothies' },
-    { name: 'Beef Steak', price: 100, emoji: '🥩', desc: 'Mains' },
-    { name: 'Blueberry Cheesecake', price: 185, emoji: '🍰', desc: 'Pastries' },
-    { name: 'Butter Almond Frappe', price: 180, emoji: '🥤', desc: 'Frappe' },
-    { name: 'Buttered Veggies', price: 250, emoji: '🥦', desc: 'Vegetables' },
-    { name: 'Cafe Latte', price: 150, emoji: '☕', desc: 'Coffee' },
-    { name: 'Chicken Buffalo Wings', price: 350, emoji: '🍗', desc: 'Chicken' },
-    { name: 'Cappuccino', price: 150, emoji: '☕', desc: 'Coffee' },
-    { name: 'Espresso', price: 100, emoji: '☕', desc: 'Coffee' }
-  ],
-  store: [
-    { name: 'Sunscreen SPF 50+', price: 180, emoji: '🧴', desc: 'Sunscreen' },
-    { name: 'Bottled Water (1L) × 6', price: 90, emoji: '💧', desc: 'Beverages' },
-    { name: 'Resort Souvenir T-Shirt', price: 450, emoji: '👕', desc: 'Apparel' },
-    { name: 'Resort Flip Flops', price: 350, emoji: '🩴', desc: 'Footwear' },
-    { name: 'Snack Bundle Pack', price: 120, emoji: '🍫', desc: 'Snacks' },
-    { name: 'Toiletry Kit', price: 150, emoji: '🪥', desc: 'Toiletries' }
-  ]
-}
+const products = ref([...fallbackRestaurant])
 
-const products = ref({ ...fallbackProducts })
-const isLoading = ref(false)
-const loadError = ref('')
-
-// Computed
-const totalItems = computed(() =>
-  cart.value.reduce((sum, item) => sum + item.qty, 0)
-)
-
-const cartTotal = computed(() =>
-  cart.value.reduce((sum, item) => sum + item.price * item.qty, 0)
-)
-
-const calculateTotalWithDiscount = computed(() => {
-  const total = cartTotal.value
-  return total > 500 ? total - 50 : total
-})
+const totalItems = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
+const cartTotal  = computed(() => cart.value.reduce((s, i) => s + i.price * i.qty, 0))
 
 const filteredProducts = computed(() => {
-  const currentProducts = products.value[activeTab.value] || []
-  if (!searchQuery.value) return currentProducts
-
-  return currentProducts.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    p.desc.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
+  if (!searchQuery.value) return products.value
+  const q = searchQuery.value.toLowerCase()
+  return products.value.filter(p => p.name.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q))
 })
 
-// Group products by menu type (desc field)
 const groupedProducts = computed(() => {
-  const groups = {}
-  
-  filteredProducts.value.forEach(product => {
-    const type = product.desc || 'Other'
-    if (!groups[type]) {
-      groups[type] = []
-    }
-    groups[type].push(product)
-  })
-  
-  // Convert to array
-  return Object.keys(groups).map(type => ({
-    type,
-    items: groups[type]
-  }))
+  const g = {}
+  filteredProducts.value.forEach(p => { const t = p.desc || 'Other'; if (!g[t]) g[t] = []; g[t].push(p) })
+  return Object.keys(g).map(type => ({ type, items: g[type] }))
 })
 
-// Sort groups by item count (most items first)
-const sortedGroups = computed(() => {
-  return [...groupedProducts.value].sort((a, b) => b.items.length - a.items.length)
-})
+const sortedGroups = computed(() => [...groupedProducts.value].sort((a, b) => b.items.length - a.items.length))
 
-// Methods
-const goToStage = (stage) => {
-  currentStage.value = stage
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
+const goToStage     = (s) => { currentStage.value = s; window.scrollTo({ top: 0, behavior: 'smooth' }) }
+const previousStage = ()  => currentStage.value > 1 && goToStage(currentStage.value - 1)
+const proceedToCart = ()  => { if (!cart.value.length) return alert('Add items first'); goToStage(2) }
+const proceedToCheckout = () => { if (!cart.value.length) return alert('Cart is empty'); goToStage(3) }
 
-const previousStage = () =>
-  currentStage.value > 1 && goToStage(currentStage.value - 1)
-
-const proceedToCart = () => {
-  if (cart.value.length === 0)
-    return alert('Please add items to your cart first')
-  goToStage(2)
-}
-
-const proceedToCheckout = () => {
-  if (cart.value.length === 0)
-    return alert('Your cart is empty')
-  goToStage(3)
-}
-
-const isProductAdded = (productName) =>
-  addedProducts.value.has(productName)
+const isProductAdded = (name) => addedProducts.value.has(name)
 
 const addToCart = (product) => {
-  const existing = cart.value.find(i => i.name === product.name)
-
-  if (existing) {
-    existing.qty++
-  } else {
-    cart.value.push({ ...product, qty: 1 })
-  }
-
+  const ex = cart.value.find(i => i.name === product.name)
+  if (ex) ex.qty++
+  else cart.value.push({ ...product, qty: 1 })
   addedProducts.value.add(product.name)
-  setTimeout(() => addedProducts.value.delete(product.name), 1200)
+  setTimeout(() => addedProducts.value.delete(product.name), 900)
 }
 
-const changeQty = (idx, delta) => {
-  cart.value[idx].qty += delta
-  if (cart.value[idx].qty <= 0)
-    cart.value.splice(idx, 1)
-}
-
-const removeItem = (idx) =>
-  cart.value.splice(idx, 1)
-
-const selectLocType = (type) => {
-  currentLocType.value = type
-}
+const changeQty  = (idx, d) => { cart.value[idx].qty += d; if (cart.value[idx].qty <= 0) cart.value.splice(idx, 1) }
+const removeItem = (idx)    => cart.value.splice(idx, 1)
 
 const saveLocation = () => {
-  if (!locationNumber.value.trim()) {
+  if (currentLocType.value !== 'Day Guest' && !locationNumber.value.trim())
     return alert(`Please enter your ${currentLocType.value} number.`)
-  }
-
   locationSaved.value = true
   showLocationSaved.value = true
   setTimeout(() => showLocationSaved.value = false, 3000)
 }
 
 const placeOrder = async () => {
-  if (!locationSaved.value)
-    return alert('Please set your delivery location first')
-
-  if (cart.value.length === 0)
-    return alert('Your cart is empty')
-
+  if (!locationSaved.value) return alert('Set delivery location first')
+  if (!cart.value.length)   return alert('Cart is empty')
   try {
-    const orderData = {
-      cart: cart.value.map(item => ({
-        name: item.name,
-        price: item.price,
-        qty: item.qty
-      })),
-      locationType: currentLocType.value,
-      locationNumber: locationNumber.value,
-      deliveryNotes: locationNotes.value,
-      totalAmount: calculateTotalWithDiscount.value
-    }
-
-    const response = await fetch(`${API_BASE}/eshop/order`, {
+    const res = await fetch(`${API_BASE}/eshop/order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData)
+      body: JSON.stringify({
+        cart: cart.value.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
+        locationType: currentLocType.value,
+        locationNumber: locationNumber.value,
+        deliveryNotes: locationNotes.value,
+        totalAmount: cartTotal.value,
+      }),
     })
-
-    const result = await response.json()
-
-    if (!response.ok)
-      throw new Error(result.error || 'Failed to place order')
-
+    const result = await res.json()
+    if (!res.ok) throw new Error(result.error || 'Failed')
     showToast.value = true
-
-    // Reset
-    cart.value = []
-    locationSaved.value = false
-    locationNumber.value = ''
-    locationNotes.value = ''
+    cart.value = []; locationSaved.value = false
+    locationNumber.value = ''; locationNotes.value = ''
     currentStage.value = 1
-
     setTimeout(() => showToast.value = false, 4000)
-
-  } catch (error) {
-    alert(`Failed to place order: ${error.message}`)
-  }
-}
-
-const getEmojiForCategory = (category) => {
-  if (category === 'restaurant') return '🍽️'
-  if (category === 'store') return '🛍️'
-  return '🧾'
-}
-
-const mapPosItems = (items, category) => {
-  return items.map(item => ({
-    name: item.name || 'Unnamed item',
-    price: parseFloat(item.price) || 0,
-    emoji: getEmojiForCategory(category),
-    desc: item.description || 'Other'
-  }))
-}
-
-const fetchCategoryItems = async (category) => {
-  const response = await fetch(`${API_BASE}/items/category/${category}`)
-  if (!response.ok)
-    throw new Error(`Failed to load ${category} items`)
-  const data = await response.json()
-  return Array.isArray(data) ? data : []
+  } catch (e) { alert(`Failed: ${e.message}`) }
 }
 
 const fetchProducts = async () => {
-  isLoading.value = true
-  loadError.value = ''
-
+  isLoading.value = true; loadError.value = ''
   try {
-    const [restaurantItems, storeItems] = await Promise.all([
-      fetchCategoryItems('restaurant'),
-      fetchCategoryItems('store')
-    ])
-
-    const restaurant = mapPosItems(restaurantItems, 'restaurant')
-    const store = storeItems.length > 0
-      ? mapPosItems(storeItems, 'store')
-      : fallbackProducts.store
-
-    products.value = {
-      restaurant: restaurant.length > 0
-        ? restaurant
-        : fallbackProducts.restaurant,
-      store
-    }
-
-  } catch (error) {
-    loadError.value = 'Unable to load items from the server.'
-    products.value = { ...fallbackProducts }
-  } finally {
-    isLoading.value = false
-  }
+    const r = await fetch(`${API_BASE}/items/category/restaurant`)
+    if (!r.ok) throw new Error('Failed')
+    const data = await r.json()
+    if (Array.isArray(data) && data.length)
+      products.value = data.map(i => ({ name: i.name || 'Unnamed', price: parseFloat(i.price) || 0, desc: i.description || 'Other' }))
+  } catch { loadError.value = 'Unable to load menu.'; products.value = [...fallbackRestaurant] }
+  finally { isLoading.value = false }
 }
 
-onMounted(() => {
-  fetchProducts()
-})
+onMounted(fetchProducts)
 </script>
 
 <style scoped>
-/* =========================================================
-   TROPICAL RESORT COLOR PALETTE - UPDATED
-   - Ocean Blue (primary):    #1E88B6 (Cerulean/Ocean Blue)
-   - Ocean Blue (dark):       #166B8F
-   - Ocean Blue (pale):       #E3F2F9
-   - Bright Blue (hover):     #4AA3D0 (lighter ocean blue)
-   - Dark Blue (text on yellow): #0D4B6E (darker blue for readability)
-   
-   - Sunflower Gold (accent): #F2C200 (Warm Golden Yellow)
-   - Sunflower Gold (light):  #FFD633
-   
-   TEXT COLORS:
-   - Primary Text: #1A2E40 (Dark blue-gray)
-   - Secondary Text: #166B8F
-   - Bright Blue Price: #4AA3D0 (for cart/checkout prices)
-   - Dark Blue on Yellow: #0D4B6E (for text on yellow backgrounds)
-   ========================================================= */
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ── Design Tokens ──────────────────────────────────────────── */
+:root {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-gray-bg:       #f9fafb;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
 }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 .eshop-container {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #E3F2F9;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #EEF5FB;
   min-height: 100vh;
-  color: #1A2E40;
+  color: #1f2937;
 }
 
-/* ══════════════════════════════════════════ */
-/* HEADER */
-/* ══════════════════════════════════════════ */
+/* ── Header ─────────────────────────────────────────────────── */
 .eshop-header {
-  background: linear-gradient(135deg, #1E88B6 0%, #166B8F 100%);
-  padding: 0.85rem 1.5rem;
+  background: linear-gradient(135deg, #0C3B5E 0%, #0369a1 60%, #1F8DBF 100%);
+  padding: 0 1.5rem;
+  height: 68px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.25rem;
-  border-bottom: 3px solid #F2C200;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  gap: 1.5rem;
+  border-bottom: 3px solid #F4C400;
+  box-shadow: 0 2px 16px rgba(12,59,94,0.35);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  flex: 0 0 auto;
-}
-
-.header-icon {
-  font-size: 1.85rem;
-}
+.header-brand { display: flex; align-items: center; gap: 0.65rem; }
+.brand-icon   { font-size: 1.8rem; }
 
 .header-title {
-  font-size: 1.4rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  color: white;
-  margin: 0;
+  color: #fff;
+  line-height: 1.1;
   white-space: nowrap;
 }
 
-.header-right {
-  display: flex;
-  gap: 0.75rem;
-  flex: 0 0 auto;
+.header-sub {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: 0.04em;
 }
 
-.cart-header-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid #1E88B6;
-  color: white;
-  padding: 0.55rem 1rem;
-  border-radius: 30px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.cart-header-btn:hover {
-  background: #F2C200;
-  border-color: #F2C200;
-  color: #0D4B6E; /* Darker blue on yellow hover */
-  transform: translateY(-1px);
-}
-
-.cart-icon-header {
-  font-size: 1.1rem;
-}
-
-.cart-badge-header {
-  background: #F2C200;
-  color: #1E88B6;
-  border-radius: 999px;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 900;
-  border: 2px solid white;
-}
-
-/* ══════════════════════════════════════════ */
-/* STAGE TABS */
-/* ══════════════════════════════════════════ */
+/* Stage tabs */
 .stage-tabs-container {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  flex: 1 1 auto;
-  min-width: 0;
+  gap: 4px;
+  background: rgba(255,255,255,0.08);
+  padding: 4px;
+  border-radius: 50px;
 }
 
 .stage-tab-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid transparent;
-  padding: 0.55rem 0.8rem;
-  border-radius: 30px;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: white;
-  white-space: nowrap;
-  position: relative;
-  z-index: 1;
-}
-
-.stage-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: #1E88B6;
-  color: #0D4B6E; /* Darker blue on hover */
-  transform: translateY(-1px);
-}
-
-.stage-tab-btn.active {
-  background: #F2C200;
-  color: #0D4B6E; /* Darker blue on yellow active */
-  border-color: #F2C200;
-}
-
-.stage-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  transition: all 0.2s ease;
-}
-
-.stage-tab-btn.active .stage-icon,
-.stage-tab-btn:hover .stage-icon {
-  background: #0D4B6E; /* Darker blue icon background on yellow */
-  color: #F2C200;
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.stage-tab-btn.completed .stage-icon {
-  background: #F2C200;
-  color: #0D4B6E; /* Darker blue on completed */
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.stage-label {
+  gap: 0.45rem;
+  padding: 0.42rem 0.85rem;
+  border: none;
+  border-radius: 50px;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.78rem;
   font-weight: 600;
-  font-size: 0.92rem;
-  transition: color 0.2s ease;
-}
-
-.stage-tab-btn:hover .stage-label,
-.stage-tab-btn.active .stage-label {
-  color: #0D4B6E; /* Darker blue text on yellow */
-}
-
-/* ══════════════════════════════════════════ */
-/* MAIN WRAPPER */
-/* ══════════════════════════════════════════ */
-.main-wrapper {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1.25rem 1.5rem;
-}
-
-.stage-content {
-  width: 100%;
-}
-
-/* ══════════════════════════════════════════ */
-/* STAGE 1: MENU - 2 COLUMN GROUPED LAYOUT */
-/* ══════════════════════════════════════════ */
-.menu-container {
-  background: #ffffff;
-  border-radius: 20px;
-  border: 1px solid rgba(30, 136, 182, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-}
-
-.menu-header {
-  padding: 1.1rem 1.5rem;
-  border-bottom: 2px solid #F2C200;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: nowrap;
-  gap: 1.25rem;
-  background: white;
-}
-
-.menu-title-section {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  flex-wrap: nowrap;
-  min-width: 0;
-}
-
-.menu-icon {
-  font-size: 1.6rem;
-}
-
-.menu-title {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #1E88B6;
-  margin: 0;
+  cursor: pointer;
+  transition: all 0.2s;
   white-space: nowrap;
 }
 
-.search-box {
-  position: relative;
-  width: 360px;
-  max-width: 100%;
-  flex: 0 1 420px;
-  margin-left: auto;
+.stage-tab-btn:hover     { color: #fff; background: rgba(255,255,255,0.12); }
+.stage-tab-btn.active    { background: #F4C400; color: #0C3B5E; }
+.stage-tab-btn.completed { color: rgba(255,255,255,0.9); }
+
+.stage-num {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.68rem; font-weight: 800; flex-shrink: 0;
+  transition: background 0.2s;
+}
+.stage-tab-btn.active .stage-num    { background: #0C3B5E; color: #F4C400; }
+.stage-tab-btn.completed .stage-num { background: rgba(255,255,255,0.28); }
+
+/* Cart button */
+.cart-header-btn {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.48rem 1rem;
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-radius: 50px;
+  color: #fff;
+  font-size: 0.82rem; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.cart-header-btn:hover,
+.cart-header-btn.has-items { background: #F4C400; border-color: #F4C400; color: #0C3B5E; }
+
+.cart-icon-wrap { position: relative; font-size: 0.95rem; display: flex; align-items: center; }
+
+.cart-badge-header {
+  position: absolute; top: -8px; right: -11px;
+  background: #ef4444; color: #fff;
+  width: 17px; height: 17px;
+  border-radius: 50%;
+  font-size: 0.58rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #0C3B5E;
+  animation: badgePop 0.3s ease;
 }
 
-.search-icon {
-  position: absolute;
-  left: 0.9rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1.05rem;
-  color: #1E88B6;
+@keyframes badgePop {
+  0%   { transform: scale(0); }
+  70%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
-.search-input {
-  padding: 0.6rem 0.9rem 0.6rem 2.8rem;
-  border: 2px solid rgba(30, 136, 182, 0.2);
-  border-radius: 30px;
-  font-size: 0.95rem;
-  width: 100%;
-  transition: all 0.2s ease;
-  background: #E3F2F9;
-  color: #1A2E40;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #1E88B6;
-  background: white;
-}
-
-/* Products Section */
-.products-section {
+/* ── Main Wrapper ───────────────────────────────────────────── */
+.main-wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
   padding: 1.5rem;
 }
 
-.loading-container,
-.error-container,
-.no-results {
-  text-align: center;
-  padding: 3rem 1.5rem;
-  color: #1A2E40;
+.stage-content { width: 100%; }
+
+.stage-fade-enter-active, .stage-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.stage-fade-enter-from { opacity: 0; transform: translateY(10px); }
+.stage-fade-leave-to   { opacity: 0; transform: translateY(-6px); }
+
+/* ── Menu Container — light blue per requirement ────────────── */
+.menu-container {
+  background: #eff6ff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(3,105,161,0.08);
+  border: 1px solid #dbeafe;
 }
 
-.no-results-emoji {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: 1rem;
-}
-
-.no-results h3 {
-  font-size: 1.4rem;
-  color: #1E88B6;
-  margin-bottom: 0.4rem;
-  font-weight: 700;
-}
-
-.no-results p {
-  color: #166B8F;
-}
-
-.spinner {
-  width: 44px;
-  height: 44px;
-  border: 4px solid rgba(30, 136, 182, 0.1);
-  border-top: 4px solid #F2C200;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.error-emoji {
-  font-size: 2.75rem;
-  display: block;
-  margin-bottom: 1rem;
-}
-
-.retry-button {
-  background: #1E88B6;
-  color: white;
-  border: 2px solid #1E88B6;
-  padding: 0.65rem 1.6rem;
-  border-radius: 30px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 1rem;
-  transition: all 0.2s ease;
-}
-
-.retry-button:hover {
-  background: #F2C200;
-  border-color: #F2C200;
-  color: #0D4B6E; /* Darker blue on yellow hover */
-  transform: translateY(-1px);
-}
-
-/* Menu Type Group */
-.menu-type-group {
-  margin-bottom: 2rem;
-}
-
-.menu-type-group:last-child {
-  margin-bottom: 0;
-}
-
-.menu-type-heading {
+/* White header bar lifts cleanly above the blue bg */
+.menu-header {
+  background: #fff;
+  padding: 1rem 1.5rem;
+  border-bottom: 2px solid #F4C400;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #1E88B6;
-  margin: 0 0 1rem 0;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid rgba(242, 194, 0, 0.3);
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.menu-type-icon {
-  font-size: 1.3rem;
+.menu-title-section { display: flex; align-items: center; gap: 0.75rem; }
+.menu-emoji         { font-size: 1.5rem; }
+
+.menu-title {
+  font-size: 1.08rem; font-weight: 800; color: #0C3B5E; line-height: 1.2;
+}
+.menu-sub { font-size: 0.7rem; color: #6b7280; margin-top: 1px; }
+
+/* Search */
+.search-box  { position: relative; flex: 0 1 300px; }
+.search-icon { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: #0369a1; font-size: 0.78rem; }
+
+.search-input {
+  width: 100%;
+  padding: 0.52rem 2.2rem 0.52rem 2.35rem;
+  border: 1.5px solid #dbeafe;
+  border-radius: 50px;
+  font-size: 0.83rem;
+  background: #f0f7ff;
+  color: #1f2937;
+  transition: all 0.2s;
+}
+.search-input:focus { outline: none; border-color: #0369a1; background: #fff; box-shadow: 0 0 0 3px rgba(3,105,161,0.1); }
+
+.search-clear {
+  position: absolute; right: 0.7rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: #9ca3af; font-size: 0.72rem; cursor: pointer;
+  transition: color 0.15s;
+}
+.search-clear:hover { color: #0369a1; }
+
+/* Products Section */
+.products-section { padding: 1.25rem 1.5rem; }
+
+/* ── State containers ───────────────────────────────────────── */
+.state-container {
+  text-align: center; padding: 3rem 1.5rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.8rem;
+}
+.state-container.padded { padding: 2.5rem 1.5rem; }
+
+.state-emoji   { font-size: 2.8rem; }
+.state-heading { font-size: 1.1rem; font-weight: 700; color: #0C3B5E; }
+.state-text    { font-size: 0.83rem; color: #6b7280; }
+
+.resort-spinner { display: flex; gap: 5px; align-items: flex-end; height: 38px; margin-bottom: 0.4rem; }
+
+.spinner-wave {
+  width: 7px; background: #0369a1; border-radius: 4px;
+  animation: waveAnim 0.9s ease-in-out infinite alternate;
+}
+.spinner-wave:nth-child(1) { height: 18px; }
+.spinner-wave:nth-child(2) { height: 30px; }
+.spinner-wave:nth-child(3) { height: 24px; }
+.spinner-wave:nth-child(4) { height: 36px; }
+
+@keyframes waveAnim {
+  from { opacity: 0.4; transform: scaleY(0.6); }
+  to   { opacity: 1;   transform: scaleY(1); }
 }
 
-/* 2-Column Grid */
-.products-two-column {
+.retry-btn {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.52rem 1.1rem;
+  background: #0369a1; color: #fff;
+  border: none; border-radius: 50px;
+  font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.retry-btn:hover { background: #0C3B5E; transform: translateY(-1px); }
+
+/* ── Category blocks — clear divisions ──────────────────────── */
+.categories-list { display: flex; flex-direction: column; gap: 1rem; }
+
+/* Each category is a white card sitting on the light-blue background */
+.category-block {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem;
+  box-shadow: 0 1px 4px rgba(3,105,161,0.07);
+  border: 1px solid #dbeafe;
+}
+
+/* Category heading row */
+.category-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1.5px solid #eff6ff;
+}
+
+/* Gold dot — accent that ties into the system palette */
+.category-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #F4C400;
+  flex-shrink: 0;
+}
+
+.category-title {
+  font-size: 0.9rem; font-weight: 800; color: #0C3B5E;
+  flex: 1; letter-spacing: 0.01em;
+}
+
+.category-count {
+  background: #eff6ff;
+  color: #0369a1;
+  padding: 0.1rem 0.5rem;
+  border-radius: 50px;
+  font-size: 0.68rem; font-weight: 700;
+}
+
+/* 2-column product grid */
+.products-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
+  gap: 0.55rem;
 }
 
-/* Product Card - 2 Column Style with Light Blue Background */
-.product-card-two-col {
-  background: #E9F2F9;
-  border: 1px solid rgba(30, 136, 182, 0.15);
-  border-radius: 12px;
-  padding: 0.9rem;
-  transition: all 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+/* Product card */
+.product-card {
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.18s, background 0.2s;
 }
 
-.product-card-two-col:hover {
-  border-color: #1E88B6;
+.product-card:hover {
+  border-color: #0369a1;
+  background: #eff6ff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 10px rgba(3,105,161,0.1);
 }
 
-.product-info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.75rem;
-  min-height: 60px;
+.product-card.is-added { border-color: #F4C400; background: #fffbeb; }
+
+.product-body {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 0.7rem;
 }
 
-.product-name-type {
-  flex: 1;
+.product-info { flex: 1; min-width: 0; }
+
+.product-name {
+  font-size: 0.85rem; font-weight: 700; color: #1f2937;
+  line-height: 1.3; margin-bottom: 0.15rem;
 }
 
-.product-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1A2E40;
-  margin: 0 0 0.25rem 0;
-  line-height: 1.3;
-}
+.product-cat { font-size: 0.68rem; color: #6b7280; }
 
-.product-type {
-  font-size: 0.8rem;
-  color: #166B8F;
-  margin: 0;
-  font-weight: 500;
+.product-right {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 0.42rem; flex-shrink: 0;
 }
 
 .product-price {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1E88B6;
-  white-space: nowrap;
-  margin-left: 0.5rem;
+  font-size: 0.9rem; font-weight: 800; color: #0369a1; white-space: nowrap;
 }
 
-.product-action-row {
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid rgba(242, 194, 0, 0.2);
-  padding-top: 0.65rem;
+.add-btn {
+  width: 27px; height: 27px;
+  border-radius: 50%;
+  background: #0369a1; color: #fff;
+  border: none; font-size: 0.7rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
 }
+.add-btn:hover { background: #0C3B5E; transform: scale(1.12); }
+.add-btn.added { background: #F4C400; color: #0C3B5E; transform: scale(1.1); }
 
-.product-add-btn {
-  background: #1E88B6;
-  color: white;
-  border: 2px solid #1E88B6;
-  padding: 0.4rem 1.2rem;
-  border-radius: 30px;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  min-width: 70px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.product-add-btn:hover {
-  background: #F2C200;
-  border-color: #F2C200;
-  color: #0D4B6E; /* Darker blue on yellow hover */
-  transform: translateY(-1px);
-}
-
-.product-add-btn.added {
-  background: #F2C200;
-  color: #0D4B6E; /* Darker blue on added state */
-  border-color: #1E88B6;
-}
-
-/* ══════════════════════════════════════════ */
-/* STAGE 2: CART REVIEW - BRIGHT BLUE PRICES */
-/* ══════════════════════════════════════════ */
-.cart-container {
-  background: white;
-  border-radius: 20px;
-  border: 1px solid rgba(30, 136, 182, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+/* ── Panel Container (Cart + Checkout) ──────────────────────── */
+.panel-container {
+  background: #fff;
+  border-radius: 14px;
   overflow: hidden;
+  box-shadow: 0 2px 12px rgba(3,105,161,0.08);
+  border: 1px solid #e5e7eb;
   max-width: 900px;
   margin: 0 auto;
 }
 
-.cart-header {
-  padding: 1.2rem 1.5rem;
-  border-bottom: 2px solid #F2C200;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: white;
+.panel-header {
+  padding: 1.1rem 1.5rem;
+  border-bottom: 2px solid #F4C400;
+  background: #fff;
 }
 
-.cart-title-section {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
+.navy-header { background: linear-gradient(135deg, #0C3B5E 0%, #0369a1 100%); }
 
-.cart-icon {
-  font-size: 1.8rem;
-}
+.panel-title-wrap { display: flex; align-items: center; gap: 0.85rem; }
 
-.cart-title {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #1E88B6;
-  margin: 0;
-}
+.panel-icon  { font-size: 1.3rem; color: #0369a1; }
+.gold-icon   { color: #F4C400 !important; }
 
-.item-count-badge {
-  background: rgba(242, 194, 0, 0.1);
-  color: #F2C200;
-  padding: 0.35rem 0.9rem;
-  border-radius: 30px;
-  font-weight: 600;
-  border: 2px solid rgba(242, 194, 0, 0.3);
-}
+.panel-title { font-size: 1.08rem; font-weight: 800; color: #0C3B5E; }
+.white-title { color: #fff; }
+.panel-sub   { font-size: 0.72rem; color: #6b7280; margin-top: 1px; }
+.light-sub   { color: rgba(255,255,255,0.65); }
 
-.empty-cart {
-  text-align: center;
-  padding: 3.25rem 1.5rem;
-}
+/* ── Cart Body ──────────────────────────────────────────────── */
+.cart-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 1.1rem; }
 
-.empty-illustration {
-  font-size: 3.5rem;
-  margin-bottom: 0.75rem;
-}
+.cart-items-wrap { max-height: 400px; overflow-y: auto; padding-right: 2px; }
+.cart-items-wrap::-webkit-scrollbar { width: 4px; }
+.cart-items-wrap::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
 
-.empty-cart h3 {
-  font-size: 1.4rem;
-  color: #1E88B6;
-  margin-bottom: 0.4rem;
-  font-weight: 700;
-}
-
-.empty-cart p {
-  color: #166B8F;
-  margin-bottom: 1.5rem;
-}
-
-.back-to-menu-btn {
-  background: #1E88B6;
-  color: white;
-  border: 2px solid #1E88B6;
-  padding: 0.7rem 1.6rem;
-  border-radius: 30px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.back-to-menu-btn:hover {
-  background: #F2C200;
-  border-color: #F2C200;
-  color: #0D4B6E; /* Darker blue on yellow hover */
-  transform: translateY(-1px);
-}
-
-.cart-review-content {
-  padding: 1.5rem;
-}
-
-.cart-items {
-  max-height: 460px;
-  overflow-y: auto;
-  margin-bottom: 1.25rem;
-}
+.cart-items-list { display: flex; flex-direction: column; gap: 0.6rem; }
 
 .cart-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  background: #E3F2F9;
-  border: 2px solid rgba(242, 194, 0, 0.2);
-  border-radius: 12px;
-  margin-bottom: 0.75rem;
-  transition: all 0.2s ease;
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.78rem 1rem;
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 9px;
+  transition: border-color 0.2s, background 0.2s;
+}
+.cart-item:hover { border-color: #bfdbfe; background: #eff6ff; }
+
+.ci-avatar {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: linear-gradient(135deg, #0369a1, #1F8DBF);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.95rem; flex-shrink: 0;
 }
 
-.cart-item:hover {
-  border-color: #1E88B6;
-  background: white;
-}
+.ci-info { flex: 1; min-width: 0; }
+.ci-name { font-size: 0.84rem; font-weight: 700; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ci-unit { font-size: 0.7rem; color: #6b7280; margin-top: 1px; }
 
-.cart-item-left {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  flex: 1;
-}
-
-.cart-item-emoji {
-  font-size: 2.2rem;
-  width: 54px;
-  height: 54px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border-radius: 30px;
-  border: 2px solid rgba(242, 194, 0, 0.3);
-}
-
-.cart-item-details {
-  flex: 1;
-}
-
-.cart-item-name {
-  font-size: 1.02rem;
-  font-weight: 700;
-  color: #1E88B6;
-  margin: 0 0 0.2rem;
-}
-
-.cart-item-price-per {
-  font-size: 0.9rem;
-  color: #166B8F;
-  margin: 0;
-}
-
-.cart-item-right {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.quantity-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  background: white;
-  padding: 0.45rem 0.7rem;
-  border-radius: 30px;
-  border: 2px solid rgba(242, 194, 0, 0.2);
+.ci-controls {
+  display: flex; align-items: center; gap: 0.32rem;
+  background: #fff; border: 1.5px solid #e5e7eb;
+  border-radius: 50px; padding: 0.26rem 0.48rem;
 }
 
 .qty-btn {
-  background: none;
-  border: none;
-  color: #F2C200;
-  font-size: 1.15rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0.2rem 0.45rem;
-  transition: all 0.2s ease;
+  background: none; border: none; color: #0369a1;
+  font-size: 0.58rem; cursor: pointer; padding: 0.18rem 0.3rem;
+  border-radius: 4px; display: flex; align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+.qty-btn:hover { background: #eff6ff; color: #0C3B5E; }
+
+.qty-val { font-size: 0.82rem; font-weight: 700; color: #0C3B5E; min-width: 20px; text-align: center; }
+
+.ci-total { font-size: 0.86rem; font-weight: 800; color: #0369a1; min-width: 60px; text-align: right; flex-shrink: 0; }
+
+.ci-remove {
+  background: none; border: none; color: #d1d5db;
+  font-size: 0.7rem; cursor: pointer; padding: 0.26rem; border-radius: 5px;
+  transition: color 0.15s, background 0.15s;
+}
+.ci-remove:hover { color: #ef4444; background: #fee2e2; }
+
+/* Cart item animations */
+.cart-item-anim-enter-active { transition: all 0.25s ease; }
+.cart-item-anim-leave-active  { transition: all 0.2s ease; }
+.cart-item-anim-enter-from    { opacity: 0; transform: translateX(-14px); }
+.cart-item-anim-leave-to      { opacity: 0; transform: translateX(14px); }
+
+/* Order summary card */
+.order-summary-card {
+  background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 9px; padding: 1rem 1.2rem;
 }
 
-.qty-btn:hover {
-  color: #0D4B6E; /* Darker blue on hover */
+.summary-title { font-size: 0.88rem; font-weight: 700; color: #0C3B5E; margin-bottom: 0.8rem; }
+.summary-lines { display: flex; flex-direction: column; gap: 0.48rem; }
+
+.summary-line  { display: flex; justify-content: space-between; font-size: 0.83rem; color: #6b7280; }
+.summary-val   { font-weight: 700; color: #0369a1; }
+.summary-free  { font-weight: 700; color: #10b981; }
+.summary-divider { height: 1px; background: #e5e7eb; margin: 0.3rem 0; }
+.total-line    { font-size: 0.92rem; font-weight: 700; color: #0C3B5E; }
+.summary-total { font-size: 1.12rem; font-weight: 800; color: #0369a1; }
+
+/* ── Checkout ───────────────────────────────────────────────── */
+.checkout-body { padding: 1.5rem; }
+
+.checkout-cols {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;
 }
 
-.qty-value {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #1E88B6;
-  min-width: 56px;
-  text-align: center;
+.checkout-col { display: flex; flex-direction: column; gap: 1rem; }
+
+.checkout-card {
+  background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 1.1rem 1.2rem;
 }
 
-.cart-item-total {
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: #4AA3D0;
-  min-width: 96px;
-  text-align: right;
+.card-title {
+  font-size: 0.88rem; font-weight: 700; color: #0C3B5E; margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 0.4rem;
 }
 
-.remove-btn {
-  background: #F2C200;
-  color: #1E88B6;
-  border: none;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.card-icon { font-size: 0.95rem; }
+
+.loc-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.9rem; }
+
+.loc-card {
+  background: #fff; border: 1.5px solid #e5e7eb; border-radius: 9px;
+  padding: 0.85rem 0.7rem; text-align: center; cursor: pointer;
+  position: relative; transition: all 0.2s;
+}
+.loc-card:hover    { border-color: #0369a1; background: #eff6ff; }
+.loc-card.selected { border-color: #0369a1; background: #eff6ff; box-shadow: 0 0 0 3px rgba(3,105,161,0.1); }
+
+.loc-emoji { display: block; font-size: 1.65rem; margin-bottom: 0.35rem; }
+.loc-name  { font-size: 0.78rem; font-weight: 700; color: #0C3B5E; }
+
+.loc-check {
+  position: absolute; top: 5px; right: 7px;
+  width: 17px; height: 17px; background: #0369a1; border-radius: 50%;
+  color: #fff; font-size: 0.55rem;
+  display: flex; align-items: center; justify-content: center;
 }
 
-.remove-btn:hover {
-  background: #1E88B6;
-  color: #F2C200;
-}
+.form-field   { margin-bottom: 0.8rem; }
+.field-label  { display: block; font-size: 0.76rem; font-weight: 700; color: #0C3B5E; margin-bottom: 0.38rem; }
+.req { color: #ef4444; margin-left: 2px; }
+.opt { font-weight: 400; color: #9ca3af; font-size: 0.7rem; }
 
-.cart-summary {
-  background: white;
-  padding: 1.2rem;
-  border-radius: 12px;
-  border: 2px solid rgba(242, 194, 0, 0.2);
-  margin-bottom: 1.25rem;
-}
+.input-wrap  { position: relative; }
+.input-icon  { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: #0369a1; font-size: 0.72rem; }
+.ta-icon     { top: 0.85rem; transform: none; }
 
-.summary-heading {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #1E88B6;
-  margin: 0 0 0.85rem;
-}
-
-.summary-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.98rem;
-  color: #166B8F;
-}
-
-.row-value {
-  font-weight: 600;
-  color: #1E88B6;
-}
-
-.row-value.price-bright-blue {
-  color: #4AA3D0 !important;
-  font-weight: 700;
-}
-
-.row-value.free {
-  color: #1E88B6 !important;
-  font-weight: 600;
-}
-
-.row-value.discount {
-  color: #4AA3D0;
-  font-weight: 600;
-}
-
-.summary-row.discount {
-  color: #4AA3D0;
-}
-
-.summary-divider {
-  height: 2px;
-  background: #F2C200;
-  opacity: 0.3;
-  margin: 0.25rem 0;
-}
-
-.summary-row.total {
-  font-size: 1.08rem;
-  font-weight: 700;
-  color: #1E88B6;
-  margin-top: 0.25rem;
-}
-
-.row-total {
-  font-size: 1.55rem;
-  font-weight: 700;
-  color: #4AA3D0;
-}
-
-.price-bright-blue {
-  color: #4AA3D0 !important;
-  font-weight: 700;
-}
-
-/* ══════════════════════════════════════════ */
-/* STAGE 3: CHECKOUT - BRIGHT BLUE PRICES */
-/* ══════════════════════════════════════════ */
-.checkout-container {
-  background: white;
-  border-radius: 20px;
-  border: 1px solid rgba(30, 136, 182, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.checkout-header {
-  background: linear-gradient(135deg, #1E88B6 0%, #166B8F 100%);
-  padding: 1.5rem;
-  text-align: center;
-  border-bottom: 3px solid #F2C200;
-}
-
-.checkout-title-section {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-.checkout-icon {
-  font-size: 1.85rem;
-}
-
-.checkout-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: white;
-  margin: 0;
-}
-
-.checkout-body {
-  padding: 1.5rem;
-  background: white;
-}
-
-.checkout-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 1.25rem;
-}
-
-.checkout-left,
-.checkout-right {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.checkout-section {
-  background: white;
-  padding: 1.25rem;
-  border-radius: 12px;
-  border: 2px solid rgba(242, 194, 0, 0.2);
-}
-
-.section-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #1E88B6;
-  margin: 0 0 1.1rem;
-}
-
-.section-icon {
-  font-size: 1.25rem;
-  color: #F2C200;
-}
-
-.location-types {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.85rem;
-  margin-bottom: 1.1rem;
-}
-
-.location-type-option {
-  background: white;
-  border: 2px solid rgba(30, 136, 182, 0.2);
-  padding: 1.15rem 0.9rem;
-  border-radius: 12px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #1A2E40;
-}
-
-.location-type-option:hover {
-  border-color: #1E88B6;
-  background: rgba(30, 136, 182, 0.02);
-  color: #0D4B6E; /* Darker blue on hover */
-}
-
-.location-type-option.selected {
-  background: #1E88B6;
-  border-color: #F2C200;
-  color: white;
-}
-
-.location-type-option.selected:hover {
-  color: white; /* Keep white on selected when hovered */
-}
-
-.location-emoji {
-  font-size: 2.25rem;
-  display: block;
-  margin-bottom: 0.55rem;
-}
-
-.location-name {
-  font-weight: 600;
-  font-size: 0.98rem;
-}
-
-.form-field {
-  margin-bottom: 1rem;
-}
-
-.field-label {
-  display: block;
-  font-weight: 600;
-  color: #1E88B6;
-  margin-bottom: 0.45rem;
-  font-size: 0.95rem;
-}
-
-.required {
-  color: #F2C200;
-}
-
-.field-input-wrapper {
-  position: relative;
-}
-
-.field-icon {
-  position: absolute;
-  left: 0.9rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1.05rem;
-}
-
-.field-input,
-.field-textarea {
+.field-input, .field-textarea {
   width: 100%;
-  padding: 0.7rem 0.9rem 0.7rem 2.8rem;
-  border: 2px solid rgba(30, 136, 182, 0.2);
-  border-radius: 30px;
-  font-size: 0.98rem;
-  font-family: inherit;
-  transition: all 0.2s ease;
-  background: #E3F2F9;
-  color: #1A2E40;
+  padding: 0.62rem 0.85rem 0.62rem 2.3rem;
+  border: 1.5px solid #e5e7eb; border-radius: 8px;
+  font-size: 0.83rem; background: #fff; color: #1f2937; font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field-input:focus, .field-textarea:focus { outline: none; border-color: #0369a1; box-shadow: 0 0 0 3px rgba(3,105,161,0.1); }
+.field-textarea { resize: vertical; }
+
+.confirm-loc-btn {
+  width: 100%; padding: 0.72rem; background: #0369a1; color: #fff;
+  border: none; border-radius: 8px; font-size: 0.83rem; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  gap: 0.5rem; transition: all 0.2s;
+}
+.confirm-loc-btn:hover { background: #0C3B5E; transform: translateY(-1px); }
+.confirm-loc-btn.saved { background: #059669; }
+
+.success-inline {
+  margin-top: 0.6rem; padding: 0.5rem 0.8rem;
+  background: #d1fae5; border-radius: 6px;
+  font-size: 0.76rem; font-weight: 600; color: #065f46;
+  display: flex; align-items: center; gap: 0.4rem;
 }
 
-.field-input:focus,
-.field-textarea:focus {
-  outline: none;
-  border-color: #1E88B6;
-  background: white;
+.pop-in-enter-active { animation: popIn 0.22s ease; }
+.pop-in-leave-active { animation: popIn 0.18s ease reverse; }
+@keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+.info-card {
+  background: #eff6ff; border-left: 3px solid #F4C400;
+  border-radius: 0 8px 8px 0; padding: 0.8rem 1rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.info-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.78rem; color: #0C3B5E; }
+.info-ic  { color: #0369a1; font-size: 0.75rem; width: 14px; flex-shrink: 0; }
+
+.warning-card {
+  background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px;
+  padding: 0.8rem 0.95rem; font-size: 0.78rem; color: #92400e; font-weight: 600;
+  display: flex; align-items: center; gap: 0.55rem;
 }
 
-.field-textarea {
-  resize: vertical;
-  border-radius: 16px;
+/* Order items list */
+.order-items {
+  background: #fff; border-radius: 8px; padding: 0.45rem;
+  margin-bottom: 0.8rem; max-height: 200px; overflow-y: auto;
+  border: 1px solid #e5e7eb;
+}
+.order-items::-webkit-scrollbar { width: 4px; }
+.order-items::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
+.oi-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.48rem 0.65rem; border-radius: 6px; transition: background 0.15s;
+}
+.oi-row:hover { background: #f9fafb; }
+
+.oi-name  { flex: 1; font-size: 0.8rem; font-weight: 600; color: #1f2937; }
+.oi-qty   { font-size: 0.72rem; color: #6b7280; min-width: 34px; text-align: center; }
+.oi-price { font-size: 0.8rem; font-weight: 700; color: #0369a1; min-width: 58px; text-align: right; }
+
+.order-totals { border-top: 1px solid #e5e7eb; padding-top: 0.7rem; display: flex; flex-direction: column; gap: 0.45rem; }
+
+.total-row  { display: flex; justify-content: space-between; font-size: 0.8rem; color: #6b7280; }
+.tv         { font-weight: 600; color: #0369a1; }
+.free-green { color: #059669 !important; }
+.total-divider { height: 1px; background: #e5e7eb; margin: 0.15rem 0; }
+.final-row  { font-size: 0.92rem; font-weight: 700; color: #0C3B5E; }
+.final-val  { font-size: 1.1rem; font-weight: 800; color: #0369a1; }
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.nav-btns { display: flex; gap: 0.8rem; }
+.mt-sm    { margin-top: 0.5rem; }
+
+.ghost-btn {
+  display: flex; align-items: center; gap: 0.45rem;
+  padding: 0.7rem 1.15rem;
+  background: #fff; border: 1.5px solid #e5e7eb; border-radius: 8px;
+  color: #6b7280; font-size: 0.83rem; font-weight: 600; cursor: pointer;
+  transition: all 0.2s;
+}
+.ghost-btn:hover { border-color: #0369a1; color: #0369a1; background: #eff6ff; transform: translateX(-2px); }
+
+.primary-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.45rem;
+  padding: 0.7rem 1.4rem;
+  background: #0369a1; color: #fff; border: none; border-radius: 8px;
+  font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.primary-btn:hover { background: #0C3B5E; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(3,105,161,0.22); }
+
+.submit-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 0.75rem 1.4rem;
+  background: #9ca3af; color: #fff; border: none; border-radius: 8px;
+  font-size: 0.85rem; font-weight: 700; cursor: not-allowed; transition: all 0.25s;
+}
+.submit-btn.ready { background: #F4C400; color: #0C3B5E; cursor: pointer; }
+.submit-btn.ready:hover { background: #F2C200; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(244,196,0,0.3); }
+
+/* ── Global Toast ───────────────────────────────────────────── */
+.global-toast {
+  position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+  background: #fff; border: 2px solid #F4C400; border-radius: 50px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 1000;
 }
 
-.confirm-location-btn {
-  width: 100%;
-  background: #1E88B6;
-  color: white;
-  border: 2px solid #1E88B6;
-  padding: 0.8rem 1.2rem;
-  border-radius: 30px;
-  font-weight: 600;
-  font-size: 0.98rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
+.toast-inner { display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 1.35rem; }
+.toast-emoji { font-size: 1.45rem; }
+.toast-inner strong { display: block; font-size: 0.88rem; color: #0C3B5E; font-weight: 800; }
+.toast-inner span   { font-size: 0.72rem; color: #6b7280; }
+
+.toast-slide-enter-active { animation: toastIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.toast-slide-leave-active  { animation: toastIn 0.22s ease reverse; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-14px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-.confirm-location-btn:hover {
-  transform: translateY(-1px);
-  background: #F2C200;
-  border-color: #F2C200;
-  color: #0D4B6E; /* Darker blue on yellow hover */
+/* ── Floating Cart FAB ──────────────────────────────────────── */
+.fab-cart {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.72rem 1.2rem 0.72rem 0.95rem;
+  background: #0C3B5E; color: #fff;
+  border: 2px solid #F4C400; border-radius: 50px;
+  box-shadow: 0 6px 20px rgba(12,59,94,0.38);
+  cursor: pointer; font-size: 0.85rem; font-weight: 700; z-index: 999;
+  transition: all 0.22s;
+}
+.fab-cart:hover { background: #F4C400; color: #0C3B5E; border-color: #0C3B5E; transform: translateY(-2px); box-shadow: 0 8px 22px rgba(244,196,0,0.3); }
+
+.fab-badge {
+  background: #ef4444; color: #fff;
+  width: 20px; height: 20px; border-radius: 50%;
+  font-size: 0.68rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
 }
 
-.icon-inline {
-  font-size: 1.05rem;
-}
+.fab-label { white-space: nowrap; }
 
-.success-alert {
-  background: rgba(242, 194, 0, 0.1);
-  color: #F2C200;
-  padding: 0.75rem 1rem;
-  border-radius: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.85rem;
-  font-weight: 600;
-  border: 2px solid rgba(242, 194, 0, 0.3);
-}
+.fab-pop-enter-active { animation: fabIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.fab-pop-leave-active  { animation: fabIn 0.2s ease reverse; }
+@keyframes fabIn { from { opacity: 0; transform: scale(0.7) translateY(18px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-.success-icon-inline {
-  font-size: 1.15rem;
-}
-
-.order-items-list {
-  background: #E3F2F9;
-  border-radius: 12px;
-  padding: 0.9rem;
-  margin-bottom: 1rem;
-  border: 2px solid rgba(242, 194, 0, 0.2);
-}
-
-.order-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.65rem 0.75rem;
-  background: white;
-  border-radius: 30px;
-  margin-bottom: 0.5rem;
-  border: 2px solid rgba(242, 194, 0, 0.2);
-}
-
-.order-item:last-child {
-  margin-bottom: 0;
-}
-
-.order-item-name {
-  flex: 1;
-  font-weight: 600;
-  color: #1E88B6;
-  font-size: 0.93rem;
-}
-
-.order-item-qty {
-  color: #166B8F;
-  margin: 0 0.85rem;
-  font-size: 0.88rem;
-}
-
-.order-item-price {
-  font-weight: 600;
-  color: #4AA3D0;
-  min-width: 80px;
-  text-align: right;
-  font-size: 0.98rem;
-}
-
-.order-totals {
-  background: white;
-  border-radius: 12px;
-  padding: 1rem;
-  border: 2px solid rgba(242, 194, 0, 0.2);
-}
-
-.order-total-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.45rem 0;
-  color: #166B8F;
-  font-size: 0.93rem;
-}
-
-.order-total-row.final {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #1E88B6;
-  margin-top: 0.35rem;
-  padding-top: 0.65rem;
-}
-
-.free-label {
-  color: #1E88B6 !important;
-  font-weight: 600;
-}
-
-.order-total-row.discount {
-  color: #4AA3D0;
-}
-
-.order-total-divider {
-  height: 2px;
-  background: #F2C200;
-  opacity: 0.3;
-  margin: 0.65rem 0;
-}
-
-.final-amount {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #4AA3D0;
-}
-
-.info-box {
-  background: #E3F2F9;
-  border-left: 4px solid #F2C200;
-  padding: 1rem;
-  border-radius: 12px;
-  display: flex;
-  gap: 0.85rem;
-}
-
-.info-box-icon {
-  font-size: 1.4rem;
-}
-
-.info-box-text {
-  font-size: 0.93rem;
-  color: #166B8F;
-  line-height: 1.55;
-}
-
-.warning-box {
-  background: rgba(242, 194, 0, 0.1);
-  color: #1E88B6;
-  padding: 0.9rem;
-  border-radius: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.7rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-align: center;
-  border: 2px solid rgba(242, 194, 0, 0.3);
-}
-
-.warning-box-icon {
-  font-size: 1.25rem;
-}
-
-/* ══════════════════════════════════════════ */
-/* NAVIGATION BUTTONS */
-/* ══════════════════════════════════════════ */
-.navigation-buttons {
-  display: flex;
-  gap: 0.85rem;
-  padding-top: 0;
-  border-top: none;
-}
-
-.nav-button {
-  flex: 1;
-  padding: 0.95rem 1.4rem;
-  border-radius: 30px;
-  font-weight: 600;
-  font-size: 0.98rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.nav-button.back {
-  background: white;
-  border: 2px solid rgba(30, 136, 182, 0.2);
-  color: #1E88B6;
-}
-
-.nav-button.back:hover {
-  background: #E3F2F9;
-  border-color: #1E88B6;
-  color: #0D4B6E; /* Darker blue on hover */
-  transform: translateY(-1px);
-}
-
-.nav-button.proceed,
-.nav-button.submit {
-  background: #1E88B6;
-  border: 2px solid #1E88B6;
-  color: white;
-}
-
-.nav-button.proceed:hover,
-.nav-button.submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background: #F2C200;
-  border-color: #F2C200;
-  color: #0D4B6E; /* Darker blue on yellow hover */
-}
-
-.nav-button.submit:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ══════════════════════════════════════════ */
-/* TOAST & FLOATING CART */
-/* ══════════════════════════════════════════ */
-.toast-notification {
-  position: fixed;
-  top: -100px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  padding: 0.9rem 1.4rem;
-  border-radius: 30px;
-  border: 3px solid #F2C200;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  transition: top 0.3s;
-  z-index: 1000;
-}
-
-.toast-notification.visible {
-  top: 1.25rem;
-}
-
-.toast-icon-emoji {
-  font-size: 1.8rem;
-}
-
-.toast-message {
-  display: flex;
-  flex-direction: column;
-}
-
-.toast-message strong {
-  color: #1E88B6;
-  font-size: 0.98rem;
-  font-weight: 700;
-}
-
-.toast-message span {
-  color: #166B8F;
-  font-size: 0.88rem;
-}
-
-.floating-cart-button {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  width: 62px;
-  height: 62px;
-  border-radius: 50%;
-  background: #1E88B6;
-  color: white;
-  border: 3px solid #F2C200;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  z-index: 999;
-}
-
-.floating-cart-button:hover {
-  transform: scale(1.05);
-  background: #F2C200;
-  color: #0D4B6E; /* Darker blue on yellow hover */
-}
-
-.float-cart-icon {
-  font-size: 1.75rem;
-}
-
-.float-cart-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #F2C200;
-  color: #1E88B6;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  font-weight: 700;
-  border: 3px solid white;
-}
-
-/* Slide animation */
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.3s;
-}
-
-.slide-down-enter-from {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-
-.slide-down-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-/* ══════════════════════════════════════════ */
-/* RESPONSIVE DESIGN */
-/* ══════════════════════════════════════════ */
+/* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .eshop-header {
-    padding: 0.85rem 1rem;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .header-title {
-    font-size: 1.15rem;
-  }
-
-  .header-right {
-    gap: 0.5rem;
-  }
-
-  .stage-tabs-container {
-    order: 3;
-    width: 100%;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-  }
-
-  .stage-tab-btn {
-    padding: 0.5rem 0.7rem;
-    font-size: 0.85rem;
-  }
-
-  .stage-label {
-    display: none;
-  }
-
-  .main-wrapper {
-    padding: 1rem;
-  }
-
-  .menu-header {
-    flex-wrap: wrap;
-    gap: 0.9rem;
-    padding: 1rem 1.15rem;
-  }
-
-  .search-box {
-    width: 100%;
-    flex: 1 1 100%;
-    margin-left: 0;
-  }
-
-  .products-section {
-    padding: 1rem;
-  }
-
-  .products-two-column {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  .menu-type-heading {
-    font-size: 1.1rem;
-  }
-
-  .checkout-container {
-    margin: 0 0.25rem;
-  }
-
-  .checkout-header {
-    padding: 1.25rem 1rem;
-  }
-
-  .checkout-title {
-    font-size: 1.35rem;
-  }
-
-  .checkout-body {
-    padding: 1.1rem;
-  }
-
-  .checkout-columns {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .checkout-section {
-    padding: 1.1rem;
-  }
-
-  .location-types {
-    grid-template-columns: 1fr;
-  }
-
-  .navigation-buttons {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .nav-button {
-    padding: 0.85rem 1.15rem;
-  }
+  .eshop-header { height: auto; padding: 0.7rem 1rem; flex-wrap: wrap; gap: 0.7rem; }
+  .stage-tabs-container { order: 3; width: 100%; }
+  .stage-label { display: none; }
+  .main-wrapper { padding: 1rem; }
+  .products-grid { grid-template-columns: 1fr; }
+  .checkout-cols { grid-template-columns: 1fr; }
+  .nav-btns { flex-direction: column; }
+  .ghost-btn { justify-content: center; }
+  .fab-label { display: none; }
+  .fab-cart  { padding: 0.85rem; border-radius: 50%; }
 }
 
 @media (max-width: 480px) {
-  .header-icon {
-    font-size: 1.5rem;
-  }
-
-  .header-title {
-    font-size: 1rem;
-  }
-
-  .cart-header-btn span:not(.cart-icon-header):not(.cart-badge-header) {
-    display: none;
-  }
-
-  .stage-tab-btn {
-    padding: 0.45rem;
-  }
-
-  .stage-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 0.9rem;
-  }
-
-  .main-wrapper {
-    padding: 0.85rem;
-  }
-
-  .checkout-header {
-    padding: 1.1rem 1rem;
-  }
-
-  .checkout-title {
-    font-size: 1.2rem;
-  }
-
-  .checkout-body {
-    padding: 1rem;
-  }
-
-  .checkout-section {
-    padding: 1rem;
-  }
-
-  .field-input,
-  .field-textarea {
-    padding: 0.7rem 0.85rem 0.7rem 2.65rem;
-    font-size: 0.92rem;
-  }
-
-  .field-icon {
-    font-size: 1rem;
-    left: 0.85rem;
-  }
-
-  .confirm-location-btn {
-    font-size: 0.95rem;
-    padding: 0.75rem 1.1rem;
-  }
-
-  .order-item {
-    padding: 0.6rem 0.7rem;
-  }
-
-  .order-item-name {
-    font-size: 0.9rem;
-  }
-
-  .order-item-qty,
-  .order-item-price {
-    font-size: 0.85rem;
-  }
-
-  .order-total-row {
-    font-size: 0.9rem;
-    padding: 0.375rem 0;
-  }
-
-  .order-total-row.final {
-    font-size: 1rem;
-  }
-
-  .final-amount {
-    font-size: 1.15rem;
-  }
-
-  .info-box,
-  .warning-box {
-    padding: 0.85rem;
-    font-size: 0.85rem;
-  }
-
-  .nav-button {
-    font-size: 0.95rem;
-    padding: 0.75rem 1rem;
-  }
-
-  .product-info-row {
-    min-height: 50px;
-  }
-
-  .product-title {
-    font-size: 0.9rem;
-  }
-
-  .product-type {
-    font-size: 0.75rem;
-  }
-
-  .product-price {
-    font-size: 0.95rem;
-  }
-
-  .product-add-btn {
-    padding: 0.35rem 1rem;
-    height: 32px;
-    font-size: 0.8rem;
-  }
+  .header-title   { font-size: 1rem; }
+  .header-sub     { display: none; }
+  .cart-btn-label { display: none; }
 }
 </style>
