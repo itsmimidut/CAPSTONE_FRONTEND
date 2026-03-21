@@ -1,662 +1,732 @@
 <template>
-  <section class="profile-section">
-
-    <!-- ── Top Action Bar ──────────────────────── -->
-    <div class="top-bar">
-      <div class="top-bar-title">
-        <span class="top-bar-icon"><i class="fas fa-user-circle"></i></span>
-        <h2 class="top-bar-heading">My Profile</h2>
-      </div>
-      <button class="edit-toggle-btn" :class="{ cancel: isEditing }" @click="toggleEdit">
-        <i :class="isEditing ? 'fas fa-times' : 'fas fa-pen'"></i>
-        {{ isEditing ? 'Cancel' : 'Edit Profile' }}
-      </button>
-    </div>
-
-    <!-- ── Main Card ───────────────────────────── -->
+  <section class="profile-wrap">
     <div class="profile-card">
-      <div class="profile-grid">
+      <div class="profile-head">
+        <div class="avatar-wrap">
+          <img
+            v-if="avatarPreview"
+            :src="avatarPreview"
+            alt="Profile"
+            class="avatar-img"
+          />
+          <span v-else class="avatar-initial">{{ userInitial }}</span>
+        </div>
 
-        <!-- LEFT: Avatar + identity -->
-        <div class="avatar-col">
+        <div class="head-main">
+          <h2 class="head-title">Profile Settings</h2>
+          <p class="head-sub">Update your personal details and profile photo.</p>
+        </div>
 
-          <!-- Avatar frame -->
-          <div class="avatar-frame-wrap">
-            <div class="avatar-frame">
-              <img v-if="previewImage" :src="previewImage" alt="Profile" class="avatar-img" />
-              <span v-else class="avatar-initials">{{ initials }}</span>
-            </div>
+        <div class="head-actions">
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            class="hidden-input"
+            @change="onImagePicked"
+          />
+          <button class="btn btn-ghost" type="button" @click="fileInputRef?.click()" :disabled="isSaving">
+            Change Photo
+          </button>
+        </div>
+      </div>
 
-            <!-- Camera button (edit mode) -->
-            <label v-if="isEditing" class="avatar-camera-btn" title="Change photo">
-              <input type="file" class="hidden-input" accept="image/*" @change="handleImageChange" />
-              <i class="fas fa-camera"></i>
+      <p v-if="message.text" :class="['message', message.type === 'error' ? 'message-error' : 'message-success']">
+        {{ message.text }}
+      </p>
+
+      <form class="profile-form" @submit.prevent="saveProfile">
+        <div class="grid two-col">
+          <label class="field">
+            <span>First Name</span>
+            <input v-model="form.firstName" type="text" required />
+          </label>
+
+          <label class="field">
+            <span>Last Name</span>
+            <input v-model="form.lastName" type="text" required />
+          </label>
+
+          <label class="field">
+            <span>Email</span>
+            <input v-model="form.email" type="email" disabled />
+          </label>
+
+          <label class="field">
+            <span>Phone</span>
+            <input v-model="form.phone" type="text" />
+          </label>
+
+          <label class="field two-col-span">
+            <span>Address</span>
+            <input v-model="form.address" type="text" />
+          </label>
+
+          <label class="field">
+            <span>City</span>
+            <input v-model="form.city" type="text" />
+          </label>
+
+          <label class="field">
+            <span>Country</span>
+            <input v-model="form.country" type="text" />
+          </label>
+
+          <label class="field">
+            <span>Postal Code</span>
+            <input v-model="form.postalCode" type="text" />
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-ghost" type="button" @click="resetForm" :disabled="isSaving">
+            Reset
+          </button>
+          <button class="btn btn-primary" type="submit" :disabled="isSaving || !form.email">
+            {{ isSaving ? 'Saving...' : 'Save Profile' }}
+          </button>
+        </div>
+      </form>
+
+      <div class="password-box">
+        <h3 class="password-title">Security: Change Password</h3>
+        <p class="password-sub">Use your current password to set a new one.</p>
+
+        <form class="password-form" @submit.prevent="changePassword">
+          <div class="grid two-col">
+            <label class="field">
+              <span>Current Password</span>
+              <div class="password-input-wrap">
+                <input
+                  v-model="passwordForm.currentPassword"
+                  :type="showCurrentPassword ? 'text' : 'password'"
+                  autocomplete="current-password"
+                  required
+                />
+                <button
+                  class="password-toggle"
+                  type="button"
+                  @click="showCurrentPassword = !showCurrentPassword"
+                >
+                  <i :class="showCurrentPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
+                </button>
+              </div>
             </label>
 
-            <!-- Online indicator -->
-            <span class="avatar-online-dot"></span>
-          </div>
-
-          <!-- Name + email -->
-          <div class="avatar-identity">
-            <h3 class="avatar-name">{{ displayName }}</h3>
-            <p class="avatar-email">{{ form.email || 'No email' }}</p>
-          </div>
-
-          <!-- Role badge -->
-          <span class="role-badge">
-            <i class="fas fa-user"></i> Customer
-          </span>
-
-          <!-- Hint -->
-          <p class="avatar-hint">
-            <i class="fas fa-shield-alt"></i>
-            Profile image is stored securely in the customer database.
-          </p>
-        </div>
-
-        <!-- RIGHT: Form -->
-        <div class="form-col">
-          <form class="profile-form" @submit.prevent="saveProfile">
-
-            <!-- Name row -->
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label class="form-label">First Name</label>
-                <div class="input-wrap">
-                  <i class="fas fa-user fi"></i>
-                  <input
-                    v-model="form.firstName"
-                    type="text"
-                    :disabled="!isEditing"
-                    class="form-input"
-                    :class="{ disabled: !isEditing }"
-                    placeholder="Juan"
-                  />
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Last Name</label>
-                <div class="input-wrap">
-                  <i class="fas fa-user fi"></i>
-                  <input
-                    v-model="form.lastName"
-                    type="text"
-                    :disabled="!isEditing"
-                    class="form-input"
-                    :class="{ disabled: !isEditing }"
-                    placeholder="Dela Cruz"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Email + Phone -->
-            <div class="form-grid-2">
-              <div class="form-group">
-                <label class="form-label">Email <span class="locked-badge"><i class="fas fa-lock"></i> Locked</span></label>
-                <div class="input-wrap">
-                  <i class="fas fa-envelope fi"></i>
-                  <input
-                    v-model="form.email"
-                    type="email"
-                    disabled
-                    class="form-input disabled"
-                    placeholder="juan@email.com"
-                  />
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Phone</label>
-                <div class="input-wrap">
-                  <i class="fas fa-phone fi"></i>
-                  <input
-                    v-model="form.phone"
-                    type="text"
-                    :disabled="!isEditing"
-                    class="form-input"
-                    :class="{ disabled: !isEditing }"
-                    placeholder="+63 912 345 6789"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Address -->
-            <div class="form-group full">
-              <label class="form-label">Street Address</label>
-              <div class="input-wrap">
-                <i class="fas fa-map-marker-alt fi"></i>
+            <label class="field">
+              <span>New Password</span>
+              <div class="password-input-wrap">
                 <input
-                  v-model="form.address"
-                  type="text"
-                  :disabled="!isEditing"
-                  class="form-input"
-                  :class="{ disabled: !isEditing }"
-                  placeholder="123 Resort St."
+                  v-model="passwordForm.newPassword"
+                  :type="showNewPassword ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  required
                 />
+                <button
+                  class="password-toggle"
+                  type="button"
+                  @click="showNewPassword = !showNewPassword"
+                >
+                  <i :class="showNewPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
+                </button>
               </div>
+            </label>
+
+            <label class="field two-col-span">
+              <span>Confirm New Password</span>
+              <div class="password-input-wrap">
+                <input
+                  v-model="passwordForm.confirmPassword"
+                  :type="showConfirmPassword ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  required
+                />
+                <button
+                  class="password-toggle"
+                  type="button"
+                  @click="showConfirmPassword = !showConfirmPassword"
+                >
+                  <i :class="showConfirmPassword ? 'fa fa-eye-slash' : 'fa fa-eye'"></i>
+                </button>
+              </div>
+            </label>
+          </div>
+
+          <div class="strength-box">
+            <div class="strength-row">
+              <span>Password Strength</span>
+              <strong :class="strengthClass">{{ passwordStrengthLabel }}</strong>
             </div>
-
-            <!-- City + Country + Postal -->
-            <div class="form-grid-3">
-              <div class="form-group">
-                <label class="form-label">City</label>
-                <div class="input-wrap">
-                  <i class="fas fa-city fi"></i>
-                  <input
-                    v-model="form.city"
-                    type="text"
-                    :disabled="!isEditing"
-                    class="form-input"
-                    :class="{ disabled: !isEditing }"
-                    placeholder="Calapan"
-                  />
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Country</label>
-                <div class="input-wrap">
-                  <i class="fas fa-globe-asia fi"></i>
-                  <input
-                    v-model="form.country"
-                    type="text"
-                    :disabled="!isEditing"
-                    class="form-input"
-                    :class="{ disabled: !isEditing }"
-                    placeholder="Philippines"
-                  />
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Postal Code</label>
-                <div class="input-wrap">
-                  <i class="fas fa-map-pin fi"></i>
-                  <input
-                    v-model="form.postalCode"
-                    type="text"
-                    :disabled="!isEditing"
-                    class="form-input"
-                    :class="{ disabled: !isEditing }"
-                    placeholder="5200"
-                  />
-                </div>
-              </div>
+            <div class="strength-bar">
+              <div class="strength-fill" :class="strengthClass" :style="{ width: `${passwordStrengthPercent}%` }"></div>
             </div>
+            <ul class="strength-checklist">
+              <li :class="{ ok: passwordChecks.minLength }">At least 8 characters</li>
+              <li :class="{ ok: passwordChecks.upper }">At least one uppercase letter</li>
+              <li :class="{ ok: passwordChecks.lower }">At least one lowercase letter</li>
+              <li :class="{ ok: passwordChecks.number }">At least one number</li>
+              <li :class="{ ok: passwordChecks.symbol }">At least one symbol</li>
+            </ul>
+          </div>
 
-            <!-- Save row -->
-            <div class="form-actions">
-              <button
-                type="submit"
-                class="save-btn"
-                :class="{ loading: isSaving }"
-                :disabled="!isEditing || isSaving"
-              >
-                <span class="save-btn-text">
-                  <i :class="isSaving ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
-                  {{ isSaving ? 'Saving…' : 'Save Changes' }}
-                </span>
-              </button>
-
-              <transition name="msg-fade">
-                <span v-if="saveMessage" class="save-message success-msg">
-                  <i class="fas fa-check-circle"></i> {{ saveMessage }}
-                </span>
-                <span v-else-if="saveError" class="save-message error-msg">
-                  <i class="fas fa-exclamation-circle"></i> {{ saveError }}
-                </span>
-              </transition>
-            </div>
-
-          </form>
-        </div>
-
+          <div class="form-actions">
+            <button class="btn btn-ghost" type="button" @click="resetPasswordForm" :disabled="isChangingPassword">
+              Clear
+            </button>
+            <button class="btn btn-primary" type="submit" :disabled="isChangingPassword || !form.email">
+              {{ isChangingPassword ? 'Changing...' : 'Change Password' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
-
   </section>
 </template>
 
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
+import axios from 'axios'
 
 const props = defineProps({
   profile: {
     type: Object,
-    default: () => ({
-      fullName: '', email: '', phone: '',
-      address: '', city: '', country: '',
-      postalCode: '', profileImage: '',
-    }),
-  },
+    default: () => ({})
+  }
 })
 
 const emit = defineEmits(['profile-updated'])
 
-const apiBase    = 'http://localhost:8000/api'
-const isEditing  = ref(false)
-const isSaving   = ref(false)
-const saveMessage = ref('')
-const saveError  = ref('')
-const previewImage = ref('')
+const configuredApiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/+$/, '')
+const apiBase = /\/api$/i.test(configuredApiBase)
+  ? configuredApiBase
+  : `${configuredApiBase}/api`
+const apiRoot = apiBase.replace(/\/api\/?$/, '')
+const fileInputRef = ref(null)
+const pickedImageFile = ref(null)
+const avatarPreview = ref('')
+const isSaving = ref(false)
+const isChangingPassword = ref(false)
+const showCurrentPassword = ref(false)
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
+const message = reactive({ text: '', type: 'success' })
 
 const form = reactive({
-  firstName: '', lastName: '', email: '', phone: '',
-  address: '', city: '', country: '', postalCode: '', profileImage: '',
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  address: '',
+  city: '',
+  country: 'Philippines',
+  postalCode: '',
+  profileImage: ''
 })
 
-const hydrateForm = () => {
-  const fullName = props.profile.fullName || ''
-  const [firstName = '', ...rest] = fullName.trim().split(' ')
-  form.firstName    = props.profile.firstName || firstName
-  form.lastName     = props.profile.lastName  || rest.join(' ')
-  form.email        = props.profile.email        || ''
-  form.phone        = props.profile.phone        || ''
-  form.address      = props.profile.address      || ''
-  form.city         = props.profile.city         || ''
-  form.country      = props.profile.country      || ''
-  form.postalCode   = props.profile.postalCode   || ''
-  form.profileImage = props.profile.profileImage || ''
-  previewImage.value = form.profileImage
+const passwordForm = reactive({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const passwordChecks = computed(() => {
+  const value = String(passwordForm.newPassword || '')
+  return {
+    minLength: value.length >= 8,
+    upper: /[A-Z]/.test(value),
+    lower: /[a-z]/.test(value),
+    number: /\d/.test(value),
+    symbol: /[^A-Za-z0-9]/.test(value)
+  }
+})
+
+const passwordStrengthScore = computed(() => {
+  const checks = passwordChecks.value
+  return Object.values(checks).filter(Boolean).length
+})
+
+const passwordStrengthPercent = computed(() => (passwordStrengthScore.value / 5) * 100)
+
+const passwordStrengthLabel = computed(() => {
+  const score = passwordStrengthScore.value
+  if (score <= 1) return 'Very Weak'
+  if (score <= 2) return 'Weak'
+  if (score <= 3) return 'Fair'
+  if (score <= 4) return 'Good'
+  return 'Strong'
+})
+
+const strengthClass = computed(() => {
+  const score = passwordStrengthScore.value
+  if (score <= 1) return 'weak'
+  if (score <= 3) return 'fair'
+  if (score <= 4) return 'good'
+  return 'strong'
+})
+
+const resolveImageUrl = (rawPath) => {
+  const path = String(rawPath || '').trim()
+  if (!path) return ''
+  if (/^(https?:\/\/|data:|blob:)/i.test(path)) return path
+  if (path.startsWith('//')) return `https:${path}`
+  if (path.startsWith('/')) return `${apiRoot}${path}`
+  return `${apiRoot}/${path.replace(/^\.?\//, '')}`
 }
 
-watch(() => props.profile, () => { if (!isEditing.value) hydrateForm() }, { immediate: true, deep: true })
+const applyProfile = (p) => {
+  const fullName = String(p?.fullName || '').trim()
+  const [fullFirst, ...fullLast] = fullName.split(' ').filter(Boolean)
 
-const initials = computed(() => {
-  const parts = (displayName.value || 'Guest').trim().split(' ').filter(Boolean)
-  return parts.slice(0, 2).map(p => p[0].toUpperCase()).join('') || 'G'
-})
+  form.firstName = String(p?.firstName || fullFirst || '').trim()
+  form.lastName = String(p?.lastName || fullLast.join(' ') || '').trim()
+  form.email = String(p?.email || '').trim()
+  form.phone = String(p?.phone || '').trim()
+  form.address = String(p?.address || '').trim()
+  form.city = String(p?.city || '').trim()
+  form.country = String(p?.country || 'Philippines').trim() || 'Philippines'
+  form.postalCode = String(p?.postalCode || '').trim()
+  form.profileImage = String(p?.profileImage || '').trim()
 
-const displayName = computed(() =>
-  `${form.firstName} ${form.lastName}`.trim() || props.profile.fullName || 'Guest'
+  avatarPreview.value = resolveImageUrl(form.profileImage)
+  pickedImageFile.value = null
+  if (fileInputRef.value) fileInputRef.value.value = ''
+}
+
+watch(
+  () => props.profile,
+  (nextProfile) => {
+    applyProfile(nextProfile || {})
+  },
+  { immediate: true, deep: true }
 )
 
-const toggleEdit = () => {
-  if (isEditing.value) {
-    isEditing.value = false
-    saveError.value = ''
-    saveMessage.value = ''
-    hydrateForm()
-    return
-  }
-  isEditing.value = true
-  saveMessage.value = ''
+const userInitial = computed(() => {
+  const source = `${form.firstName} ${form.lastName}`.trim() || form.email || 'G'
+  return source.charAt(0).toUpperCase()
+})
+
+const showMessage = (text, type = 'success') => {
+  message.text = text
+  message.type = type
+  setTimeout(() => {
+    if (message.text === text) message.text = ''
+  }, 3500)
 }
 
-const handleImageChange = (event) => {
-  const file = event.target.files?.[0]
+const onImagePicked = (event) => {
+  const file = event.target?.files?.[0]
   if (!file) return
-  const reader = new FileReader()
-  reader.onload = () => { previewImage.value = reader.result; form.profileImage = reader.result }
-  reader.readAsDataURL(file)
+
+  pickedImageFile.value = file
+  avatarPreview.value = URL.createObjectURL(file)
+}
+
+const resetForm = () => {
+  applyProfile(props.profile || {})
+}
+
+const resetPasswordForm = () => {
+  passwordForm.currentPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  showCurrentPassword.value = false
+  showNewPassword.value = false
+  showConfirmPassword.value = false
 }
 
 const saveProfile = async () => {
-  if (!form.email) { saveError.value = 'Email is required to update the profile.'; return }
-  isSaving.value = true; saveError.value = ''; saveMessage.value = ''
+  if (!form.email) {
+    showMessage('Missing account email. Please log in again.', 'error')
+    return
+  }
+
+  isSaving.value = true
   try {
-    const res = await fetch(`${apiBase}/customers/profile/${encodeURIComponent(form.email)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        firstName: form.firstName, lastName: form.lastName,
-        phone: form.phone, address: form.address,
-        city: form.city, country: form.country,
-        postalCode: form.postalCode, profileImage: form.profileImage,
-      }),
-    })
-    if (!res.ok) throw new Error('Failed to update profile')
-    const { customer = {} } = await res.json()
-    emit('profile-updated', {
-      fullName:     `${customer.firstName || ''} ${customer.lastName || ''}`.trim(),
-      email:        customer.email        || form.email,
-      phone:        customer.phone        || form.phone,
-      address:      customer.address      || form.address,
-      city:         customer.city         || form.city,
-      country:      customer.country      || form.country,
-      postalCode:   customer.postalCode   || form.postalCode,
-      profileImage: customer.profileImage || form.profileImage,
-      firstName:    customer.firstName    || form.firstName,
-      lastName:     customer.lastName     || form.lastName,
-    })
-    isEditing.value = false
-    saveMessage.value = 'Profile updated successfully.'
-    setTimeout(() => saveMessage.value = '', 4000)
-  } catch (err) {
-    saveError.value = err?.message || 'Failed to update profile.'
+    const payload = new FormData()
+    payload.append('firstName', form.firstName)
+    payload.append('lastName', form.lastName)
+    payload.append('phone', form.phone)
+    payload.append('address', form.address)
+    payload.append('city', form.city)
+    payload.append('country', form.country)
+    payload.append('postalCode', form.postalCode)
+
+    if (pickedImageFile.value) {
+      payload.append('profileImage', pickedImageFile.value)
+    } else {
+      payload.append('profileImage', form.profileImage)
+    }
+
+    const { data } = await axios.put(
+      `${apiBase}/customers/profile/${encodeURIComponent(form.email)}`,
+      payload,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+
+    const updated = data?.customer || {}
+    const normalized = {
+      firstName: updated.firstName || form.firstName,
+      lastName: updated.lastName || form.lastName,
+      fullName: `${updated.firstName || form.firstName} ${updated.lastName || form.lastName}`.trim(),
+      email: updated.email || form.email,
+      phone: updated.phone || form.phone,
+      address: updated.address || form.address,
+      city: updated.city || form.city,
+      country: updated.country || form.country,
+      postalCode: updated.postalCode || form.postalCode,
+      profileImage: updated.profileImage || form.profileImage
+    }
+
+    applyProfile(normalized)
+    emit('profile-updated', normalized)
+    showMessage('Profile updated successfully')
+  } catch (error) {
+    showMessage(error?.response?.data?.error || 'Failed to update profile', 'error')
   } finally {
     isSaving.value = false
+  }
+}
+
+const changePassword = async () => {
+  if (!form.email) {
+    showMessage('Missing account email. Please log in again.', 'error')
+    return
+  }
+
+  if (!passwordChecks.value.minLength) {
+    showMessage('New password must be at least 8 characters long', 'error')
+    return
+  }
+
+  if (!passwordChecks.value.upper || !passwordChecks.value.lower || !passwordChecks.value.number || !passwordChecks.value.symbol) {
+    showMessage('New password must include uppercase, lowercase, number, and symbol', 'error')
+    return
+  }
+
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    showMessage('New password and confirmation do not match', 'error')
+    return
+  }
+
+  if (passwordForm.newPassword === passwordForm.currentPassword) {
+    showMessage('New password must be different from current password', 'error')
+    return
+  }
+
+  isChangingPassword.value = true
+  try {
+    const { data } = await axios.post(`${apiBase}/customers/change-password`, {
+      email: form.email,
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword
+    })
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Failed to change password')
+    }
+
+    resetPasswordForm()
+    showMessage('Password changed successfully')
+  } catch (error) {
+    const status = error?.response?.status
+    if (status === 404) {
+      showMessage('Password endpoint not found. Please restart backend server to load latest routes.', 'error')
+    } else {
+      showMessage(error?.response?.data?.error || error.message || 'Failed to change password', 'error')
+    }
+  } finally {
+    isChangingPassword.value = false
   }
 }
 </script>
 
 <style scoped>
-/* ── Design Tokens ──────────────────────────────────────────── */
-:root {
-  --color-primary:       #0369a1;
-  --color-primary-light: #1F8DBF;
-  --color-primary-dark:  #1E88B6;
-  --color-gold:          #F4C400;
-  --color-gold-dark:     #F2C200;
-  --color-navy:          #0C3B5E;
-  --color-white:         #FFFFFF;
-  --color-gray-bg:       #f9fafb;
-  --color-gray-border:   #e5e7eb;
-  --color-text-dark:     #1f2937;
-  --color-text-light:    #6b7280;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-.profile-section {
-  font-family: 'Segoe UI', system-ui, sans-serif;
+.profile-wrap {
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  color: #1f2937;
+  justify-content: center;
 }
 
-/* ── Top Bar ────────────────────────────────────────────────── */
-.top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.top-bar-title {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.top-bar-icon {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  background: #eff6ff; color: #0369a1;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.88rem;
-}
-
-.top-bar-heading {
-  font-size: 1rem; font-weight: 800; color: #0C3B5E;
-}
-
-/* Edit toggle button */
-.edit-toggle-btn {
-  display: inline-flex; align-items: center; gap: 0.45rem;
-  padding: 0.5rem 1.1rem;
-  background: #fff;
-  border: 1.5px solid #dbeafe;
-  border-radius: 50px;
-  font-family: inherit; font-size: 0.8rem; font-weight: 700;
-  color: #0369a1; cursor: pointer;
-  transition: all 0.2s;
-}
-
-.edit-toggle-btn:hover {
-  background: #eff6ff;
-  border-color: #0369a1;
-  transform: translateY(-1px);
-}
-
-.edit-toggle-btn.cancel {
-  background: #fff; color: #ef4444;
-  border-color: #fecaca;
-}
-
-.edit-toggle-btn.cancel:hover {
-  background: #fef2f2; border-color: #ef4444;
-}
-
-/* ── Profile Card ───────────────────────────────────────────── */
 .profile-card {
-  background: #fff;
-  border-radius: 14px;
-  border: 1px solid #dbeafe;
-  box-shadow: 0 2px 12px rgba(3,105,161,0.07);
-  overflow: hidden;
-}
-
-/* ── Profile Grid ───────────────────────────────────────────── */
-.profile-grid {
+  width: 100%;
+  max-width: 980px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 8px 26px rgba(12, 59, 94, 0.08);
+  padding: 1rem;
   display: grid;
-  grid-template-columns: 260px 1fr;
-  min-height: 420px;
+  gap: 0.9rem;
 }
 
-@media (max-width: 900px) {
-  .profile-grid { grid-template-columns: 1fr; }
-}
-
-/* ── Avatar Column ──────────────────────────────────────────── */
-.avatar-col {
-  background: #eff6ff;
-  border-right: 1px solid #dbeafe;
-  padding: 1.75rem 1.5rem;
-  display: flex;
-  flex-direction: column;
+.profile-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.8rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.8rem;
 }
 
-@media (max-width: 900px) {
-  .avatar-col {
-    border-right: none;
-    border-bottom: 1px solid #dbeafe;
-    padding: 1.5rem;
-  }
-}
-
-/* Avatar frame */
-.avatar-frame-wrap {
-  position: relative;
-  width: 120px; height: 120px;
-}
-
-.avatar-frame {
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #0C3B5E, #0369a1);
-  border: 3px solid #fff;
-  box-shadow: 0 4px 16px rgba(3,105,161,0.2);
+.avatar-wrap {
+  width: 62px;
+  height: 62px;
+  border-radius: 14px;
   overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
+  background: #0c3b5e;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .avatar-img {
-  width: 100%; height: 100%; object-fit: cover;
-}
-
-.avatar-initials {
-  font-size: 2.2rem; font-weight: 800;
-  color: #fff; line-height: 1;
-  user-select: none;
-}
-
-/* Camera button */
-.avatar-camera-btn {
-  position: absolute;
-  bottom: 4px; right: 4px;
-  width: 30px; height: 30px;
-  border-radius: 50%;
-  background: #F4C400; color: #0C3B5E;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.7rem; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(244,196,0,0.4);
-  transition: background 0.18s, transform 0.15s;
-  border: 2px solid #fff;
-}
-
-.avatar-camera-btn:hover { background: #F2C200; transform: scale(1.1); }
-
-.hidden-input { display: none; }
-
-/* Online dot */
-.avatar-online-dot {
-  position: absolute;
-  top: 6px; right: 6px;
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  background: #10b981;
-  border: 2px solid #eff6ff;
-  box-shadow: 0 0 0 2px rgba(16,185,129,0.25);
-}
-
-/* Identity */
-.avatar-identity { text-align: center; }
-
-.avatar-name {
-  font-size: 1rem; font-weight: 800; color: #0C3B5E;
-  line-height: 1.2; margin-bottom: 0.2rem;
-}
-
-.avatar-email {
-  font-size: 0.75rem; color: #6b7280;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  max-width: 200px;
-}
-
-/* Role badge */
-.role-badge {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  background: #fff;
-  border: 1.5px solid #dbeafe;
-  color: #0369a1;
-  font-size: 0.72rem; font-weight: 700;
-  padding: 0.3rem 0.85rem;
-  border-radius: 20px;
-  letter-spacing: 0.03em;
-}
-
-/* Hint */
-.avatar-hint {
-  font-size: 0.7rem; color: #6b7280;
-  text-align: center; line-height: 1.45;
-  display: flex; align-items: flex-start; gap: 0.35rem;
-  max-width: 180px;
-}
-
-.avatar-hint i { color: #0369a1; margin-top: 1px; flex-shrink: 0; }
-
-/* ── Form Column ────────────────────────────────────────────── */
-.form-col {
-  padding: 1.75rem 1.5rem;
-}
-
-.profile-form { display: flex; flex-direction: column; gap: 0.9rem; }
-
-/* Form grids */
-.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
-.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.85rem; }
-
-@media (max-width: 640px) {
-  .form-grid-2 { grid-template-columns: 1fr; }
-  .form-grid-3 { grid-template-columns: 1fr 1fr; }
-}
-
-@media (max-width: 420px) {
-  .form-grid-3 { grid-template-columns: 1fr; }
-}
-
-.form-group { display: flex; flex-direction: column; gap: 0.32rem; }
-.form-group.full { grid-column: 1 / -1; }
-
-/* Label */
-.form-label {
-  font-size: 0.68rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.07em;
-  color: #0C3B5E;
-  display: flex; align-items: center; gap: 0.45rem;
-}
-
-.locked-badge {
-  display: inline-flex; align-items: center; gap: 0.25rem;
-  background: #f3f4f6; color: #9ca3af;
-  font-size: 0.6rem; font-weight: 700;
-  padding: 0.1rem 0.45rem; border-radius: 20px;
-  text-transform: none; letter-spacing: 0;
-}
-
-/* Input */
-.input-wrap { position: relative; }
-
-.fi {
-  position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%);
-  color: #0369a1; font-size: 0.7rem; pointer-events: none;
-}
-
-.form-input {
   width: 100%;
-  padding: 0.6rem 0.85rem 0.6rem 2.2rem;
-  border: 1.5px solid #dbeafe;
-  border-radius: 8px;
-  font-family: inherit; font-size: 0.85rem;
-  color: #1f2937; background: #f0f7ff;
-  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
-  outline: none;
+  height: 100%;
+  object-fit: cover;
 }
 
-.form-input:focus {
-  border-color: #0369a1;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(3,105,161,0.1);
+.avatar-initial {
+  font-size: 1.2rem;
+  font-weight: 800;
 }
 
-/* Disabled state — softer, not harsh */
-.form-input.disabled {
-  background: #f9fafb;
-  border-color: #e5e7eb;
+.head-title {
+  margin: 0;
+  color: #0c3b5e;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.head-sub {
+  margin: 0.25rem 0 0;
   color: #6b7280;
-  cursor: default;
+  font-size: 0.82rem;
 }
 
-/* ── Form Actions ───────────────────────────────────────────── */
+.profile-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.two-col-span {
+  grid-column: 1 / -1;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field span {
+  color: #6b7280;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.field input {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  padding: 0.55rem 0.7rem;
+  color: #1f2937;
+}
+
+.field input:disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
 .form-actions {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding-top: 0.25rem;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
-/* Save button */
-.save-btn {
+.password-box {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.9rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.password-title {
+  margin: 0;
+  color: #0c3b5e;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.password-sub {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+
+.password-form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.password-input-wrap {
   position: relative;
-  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
-  padding: 0.68rem 1.5rem;
-  background: #F4C400; color: #0C3B5E;
-  border: none; border-radius: 9px;
-  font-family: inherit; font-size: 0.85rem; font-weight: 800;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 4.2rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #0369a1;
+  font-size: 0.75rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
-  box-shadow: 0 3px 10px rgba(244,196,0,0.3);
 }
 
-.save-btn:hover:not(:disabled) {
-  background: #F2C200;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(244,196,0,0.38);
+.strength-box {
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 0.6rem 0.7rem;
+  display: grid;
+  gap: 0.45rem;
 }
 
-.save-btn:disabled {
-  background: #e5e7eb; color: #9ca3af;
-  cursor: not-allowed; box-shadow: none; transform: none;
+.strength-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: #475569;
 }
 
-.save-btn.loading { pointer-events: none; opacity: 0.85; }
-
-/* Messages */
-.save-message {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  font-size: 0.8rem; font-weight: 600;
+.strength-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
 }
 
-.success-msg { color: #059669; }
-.error-msg   { color: #ef4444; }
+.strength-fill {
+  height: 100%;
+  transition: width 0.2s ease;
+}
 
-/* Message fade */
-.msg-fade-enter-active, .msg-fade-leave-active { transition: opacity 0.25s ease; }
-.msg-fade-enter-from, .msg-fade-leave-to { opacity: 0; }
+.strength-fill.weak,
+.strength-row strong.weak { color: #b91c1c; background-color: #ef4444; }
+.strength-fill.fair,
+.strength-row strong.fair { color: #b45309; background-color: #f59e0b; }
+.strength-fill.good,
+.strength-row strong.good { color: #0369a1; background-color: #0ea5e9; }
+.strength-fill.strong,
+.strength-row strong.strong { color: #166534; background-color: #22c55e; }
+
+.strength-row strong {
+  background: none;
+  font-size: 0.78rem;
+}
+
+.strength-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.strength-checklist li.ok {
+  color: #166534;
+  font-weight: 600;
+}
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.btn-primary {
+  background: #0369a1;
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1f8dbf;
+}
+
+.message {
+  margin: 0;
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.message-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.message-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.hidden-input {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-head {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .head-actions {
+    justify-self: start;
+  }
+}
 </style>

@@ -4,8 +4,8 @@
       <!-- Header -->
       <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex justify-between items-center border-b">
         <div>
-          <h3 class="text-2xl font-bold"><i class="fas fa-bed mr-2"></i>{{ itemName }}</h3>
-          <p class="text-blue-100 text-sm mt-1">₱{{ itemPrice.toLocaleString() }} per night</p>
+          <h3 class="text-2xl font-bold"><i :class="['mr-2', isCottage ? 'fas fa-home' : 'fas fa-bed']"></i>{{ itemName }}</h3>
+          <p class="text-blue-100 text-sm mt-1">₱{{ itemPrice.toLocaleString() }} {{ isCottage ? 'per day-use' : 'per night' }}</p>
         </div>
         <button @click="closeModal" class="text-2xl hover:bg-blue-600 p-2 rounded transition-colors">
           <i class="fas fa-times"></i>
@@ -125,13 +125,17 @@
                 v-model="form.checkOut" 
                 type="date" 
                 class="w-full border rounded px-3 py-2 focus:border-blue-600 focus:outline-none"
-                :min="form.checkIn || minDate"
+                :min="checkOutMinDate"
               >
             </div>
           </div>
-          <div v-if="nights > 0" class="mt-3 p-3 bg-blue-50 rounded border border-blue-200 text-sm">
+          <div v-if="durationCount > 0" class="mt-3 p-3 bg-blue-50 rounded border border-blue-200 text-sm">
             <i class="fas fa-info-circle text-blue-600 mr-2"></i>
-            <span class="font-semibold text-blue-700">{{ nights }} Night{{ nights > 1 ? 's' : '' }} • Total: ₱{{ lineTotal.toLocaleString() }}</span>
+            <span class="font-semibold text-blue-700">{{ durationCount }} {{ isCottage ? `Day${durationCount > 1 ? 's' : ''}` : `Night${durationCount > 1 ? 's' : ''}` }} • Total: ₱{{ lineTotal.toLocaleString() }}</span>
+          </div>
+          <div v-if="form.checkIn && form.checkOut && !isDateRangeValid" class="mt-3 p-3 bg-red-50 rounded border border-red-200 text-sm text-red-700">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            {{ isCottage ? 'For cottages, check-out cannot be earlier than check-in.' : 'For rooms, check-out must be later than check-in.' }}
           </div>
         </div>
 
@@ -156,8 +160,8 @@
               <span class="font-semibold">₱{{ itemPrice.toLocaleString() }}</span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="text-gray-700">{{ nights }} night{{ nights > 1 ? 's' : '' }}:</span>
-              <span class="font-semibold">₱{{ (itemPrice * nights).toLocaleString() }}</span>
+              <span class="text-gray-700">{{ durationCount }} {{ isCottage ? `day${durationCount > 1 ? 's' : ''}` : `night${durationCount > 1 ? 's' : ''}` }}:</span>
+              <span class="font-semibold">₱{{ (itemPrice * durationCount).toLocaleString() }}</span>
             </div>
             <div class="border-t border-blue-300 pt-2 flex justify-between text-lg">
               <span class="font-bold text-gray-800">Total:</span>
@@ -202,6 +206,10 @@ export default {
     itemPrice: {
       type: Number,
       required: true
+    },
+    itemCategory: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -220,20 +228,40 @@ export default {
     };
   },
   computed: {
+    isCottage() {
+      return String(this.itemCategory || '').toLowerCase() === 'cottage';
+    },
     minDate() {
       const today = new Date();
       return today.toISOString().split('T')[0];
     },
-    nights() {
+    checkOutMinDate() {
+      if (!this.form.checkIn) return this.minDate;
+      if (this.isCottage) return this.form.checkIn;
+
+      const date = new Date(this.form.checkIn);
+      date.setDate(date.getDate() + 1);
+      return date.toISOString().split('T')[0];
+    },
+    durationCount() {
       if (!this.form.checkIn || !this.form.checkOut) return 0;
       const checkIn = new Date(this.form.checkIn);
       const checkOut = new Date(this.form.checkOut);
-      const diffTime = Math.abs(checkOut - checkIn);
+      const diffTime = checkOut - checkIn;
+
+      if (diffTime < 0) return 0;
+
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays;
+      return this.isCottage ? diffDays + 1 : diffDays;
+    },
+    isDateRangeValid() {
+      if (!this.form.checkIn || !this.form.checkOut) return false;
+      const checkIn = new Date(this.form.checkIn);
+      const checkOut = new Date(this.form.checkOut);
+      return this.isCottage ? checkOut >= checkIn : checkOut > checkIn;
     },
     lineTotal() {
-      return this.itemPrice * this.nights;
+      return this.itemPrice * this.durationCount;
     },
     isFormValid() {
       return (
@@ -241,7 +269,8 @@ export default {
         this.form.lastName.trim() &&
         this.form.checkIn &&
         this.form.checkOut &&
-        this.nights > 0 &&
+        this.isDateRangeValid &&
+        this.durationCount > 0 &&
         this.form.adults > 0
       );
     }
@@ -276,7 +305,7 @@ export default {
         checkIn: this.form.checkIn,
         checkOut: this.form.checkOut,
         specialRequests: this.form.specialRequests,
-        nights: this.nights,
+        nights: this.durationCount,
         lineTotal: this.lineTotal
       });
       

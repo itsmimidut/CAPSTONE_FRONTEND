@@ -35,7 +35,13 @@
     <!-- ── User Info ── -->
     <div class="user-info">
       <div class="user-avatar">
-        <span class="avatar-initial">{{ userInitial }}</span>
+        <img
+          v-if="userAvatarSrc"
+          :src="userAvatarSrc"
+          alt="Profile"
+          class="avatar-image"
+        />
+        <span v-else class="avatar-initial">{{ userInitial }}</span>
         <span class="avatar-ring"></span>
         <span class="avatar-online-dot"></span>
       </div>
@@ -165,13 +171,17 @@ const route         = useRoute()
 const router        = useRouter()
 const auth          = useAuthStore()
 const notifications = useNotificationStore()
+const configuredApiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/+$/, '')
+const apiBase = /\/api$/i.test(configuredApiBase)
+  ? configuredApiBase
+  : `${configuredApiBase}/api`
+const apiRoot = apiBase.replace(/\/api\/?$/, '')
+const fetchedProfileImage = ref('')
 
 const getStoredUser = () => {
   try { return JSON.parse(localStorage.getItem('user') || '{}') }
   catch { return {} }
 }
-
-const resolvedUser = computed(() => auth.user || getStoredUser())
 
 const handleLogout = () => {
   auth.logout()
@@ -223,8 +233,41 @@ const navItems = [
   },
   { path: '/pos',            label: 'Point of Sale',   icon: 'fas fa-cash-register', roles: ['admin', 'restaurantstaff', 'receptionist'] },
   { path: '/admin/swimming', label: 'Swimming Pools',  icon: 'fas fa-swimming-pool', roles: ['admin', 'receptionist'] },
+  // { path: '/admin/website/amenities', label: 'Website Amenities', icon: 'fas fa-globe', roles: ['admin'] },
+  { path: '/profile',        label: 'Profile',          icon: 'fas fa-user-circle', roles: ['admin', 'restaurantstaff', 'receptionist', 'customer'] },
   { path: '/admin/users',    label: 'User Management', icon: 'fas fa-users',         roles: ['admin'] }
 ]
+
+const resolvedUser = computed(() => {
+  const fromStore = auth.user || {}
+  const fromStorage = getStoredUser()
+  return {
+    ...fromStorage,
+    ...fromStore,
+    // Ensure image survives even if auth store user object is partial
+    profileImage:
+      fromStore.profileImage ||
+      fromStore.profile_image ||
+      fromStorage.profileImage ||
+      fromStorage.profile_image ||
+      '',
+  }
+})
+
+const resolveProfileImageUrl = (rawPath) => {
+  const path = (rawPath || '').trim()
+  if (!path) return ''
+  if (/^(https?:\/\/|data:|blob:)/i.test(path)) return path
+  if (path.startsWith('//')) return `https:${path}`
+  if (path.startsWith('/')) return `${apiRoot}${path}`
+  return `${apiRoot}/${path.replace(/^\.?\//, '')}`
+}
+
+const userAvatarSrc = computed(() => {
+  const u = resolvedUser.value || {}
+  const candidate = fetchedProfileImage.value || u.profileImage || u.profile_image || ''
+  return resolveProfileImageUrl(candidate)
+})
 
 const isRoleAllowed = (item, role) =>
   !item.roles || item.roles.length === 0 || item.roles.includes(role)
@@ -250,13 +293,42 @@ const autoOpenDropdown = () => {
   }
 }
 
+const fetchProfileImageById = async () => {
+  const u = resolvedUser.value || {}
+  const userId = u.id || u.user_id
+  if (!userId) return
+
+  try {
+    const res = await fetch(`${apiBase}/customers/profile/id/${encodeURIComponent(userId)}`)
+    if (!res.ok) return
+
+    const payload = await res.json()
+    const customer = payload?.customer || {}
+    const latestProfileImage = customer.profileImage || customer.profile_image || ''
+    fetchedProfileImage.value = latestProfileImage
+
+    const currentStored = getStoredUser()
+    const mergedUser = {
+      ...currentStored,
+      ...(auth.user || {}),
+      profileImage: latestProfileImage,
+      profile_image: latestProfileImage,
+    }
+    localStorage.setItem('user', JSON.stringify(mergedUser))
+    auth.setUser(mergedUser)
+  } catch {
+    // Fallback to existing user data if fetch fails
+  }
+}
+
 // Only auto-open on mount and when route changes, but don't force close
 watch(() => activePath.value, () => {
   autoOpenDropdown()
 })
 
-onMounted(() => {
+onMounted(async () => {
   auth.initFromStorage()
+  await fetchProfileImageById()
   autoOpenDropdown()
   notifications.fetchNotificationCounts()
   notificationInterval = setInterval(() => {
@@ -430,21 +502,28 @@ onUnmounted(() => {
 .logo-container {
   display: flex;
   align-items: center;
-  gap: 10px;
   flex: 1;
   min-width: 0;
+  width: 100%;
 }
-.logo-text { min-width: 0; flex: 1; overflow: hidden; }
+
+.logo-text {
+  flex: 1;
+  width: 100%;
+}
+
 .logo-image {
-  width: 100%; height: auto; display: block;
-  max-height: 42px; object-fit: contain;
-  object-position: left center;
-  /* Gentle drop shadow so the logo pops on the dark navy background */
+  display: block;
+  width: 100%;
+  height: 70px; /* adjust mo: 60px, 70px, 80px */
+  object-fit: contain; /* use cover if gusto mo mapuno talaga */
+  object-position: center;
   filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.35));
 }
 .sidebar.collapsed .logo-text { display: none; }
 
 .header-close-btn {
+  display: flex;
   width: 30px; height: 30px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.1);
@@ -459,6 +538,13 @@ onUnmounted(() => {
 .header-close-btn:hover {
   background: rgba(244, 196, 0, 0.18);
   border-color: rgba(244, 196, 0, 0.5);
+}
+
+/* Keep sidebar close control mobile-only even if utility classes fail to apply */
+@media (min-width: 768px) {
+  .header-close-btn {
+    display: none !important;
+  }
 }
 
 /* ── User Info ── */
@@ -736,6 +822,37 @@ onUnmounted(() => {
 .dropdown-leave-active { transition: opacity 0.18s ease, transform 0.18s ease; }
 .dropdown-enter-from   { opacity: 0; transform: translateY(-6px); }
 .dropdown-leave-to     { opacity: 0; transform: translateY(-4px); }
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.avatar-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 14px;
+  border: 2px solid var(--color-gold-dark);
+  opacity: 0.6;
+  animation: ringPulse 3s ease-in-out infinite;
+}
+
+.avatar-online-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4ade80;
+  border: 2px solid var(--color-navy);
+  z-index: 2;
+  animation: dotBlink 2.5s ease-in-out infinite;
+}
 
 /* ── Logout ── */
 .logout-container {

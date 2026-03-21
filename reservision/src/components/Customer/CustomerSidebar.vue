@@ -33,7 +33,13 @@
     <!-- ── User Info ─────────────────────────────── -->
     <div class="user-info">
       <div class="user-avatar">
-        <span class="avatar-initial">{{ userInitial }}</span>
+        <img
+          v-if="userAvatarSrc"
+          :src="userAvatarSrc"
+          alt="Profile"
+          class="avatar-image"
+        />
+        <span v-else class="avatar-initial">{{ userInitial }}</span>
         <span class="avatar-ring"></span>
         <span class="avatar-online-dot"></span>
       </div>
@@ -113,7 +119,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 
@@ -130,13 +136,42 @@ const props = defineProps({
 const emit = defineEmits(['select', 'close'])
 const router = useRouter()
 const auth = useAuthStore()
+const configuredApiBase = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/+$/, '')
+const apiBase = /\/api$/i.test(configuredApiBase)
+  ? configuredApiBase
+  : `${configuredApiBase}/api`
+const apiRoot = apiBase.replace(/\/api\/?$/, '')
+const fetchedProfileImage = ref('')
 
 const getStoredUser = () => {
   try { return JSON.parse(localStorage.getItem('user') || '{}') }
   catch { return {} }
 }
 
-const resolvedUser = computed(() => auth.user || getStoredUser())
+const resolvedUser = computed(() => {
+  const fromStore = auth.user || {}
+  const fromStorage = getStoredUser()
+  return {
+    ...fromStorage,
+    ...fromStore,
+    // Ensure image survives even if auth store user object is partial
+    profileImage:
+      fromStore.profileImage ||
+      fromStore.profile_image ||
+      fromStorage.profileImage ||
+      fromStorage.profile_image ||
+      '',
+  }
+})
+
+const resolveProfileImageUrl = (rawPath) => {
+  const path = (rawPath || '').trim()
+  if (!path) return ''
+  if (/^(https?:\/\/|data:|blob:)/i.test(path)) return path
+  if (path.startsWith('//')) return `https:${path}`
+  if (path.startsWith('/')) return `${apiRoot}${path}`
+  return `${apiRoot}/${path.replace(/^\.?\//, '')}`
+}
 
 const resolvedUserName = computed(() => {
   const u = resolvedUser.value || {}
@@ -154,6 +189,12 @@ const resolvedUserRole = computed(() => {
     customer: 'Customer'
   }
   return roleLabels[role] || props.userRole || 'Customer'
+})
+
+const userAvatarSrc = computed(() => {
+  const u = resolvedUser.value || {}
+  const candidate = fetchedProfileImage.value || u.profileImage || u.profile_image || ''
+  return resolveProfileImageUrl(candidate)
 })
 
 const userInitial = computed(() => (resolvedUserName.value?.charAt(0) || 'G').toUpperCase())
@@ -177,7 +218,38 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-onMounted(() => { auth.initFromStorage() })
+const fetchProfileImageById = async () => {
+  const u = resolvedUser.value || {}
+  const userId = u.id || u.user_id
+  if (!userId) return
+
+  try {
+    const res = await fetch(`${apiBase}/customers/profile/id/${encodeURIComponent(userId)}`)
+    if (!res.ok) return
+
+    const payload = await res.json()
+    const customer = payload?.customer || {}
+    const latestProfileImage = customer.profileImage || customer.profile_image || ''
+    fetchedProfileImage.value = latestProfileImage
+
+    const currentStored = getStoredUser()
+    const mergedUser = {
+      ...currentStored,
+      ...(auth.user || {}),
+      profileImage: latestProfileImage,
+      profile_image: latestProfileImage,
+    }
+    localStorage.setItem('user', JSON.stringify(mergedUser))
+    auth.setUser(mergedUser)
+  } catch {
+    // Fallback to existing user data if fetch fails
+  }
+}
+
+onMounted(async () => {
+  auth.initFromStorage()
+  await fetchProfileImageById()
+})
 </script>
 
 <style scoped>
@@ -383,6 +455,15 @@ onMounted(() => { auth.initFromStorage() })
 .user-info:hover .user-avatar { transform: scale(1.06); }
 
 .avatar-initial { position: relative; z-index: 1; }
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 14px;
+  position: relative;
+  z-index: 1;
+}
 
 .avatar-ring {
   position: absolute;

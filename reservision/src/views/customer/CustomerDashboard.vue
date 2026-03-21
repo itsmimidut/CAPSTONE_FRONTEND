@@ -144,6 +144,8 @@ import OrderHistory from '../../components/Customer/OrderHistory.vue'
 
 const apiBase = 'http://localhost:8000/api'
 const auth    = useAuthStore()
+const apiRoot = (import.meta.env.VITE_API_URL || apiBase).replace(/\/api\/?$/, '')
+const roomFallbackImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=60'
 
 const activeSection    = ref('dashboard')
 const reservationsRef  = ref(null)
@@ -208,7 +210,29 @@ const headerSubtitle = computed(() => {
 
 const setActiveSection = (id) => { activeSection.value = id }
 
-const onProfileUpdated = (updated) => { profile.value = { ...profile.value, ...updated } }
+const onProfileUpdated = (updated) => {
+  profile.value = { ...profile.value, ...updated }
+
+  const currentStored = (() => {
+    try { return JSON.parse(localStorage.getItem('user') || '{}') }
+    catch { return {} }
+  })()
+
+  const nextUser = {
+    ...currentStored,
+    ...(auth.user || {}),
+    firstName: updated.firstName ?? auth.user?.firstName ?? currentStored.firstName ?? '',
+    lastName: updated.lastName ?? auth.user?.lastName ?? currentStored.lastName ?? '',
+    name: updated.fullName ?? auth.user?.name ?? currentStored.name ?? '',
+    email: updated.email ?? auth.user?.email ?? currentStored.email ?? '',
+    phone: updated.phone ?? auth.user?.phone ?? currentStored.phone ?? '',
+    role: auth.user?.role ?? currentStored.role ?? 'customer',
+    profileImage: updated.profileImage ?? auth.user?.profileImage ?? currentStored.profileImage ?? '',
+  }
+
+  localStorage.setItem('user', JSON.stringify(nextUser))
+  auth.setUser(nextUser)
+}
 
 // ── Helpers ──────────────────────────────────────────
 const formatDate = (v) => {
@@ -229,6 +253,31 @@ const parseImages = (value) => {
   if (!value) return []
   if (Array.isArray(value)) return value
   try { const p = JSON.parse(value); return Array.isArray(p) ? p : [] } catch { return [] }
+}
+
+const resolveRoomImageUrl = (rawPath) => {
+  if (!rawPath) return roomFallbackImage
+  const path = String(rawPath).trim()
+  if (!path) return roomFallbackImage
+
+  if (
+    path.startsWith('http://') ||
+    path.startsWith('https://') ||
+    path.startsWith('data:') ||
+    path.startsWith('blob:')
+  ) {
+    return path
+  }
+
+  if (path.startsWith('//')) {
+    return `${window.location.protocol}${path}`
+  }
+
+  if (path.startsWith('/')) {
+    return `${apiRoot}${path}`
+  }
+
+  return `${apiRoot}/${path.replace(/^\.?\//, '')}`
 }
 
 const buildSummaryCards = (bookings) => {
@@ -296,8 +345,12 @@ const loadDashboardData = async () => {
     const available = rooms.filter(r => String(r.status || '').toLowerCase() === 'available')
     const mapped = available.slice(0, 6).map(room => {
       const images = parseImages(room.images)
-      const imageUrl = images[room.primaryImageIndex] || images[0] ||
-        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=60'
+      const primaryIndex = Number.isInteger(Number(room.primaryImageIndex))
+        ? Number(room.primaryImageIndex)
+        : 0
+      const selectedImage = images[primaryIndex] || images[0] || ''
+      const imageUrl = resolveRoomImageUrl(selectedImage)
+
       return {
         title: room.name,
         price: `PHP ${Number(room.price || 0).toLocaleString()} / night`,

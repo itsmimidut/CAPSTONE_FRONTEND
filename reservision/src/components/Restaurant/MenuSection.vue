@@ -171,6 +171,68 @@
             <input id="add-avail" v-model="newItem.available" type="checkbox" class="form-checkbox" />
             <label for="add-avail" class="form-label checkbox-label">Available for ordering</label>
           </div>
+
+          <div class="form-group custom-section">
+            <label class="form-label">Sizes (Optional)</label>
+            <div class="custom-list">
+              <div v-for="(size, index) in newItem.sizes" :key="`add-size-${index}`" class="custom-row">
+                <input
+                  v-model="size.label"
+                  type="text"
+                  class="form-input"
+                  placeholder="Size name (e.g. Regular, Large)"
+                />
+                <input
+                  v-model.number="size.price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="form-input custom-price-input"
+                  placeholder="Price"
+                />
+                <div class="custom-row-tools">
+                  <span class="default-pill" v-if="index === 0">Default</span>
+                  <button type="button" class="act-btn delete-btn custom-remove-btn" @click="removeSizeRow(index)" title="Remove size">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn-secondary custom-add-btn" @click="addSizeRow">
+              <i class="fas fa-plus"></i> Add Size
+            </button>
+          </div>
+
+          <div class="form-group custom-section">
+            <label class="form-label">Add-ons (Optional)</label>
+            <div class="custom-list">
+              <div v-for="(addon, index) in newItem.addons" :key="`add-addon-${index}`" class="custom-row custom-row--addon">
+                <input
+                  v-model="addon.name"
+                  type="text"
+                  class="form-input"
+                  placeholder="Add-on name (e.g. Extra Cheese)"
+                />
+                <input
+                  v-model.number="addon.price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="form-input custom-price-input"
+                  placeholder="Price"
+                />
+                <div class="custom-row-tools">
+                  <button type="button" class="act-btn delete-btn custom-remove-btn" @click="removeAddonRow(index)" title="Remove add-on">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn-secondary custom-add-btn" @click="addAddonRow">
+              <i class="fas fa-plus"></i> Add Add-on
+            </button>
+          </div>
+
           <div class="modal-foot">
             <button type="button" class="btn-cancel" @click="closeModal">Cancel</button>
             <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Add Item</button>
@@ -219,6 +281,68 @@
             <input id="edit-avail" v-model="editingItem.available" type="checkbox" class="form-checkbox" />
             <label for="edit-avail" class="form-label checkbox-label">Available for ordering</label>
           </div>
+
+          <div class="form-group custom-section">
+            <label class="form-label">Sizes (Optional)</label>
+            <div class="custom-list">
+              <div v-for="(size, index) in editingItem.sizes" :key="`edit-size-${index}`" class="custom-row">
+                <input
+                  v-model="size.label"
+                  type="text"
+                  class="form-input"
+                  placeholder="Size name (e.g. Regular, Large)"
+                />
+                <input
+                  v-model.number="size.price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="form-input custom-price-input"
+                  placeholder="Price"
+                />
+                <div class="custom-row-tools">
+                  <span class="default-pill" v-if="index === 0">Default</span>
+                  <button type="button" class="act-btn delete-btn custom-remove-btn" @click="removeEditSizeRow(index)" title="Remove size">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn-secondary custom-add-btn" @click="addEditSizeRow">
+              <i class="fas fa-plus"></i> Add Size
+            </button>
+          </div>
+
+          <div class="form-group custom-section">
+            <label class="form-label">Add-ons (Optional)</label>
+            <div class="custom-list">
+              <div v-for="(addon, index) in editingItem.addons" :key="`edit-addon-${index}`" class="custom-row custom-row--addon">
+                <input
+                  v-model="addon.name"
+                  type="text"
+                  class="form-input"
+                  placeholder="Add-on name (e.g. Extra Cheese)"
+                />
+                <input
+                  v-model.number="addon.price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="form-input custom-price-input"
+                  placeholder="Price"
+                />
+                <div class="custom-row-tools">
+                  <button type="button" class="act-btn delete-btn custom-remove-btn" @click="removeEditAddonRow(index)" title="Remove add-on">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn-secondary custom-add-btn" @click="addEditAddonRow">
+              <i class="fas fa-plus"></i> Add Add-on
+            </button>
+          </div>
+
           <div class="modal-foot">
             <button type="button" class="btn-cancel" @click="closeEditModal">Cancel</button>
             <button type="submit" class="btn-primary btn-gold"><i class="fas fa-save"></i> Save Changes</button>
@@ -335,7 +459,42 @@ const newCategory          = ref('')
 const editingCategoryIndex = ref(null)
 const editingCategoryValue = ref('')
 
-const newItem = ref({ name: '', category: '', price: 0, available: true })
+const newItem = ref({ name: '', category: '', price: 0, available: true, sizes: [], addons: [] })
+
+const sanitizeSizes = (sizes = []) => {
+  const cleaned = sizes
+    .map((s, idx) => ({
+      label: String(s?.label || '').trim(),
+      price: Number(s?.price || 0),
+      isDefault: idx === 0
+    }))
+    .filter(s => s.label && Number.isFinite(s.price) && s.price >= 0)
+  return cleaned.map((s, idx) => ({ ...s, isDefault: idx === 0 }))
+}
+
+const sanitizeAddons = (addons = []) =>
+  addons
+    .map(a => ({
+      name: String(a?.name || '').trim(),
+      price: Number(a?.price || 0)
+    }))
+    .filter(a => a.name && Number.isFinite(a.price) && a.price >= 0)
+
+const hasInvalidCustomRows = (sizes = [], addons = []) => {
+  const invalidSize = sizes.some(s => {
+    const hasAnyValue = String(s?.label || '').trim() || String(s?.price ?? '').trim()
+    if (!hasAnyValue) return false
+    return !String(s?.label || '').trim() || !Number.isFinite(Number(s?.price)) || Number(s?.price) < 0
+  })
+
+  const invalidAddon = addons.some(a => {
+    const hasAnyValue = String(a?.name || '').trim() || String(a?.price ?? '').trim()
+    if (!hasAnyValue) return false
+    return !String(a?.name || '').trim() || !Number.isFinite(Number(a?.price)) || Number(a?.price) < 0
+  })
+
+  return invalidSize || invalidAddon
+}
 
 const filteredMenu = computed(() =>
   props.menu.filter(item => {
@@ -352,30 +511,112 @@ const filteredMenu = computed(() =>
 const getItemsByCategory = (cat) => filteredMenu.value.filter(i => i.category === cat)
 
 const handleToggle = (item) => emit('toggle-availability', item.menu_id)
-const handleEdit   = (item) => { editingItem.value = { ...item }; showEditModal.value = true }
 const handleDelete = (item) => { if (confirm(`Delete ${item.name}?`)) emit('delete-item', item.menu_id) }
 
 const handleEditSubmit = () => {
   if (!editingItem.value) return
+
+  if (hasInvalidCustomRows(editingItem.value.sizes || [], editingItem.value.addons || [])) {
+    alert('Please complete or remove invalid size/add-on rows before saving')
+    return
+  }
+
+  const sizes = sanitizeSizes(editingItem.value.sizes || [])
+  const addons = sanitizeAddons(editingItem.value.addons || [])
+  const normalizedPrice = sizes.length ? Number(sizes[0].price) : Number(editingItem.value.price || 0)
+
   emit('update-item', {
     menu_id:   editingItem.value.menu_id,
     name:      editingItem.value.name,
     category:  editingItem.value.category,
-    price:     editingItem.value.price,
+    price:     normalizedPrice,
     available: editingItem.value.available,
+    sizes,
+    addons,
   })
   closeEditModal()
 }
 
 const handleAddItem = () => {
-  if (newItem.value.name && newItem.value.category && newItem.value.price >= 0) {
-    emit('add-item', { ...newItem.value })
-    closeModal()
+  if (!newItem.value.name || !newItem.value.category) return
+
+  if (hasInvalidCustomRows(newItem.value.sizes, newItem.value.addons)) {
+    alert('Please complete or remove invalid size/add-on rows before adding')
+    return
   }
+
+  const sizes = sanitizeSizes(newItem.value.sizes)
+  const addons = sanitizeAddons(newItem.value.addons)
+  const normalizedPrice = sizes.length ? Number(sizes[0].price) : Number(newItem.value.price || 0)
+
+  if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+    alert('Please enter a valid price')
+    return
+  }
+
+  emit('add-item', {
+    name: String(newItem.value.name).trim(),
+    category: newItem.value.category,
+    price: normalizedPrice,
+    available: !!newItem.value.available,
+    sizes,
+    addons,
+  })
+
+  closeModal()
 }
 
-const closeModal     = () => { showAddItemModal.value = false; newItem.value = { name: '', category: '', price: 0, available: true } }
+const closeModal     = () => { showAddItemModal.value = false; newItem.value = { name: '', category: '', price: 0, available: true, sizes: [], addons: [] } }
 const closeEditModal = () => { showEditModal.value = false; editingItem.value = null }
+
+const addSizeRow = () => {
+  newItem.value.sizes.push({ label: '', price: 0, isDefault: newItem.value.sizes.length === 0 })
+}
+
+const removeSizeRow = (index) => {
+  newItem.value.sizes.splice(index, 1)
+  newItem.value.sizes = newItem.value.sizes.map((s, idx) => ({ ...s, isDefault: idx === 0 }))
+}
+
+const addAddonRow = () => {
+  newItem.value.addons.push({ name: '', price: 0 })
+}
+
+const removeAddonRow = (index) => {
+  newItem.value.addons.splice(index, 1)
+}
+
+const addEditSizeRow = () => {
+  if (!editingItem.value) return
+  if (!Array.isArray(editingItem.value.sizes)) editingItem.value.sizes = []
+  editingItem.value.sizes.push({ label: '', price: 0, isDefault: editingItem.value.sizes.length === 0 })
+}
+
+const removeEditSizeRow = (index) => {
+  if (!editingItem.value || !Array.isArray(editingItem.value.sizes)) return
+  editingItem.value.sizes.splice(index, 1)
+  editingItem.value.sizes = editingItem.value.sizes.map((s, idx) => ({ ...s, isDefault: idx === 0 }))
+}
+
+const addEditAddonRow = () => {
+  if (!editingItem.value) return
+  if (!Array.isArray(editingItem.value.addons)) editingItem.value.addons = []
+  editingItem.value.addons.push({ name: '', price: 0 })
+}
+
+const removeEditAddonRow = (index) => {
+  if (!editingItem.value || !Array.isArray(editingItem.value.addons)) return
+  editingItem.value.addons.splice(index, 1)
+}
+
+const normalizeEditingItem = (item) => ({
+  ...item,
+  price: Number(item?.price || 0),
+  sizes: sanitizeSizes(item?.sizes || []),
+  addons: sanitizeAddons(item?.addons || []),
+})
+
+const handleEdit = (item) => { editingItem.value = normalizeEditingItem(item); showEditModal.value = true }
 
 const closeCategoryModal = () => {
   showCategoryModal.value    = false
@@ -864,6 +1105,48 @@ const deleteCategory = (index) => {
 .form-checkbox     { width: 16px; height: 16px; accent-color: var(--color-primary-light); cursor: pointer; }
 .checkbox-label    { margin: 0; text-transform: none; letter-spacing: 0; font-size: 0.875rem; color: var(--color-text-dark); }
 
+.custom-section { margin-top: 0.4rem; }
+.custom-list { display: flex; flex-direction: column; gap: 0.55rem; }
+.custom-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
+  gap: 0.5rem;
+  align-items: center;
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-border);
+  border-radius: 10px;
+  padding: 0.45rem;
+}
+.custom-row-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-self: end;
+}
+.custom-price-input {
+  text-align: right;
+}
+.default-pill {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #7a5200;
+  background: rgba(244, 196, 0, 0.2);
+  border: 1px solid rgba(244, 196, 0, 0.5);
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  white-space: nowrap;
+}
+.custom-remove-btn {
+  width: 30px;
+  height: 30px;
+}
+.custom-add-btn {
+  margin-top: 0.55rem;
+  width: fit-content;
+  padding: 0.42rem 0.82rem;
+  font-size: 0.78rem;
+}
+
 /* ── Modal Footer ── */
 .modal-foot {
   display: flex; gap: 0.6rem; justify-content: flex-end;
@@ -962,7 +1245,13 @@ const deleteCategory = (index) => {
   .controls-bar    { flex-direction: column; }
   .filter-select   { width: 100%; }
   .form-row        { grid-template-columns: 1fr; }
+  .custom-row      { grid-template-columns: minmax(0, 1fr) 110px auto; }
   .add-cat-form    { flex-direction: column; }
   .list-item       { flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+  .custom-row { grid-template-columns: 1fr; }
+  .custom-price-input { text-align: left; }
+  .custom-row-tools { justify-self: start; }
 }
 </style>

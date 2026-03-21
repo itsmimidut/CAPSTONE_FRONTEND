@@ -436,6 +436,9 @@ export default {
   data() {
     return {
       apiBaseUrl: 'http://localhost:8000/api',
+      apiRoot: (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api\/?$/, ''),
+      fallbackRoomImage: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500',
+      fallbackFoodImage: 'https://images.unsplash.com/photo-1541542684-3b05a8f9c4c8?w=500',
       loading: false,
       mobileSearchOpen: false,
       showCalendar: false,
@@ -514,6 +517,47 @@ export default {
     }
   },
   methods: {
+    parseImageArray(value) {
+      if (!value) return []
+      if (Array.isArray(value)) return value
+      try {
+        const parsed = JSON.parse(value)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    },
+    resolveImageUrl(rawPath) {
+      if (!rawPath) return ''
+      const path = String(rawPath).trim()
+      if (!path) return ''
+
+      if (
+        path.startsWith('http://') ||
+        path.startsWith('https://') ||
+        path.startsWith('data:') ||
+        path.startsWith('blob:')
+      ) return path
+
+      if (path.startsWith('//')) return `${window.location.protocol}${path}`
+      if (path.startsWith('/')) return `${this.apiRoot}${path}`
+      return `${this.apiRoot}/${path.replace(/^\.?\//, '')}`
+    },
+    normalizeImages(rawImages, fallbackImage, primaryImageIndex = 0) {
+      const resolved = this.parseImageArray(rawImages)
+        .map(img => this.resolveImageUrl(img))
+        .filter(Boolean)
+
+      if (!resolved.length) return [fallbackImage]
+
+      const idx = Number(primaryImageIndex)
+      if (Number.isInteger(idx) && idx >= 0 && idx < resolved.length && idx !== 0) {
+        const [primary] = resolved.splice(idx, 1)
+        resolved.unshift(primary)
+      }
+
+      return resolved
+    },
     getCatIcon(cat) {
       const icons = { rooms: 'fas fa-bed', cottages: 'fas fa-home', food: 'fas fa-utensils', events: 'fas fa-calendar-alt', swimming: 'fas fa-swimmer' }
       return icons[cat] || 'fas fa-th'
@@ -578,9 +622,7 @@ export default {
         let items = Array.isArray(data) ? data : (data.success && data.data ? data.data : [])
         this.itemData.rooms = []; this.itemData.cottages = []; this.itemData.events = []; this.itemData.food = []
         items.forEach(item => {
-          let images = []
-          try { images = typeof item.images === 'string' ? JSON.parse(item.images) : item.images || [] } catch {}
-          if (!Array.isArray(images) || !images.length) images = ['https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500']
+          const images = this.normalizeImages(item.images, this.fallbackRoomImage, item.primaryImageIndex)
           const ct = (item.category_type || '').toLowerCase()
           const fi = { id: item.item_id, item_id: item.item_id, name: item.name || 'Unnamed', price: parseFloat(item.price) || 0, desc: item.description || '', description: item.description || '', amenities: [], imgs: images, perNight: true, maxGuests: item.max_guests || 2, category: item.category, status: item.status, categoryType: ct }
           if (ct === 'room') this.itemData.rooms.push(fi)
@@ -597,9 +639,7 @@ export default {
         const data = await res.json()
         if (data.success && data.data) {
           data.data.slice(0,5).forEach(item => {
-            let images = []
-            try { images = typeof item.image === 'string' ? JSON.parse(item.image) : item.image || [] } catch {}
-            if (!Array.isArray(images) || !images.length) images = ['https://images.unsplash.com/photo-1541542684-3b05a8f9c4c8?w=500']
+            const images = this.normalizeImages(item.image, this.fallbackFoodImage, item.primaryImageIndex)
             this.itemData.food.push({ id: 'm'+item.item_id, item_id: item.item_id, name: item.name, price: parseFloat(item.price), desc: item.description, description: item.description, amenities: [], imgs: images, perNight: false, maxGuests: 1, category: 'Food' })
           })
         }
@@ -906,7 +946,7 @@ export default {
 }
 .search-go-btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 5px 14px rgba(3,105,161,0.3); }
 
-.search-go-text { /* hide label on very small screens */ }
+.search-go-text { display: inline; }
 
 /* On small screens stack the fields */
 @media (max-width: 640px) {
@@ -926,6 +966,12 @@ export default {
   grid-template-columns: 1fr 320px;
   gap: 1rem;
   align-items: start;
+}
+
+@media (min-width : 1025px) {
+  .summary-col { position: sticky; top: 11.5rem; align-self: start; }  
+  .search-section { position: sticky; top: 4rem; }
+  .category-bar { position: sticky; top: 6.5rem; }
 }
 
 @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } }
@@ -1253,6 +1299,7 @@ export default {
 .swim-price-breakdown {
   background: #eff6ff; border: 1.5px solid #dbeafe; border-radius: 10px; padding: 0.9rem 1rem;
 }
+
 .pb-row { display: flex; justify-content: space-between; font-size: 0.82rem; color: #6b7280; padding: 0.3rem 0; }
 .pb-row span:last-child { font-weight: 600; color: #1f2937; }
 .pb-divider { height: 1px; background: #dbeafe; margin: 0.35rem 0; }

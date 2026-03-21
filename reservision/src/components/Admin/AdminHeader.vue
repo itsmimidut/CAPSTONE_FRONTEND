@@ -260,6 +260,13 @@ const userInitial = computed(() => (props.userName?.charAt(0) || 'A').toUpperCas
 .menu-btn i { transition: transform 0.28s ease, color 0.18s ease; }
 .menu-btn:hover i { transform: rotate(90deg); color: var(--color-gold); }
 
+/* Keep the hamburger menu mobile-only in admin layouts */
+@media (min-width: 768px) {
+  .menu-btn {
+    display: none !important;
+  }
+}
+
 /* ── Normal header title block ── */
 .header-title-block { display: flex; flex-direction: column; gap: 0.05rem; }
 

@@ -106,6 +106,8 @@ const menu = computed(() =>
     price:     m.price,
     category:  m.category,
     available: m.available,
+    sizes: Array.isArray(m.sizes) ? m.sizes : [],
+    addons: Array.isArray(m.addons) ? m.addons : [],
   }))
 )
 

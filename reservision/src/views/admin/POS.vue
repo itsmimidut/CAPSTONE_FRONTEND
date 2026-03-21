@@ -2,12 +2,13 @@
   <div class="admin-layout" :class="{ 'pos-fullscreen': isFullscreen }">
 
     <AdminSidebar
+      v-if="!isFullscreen"
       :is-open="sidebarOpen"
       :is-collapsed="sidebarCollapsed"
       @close="sidebarOpen = false"
     />
 
-    <main class="main-content" :class="{ shifted: sidebarCollapsed }">
+    <main class="main-content" :class="{ shifted: sidebarCollapsed && !isFullscreen, 'main-content--fullscreen': isFullscreen }">
 
       <AdminHeader
         :pos-mode="true"
@@ -97,65 +98,25 @@
                   :key="`items-${category.id}`"
                   v-show="currentCategory === category.id"
                 >
-                  <!-- Grouped restaurant view (only when not searching) -->
-                  <template v-if="category.id === 'restaurant' && restaurantTypeFilter === 'all' && !searchQuery && groupedRestaurantItems.length > 0">
-                    <div v-for="group in groupedRestaurantItems" :key="group.type" class="item-group">
-                      <div class="group-header">
-                        <span class="group-label">{{ group.type }}</span>
-                        <span class="group-count">{{ group.items.length }}</span>
+                  <!-- Flat grid (always) -->
+                  <div v-if="getFilteredItems(category.items, category.id).length === 0" class="items-no-results">
+                    <i class="fas fa-search"></i>
+                    <p>No items match "<strong>{{ searchQuery }}</strong>"</p>
+                  </div>
+                  <div v-else class="items-grid">
+                    <button
+                      v-for="item in getFilteredItems(category.items, category.id)"
+                      :key="item.name"
+                      @click="handleItemClick(item, category.id)"
+                      class="item-card"
+                    >
+                      <div class="item-card-icon">
+                        <i :class="`fas fa-${category.id === 'rooms' ? 'bed' : category.id === 'cottage' ? 'home' : category.id === 'event' ? 'calendar-alt' : 'utensils'}`"></i>
                       </div>
-                      <div class="items-grid">
-                        <button
-                          v-for="item in group.items" :key="item.name"
-                          @click="handleItemClick(item.name, item.price, category.id)"
-                          class="item-card"
-                        >
-                          <div class="item-card-icon"><i class="fas fa-utensils"></i></div>
-                          <div class="item-card-name">{{ item.name }}</div>
-                          <div class="item-card-price">₱{{ item.price.toLocaleString() }}</div>
-                        </button>
-                      </div>
-                    </div>
-                    <div v-if="uncategorizedRestaurantItems.length > 0" class="item-group">
-                      <div class="group-header">
-                        <span class="group-label">Other</span>
-                        <span class="group-count">{{ uncategorizedRestaurantItems.length }}</span>
-                      </div>
-                      <div class="items-grid">
-                        <button
-                          v-for="item in uncategorizedRestaurantItems" :key="item.name"
-                          @click="handleItemClick(item.name, item.price, category.id)"
-                          class="item-card"
-                        >
-                          <div class="item-card-icon"><i class="fas fa-utensils"></i></div>
-                          <div class="item-card-name">{{ item.name }}</div>
-                          <div class="item-card-price">₱{{ item.price.toLocaleString() }}</div>
-                        </button>
-                      </div>
-                    </div>
-                  </template>
-
-                  <!-- Flat grid (filtered category OR searching) -->
-                  <template v-else>
-                    <div v-if="getFilteredItems(category.items, category.id).length === 0" class="items-no-results">
-                      <i class="fas fa-search"></i>
-                      <p>No items match "<strong>{{ searchQuery }}</strong>"</p>
-                    </div>
-                    <div v-else class="items-grid">
-                      <button
-                        v-for="item in getFilteredItems(category.items, category.id)"
-                        :key="item.name"
-                        @click="handleItemClick(item.name, item.price, category.id)"
-                        class="item-card"
-                      >
-                        <div class="item-card-icon">
-                          <i :class="`fas fa-${category.id === 'rooms' ? 'bed' : category.id === 'cottage' ? 'home' : category.id === 'event' ? 'calendar-alt' : 'utensils'}`"></i>
-                        </div>
-                        <div class="item-card-name">{{ item.name }}</div>
-                        <div class="item-card-price">₱{{ item.price.toLocaleString() }}</div>
-                      </button>
-                    </div>
-                  </template>
+                      <div class="item-card-name">{{ item.name }}</div>
+                      <div class="item-card-price">₱{{ item.price.toLocaleString() }}</div>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -198,6 +159,11 @@
                         <span><i class="fas fa-calendar-alt"></i> {{ item.checkIn }} – {{ item.checkOut }}</span>
                         <span v-if="item.nights"><i class="fas fa-moon"></i> {{ item.nights }} night{{ item.nights > 1 ? 's' : '' }}</span>
                       </div>
+                      <div v-else-if="item.customization" class="cart-row-meta">
+                        <span><i class="fas fa-ruler-combined"></i> Size: {{ item.customization.sizeLabel }}</span>
+                        <span v-if="item.customization.addOns?.length"><i class="fas fa-plus-circle"></i> Add-ons: {{ item.customization.addOns.map(a => a.name).join(', ') }}</span>
+                        <span v-if="item.customization.specialRequest"><i class="fas fa-sticky-note"></i> {{ item.customization.specialRequest }}</span>
+                      </div>
                       <div v-else class="cart-row-qty">× {{ item.qty }}</div>
                     </div>
                     <div class="cart-row-right">
@@ -219,36 +185,10 @@
                   <span class="total-amount">₱{{ total.toLocaleString() }}</span>
                 </div>
 
-                <!-- Payment method -->
-                <div class="payment-section">
-                  <div class="payment-label"><i class="fas fa-credit-card"></i> Payment Method</div>
-                  <div class="payment-btns">
-                    <button
-                      type="button"
-                      :class="['pay-btn', paymentMethod === 'GCash' ? 'pay-btn--gcash' : '']"
-                      @click="paymentMethod = 'GCash'"
-                    >
-                      <i class="fas fa-wallet"></i>
-                      <span>GCash</span>
-                      <i v-if="paymentMethod === 'GCash'" class="fas fa-check-circle pay-check"></i>
-                    </button>
-                    <button
-                      type="button"
-                      :class="['pay-btn', paymentMethod === 'Cash' ? 'pay-btn--cash' : '']"
-                      @click="paymentMethod = 'Cash'"
-                    >
-                      <i class="fas fa-money-bill-wave"></i>
-                      <span>Cash</span>
-                      <i v-if="paymentMethod === 'Cash'" class="fas fa-check-circle pay-check"></i>
-                    </button>
-                  </div>
-                </div>
-
                 <!-- Checkout -->
-                <button @click="checkout" class="checkout-btn">
+                <button @click="openPaymentPanel" class="checkout-btn" :disabled="cart.length === 0">
                   <i class="fas fa-check-circle"></i>
-                  <span>Pay & Complete</span>
-                  <span class="checkout-amount">₱{{ total.toLocaleString() }}</span>
+                  <span>Payment</span>
                 </button>
 
               </div>
@@ -346,176 +286,125 @@
           </div>
         </div>
 
-      </div>
+        <transition name="pay-panel-fade">
+          <div v-if="showPaymentPanel" class="pay-overlay" @click.self="closePaymentPanel">
+            <transition name="pay-panel-slide">
+              <section v-if="showPaymentPanel" class="pay-panel">
+                <div class="pay-workspace pay-workspace--merged">
+                  <div class="pay-order-col">
+                    <div class="pay-order-head">
+                      <div class="pay-col-title">Items</div>
+                      <button type="button" class="pay-action pay-action--cancel" @click="closePaymentPanel">
+                        <i class="fas fa-times"></i> Cancel
+                      </button>
+                    </div>
 
-      <!-- Receipt Customization Modal -->
-      <div v-if="showReceiptCustomizer" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex justify-between items-center border-b">
-            <div>
-              <h3 class="text-2xl font-bold"><i class="fas fa-palette mr-2"></i>Customize Receipt</h3>
-              <p class="text-blue-100 text-sm mt-1">POS-{{ selectedReceipt?.receiptNo }}</p>
-            </div>
-            <button @click="showReceiptCustomizer = false" class="text-2xl hover:bg-blue-600 p-2 rounded transition-colors">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="p-6 space-y-6">
-            <div class="border rounded-lg p-4 bg-gray-50">
-              <h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-paint-brush mr-2"></i>Colors</h4>
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="text-sm font-semibold text-gray-700 mb-2 block">Header Background</label>
-                  <div class="flex gap-2">
-                    <input type="color" v-model="receiptStyle.headerBg" class="w-12 h-10 rounded cursor-pointer">
-                    <input type="text" v-model="receiptStyle.headerBg" class="flex-1 border rounded px-2 py-1 text-sm font-mono">
+                    <div class="pay-order-list">
+                      <div v-if="cart.length === 0" class="pay-empty">No items in current order.</div>
+                      <div v-else v-for="(item, index) in cart" :key="`pay-${index}`" class="pay-order-row">
+                        <div class="pay-order-main">
+                          <strong>{{ item.name }}</strong>
+                          <small>× {{ item.isBooking ? 1 : (item.qty || 1) }}</small>
+                        </div>
+                        <div class="pay-order-price">₱{{ Number(item.price || 0).toLocaleString() }}</div>
+                      </div>
+                    </div>
+
+                    <div class="pay-order-total">
+                      <span>Total</span>
+                      <strong>₱{{ total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="pay-main-col">
+                    <div class="pay-col-title">Payment Method</div>
+                    <div class="pay-method-grid">
+                      <button
+                        type="button"
+                        :class="['pay-method-btn', paymentMethod === 'Cash' ? 'pay-method-btn--active' : '']"
+                        @click="paymentMethod = 'Cash'"
+                      >
+                        <i class="fas fa-money-bill-wave"></i>
+                        <span>Cash</span>
+                      </button>
+                      <button
+                        type="button"
+                        :class="['pay-method-btn', paymentMethod === 'GCash' ? 'pay-method-btn--active' : '']"
+                        @click="paymentMethod = 'GCash'"
+                      >
+                        <i class="fas fa-wallet"></i>
+                        <span>GCash</span>
+                      </button>
+                    </div>
+
+                    <div class="pay-details-card">
+                      <div class="pay-line">
+                        <span>Total:</span>
+                        <strong>₱{{ total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
+                      </div>
+
+                      <div class="pay-input-row">
+                        <label for="panel-paid">Paid:</label>
+                        <input
+                          id="panel-paid"
+                          ref="paymentAmountInput"
+                          v-model="cashReceived"
+                          type="text"
+                          inputmode="decimal"
+                          class="pay-paid-input"
+                          :disabled="paymentMethod !== 'Cash'"
+                          placeholder="0.00"
+                          @focus="selectPaymentAmountInput"
+                        />
+                      </div>
+
+                      <div class="pay-line" :class="isCashInsufficient ? 'pay-line--warn' : ''">
+                        <span>Change:</span>
+                        <strong>₱{{ changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
+                      </div>
+
+                      <p v-if="isCashInsufficient" class="pay-warning">
+                        Insufficient cash amount.
+                      </p>
+
+                      <button
+                        type="button"
+                        class="pay-complete-btn"
+                        :disabled="cart.length === 0 || isCashInsufficient"
+                        @click="completeFromPaymentPanel"
+                      >
+                        <i class="fas fa-check-circle"></i>
+                        Pay & Complete
+                      </button>
+                    </div>
+
+                    <div class="pay-keypad">
+                      <button type="button" class="key-btn" @click="appendToCashReceived('1')">1</button>
+                      <button type="button" class="key-btn" @click="appendToCashReceived('2')">2</button>
+                      <button type="button" class="key-btn" @click="appendToCashReceived('3')">3</button>
+                      <button type="button" class="key-btn key-btn--danger" @click="backspaceCashReceived"><i class="fas fa-backspace"></i></button>
+
+                      <button type="button" class="key-btn" @click="appendToCashReceived('4')">4</button>
+                      <button type="button" class="key-btn" @click="appendToCashReceived('5')">5</button>
+                      <button type="button" class="key-btn" @click="appendToCashReceived('6')">6</button>
+                      <button type="button" class="key-btn key-btn--warn" @click="clearCashReceived">C</button>
+
+                      <button type="button" class="key-btn" @click="appendToCashReceived('7')">7</button>
+                      <button type="button" class="key-btn" @click="appendToCashReceived('8')">8</button>
+                      <button type="button" class="key-btn" @click="appendToCashReceived('9')">9</button>
+                      <button type="button" class="key-btn key-btn--wide" @click="setExactCash">EXACT</button>
+
+                      <button type="button" class="key-btn" @click="appendToCashReceived('00')">00</button>
+                      <button type="button" class="key-btn" @click="appendToCashReceived('0')">0</button>
+                      <button type="button" class="key-btn" @click="appendToCashReceived('.')">.</button>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label class="text-sm font-semibold text-gray-700 mb-2 block">Header Text</label>
-                  <div class="flex gap-2">
-                    <input type="color" v-model="receiptStyle.headerText" class="w-12 h-10 rounded cursor-pointer">
-                    <input type="text" v-model="receiptStyle.headerText" class="flex-1 border rounded px-2 py-1 text-sm font-mono">
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="border rounded-lg p-4 bg-gray-50">
-              <h4 class="font-bold text-gray-800 mb-4"><i class="fas fa-file-alt mr-2"></i>Content</h4>
-              <div class="space-y-3">
-                <div>
-                  <label class="text-sm font-semibold text-gray-700 mb-2 block">Company Name</label>
-                  <input type="text" v-model="receiptStyle.companyName" class="w-full border rounded px-3 py-2">
-                </div>
-              </div>
-            </div>
+              </section>
+            </transition>
           </div>
-          <div class="sticky bottom-0 bg-gray-100 p-6 flex gap-3 justify-end border-t">
-            <button @click="showReceiptCustomizer = false" class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg font-semibold">Cancel</button>
-            <button @click="downloadCustomizedReceipt" class="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold">
-              <i class="fas fa-download mr-2"></i>Download
-            </button>
-            <button @click="saveReceiptStyle" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold">
-              <i class="fas fa-save mr-2"></i>Save Style
-            </button>
-          </div>
-        </div>
-      </div>
+        </transition>
 
-      <!-- Room/Cottage/Event Booking Modal -->
-      <POSRoomBookingModal
-        :is-open="showBookingModal"
-        :item-name="pendingBookingItem?.name || ''"
-        :item-price="pendingBookingItem?.price || 0"
-        @close="showBookingModal = false"
-        @confirm="handleBookingConfirm"
-      />
-
-      <!-- Transaction Details Modal / Receipt Preview -->
-      <div
-        v-if="showTransactionDetails && selectedTransaction"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      >
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-          <!-- Header -->
-          <div class="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex justify-between items-center border-b">
-            <div>
-              <h3 class="text-2xl font-bold">
-                <i class="fas fa-receipt mr-2"></i>Receipt Preview
-              </h3>
-              <p class="text-blue-100 text-sm mt-1">This is how the printer receipt will look</p>
-            </div>
-            <button
-              @click="showTransactionDetails = false"
-              class="text-2xl hover:bg-blue-600 p-2 rounded transition-colors"
-            >
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-
-          <!-- Receipt Preview Body -->
-          <div class="p-6 bg-gray-100 flex justify-center">
-            <div class="receipt-preview-paper">
-              <div class="receipt-center receipt-title-company">
-                {{ receiptStyle.companyName || 'ReserVision' }}
-              </div>
-              <div class="receipt-center receipt-title-sub">
-                {{ receiptStyle.receiptTitle || 'Point of Sale' }}
-              </div>
-
-              <div class="receipt-divider">--------------------------------</div>
-
-              <div class="receipt-meta">
-                <div>Receipt: POS-{{ selectedTransaction.receiptNo }}</div>
-                <div>Type: {{ selectedTransaction.type }}</div>
-                <div>Date: {{ formatReceiptDate(selectedTransaction.date) }}</div>
-                <div>Time: {{ selectedTransaction.time }}</div>
-                <div>Payment: {{ selectedTransaction.payment }}</div>
-              </div>
-
-              <template v-if="selectedTransaction.items.some(item => item.bookingReference)">
-                <div class="receipt-divider">--------------------------------</div>
-
-                <div
-                  v-for="(item, idx) in selectedTransaction.items"
-                  :key="idx"
-                  class="receipt-item-block"
-                >
-                  <div class="receipt-item-name">{{ item.name }}</div>
-                  <div v-if="item.bookingReference" class="receipt-small">
-                    Ref: {{ item.bookingReference }}
-                  </div>
-                  <div class="receipt-line-between">
-                    <span>Amount</span>
-                    <span>₱{{ Number(item.price).toLocaleString() }}</span>
-                  </div>
-                </div>
-              </template>
-
-              <template v-else>
-                <div class="receipt-divider">--------------------------------</div>
-
-                <div
-                  v-for="(item, idx) in selectedTransaction.items"
-                  :key="idx"
-                  class="receipt-line-between receipt-item-row"
-                >
-                  <span class="receipt-item-name-inline">{{ item.name }}</span>
-                  <span>₱{{ Number(item.price).toLocaleString() }}</span>
-                </div>
-              </template>
-
-              <div class="receipt-divider">--------------------------------</div>
-
-              <div class="receipt-line-between receipt-total-row">
-                <span>TOTAL</span>
-                <span>₱{{ Number(selectedTransaction.total).toLocaleString() }}</span>
-              </div>
-
-              <div class="receipt-divider">--------------------------------</div>
-
-              <div class="receipt-center receipt-footer">
-                Thank you for your purchase!
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="sticky bottom-0 bg-gray-100 p-4 flex gap-2 justify-end border-t">
-            <button
-              @click="printReceipt(selectedTransaction.receiptNo)"
-              class="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
-            >
-              <i class="fas fa-print mr-2"></i>Print
-            </button>
-            <button
-              @click="showTransactionDetails = false"
-              class="px-4 py-2 bg-gray-400 text-white rounded-lg font-semibold hover:bg-gray-500 transition-colors"
-            >
-              <i class="fas fa-times mr-2"></i>Close
-            </button>
-          </div>
-        </div>
       </div>
 
     </main>
@@ -574,9 +463,98 @@
       :is-open="showBookingModal"
       :item-name="pendingBookingItem?.name || ''"
       :item-price="pendingBookingItem?.price || 0"
+      :item-category="pendingBookingItem?.category || ''"
       @close="showBookingModal = false"
       @confirm="handleBookingConfirm"
     />
+
+    <!-- ══ FOOD CUSTOMIZATION MODAL ══ -->
+    <div v-if="showCustomizationModal && pendingCustomItem" class="modal-overlay" @click.self="closeCustomizationModal">
+      <div class="modal-box" @click.stop>
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-head-icon modal-head-icon--gold"><i class="fas fa-sliders-h"></i></div>
+            <div>
+              <div class="modal-title">Customize Item</div>
+              <div class="modal-sub">{{ pendingCustomItem.name }} • Base ₱{{ Number(pendingCustomItem.price || 0).toLocaleString() }}</div>
+            </div>
+          </div>
+          <button @click="closeCustomizationModal" class="modal-close-btn"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-ruler-combined"></i> Size</div>
+            <div class="customize-chip-grid">
+              <button
+                v-for="size in customizationSizeOptions"
+                :key="size.id"
+                type="button"
+                :class="['customize-chip', customizationForm.sizeId === size.id ? 'customize-chip--active' : '']"
+                @click="customizationForm.sizeId = size.id"
+              >
+                <span>{{ size.label }}</span>
+                <small>{{ size.priceDelta > 0 ? `+₱${size.priceDelta}` : 'Included' }}</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-plus-circle"></i> Add-ons</div>
+            <div v-if="customizationAddOnOptions.length > 0" class="customize-addon-list">
+              <label
+                v-for="addon in customizationAddOnOptions"
+                :key="addon.id"
+                class="customize-addon-item"
+              >
+                <input
+                  type="checkbox"
+                  :value="addon.id"
+                  v-model="customizationForm.selectedAddOnIds"
+                >
+                <span>{{ addon.name }}</span>
+                <strong>+₱{{ addon.price }}</strong>
+              </label>
+            </div>
+            <div v-else class="customize-addon-list customize-addon-list--disabled">
+              <div class="customize-addon-empty">No add-ons available for this item</div>
+            </div>
+          </div>
+
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-sticky-note"></i> Special Request</div>
+            <textarea
+              v-model="customizationForm.specialRequest"
+              class="form-input"
+              rows="3"
+              placeholder="No onions, less ice, extra hot, etc."
+            ></textarea>
+          </div>
+
+          <div class="modal-section">
+            <div class="detail-row">
+              <span class="detail-key">Base Price</span>
+              <span class="detail-val">₱{{ Number(pendingCustomItem.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">Customizations</span>
+              <span class="detail-val">₱{{ customizationExtraAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="detail-row detail-row--total">
+              <span class="detail-key">Item Total</span>
+              <span class="detail-total">₱{{ customizedItemUnitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-foot">
+          <button @click="closeCustomizationModal" class="btn-cancel">Cancel</button>
+          <button @click="confirmCustomization" class="btn-action btn-action--primary">
+            <i class="fas fa-check-circle"></i> Confirm
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- ══ TRANSACTION DETAILS MODAL ══ -->
     <div v-if="showTransactionDetails && selectedTransaction" class="modal-overlay" @click.self="showTransactionDetails = false">
@@ -585,44 +563,60 @@
           <div class="modal-head-left">
             <div class="modal-head-icon"><i class="fas fa-receipt"></i></div>
             <div>
-              <div class="modal-title">Transaction Details</div>
-              <div class="modal-sub">POS-{{ selectedTransaction.receiptNo }}</div>
+              <div class="modal-title">Receipt Preview</div>
+              <div class="modal-sub">POS-{{ selectedTransaction.receiptNo }} • Printable layout</div>
             </div>
           </div>
           <button @click="showTransactionDetails = false" class="modal-close-btn"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
           <div class="modal-section">
-            <div class="modal-section-title"><i class="fas fa-info-circle"></i> Transaction Info</div>
-            <div class="detail-grid">
-              <div class="detail-row"><span class="detail-key">Receipt No</span><span class="detail-val">POS-{{ selectedTransaction.receiptNo }}</span></div>
-              <div class="detail-row"><span class="detail-key">Type</span><span class="detail-val">{{ selectedTransaction.type }}</span></div>
-              <div class="detail-row"><span class="detail-key">Date</span><span class="detail-val">{{ selectedTransaction.date }}</span></div>
-              <div class="detail-row"><span class="detail-key">Time</span><span class="detail-val">{{ selectedTransaction.time }}</span></div>
-            </div>
-          </div>
-          <div class="modal-section">
-            <div class="modal-section-title"><i class="fas fa-shopping-cart"></i> Items</div>
-            <div class="items-detail-list">
-              <div v-for="(item, idx) in selectedTransaction.items" :key="idx" class="items-detail-row">
-                <div class="items-detail-left">
-                  <div class="items-detail-name">{{ item.name }}</div>
-                  <div v-if="item.bookingReference" class="items-detail-ref"><i class="fas fa-tag"></i> Ref: {{ item.bookingReference }}</div>
+            <div class="modal-section-title"><i class="fas fa-print"></i> Print Preview</div>
+            <div class="receipt-preview-wrap">
+              <div class="receipt-preview-paper">
+                <div class="receipt-center receipt-title-company">
+                  {{ receiptStyle.companyName || "Eduardo's Resort" }}
                 </div>
-                <div class="items-detail-price">₱{{ item.price.toLocaleString() }}</div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-section">
-            <div class="modal-section-title"><i class="fas fa-credit-card"></i> Payment</div>
-            <div class="detail-grid">
-              <div class="detail-row">
-                <span class="detail-key">Method</span>
-                <span :class="['pay-badge', selectedTransaction.payment === 'GCash' ? 'pay-badge--gcash' : 'pay-badge--cash']">{{ selectedTransaction.payment }}</span>
-              </div>
-              <div class="detail-row detail-row--total">
-                <span class="detail-key">Total Amount</span>
-                <span class="detail-total">₱{{ selectedTransaction.total.toLocaleString() }}</span>
+                <div class="receipt-center receipt-title-sub">
+                  {{ receiptStyle.receiptTitle || 'Point of Sale' }}
+                </div>
+
+                <div class="receipt-divider">--------------------------------</div>
+
+                <div class="receipt-meta">
+                  <div>Receipt: POS-{{ selectedTransaction.receiptNo }}</div>
+                  <div>Type: {{ selectedTransaction.type }}</div>
+                  <div>Date: {{ formatReceiptDate(selectedTransaction.date) }}</div>
+                  <div>Time: {{ selectedTransaction.time }}</div>
+                  <div>Payment: {{ selectedTransaction.payment }}</div>
+                </div>
+
+                <div class="receipt-divider">--------------------------------</div>
+
+                <div
+                  v-for="(item, idx) in selectedTransaction.items"
+                  :key="idx"
+                  class="receipt-line-between receipt-item-row"
+                >
+                  <span class="receipt-item-name-inline">
+                    {{ item.name }}
+                    <small v-if="item.bookingReference" class="receipt-small-inline">(Ref: {{ item.bookingReference }})</small>
+                  </span>
+                  <span>₱{{ Number(item.price).toLocaleString() }}</span>
+                </div>
+
+                <div class="receipt-divider">--------------------------------</div>
+
+                <div class="receipt-line-between receipt-total-row">
+                  <span>TOTAL</span>
+                  <span>₱{{ Number(selectedTransaction.total).toLocaleString() }}</span>
+                </div>
+
+                <div class="receipt-divider">--------------------------------</div>
+
+                <div class="receipt-center receipt-footer">
+                  Thank you for your purchase!
+                </div>
               </div>
             </div>
           </div>
@@ -657,6 +651,10 @@ import axios from 'axios'
 import * as XLSX from 'xlsx'
 
 const API_BASE = 'http://localhost:8000/api/pos'
+const DEFAULT_SIZE_OPTIONS = [
+  { id: 'regular', label: 'Regular', priceDelta: 0 }
+]
+const DEFAULT_ADDON_OPTIONS = []
 
 export default {
   name: 'POSSystem',
@@ -665,9 +663,11 @@ export default {
     return {
       sidebarOpen: false, sidebarCollapsed: false,
       isCheckinScannerOpen: false, showTransaction: false, isFullscreen: false,
+      showPaymentPanel: false,
       auth: useAuthStore(), notifications: useNotificationStore(),
       cart: [], total: 0, receiptNo: 1,
       currentCategory: 'restaurant', paymentMethod: 'Cash',
+      cashReceived: '',
       searchQuery: '', restaurantTypeFilter: 'all', showMoreFilters: false,
       transactionHistory: [],
       showReceiptCustomizer: false, selectedReceipt: null,
@@ -686,7 +686,16 @@ export default {
       viewedTransactions: new Set(JSON.parse(localStorage.getItem('viewedEshopOrders') || '[]')),
       toastMessage: '', toastType: 'success',
       showBookingModal: false, pendingBookingItem: null,
-      showTransactionDetails: false, selectedTransaction: null
+      showTransactionDetails: false, selectedTransaction: null,
+      showCustomizationModal: false,
+      pendingCustomItem: null,
+      customizationSizeOptions: [...DEFAULT_SIZE_OPTIONS],
+      customizationAddOnOptions: [...DEFAULT_ADDON_OPTIONS],
+      customizationForm: {
+        sizeId: 'regular',
+        selectedAddOnIds: [],
+        specialRequest: ''
+      }
     }
   },
   computed: {
@@ -703,6 +712,18 @@ export default {
     },
     visibleFilters()  { return this.restaurantTypeFilters.slice(0, 5) },
     overflowFilters() { return this.restaurantTypeFilters.slice(5) },
+    cashReceivedNumber() {
+      const n = Number(this.cashReceived)
+      return Number.isFinite(n) && n >= 0 ? n : 0
+    },
+    changeAmount() {
+      if (this.paymentMethod !== 'Cash') return 0
+      return Math.max(0, this.cashReceivedNumber - Number(this.total || 0))
+    },
+    isCashInsufficient() {
+      if (this.paymentMethod !== 'Cash') return false
+      return this.cashReceivedNumber < Number(this.total || 0)
+    },
     filteredTransactionHistory() {
       if (this.userRole === 'admin') return this.transactionHistory
       return this.transactionHistory.filter(t => {
@@ -716,7 +737,7 @@ export default {
     groupedRestaurantItems() {
       const cat = this.categories.find(c => c.id === 'restaurant'); if (!cat) return []
       const items = this.searchQuery
-        ? cat.items.filter(i => i.name.toLowerCase().includes(this.searchQuery.toLowerCase()))
+        ? cat.items.filter(i => this.itemMatchesQuery(i, this.searchQuery))
         : cat.items
       const groups = {}
       items.forEach(item => { const type=(item.description||'').trim(); if (!type) return; if (!groups[type]) groups[type]=[]; groups[type].push(item) })
@@ -725,14 +746,32 @@ export default {
     uncategorizedRestaurantItems() {
       const cat = this.categories.find(c => c.id === 'restaurant'); if (!cat) return []
       const items = this.searchQuery
-        ? cat.items.filter(i => i.name.toLowerCase().includes(this.searchQuery.toLowerCase()))
+        ? cat.items.filter(i => this.itemMatchesQuery(i, this.searchQuery))
         : cat.items
       return items.filter(item => !(item.description||'').trim())
+    },
+    selectedCustomizationSize() {
+      return this.customizationSizeOptions.find(s => s.id === this.customizationForm.sizeId) || this.customizationSizeOptions[0]
+    },
+    selectedCustomizationAddOns() {
+      const selected = new Set(this.customizationForm.selectedAddOnIds || [])
+      return this.customizationAddOnOptions.filter(addon => selected.has(addon.id))
+    },
+    customizationExtraAmount() {
+      const sizeExtra = Number(this.selectedCustomizationSize?.priceDelta || 0)
+      const addOnsExtra = this.selectedCustomizationAddOns.reduce((sum, addon) => sum + Number(addon.price || 0), 0)
+      return sizeExtra + addOnsExtra
+    },
+    customizedItemUnitPrice() {
+      const basePrice = Number(this.pendingCustomItem?.price || 0)
+      return basePrice + this.customizationExtraAmount
     }
   },
   watch: {
     visibleCategories(newCats) { if (!newCats.some(c=>c.id===this.currentCategory)) this.currentCategory=newCats[0]?.id||'' },
     currentCategory(newCat)  { if (newCat !== 'restaurant') this.restaurantTypeFilter='all' },
+    paymentMethod(newMethod) { if (newMethod !== 'Cash') this.cashReceived = '' },
+    showPaymentPanel(isOpen) { if (isOpen) this.focusPaymentAmountInput() },
     eshopPendingCount(n)      { this.notifications.setEshopPending(n) }
   },
   beforeUnmount() {
@@ -783,6 +822,65 @@ export default {
     openScanner() {
       this.isCheckinScannerOpen = true;
     },
+    openPaymentPanel() {
+      if (!this.cart.length) {
+        this.showToast('No items added', 'error')
+        return
+      }
+      this.paymentMethod = 'Cash'
+      this.showPaymentPanel = true
+      if (this.paymentMethod === 'Cash' && !this.cashReceived) {
+        this.cashReceived = this.total.toFixed(2)
+      }
+      this.focusPaymentAmountInput()
+    },
+    closePaymentPanel() {
+      this.showPaymentPanel = false
+    },
+    focusPaymentAmountInput() {
+      this.$nextTick(() => {
+        const input = this.$refs.paymentAmountInput
+        if (input && typeof input.focus === 'function') {
+          input.focus()
+          if (typeof input.select === 'function') input.select()
+        }
+      })
+    },
+    selectPaymentAmountInput() {
+      const input = this.$refs.paymentAmountInput
+      if (input && typeof input.select === 'function') input.select()
+    },
+    appendToCashReceived(token) {
+      if (this.paymentMethod !== 'Cash') return
+      let current = String(this.cashReceived || '')
+      if (token === '.') {
+        if (current.includes('.')) return
+        current = current || '0'
+        this.cashReceived = `${current}.`
+        return
+      }
+      const next = `${current}${token}`
+      const normalized = next.replace(/^0+(\d)/, '$1')
+      if (!/^\d*(\.\d{0,2})?$/.test(normalized)) return
+      this.cashReceived = normalized
+    },
+    backspaceCashReceived() {
+      if (this.paymentMethod !== 'Cash') return
+      const current = String(this.cashReceived || '')
+      this.cashReceived = current.slice(0, -1)
+    },
+    clearCashReceived() {
+      if (this.paymentMethod !== 'Cash') return
+      this.cashReceived = ''
+    },
+    setExactCash() {
+      if (this.paymentMethod !== 'Cash') return
+      this.cashReceived = Number(this.total || 0).toFixed(2)
+    },
+    async completeFromPaymentPanel() {
+      const success = await this.checkout()
+      if (success) this.showPaymentPanel = false
+    },
     toggleTransaction() {
       this.showTransaction = !this.showTransaction;
     },
@@ -807,7 +905,15 @@ export default {
       try {
         const res = await axios.get(`${API_BASE}/items`)
         this.categories.forEach(cat => {
-          cat.items = res.data.filter(i=>i.category===cat.id).map(i=>({name:i.name,price:parseFloat(i.price),description:i.description||''}))
+          cat.items = res.data
+            .filter(i => i.category === cat.id)
+            .map(i => ({
+              name: i.name,
+              price: parseFloat(i.price),
+              description: i.description || '',
+              sizes: Array.isArray(i.sizes) ? i.sizes : [],
+              addons: Array.isArray(i.addons) ? i.addons : []
+            }))
         })
       } catch { this.showToast('Failed to load items from server','error') }
     },
@@ -816,7 +922,19 @@ export default {
         const res = await axios.get(`${API_BASE}/transactions`)
         this.transactionHistory = res.data.map(t => {
           const isEshop = t.receipt_no && String(t.receipt_no).includes('ESHOP')
-          return { receiptNo:t.receipt_no, items:t.items, type:t.type, payment:t.payment_method, total:parseFloat(t.total_amount), date:t.transaction_date, time:t.transaction_time, source:t.source||(isEshop?'eshop':'pos'), bookingDetails:t.bookingDetails||[] }
+          return {
+            receiptNo:t.receipt_no,
+            items:t.items,
+            type:t.type,
+            payment:t.payment_method,
+            total:parseFloat(t.total_amount),
+            paidAmount:parseFloat(t.cash_received ?? t.paid_amount ?? t.total_amount),
+            changeAmount:parseFloat(t.change_amount ?? 0),
+            date:t.transaction_date,
+            time:t.transaction_time,
+            source:t.source||(isEshop?'eshop':'pos'),
+            bookingDetails:t.bookingDetails||[]
+          }
         })
         const current = new Set(this.transactionHistory.map(t=>t.receiptNo))
         this.viewedTransactions = new Set(Array.from(this.viewedTransactions).filter(r=>current.has(r)))
@@ -828,10 +946,17 @@ export default {
       const nums = this.transactionHistory.map(t=>parseInt(String(t.receiptNo).replace(/[^\d]/g,''))).filter(n=>n>0)
       this.receiptNo = nums.length ? Math.max(...nums)+1 : 1
     },
+    itemMatchesQuery(item, query) {
+      const q = String(query || '').trim().toLowerCase()
+      if (!q) return true
+      const name = String(item?.name || '').toLowerCase()
+      const type = String(item?.description || '').toLowerCase()
+      return name.includes(q) || type.includes(q)
+    },
     showCategory(id) { if (!this.visibleCategories.some(c=>c.id===id)) return; this.currentCategory=id; this.searchQuery=''; if(id!=='restaurant') this.restaurantTypeFilter='all' },
     getFilteredItems(items, categoryId) {
       let f=[...items]
-      if(this.searchQuery) { const q=this.searchQuery.toLowerCase(); f=f.filter(i=>i.name.toLowerCase().includes(q)) }
+      if(this.searchQuery) f=f.filter(i=>this.itemMatchesQuery(i, this.searchQuery))
       if(categoryId==='restaurant'&&this.restaurantTypeFilter!=='all') f=f.filter(i=>(i.description||'').toLowerCase()===this.restaurantTypeFilter.toLowerCase())
       return f
     },
@@ -844,56 +969,203 @@ export default {
         this.restaurantTypeFilter = 'all'
       }
     },
-    handleItemClick(name, price, category) {
-      if (['rooms','cottage','event'].includes(category)) { this.pendingBookingItem={name,price,category}; this.showBookingModal=true }
-      else this.addItem(name, price)
+    normalizeSizeOptions(rawSizes) {
+      if (!Array.isArray(rawSizes) || rawSizes.length === 0) return [...DEFAULT_SIZE_OPTIONS]
+      return rawSizes.map((size, index) => {
+        const label = String(size?.label || size?.name || `Option ${index + 1}`).trim()
+        const id = String(size?.id || label || `size-${index + 1}`)
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+        return {
+          id,
+          label,
+          priceDelta: Number(size?.priceDelta || size?.price || 0)
+        }
+      })
+    },
+    normalizeAddOnOptions(rawAddons) {
+      if (!Array.isArray(rawAddons) || rawAddons.length === 0) return [...DEFAULT_ADDON_OPTIONS]
+      return rawAddons.map((addon, index) => {
+        const name = String(addon?.name || addon?.label || `Add-on ${index + 1}`).trim()
+        const id = String(addon?.id || name || `addon-${index + 1}`)
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+        return {
+          id,
+          name,
+          price: Number(addon?.price || addon?.amount || 0)
+        }
+      })
+    },
+    openCustomizationModal(item) {
+      this.pendingCustomItem = { name: item.name, price: Number(item.price || 0) }
+      this.customizationSizeOptions = this.normalizeSizeOptions(item.sizes)
+      this.customizationAddOnOptions = this.normalizeAddOnOptions(item.addons)
+      this.customizationForm = {
+        sizeId: this.customizationSizeOptions[0]?.id || 'regular',
+        selectedAddOnIds: [],
+        specialRequest: ''
+      }
+      this.showCustomizationModal = true
+    },
+    closeCustomizationModal() {
+      this.showCustomizationModal = false
+      this.pendingCustomItem = null
+    },
+    confirmCustomization() {
+      if (!this.pendingCustomItem) return
+      const customPayload = {
+        sizeId: this.selectedCustomizationSize?.id || 'regular',
+        sizeLabel: this.selectedCustomizationSize?.label || 'Regular',
+        sizePriceDelta: Number(this.selectedCustomizationSize?.priceDelta || 0),
+        addOns: this.selectedCustomizationAddOns.map(addon => ({ id: addon.id, name: addon.name, price: Number(addon.price || 0) })),
+        specialRequest: String(this.customizationForm.specialRequest || '').trim()
+      }
+      this.addItem(this.pendingCustomItem.name, this.pendingCustomItem.price, customPayload)
+      this.closeCustomizationModal()
+    },
+    handleItemClick(item, category) {
+      if (['rooms','cottage','event'].includes(category)) {
+        this.pendingBookingItem = { name: item.name, price: item.price, category }
+        this.showBookingModal = true
+      } else {
+        this.openCustomizationModal(item)
+      }
     },
     async handleBookingConfirm(bookingData) {
       try {
         const bookRes = await axios.post('http://localhost:8000/api/bookings/confirm', {
           guest:{ firstName:bookingData.firstName, lastName:bookingData.lastName, phone:bookingData.phone||'', email:bookingData.email||'', address:'', city:'', postal:'', country:'Philippines' },
           checkIn:bookingData.checkIn, checkOut:bookingData.checkOut, isSwimmingOnly:false,
-          items:[{ item_id:this.pendingBookingItem.category, name:this.pendingBookingItem.name, category:this.pendingBookingItem.category, qty:1, guests:bookingData.adults+bookingData.children, price:this.pendingBookingItem.price, perNight:true }],
+          items:[{ item_id:this.pendingBookingItem.category, name:this.pendingBookingItem.name, category:this.pendingBookingItem.category, qty:1, guests:bookingData.adults+bookingData.children, price:this.pendingBookingItem.price, perNight:this.pendingBookingItem.category !== 'cottage' }],
           paymentMethod:'pos-walkin', total:bookingData.lineTotal
         })
         if (!bookRes.data.success) throw new Error(bookRes.data.error||'Failed to create booking')
         const { bookingId, bookingReference } = bookRes.data.data
         await axios.post(`http://localhost:8000/api/bookings/${bookingId}/check-in`, { checked_in_by:this.userRole||'staff', checked_in_time:new Date().toISOString() })
-        const payRes = await axios.post('http://localhost:8000/api/paymongo/create-payment-link', { amount:bookingData.lineTotal, description:`Eduardo's Resort - ${bookingReference}`, bookingId, email:bookingData.email||`walkin-${bookingReference}@resort.local`, paymentMethod:'gcash' })
-        if (!payRes.data.success) throw new Error('Failed to create payment link')
-        const qr = await QRCode.toDataURL(payRes.data.checkout_url, { errorCorrectionLevel:'H', type:'image/png', width:200, margin:1, color:{dark:'#0C3B5E',light:'#FFFFFF'} })
-        this.cart.push({ name:this.pendingBookingItem.name, price:bookingData.lineTotal, isBooking:true, bookingId, bookingReference, paymentUrl:payRes.data.checkout_url, paymentQR:qr, ...bookingData })
+
+        const selectedMethod = String(this.paymentMethod || 'Cash')
+        let paymentUrl = null
+        let paymentQR = null
+
+        if (selectedMethod.toLowerCase() === 'gcash') {
+          const payRes = await axios.post('http://localhost:8000/api/paymongo/create-payment-link', {
+            amount:bookingData.lineTotal,
+            description:`Eduardo's Resort - ${bookingReference}`,
+            bookingId,
+            email:bookingData.email||`walkin-${bookingReference}@resort.local`,
+            paymentMethod:'gcash'
+          })
+          if (!payRes.data.success) throw new Error('Failed to create payment link')
+          paymentUrl = payRes.data.checkout_url
+          paymentQR = await QRCode.toDataURL(paymentUrl, {
+            errorCorrectionLevel:'H',
+            type:'image/png',
+            width:200,
+            margin:1,
+            color:{dark:'#0C3B5E',light:'#FFFFFF'}
+          })
+        }
+
+        this.cart.push({
+          name:this.pendingBookingItem.name,
+          price:bookingData.lineTotal,
+          isBooking:true,
+          bookingId,
+          bookingReference,
+          ...(paymentUrl ? { paymentUrl } : {}),
+          ...(paymentQR ? { paymentQR } : {}),
+          ...bookingData
+        })
         this.total += bookingData.lineTotal
         this.showToast(`Booking created! Ref: ${bookingReference}`, 'success')
         this.pendingBookingItem=null
       } catch(err) { this.showToast(err.message||'Failed to create booking','error') }
     },
-    addItem(name, price) {
-      const ex = this.cart.find(i=>i.name===name&&!i.isBooking)
-      if (ex) { ex.qty++; ex.price=ex.unitPrice*ex.qty } else this.cart.push({ name, price, unitPrice:price, qty:1 })
-      this.total += price
+    addItem(name, price, customization = null) {
+      const basePrice = Number(price || 0)
+      const sizeExtra = Number(customization?.sizePriceDelta || 0)
+      const addOnsExtra = Array.isArray(customization?.addOns)
+        ? customization.addOns.reduce((sum, addon) => sum + Number(addon.price || 0), 0)
+        : 0
+      const unitPrice = basePrice + sizeExtra + addOnsExtra
+
+      const signature = customization
+        ? JSON.stringify({
+          sizeId: customization.sizeId || 'regular',
+          addOns: (customization.addOns || []).map(addon => addon.id).sort(),
+          specialRequest: (customization.specialRequest || '').trim().toLowerCase()
+        })
+        : 'default'
+
+      const ex = this.cart.find(i => !i.isBooking && i.name === name && (i.customizationSignature || 'default') === signature)
+      if (ex) {
+        ex.qty++
+        ex.price = ex.unitPrice * ex.qty
+      } else {
+        this.cart.push({
+          name,
+          price: unitPrice,
+          unitPrice,
+          qty: 1,
+          customization: customization || null,
+          customizationSignature: signature
+        })
+      }
+      this.total += unitPrice
     },
     removeItem(index) { const i=this.cart[index]; this.total-=i.isBooking?i.price:i.unitPrice*i.qty; this.cart.splice(index,1) },
     clearCart() { if(this.cart.length>0&&confirm('Clear all items?')) { this.cart=[]; this.total=0 } },
     async checkout() {
-      if (!this.cart.length) { this.showToast('No items added','error'); return }
+      if (!this.cart.length) { this.showToast('No items added','error'); return false }
+      if (this.paymentMethod === 'Cash' && this.isCashInsufficient) { this.showToast('Insufficient cash amount','error'); return false }
       if (isNaN(this.receiptNo)||this.receiptNo<1) this.receiptNo=1
       const now = new Date()
+      const paidAmount = this.paymentMethod === 'Cash' ? this.cashReceivedNumber : this.total
+      const changeAmount = this.paymentMethod === 'Cash' ? this.changeAmount : 0
       const trans = {
         receiptNo: String(Math.floor(this.receiptNo)).padStart(3,'0'),
-        items: this.cart.map(i=>({ name:i.name, price:i.price, ...(i.isBooking&&{bookingId:i.bookingId,bookingReference:i.bookingReference}) })),
+        items: this.cart.map(i=>({
+          name:i.name,
+          price:i.price,
+          qty:i.isBooking ? 1 : (i.qty || 1),
+          quantity:i.isBooking ? 1 : (i.qty || 1),
+          unitPrice:i.isBooking ? i.price : (i.unitPrice || i.price),
+          ...(i.customization ? { customization: i.customization } : {}),
+          ...(i.isBooking&&{bookingId:i.bookingId,bookingReference:i.bookingReference})
+        })),
         type:'Walk-in', payment:this.paymentMethod, total:this.total,
+        paidAmount,
+        changeAmount,
         date: now.toISOString().split('T')[0],
         time: now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}),
         bookingDetails: this.cart.filter(i=>i.isBooking).map(i=>({ firstName:i.firstName, lastName:i.lastName, phone:i.phone, email:i.email, roomName:i.name, checkInDate:i.checkIn, checkOutDate:i.checkOut, nights:i.nights, adults:i.adults, children:i.children, bookingReference:i.bookingReference, paymentUrl:i.paymentUrl }))
       }
       try {
-        await axios.post(`${API_BASE}/transactions`, { receipt_no:trans.receiptNo, items:trans.items, type:trans.type, payment_method:trans.payment, total_amount:trans.total, transaction_date:trans.date, transaction_time:trans.time })
-        if (this.cart.some(i=>i.isBooking)) this.showBookingReceipt(trans)
+        await axios.post(`${API_BASE}/transactions`, {
+          receipt_no:trans.receiptNo,
+          items:trans.items,
+          type:trans.type,
+          payment_method:trans.payment,
+          total_amount:trans.total,
+          cash_received: trans.paidAmount,
+          change_amount: trans.changeAmount,
+          transaction_date:trans.date,
+          transaction_time:trans.time
+        })
         this.transactionHistory.unshift(trans); this.receiptNo++
-        this.showToast(`Transaction complete! POS-${trans.receiptNo}`,'success')
+        const printed = await this.printReceipt(trans.receiptNo, { fromCheckout: true })
+        if (printed) this.showToast(`Transaction complete! POS-${trans.receiptNo} (receipt printed)`,'success')
+        else this.showToast(`Transaction complete! POS-${trans.receiptNo} (print failed)`,'error')
         this.cart=[]; this.total=0
-      } catch { this.showToast('Failed to save transaction','error') }
+        this.cashReceived=''
+        return true
+      } catch {
+        this.showToast('Failed to save transaction','error')
+        return false
+      }
     },
     showBookingReceipt(trans) {
       const bookings = this.cart.filter(i=>i.isBooking)
@@ -911,16 +1183,84 @@ export default {
       localStorage.setItem('viewedEshopOrders', JSON.stringify(Array.from(this.viewedTransactions)))
       this.selectedTransaction=t; this.showTransactionDetails=true
     },
-    printReceipt(receiptNo) {
+    async printReceipt(receiptNo, options = {}) {
+      const { fromCheckout = false } = options
       const t=this.transactionHistory.find(x=>x.receiptNo===receiptNo); if(!t) return
       const hasBookings=t.items.some(i=>i.bookingReference)
       if (hasBookings&&t.bookingDetails?.length) {
-        const b=t.bookingDetails[0]
-        axios.post('http://localhost:8000/api/pos/print/booking',{ receiptNo:`POS-${t.receiptNo}`, date:t.date, time:t.time, guestName:`${b.firstName} ${b.lastName}`, phone:b.phone||'N/A', email:b.email||'N/A', roomName:b.roomName||'N/A', checkInDate:b.checkInDate||'N/A', checkOutDate:b.checkOutDate||'N/A', nights:b.nights||0, adults:b.adults||0, children:b.children||0, pricePerNight:b.nights?(t.total/b.nights).toFixed(2):'0.00', total:t.total, paymentMethod:t.payment, bookingReference:b.bookingReference })
-          .then(r=>{ if(r.data.success) this.showToast(`Receipt sent to printer! Ref: ${b.bookingReference}`,'success'); else this.showToast('Printer service unavailable','error') }).catch(e=>this.showToast(`Print failed: ${e.message}`,'error'))
+        let printedCount = 0
+        for (const b of t.bookingDetails) {
+          const bookingLineTotal = Number(
+            t.items.find(i => i.bookingReference === b.bookingReference)?.price || t.total || 0
+          )
+          try {
+            const r = await axios.post('http://localhost:8000/api/pos/print/booking', {
+              receiptNo:`POS-${t.receiptNo}`,
+              date:t.date,
+              time:t.time,
+              guestName:`${b.firstName} ${b.lastName}`,
+              phone:b.phone||'N/A',
+              email:b.email||'N/A',
+              roomName:b.roomName||'N/A',
+              checkInDate:b.checkInDate||'N/A',
+              checkOutDate:b.checkOutDate||'N/A',
+              nights:b.nights||0,
+              adults:b.adults||0,
+              children:b.children||0,
+              pricePerNight:b.nights?(bookingLineTotal/Number(b.nights)).toFixed(2):'0.00',
+              total:bookingLineTotal,
+              paidAmount: Number(t.paidAmount ?? t.total),
+              changeAmount: Number(t.changeAmount ?? 0),
+              paymentMethod:t.payment,
+              bookingReference:b.bookingReference,
+              paymentUrl:b.paymentUrl
+            })
+            if (r.data?.success) printedCount++
+          } catch (e) {
+            if (!fromCheckout) this.showToast(`Print failed: ${e.response?.data?.message || e.message}`,'error')
+          }
+        }
+
+        if (printedCount > 0) {
+          if (!fromCheckout) this.showToast(`Receipt sent to printer (${printedCount})`,'success')
+          return true
+        }
+        if (!fromCheckout) this.showToast('Printer service unavailable','error')
+        return false
       } else {
-        axios.post('http://localhost:8000/api/pos/print/regular',{ receiptNo:`POS-${t.receiptNo}`, date:t.date, time:t.time, items:t.items.map(i=>({name:i.name,price:parseFloat(i.price),quantity:1,total:parseFloat(i.price)})), total:t.total, paymentMethod:t.payment })
-          .then(r=>{ if(r.data.success) this.showToast('Receipt sent to printer!','success'); else this.showToast('Printer service unavailable','error') }).catch(e=>this.showToast(`Print failed: ${e.message}`,'error'))
+        const payload = {
+          receiptNo:`POS-${t.receiptNo}`,
+          date:t.date,
+          time:t.time,
+          items:t.items.map(i => {
+            const qty = Number(i.qty || i.quantity || 1)
+            const lineTotal = Number(i.price || 0)
+            const unitPrice = Number(i.unitPrice || (qty > 0 ? lineTotal / qty : lineTotal))
+            return {
+              name:i.name,
+              price:unitPrice,
+              quantity:qty,
+              total:lineTotal
+            }
+          }),
+          total:t.total,
+          paidAmount: Number(t.paidAmount ?? t.total),
+          changeAmount: Number(t.changeAmount ?? 0),
+          paymentMethod:t.payment
+        }
+
+        try {
+          const r = await axios.post('http://localhost:8000/api/pos/print/regular', payload)
+          if (r.data?.success) {
+            if (!fromCheckout) this.showToast('Receipt sent to printer!','success')
+            return true
+          }
+          if (!fromCheckout) this.showToast(r.data?.message || 'Printer service unavailable','error')
+          return false
+        } catch (e) {
+          if (!fromCheckout) this.showToast(`Print failed: ${e.response?.data?.message || e.message}`,'error')
+          return false
+        }
       }
     },
     async deleteTransaction(receiptNo) {
@@ -1038,6 +1378,298 @@ export default {
   min-height: 0;
 }
 @media (max-width: 768px) { .pos-container { padding: .75rem; } }
+
+/* ── Payment Workspace Overlay ── */
+.pay-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12,59,94,.32);
+  /* backdrop-filter: blur(2px); */
+  z-index: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pay-panel {
+  width: min(1270px, 100vw);
+  height: calc(100vh - 64px);
+  margin-top: 64px;
+  background: var(--color-white);
+  border-left: 1px solid var(--color-gray-border);
+  box-shadow: -10px 0 30px rgba(12,59,94,.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pay-action {
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--color-gray-border);
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  transition: all .15s ease;
+}
+.pay-action:hover { border-color: var(--color-primary-light); color: var(--color-primary); }
+.pay-action--cancel {
+  background: #ef4444;
+  color: var(--color-white);
+  border-color: #ef4444;
+}
+.pay-action--cancel:hover { background: #dc2626; border-color: #dc2626; color: var(--color-white); }
+
+.pay-workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px 210px 1fr;
+  gap: .9rem;
+  padding: .9rem 1rem 1rem;
+  background: var(--color-gray-bg);
+}
+
+.pay-order-col,
+.pay-method-col,
+.pay-keypad-col {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(3,105,161,.06);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: .85rem;
+}
+
+.pay-col-title {
+  font-size: .78rem;
+  font-weight: 800;
+  color: var(--color-navy);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin-bottom: .6rem;
+}
+
+.pay-order-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 10px;
+  background: #fbfdff;
+}
+.pay-empty {
+  padding: 1rem;
+  font-size: .8rem;
+  color: var(--color-text-light);
+}
+.pay-order-row {
+  display: flex;
+  justify-content: space-between;
+  gap: .4rem;
+  padding: .55rem .65rem;
+  border-bottom: 1px solid #eef2f7;
+}
+.pay-order-row:last-child { border-bottom: none; }
+.pay-order-main { display: flex; flex-direction: column; min-width: 0; }
+.pay-order-main strong {
+  font-size: .8rem;
+  color: var(--color-text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pay-order-main small { font-size: .68rem; color: var(--color-text-light); }
+.pay-order-price { font-size: .78rem; font-weight: 700; color: var(--color-primary); }
+
+.pay-order-total {
+  margin-top: .65rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .55rem .7rem;
+  border-radius: 10px;
+  background: rgba(3,105,161,.08);
+  color: var(--color-navy);
+}
+.pay-order-total strong { font-size: 1rem; }
+
+.pay-method-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .45rem;
+}
+.pay-method-btn {
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--color-gray-border);
+  background: #f8fbff;
+  color: var(--color-text-dark);
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  transition: all .15s ease;
+}
+.pay-method-btn--ghost {
+  margin-top: .25rem;
+  border-style: dashed;
+  color: var(--color-text-light);
+  background: #ffffff;
+}
+.pay-method-btn:hover { border-color: var(--color-primary-light); color: var(--color-primary); }
+.pay-method-btn--active {
+  background: rgba(3,105,161,.1);
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.pay-details-card {
+  margin-top: 0;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+  background: #fcfeff;
+  padding: .9rem;
+}
+.pay-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: .9rem;
+  color: var(--color-text-dark);
+  margin-bottom: .55rem;
+}
+.pay-line strong { color: var(--color-primary); font-size: 1.9rem; line-height: 1; }
+.pay-line--warn strong { color: #b91c1c; }
+
+.pay-input-row {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .45rem;
+}
+.pay-input-row label {
+  font-size: .84rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+}
+.pay-paid-input {
+  height: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--color-gray-border);
+  padding: 0 .6rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text-dark);
+  background: var(--color-white);
+}
+.pay-paid-input:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(3,105,161,.12);
+}
+.pay-paid-input:disabled { background: #f1f5f9; color: #94a3b8; }
+
+.pay-warning {
+  margin: .15rem 0 .5rem;
+  font-size: .72rem;
+  font-weight: 700;
+  color: #b91c1c;
+}
+.pay-complete-btn {
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-navy);
+  color: var(--color-white);
+  font-size: .84rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  transition: all .15s ease;
+}
+.pay-complete-btn:hover { background: var(--color-primary); }
+.pay-complete-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.pay-keypad {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .45rem;
+}
+.key-btn {
+  height: 52px;
+  border-radius: 10px;
+  border: 1px solid var(--color-gray-border);
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all .12s ease;
+}
+.key-btn:hover {
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+  background: #f3f9ff;
+}
+.key-btn--danger {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.key-btn--warn {
+  background: rgba(244,196,0,.16);
+  color: #7a5200;
+  border-color: rgba(244,196,0,.45);
+}
+.key-btn--wide {
+  grid-column: span 1;
+  font-size: .75rem;
+}
+
+.pay-panel-fade-enter-active,
+.pay-panel-fade-leave-active { transition: opacity .2s ease; }
+.pay-panel-fade-enter-from,
+.pay-panel-fade-leave-to { opacity: 0; }
+
+.pay-panel-slide-enter-active,
+.pay-panel-slide-leave-active { transition: transform .24s ease; }
+.pay-panel-slide-enter-from,
+.pay-panel-slide-leave-to { transform: translateX(100%); }
+
+@media (max-width: 1100px) {
+  .pay-workspace { grid-template-columns: 1fr; overflow-y: auto; }
+  .pay-keypad { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  .pay-panel {
+    width: 100vw;
+    height: 100vh;
+    margin-top: 0;
+    border-left: none;
+  }
+  .pay-actions-row { grid-template-columns: 1fr; }
+}
 
 /* ── POS grid ── */
 .pos-section {
@@ -1297,11 +1929,56 @@ export default {
   background: var(--color-white);
 }
 
-.total-bar   { display: flex; justify-content: space-between; align-items: center; }
+.total-bar   { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .total-label { font-size: .65rem; font-weight: 700; color: var(--color-text-light); text-transform: uppercase; letter-spacing: .5px; }
 .total-amount{ font-size: 1.2rem; font-weight: 800; color: var(--color-navy); line-height: 1; }
 
 .payment-section { display: flex; flex-direction: column; }
+.cash-meta {
+  margin-top: .45rem;
+  padding: .5rem;
+  border: 1px solid rgba(3,105,161,.15);
+  border-radius: 10px;
+  background: #f8fcff;
+}
+.cash-row { display: flex; align-items: center; gap: .5rem; }
+.cash-label {
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+  min-width: 90px;
+}
+.cash-input {
+  flex: 1;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--color-gray-border);
+  padding: 0 .55rem;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  background: var(--color-white);
+}
+.cash-input:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 2px rgba(31,141,191,.15);
+}
+.change-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: .45rem;
+  font-size: .76rem;
+  color: #166534;
+}
+.change-row strong { font-weight: 800; }
+.change-row--insufficient { color: #b91c1c; }
+.cash-warning {
+  margin-top: .25rem;
+  font-size: .68rem;
+  font-weight: 700;
+  color: #b91c1c;
+}
 .payment-label {
   font-size: .62rem; font-weight: 700; color: var(--color-text-light);
   text-transform: uppercase; letter-spacing: .4px;
@@ -1322,15 +1999,23 @@ export default {
 
 /* Checkout button */
 .checkout-btn {
-  width: 100%; padding: .62rem;
+  width: 100%; padding: .62rem; height: 50px;
   background: var(--color-navy); color: var(--color-white);
   border: none; border-radius: 10px;
+  
   font-size: .82rem; font-weight: 700; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: .42rem;
   box-shadow: 0 3px 10px rgba(12,59,94,.25);
   transition: all .18s ease;
 }
 .checkout-btn:hover { background: var(--color-primary); box-shadow: 0 5px 16px rgba(3,105,161,.35); transform: translateY(-1px); }
+.checkout-btn:disabled {
+  cursor: not-allowed;
+  opacity: .65;
+  background: #64748b;
+  box-shadow: none;
+  transform: none;
+}
 .checkout-btn .checkout-amount {
   margin-left: auto;
   font-size: .72rem;
@@ -1567,6 +2252,65 @@ export default {
 .items-detail-ref i { color: var(--color-primary-light); }
 .items-detail-price { font-weight: 700; color: var(--color-primary); font-size: .875rem; margin-left: .75rem; flex-shrink: 0; }
 
+/* Food customization modal */
+.customize-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .55rem;
+}
+.customize-chip {
+  border: 1px solid var(--color-gray-border);
+  border-radius: 10px;
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  padding: .6rem .5rem;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: all .14s;
+}
+.customize-chip span { font-size: .8rem; font-weight: 700; }
+.customize-chip small { font-size: .68rem; color: var(--color-text-light); }
+.customize-chip:hover { border-color: var(--color-primary-light); }
+.customize-chip--active {
+  border-color: var(--color-primary-light);
+  background: rgba(3,105,161,.08);
+  box-shadow: 0 0 0 1px rgba(3,105,161,.15);
+}
+
+.customize-addon-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem;
+}
+.customize-addon-list--disabled {
+  grid-template-columns: 1fr;
+}
+.customize-addon-empty {
+  border: 1px dashed var(--color-gray-border);
+  border-radius: 10px;
+  padding: .65rem .7rem;
+  font-size: .76rem;
+  color: var(--color-text-light);
+  background: #f8fafc;
+}
+.customize-addon-item {
+  border: 1px solid var(--color-gray-border);
+  border-radius: 10px;
+  background: var(--color-white);
+  padding: .5rem .6rem;
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: .45rem;
+  cursor: pointer;
+  font-size: .78rem;
+}
+.customize-addon-item input { accent-color: var(--color-primary); }
+.customize-addon-item strong { color: var(--color-primary); font-size: .72rem; }
+
 .modal-foot {
   display: flex; gap: .55rem; justify-content: flex-end;
   padding: 1rem 1.4rem;
@@ -1613,6 +2357,8 @@ export default {
   .main-content { margin-left: 0; }
   .items-topbar { flex-direction: column; align-items: flex-start; }
   .category-switch { width: 100%; justify-content: flex-start; }
+  .customize-chip-grid,
+  .customize-addon-list { grid-template-columns: 1fr; }
   /* responsive handled by Vue getTabStyle */
 }
 
@@ -1628,6 +2374,11 @@ export default {
   font-size: 13px;
   line-height: 1.45;
   border: 1px dashed #d1d5db;
+}
+
+.receipt-preview-wrap {
+  display: flex;
+  justify-content: center;
 }
 
 .receipt-center {
@@ -1689,6 +2440,11 @@ export default {
   word-break: break-word;
 }
 
+.receipt-small-inline {
+  color: #4b5563;
+  font-size: 11px;
+}
+
 .receipt-small {
   font-size: 11px;
   color: #4b5563;
@@ -1704,5 +2460,81 @@ export default {
 .receipt-footer {
   margin-top: 10px;
   font-size: 12px;
+}
+
+/* fullscreen mode: header + pos only */
+.main-content--fullscreen {
+  margin-left: 0 !important;
+}
+
+.pos-fullscreen .pos-container {
+  padding: 1rem 1rem 1rem;
+}
+
+.pos-fullscreen .pos-grid {
+  height: calc(100vh - 64px - 2rem);
+  max-height: calc(100vh - 64px - 2rem);
+}
+
+.pos-fullscreen .pay-panel {
+  width: 100vw;
+  height: calc(100vh - 64px);
+  margin-top: 64px;
+  border-left: none;
+}
+
+.pay-workspace--merged {
+  grid-template-columns: 280px 1fr;
+}
+
+.pay-order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .6rem;
+}
+
+.pay-main-col {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(3,105,161,.06);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: .85rem;
+}
+
+.pay-main-col .pay-keypad {
+  margin-top: auto;
+}
+
+.pay-action--cancel {
+  min-width: 118px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #ef4444;
+  background: #ef4444;
+  color: #fff;
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  transition: all .15s ease;
+}
+
+.pay-action--cancel:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+@media (max-width: 1100px) {
+  .pay-workspace--merged {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

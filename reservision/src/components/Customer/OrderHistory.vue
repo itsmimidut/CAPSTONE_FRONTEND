@@ -444,7 +444,7 @@ defineExpose({ fetchOrders })
   box-shadow: 0 2px 8px rgba(3,105,161,0.06);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 20;
 }
 
 .filter-grid {

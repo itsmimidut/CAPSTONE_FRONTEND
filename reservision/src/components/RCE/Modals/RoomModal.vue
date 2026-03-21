@@ -330,7 +330,8 @@ const imagePreviews = computed(() => [
 ])
 const primaryImageIndex = ref(0) // Track which image is marked as primary
 const editing = ref(false)
-
+const uploadArea = ref(null)   // ref for the drag-and-drop zone element
+const fileInput = ref(null)    // ref for the hidden <input type="file">
 watch(() => props.show,        (v)    => { if (v) resetOrLoadForm() })
 watch(() => props.initialRoom, (room) => { if (room && props.show) loadRoomData(room) }, { immediate: true })
 
@@ -465,8 +466,8 @@ const removeImage = (index) => {
     primaryImageIndex.value = Math.max(0, index - 1)
   } else if (primaryImageIndex.value > index) {
     primaryImageIndex.value--
+  }
 }
-
 const openFileDialog = () => fileInput.value?.click()
 
 onMounted(() => {

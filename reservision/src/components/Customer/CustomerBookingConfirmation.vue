@@ -396,7 +396,8 @@ export default {
       showModal: false,
       showVerificationModal: false,
       emailVerified: false,
-      verifiedEmail: ''
+      verifiedEmail: '',
+      existingCustomer: null
     }
   },
   computed: {
@@ -457,9 +458,9 @@ export default {
       try {
         const res  = await fetch(`http://localhost:8000/api/customers/check-email/${encodeURIComponent(this.guest.email)}`)
         const data = await res.json()
-        if (data.success && data.exists) {
-          this.emailVerified = true; this.verifiedEmail = this.guest.email; await this.payNow()
-        } else { this.showVerificationModal = true }
+        // Always require OTP verification — even for known emails
+        this.existingCustomer = (data.success && data.exists) ? data.customer : null
+        this.showVerificationModal = true
       } catch { this.showVerificationModal = true }
     },
 

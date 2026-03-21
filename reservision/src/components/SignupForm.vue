@@ -128,9 +128,10 @@
         <!--  • Clicking the iframe opens a centred popup account selector      -->
         <!--  • No more prompt() → no more One-Tap corner overlay               -->
         <!-- ─────────────────────────────────────────────────────────────── -->
-        <div ref="googleButtonContainer" class="w-full flex justify-center min-h-[44px]">
-          <!-- Skeleton pulse shown while the GIS script loads (disappears once
-               googleReady becomes true and renderButton() fires) -->
+        <div class="w-full flex justify-center min-h-[44px]">
+          <!-- Skeleton pulse shown while the GIS script loads.
+               Kept as a sibling of googleButtonContainer so Vue's v-if
+               comment anchors never compete with Google's injected iframe. -->
           <div
             v-if="!googleReady"
             class="w-full h-[44px] rounded-lg border border-[#1F8DBF]/20 bg-gray-50 animate-pulse
@@ -139,13 +140,16 @@
             <i class="fas fa-circle-notch fa-spin text-[#1F8DBF]/40"></i>
             <span>Loading Google Sign-In…</span>
           </div>
+          <!-- Google renderButton() injects its iframe here.
+               Vue intentionally has no children in this div. -->
+          <div ref="googleButtonContainer" class="w-full flex justify-center"></div>
         </div>
         
         <div class="text-center text-xs text-[#1F8DBF]/70 font-semibold">
           <p>
             Already have an account?
             <router-link
-              to="/login"
+              :to="{ path: '/login' }"
               class="text-[#F4C400] hover:text-[#F4C400]/80 hover:underline transition-colors font-bold"
             >
               Login here

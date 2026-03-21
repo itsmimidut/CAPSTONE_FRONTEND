@@ -27,7 +27,7 @@ import { useAuthStore } from '../stores/auth'
 // ============================================================
 // These pages are accessible without authentication
 // 🌍 Public pages
-import HomePage from '../views/website/HomePage.vue'
+import HomePage from '../components/NOT INCLUDED/HomePage.vue'
 import AboutPage from '../views/website/AboutPage.vue'
 import AmenitiesPage from '../views/website/AmenitiesPage.vue'
 import RatesPage from '../views/website/RatesPage.vue'
@@ -73,9 +73,11 @@ import CottagesOnly from '../views/admin/CottagesOnly.vue'
 import EventsOnly from '../views/admin/EventsOnly.vue'
 import SwimmingManagement from '../views/admin/SwimmingManagement.vue'
 import RoomandCottageManagement from '../views/admin/RoomAndCottage.vue'
+import WebsiteAmenitiesConfig from '../views/admin/WebsiteAmenitiesConfig.vue'
 import WebsiteReservation from '../views/website/Reservation.vue'
 import SalesReport from '../views/admin/SalesReport.vue'
 import LandingPage from '../views/website/LandingPage.vue'
+import ProfilePage from '../views/shared/ProfilePage.vue'
 // import CustomerDashboard from '../views/customer/CustomerDashboard.vue'
 
 // ============================================================
@@ -96,7 +98,7 @@ const routes = [
   // PUBLIC ROUTES - No authentication required
   // ────────────────────────────────────────────────────────
   // 🌍 Public
-  { path: '/', name: 'Home', component: HomePage },
+  { path: '/', name: 'Home', component: LandingPage },
   { path: '/amenities', name: 'Amenities', component: AmenitiesPage },
   { path: '/rates', name: 'Rates', component: RatesPage },
   { path: '/gallery', name: 'Gallery', component: GalleryPage },
@@ -151,6 +153,18 @@ const routes = [
   //   component: Reservation,
   //   meta: { requiresAuth: true, role: 'customer' }
   // },
+
+  // ────────────────────────────────────────────────────────
+  // ADMIN/STAFF/CUSTOMER SHARED ROUTES
+  // ────────────────────────────────────────────────────────
+  // 🧑‍💼 Admin + Staff + Customer (SAME profile section)
+  // Accessible to all authenticated users regardless of role
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: ProfilePage,
+    meta: { requiresAuth: true }
+  },
 
   // ────────────────────────────────────────────────────────
   // ADMIN/STAFF SHARED ROUTES
@@ -255,6 +269,12 @@ const routes = [
     name: 'RestaurantInventory',
     component: RestaurantInventory,
     meta: { requiresAuth: true, roles: ['admin', 'restaurantstaff'] }
+  },
+  {
+    path: '/admin/website/amenities',
+    name: 'WebsiteAmenitiesConfig',
+    component: WebsiteAmenitiesConfig,
+    meta: { requiresAuth: true, roles: ['admin'] }
   }
 ]
 

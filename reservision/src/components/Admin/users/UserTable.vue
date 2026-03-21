@@ -3,6 +3,7 @@
     <table>
       <thead>
         <tr>
+          <th>Profile</th>
           <th>Name</th>
           <th>Email</th>
           <th>Role</th>
@@ -11,9 +12,20 @@
       </thead>
       <tbody>
         <tr v-if="users.length === 0">
-          <td colspan="4" class="empty-state">No users found</td>
+          <td colspan="5" class="empty-state">No users found</td>
         </tr>
         <tr v-for="user in users" :key="user.id">
+          <td>
+            <div class="profile-col">
+              <img
+                v-if="getProfileImageUrl(user.profileImage)"
+                :src="getProfileImageUrl(user.profileImage)"
+                alt="Profile"
+                class="profile-thumb"
+              />
+              <div v-else class="profile-fallback">{{ getInitials(user.name) }}</div>
+            </div>
+          </td>
           <td>
             <div class="user-info">
               <div class="user-avatar">{{ getInitials(user.name) }}</div>
@@ -123,6 +135,14 @@ function getInitials(name) {
     .toUpperCase() || 'U';
 }
 
+function getProfileImageUrl(rawPath) {
+  const path = String(rawPath || '').trim();
+  if (!path) return '';
+  if (/^(https?:\/\/|data:|blob:)/i.test(path)) return path;
+  if (path.startsWith('/')) return `http://localhost:8000${path}`;
+  return `http://localhost:8000/${path.replace(/^\.?\//, '')}`;
+}
+
 function handleRoleChange(userId, newRole) {
   emit('role-change', { userId, newRole });
 }
@@ -141,7 +161,33 @@ function handleRoleChange(userId, newRole) {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 40rem;
+  min-width: 48rem;
+}
+
+.profile-col {
+  display: flex;
+  align-items: center;
+}
+
+.profile-thumb {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+}
+
+.profile-fallback {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  background: #e2e8f0;
+  color: #2b6cb0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 th {
