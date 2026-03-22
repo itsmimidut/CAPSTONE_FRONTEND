@@ -63,7 +63,7 @@
         <!-- ── Summary pill ── -->
         <div class="rooms-summary">
           <i class="fas fa-bed summary-icon"></i>
-          Showing <strong>{{ filteredRooms.length }}</strong> room(s)
+          Showing <strong>{{ filteredRooms.length }}</strong> room(s)sssss
         </div>
 
         <!-- ── Rooms Grid ── -->

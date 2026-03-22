@@ -10,7 +10,7 @@
           </div>
           <div>
             <h3 class="modal-title">{{ editing ? `Edit ${entityLabel}` : `Add New ${entityLabel}` }}</h3>
-            <p class="modal-sub">Fill in the details below</p>
+            <p class="modal-sub">Fill in the details belowsss</p>
           </div>
         </div>
         <button class="close-modal" @click="close">×</button>
@@ -71,6 +71,7 @@
                   <option value="event">Event</option>
                 </select>
                 <i class="fas fa-chevron-down select-arrow"></i>
+                
               </div>
             </div>
           </div>
@@ -85,7 +86,21 @@
             <div>
               <h4 class="section-heading">{{ entityLabel }} Images</h4>
               <p class="section-sub">Upload high-quality photos of the {{ entityLabel.toLowerCase() }}</p>
-            </div>
+
+
+            </div> 
+                         <!-- Extract Text Button -->
+              <div v-if="imagePreviews.length" class="extract-text-button-group">
+                <button
+                  class="btn-extract-text"
+                  @click="extractTextFromImages()"
+                  :disabled="isExtractingText"
+                  :title="isExtractingText ? 'Extraction in progress...' : 'Re-extract text from uploaded images'"
+                >
+                  <i class="fas fa-wand-magic-sparkles"></i>
+                  {{ isExtractingText ? 'Extracting...' : 'Extract Text from Images' }}
+                </button>
+              </div>
           </div>
 
           <div
@@ -272,6 +287,18 @@
         </button>
       </div>
 
+      <div v-if="isExtractingText" class="ocr-overlay">
+        <div class="ocr-overlay-card">
+          <div class="ocr-overlay-icon"><i class="fas fa-spinner fa-spin"></i></div>
+          <h4>Extracting Text</h4>
+          <p>Auto-filling details from uploaded image {{ ocrCurrentImage }} of {{ ocrTotalImages }}</p>
+          <div class="ocr-overlay-track">
+            <div class="ocr-overlay-fill" :style="{ width: `${extractProgress}%` }"></div>
+          </div>
+          <strong class="ocr-overlay-percent">{{ extractProgress }}%</strong>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
@@ -285,6 +312,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:show', 'save', 'close'])
+const BACKEND_URL = 'http://localhost:8000'
 
 onMounted(() => {
   console.log('RoomModal mounted, show prop:', props.show)
@@ -324,8 +352,18 @@ const entityLabel = computed(() => {
  */
 const existingImages = ref([])   // server paths kept from DB
 const newFileItems = ref([])     // { src: blobUrl, file: File }
+const isExtractingText  = ref(false)
+const extractProgress   = ref(0)
+const ocrCurrentImage   = ref(0)
+const ocrTotalImages    = ref(0)
+const extractedImageText = ref('')
+const resolveImageSrc = (src) => {
+  if (!src) return ''
+  if (src.startsWith('blob:') || src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) return src
+  return src.startsWith('/') ? `${BACKEND_URL}${src}` : `${BACKEND_URL}/${src}`
+}
 const imagePreviews = computed(() => [
-  ...existingImages.value,
+  ...existingImages.value.map(resolveImageSrc),
   ...newFileItems.value.map(i => i.src)
 ])
 const primaryImageIndex = ref(0) // Track which image is marked as primary
@@ -336,6 +374,7 @@ watch(() => props.show,        (v)    => { if (v) resetOrLoadForm() })
 watch(() => props.initialRoom, (room) => { if (room && props.show) loadRoomData(room) }, { immediate: true })
 
 const resetForm = () => {
+  newFileItems.value.forEach(item => URL.revokeObjectURL(item.src))
   form.value = {
     item_id: null, room_number: '', name: '', category: 'Standard Room',
     category_type: 'room', max_guests: 2, price: null, quantity: 1,
@@ -343,12 +382,18 @@ const resetForm = () => {
   }
   existingImages.value = []
   newFileItems.value = []
+  isExtractingText.value  = false
+  extractProgress.value   = 0
+  ocrCurrentImage.value   = 0
+  ocrTotalImages.value    = 0
+  extractedImageText.value = ''
   primaryImageIndex.value = 0
   editing.value = false
 }
 
 const loadRoomData = (room) => {
   if (!room) return
+  newFileItems.value.forEach(item => URL.revokeObjectURL(item.src))
   editing.value = true
   form.value = {
     item_id: room.item_id, room_number: room.room_number || '',
@@ -420,6 +465,7 @@ const handleFileChange = (e) => processFiles(e.target.files)
 
 const processFiles = (files) => {
   const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+  const acceptedSources = []
 
   Array.from(files).forEach((file) => {
     // Validate file type
@@ -440,11 +486,16 @@ const processFiles = (files) => {
     // Create a temporary blob URL for immediate preview — no base64 conversion
     const src = URL.createObjectURL(file)
     newFileItems.value.push({ src, file })
+    acceptedSources.push(src)
 
     if (isFirst) {
       primaryImageIndex.value = 0
     }
   })
+
+  if (acceptedSources.length > 0) {
+    extractTextFromImages(acceptedSources)
+  }
 }
 
 const setPrimaryImage = (index) => { primaryImageIndex.value = index }
@@ -467,6 +518,151 @@ const removeImage = (index) => {
   } else if (primaryImageIndex.value > index) {
     primaryImageIndex.value--
   }
+}
+
+// ── Preprocess image on a canvas: grayscale + contrast boost + 2× scale ──────
+const preprocessImageForOCR = (src) => new Promise((resolve) => {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.onload = () => {
+    const scale   = Math.min(3, 2400 / Math.max(img.width, img.height, 1))
+    const canvas  = document.createElement('canvas')
+    canvas.width  = img.width  * scale
+    canvas.height = img.height * scale
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const d = imageData.data
+    const contrast = 2.0  // >1 boosts contrast; helps white-on-colour text
+
+    for (let i = 0; i < d.length; i += 4) {
+      const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]
+      const adjusted = Math.min(255, Math.max(0, (gray - 128) * contrast + 128))
+      d[i] = d[i + 1] = d[i + 2] = adjusted
+    }
+    ctx.putImageData(imageData, 0, 0)
+    resolve(canvas.toDataURL('image/png'))
+  }
+  img.onerror = () => resolve(src)   // fall back to original if load fails
+  img.src = src
+})
+
+const cleanOCRText = (raw) =>
+  raw
+    .split('\n')
+    .map(l => l.replace(/[^\x20-\x7E\u00C0-\u024F]/g, ' ').replace(/\s{3,}/g, '  ').trim())
+    .filter(l => l.length > 1)
+    .join('\n')
+
+const extractTextFromImages = async (customSources = null) => {
+  const sources = Array.isArray(customSources) && customSources.length
+    ? customSources
+    : [
+      ...existingImages.value.map(resolveImageSrc),
+      ...newFileItems.value.map(item => item.src)
+    ]
+
+  if (!sources.length || isExtractingText.value) return
+
+  isExtractingText.value   = true
+  extractProgress.value    = 0
+  ocrCurrentImage.value    = 0
+  ocrTotalImages.value     = sources.length
+  extractedImageText.value = ''
+
+  let worker = null
+  try {
+    const { createWorker } = await import('tesseract.js')
+    worker = await createWorker('eng', 1, {
+      logger: (m) => {
+        if (m?.status === 'recognizing text' && Number.isFinite(m?.progress)) {
+          const base  = ((ocrCurrentImage.value - 1) / ocrTotalImages.value) * 100
+          const slice = (1 / ocrTotalImages.value) * 100
+          extractProgress.value = Math.min(99, Math.round(base + m.progress * slice))
+        }
+      }
+    })
+
+    // PSM 3 = fully automatic; best for poster/flyer mixed layouts
+    await worker.setParameters({ tessedit_pageseg_mode: '3' })
+
+    const chunks = []
+    for (let i = 0; i < sources.length; i++) {
+      ocrCurrentImage.value = i + 1
+      const preprocessed = await preprocessImageForOCR(sources[i])
+      const { data } = await worker.recognize(preprocessed)
+      const text = cleanOCRText(String(data?.text || ''))
+      if (text) chunks.push(sources.length > 1 ? `[Image ${i + 1}]\n${text}` : text)
+    }
+
+    extractProgress.value    = 100
+    extractedImageText.value = chunks.join('\n\n').trim()
+    smartAutoFill()
+
+    if (!extractedImageText.value) {
+      alert('No readable text found. Try an image with clearer, darker text on a light background.')
+    }
+  } catch (error) {
+    console.error('OCR extraction failed:', error)
+    alert('Text extraction failed: ' + (error?.message || error))
+  } finally {
+    isExtractingText.value = false
+    if (worker) { try { await worker.terminate() } catch {} }
+  }
+}
+
+// ── Smart Auto-Fill: parse extracted text → populate form fields ──────────────
+const smartAutoFill = () => {
+  const text = extractedImageText.value
+  if (!text.trim()) return []
+
+  const filled = []
+
+  // Room / entity name — common resort room types
+  const nameMatch = text.match(
+    /\b(FAMILY\s+ROOM|DELUXE\s+ROOM|STANDARD\s+ROOM|SUITE|COTTAGE|VILLA|SINGLE\s+ROOM|DOUBLE\s+ROOM|TWIN\s+ROOM|SUPERIOR\s+ROOM|BARKADA\s+ROOM|VIP\s+ROOM)\b/i
+  )
+  if (nameMatch) {
+    form.value.name = nameMatch[0].replace(/\s+/g, ' ').trim()
+    filled.push('Name')
+  }
+
+  // Price — PHP 4,000 / PHP4000 patterns
+  const priceMatch = text.match(/PHP\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i)
+  if (priceMatch) {
+    form.value.price = parseFloat(priceMatch[1].replace(/,/g, ''))
+    filled.push('Price')
+  }
+
+  // Capacity — "good for X pax" / "X persons" / "for X guests"
+  const paxMatch = text.match(/(?:good\s+for\s+|up\s+to\s+|for\s+)(\d+)\s*(?:pax|person|people|guests?)/i)
+  if (paxMatch) {
+    form.value.max_guests = parseInt(paxMatch[1])
+    filled.push('Capacity')
+  }
+
+  // Description — everything between inclusions header and check-in / extra person / contact block
+  const descBlock = text.match(
+    /(?:ROOM\s+INCLUSIONS?|INCLUSIONS?|INCLUDES?):?([\s\S]*?)(?:CHECK\s+IN|EXTRA\s+PERSON|FOR\s+MORE\s+INFO|$)/i
+  )
+  if (descBlock) {
+    const lines = descBlock[1]
+      .split('\n')
+      .map(l => l.replace(/^[-•·*\u2022\s]+/, '').trim())
+      .filter(l => l.length > 2)
+    if (lines.length) {
+      form.value.description = lines.join('\n')
+      filled.push('Description')
+    }
+  }
+
+  if (!filled.includes('Description') && text.trim() && !String(form.value.description || '').trim()) {
+    form.value.description = text.trim().slice(0, 1200)
+    filled.push('Description')
+  }
+
+  return filled
 }
 const openFileDialog = () => fileInput.value?.click()
 
@@ -519,6 +715,7 @@ onMounted(() => {
   box-shadow: 0 20px 50px rgba(12,59,94,0.22);
   animation: slideUp 0.22s ease;
   border: none;
+  position: relative;
 }
 @keyframes slideUp {
   from { transform: translateY(18px); opacity: 0; }
@@ -547,10 +744,10 @@ onMounted(() => {
 }
 .modal-title {
   font-size: 1rem; font-weight: 700;
-  color: var(--color-white); margin: 0;
+  color: var(--color-text-dark); margin: 0;
 }
 .modal-sub {
-  font-size: 0.7rem; color: rgba(255,255,255,0.65); margin: 2px 0 0;
+  font-size: 0.7rem; color: rgba(17, 13, 13, 0.65); margin: 2px 0 0;
 }
 .close-modal {
   width: 32px; height: 32px; border-radius: 8px;
@@ -784,6 +981,198 @@ input:checked + .slider:before { transform: translateX(22px); }
 }
 .btn-submit i { color: var(--color-gold); }
 
+.ocr-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(12,59,94,0.58);
+  backdrop-filter: blur(3px);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+}
+
+.ocr-overlay-card {
+  width: min(420px, 88%);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 10px 30px rgba(12,59,94,0.28);
+  text-align: center;
+}
+
+.ocr-overlay-icon {
+  font-size: 1.35rem;
+  color: var(--color-primary);
+}
+
+.ocr-overlay-card h4 {
+  margin: 0.45rem 0 0.25rem;
+  color: var(--color-navy);
+  font-size: 1rem;
+}
+
+.ocr-overlay-card p {
+  margin: 0;
+  color: var(--color-text-light);
+  font-size: 0.8rem;
+}
+
+.ocr-overlay-track {
+  margin-top: 0.75rem;
+  height: 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  overflow: hidden;
+}
+
+.ocr-overlay-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0ea5e9 0%, #0369a1 100%);
+  transition: width 0.18s ease;
+}
+
+.ocr-overlay-percent {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--color-navy);
+  font-size: 0.82rem;
+}
+
+/* OCR section */
+.ocr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.btn-ocr,
+.btn-ocr-apply,
+.btn-ocr-autofill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 9px;
+  border: none;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-ocr {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.btn-ocr:hover { background: var(--color-primary-dark); }
+
+.btn-ocr:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.btn-ocr-apply {
+  background: #0c3b5e;
+  color: var(--color-white);
+}
+.btn-ocr-apply:hover { background: #0a314d; }
+
+.btn-ocr-autofill {
+  background: #047857;
+  color: var(--color-white);
+}
+.btn-ocr-autofill:hover { background: #065f46; }
+
+.ocr-fill-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid #a7f3d0;
+}
+
+.ocr-hint {
+  font-weight: 400;
+  color: var(--color-text-light);
+  font-size: 0.7rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ocr-progress-wrap { margin-top: 0.75rem; }
+
+.ocr-progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  overflow: hidden;
+}
+
+.ocr-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #0369a1, #1f8dbf);
+  transition: width 0.2s ease;
+}
+
+.ocr-progress-label {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-light);
+}
+
+.ocr-result-wrap { margin-top: 0.75rem; }
+
 .textarea-group .form-control { width: 100%; }
+
+/* Extract Text Button */
+.extract-text-button-group {
+  display: left;
+  justify-content: flex-start;
+  margin-top: 0.75rem;
+}
+
+.btn-extract-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.35rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+  color: var(--color-white);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 12px rgba(3,105,161,0.2);
+}
+
+.btn-extract-text:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(3,105,161,0.32);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+}
+
+.btn-extract-text:disabled {
+  background: linear-gradient(135deg, #94a3b8 0%, #6b7280 100%);
+  cursor: not-allowed;
+  opacity: 0.7;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.btn-extract-text i {
+  font-size: 0.95rem;
+}
 </style>
 <style scoped src="../../../assets/room.css"></style>

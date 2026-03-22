@@ -212,8 +212,8 @@
               <button @click="exportAllTransactions" class="btn-export">
                 <i class="fas fa-file-excel"></i> Export Excel
               </button>
-              <button @click="clearHistory" class="btn-danger-outline">
-                <i class="fas fa-trash"></i> Clear History
+              <button @click="returnToPOS" class="btn-returnpos">
+                <i class="fas fa-arrow-left"></i> Back to POS
               </button>
             </div>
           </div>
@@ -884,6 +884,9 @@ export default {
     toggleTransaction() {
       this.showTransaction = !this.showTransaction;
     },
+    returnToPOS() {
+      this.showTransaction = false
+    },
     isTabExpanded(tab) {
       if (tab === 'scanner') return this.hoveredTab === 'scanner' || this.isCheckinScannerOpen;
       if (tab === 'transaction') return this.hoveredTab === 'transaction' || this.showTransaction;
@@ -1159,6 +1162,7 @@ export default {
         const printed = await this.printReceipt(trans.receiptNo, { fromCheckout: true })
         if (printed) this.showToast(`Transaction complete! POS-${trans.receiptNo} (receipt printed)`,'success')
         else this.showToast(`Transaction complete! POS-${trans.receiptNo} (print failed)`,'error')
+        this.showTransaction = false
         this.cart=[]; this.total=0
         this.cashReceived=''
         return true
@@ -1240,7 +1244,8 @@ export default {
               name:i.name,
               price:unitPrice,
               quantity:qty,
-              total:lineTotal
+              total:lineTotal,
+              customization: i.customization
             }
           }),
           total:t.total,
@@ -2067,6 +2072,16 @@ export default {
   border: 1px solid rgba(34,197,94,.3); transition: all .15s;
 }
 .btn-export:hover { background: #22c55e; color: var(--color-white); border-color: #22c55e; }
+
+.btn-returnpos {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .45rem 1rem; border-radius: 10px;
+  font-size: .8rem; font-weight: 600; cursor: pointer;
+  background: rgba(15, 177, 227, 0.15); color: #86e1ef;
+  border: 1px solid rgba(34, 145, 197, 0.3); transition: all .15s;
+}
+.btn-returnpos:hover { background: #22c55e; color: var(--color-white); border-color: #22c55e; }
+
 
 .btn-danger-outline {
   display: inline-flex; align-items: center; gap: .4rem;
