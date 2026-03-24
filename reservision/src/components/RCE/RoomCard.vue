@@ -354,7 +354,7 @@ const nextImg = () => {
 
 .room-title {
   font-size: 1.05rem; font-weight: 700;
-  color: var(--color-navy); line-height: 1.25;
+  color: rgb(58, 58, 58); line-height: 1.25;
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;

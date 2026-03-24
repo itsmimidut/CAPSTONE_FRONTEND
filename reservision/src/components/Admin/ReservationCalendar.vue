@@ -403,18 +403,28 @@ const getDayClass = (date) => {
   const reservations = getReservationsForDate(date)
   const today = new Date()
   const isToday = (date === today.getDate() && currentDate.value.getMonth() === today.getMonth() && currentDate.value.getFullYear() === today.getFullYear())
+  const isSelected = selectedCheckinDate.value === date
   const isPast = isDateInPast(date)
   const { status } = getOccupancyStatus(date)
   return {
     today: isToday,
+    selected: isSelected,
     'has-reservations': reservations.length > 0,
     'past-date': isPast,
     [`occ-cell-${status}`]: true
   }
 }
 
-const prevMonth = () => { currentDate.value = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() - 1) }
-const nextMonth = () => { currentDate.value = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() + 1) }
+const prevMonth = () => {
+  currentDate.value = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() - 1)
+  selectedCheckinDate.value = null
+  selectedBookingId.value = null
+}
+const nextMonth = () => {
+  currentDate.value = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() + 1)
+  selectedCheckinDate.value = null
+  selectedBookingId.value = null
+}
 
 const selectDate = (date) => {
   if (isDateInPast(date)) return
@@ -482,10 +492,11 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
   display: flex;
   gap: 0;
   background: var(--color-white);
-  border-radius: 8px;
+  border-radius: 18px;
   overflow: hidden;
-  margin: 24px 0;
-  box-shadow: 0 2px 16px rgba(12, 59, 94, 0.1), 0 0 0 1px rgba(12, 59, 94, 0.06);
+  margin: 8px 0;
+  border: 1px solid var(--color-gray-border);
+  box-shadow: 0 2px 12px rgba(3, 105, 161, 0.08);
   min-height: 680px;
 }
 
@@ -493,10 +504,10 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
    SIDE PANEL
 ══════════════════════════════════ */
 .bookings-panel {
-  width: 288px;
+  width: 320px;
   flex-shrink: 0;
-  background: var(--color-gray-bg);
-  border-right: 2px solid var(--color-gray-border);
+  background: #f8fbff;
+  border-right: 1px solid var(--color-gray-border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -511,7 +522,7 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
 
 /* Panel header — navy bar matching sidebar */
 .panel-header {
-  background: var(--color-navy);
+  background: linear-gradient(135deg, var(--color-navy) 0%, #145075 100%);
   padding: 18px 20px 16px;
   border-bottom: 2px solid var(--color-gold);
   flex-shrink: 0;
@@ -592,7 +603,7 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
   padding: 10px 12px;
   background: var(--color-white);
   border: 1.5px solid var(--color-gray-border);
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
   transition: border-color 0.18s, box-shadow 0.18s, transform 0.15s;
 }
@@ -605,7 +616,7 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
 
 .item-avatar {
   width: 34px; height: 34px;
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--color-navy);
   color: var(--color-gold);
   display: flex; align-items: center; justify-content: center;
@@ -844,7 +855,7 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 20px;
   background: var(--color-white);
   min-width: 0;
 }
@@ -854,7 +865,7 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .header-title-block h3 {
@@ -873,39 +884,34 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
 .month-navigation {
   display: flex;
   align-items: center;
-  gap: 0;
-  background: var(--color-navy);
-  border-radius: 6px;
-  overflow: hidden;
-  border: 2px solid var(--color-navy);
+  gap: 8px;
 }
 
 .nav-btn {
-  background: transparent;
-  border: none;
-  width: 38px; height: 38px;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--color-gray-border);
+  background: var(--color-white);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,0.7);
-  font-size: 0.75rem;
-  transition: background 0.15s, color 0.15s;
+  color: var(--color-text-light);
+  font-size: 0.72rem;
+  transition: all 0.15s;
 }
 
 .nav-btn:hover {
-  background: rgba(255,255,255,0.12);
-  color: var(--color-gold);
+  background: var(--color-gold);
+  border-color: var(--color-gold);
+  color: var(--color-navy);
 }
 
 .current-month {
   font-weight: 700;
-  color: var(--color-white);
-  min-width: 170px;
+  color: var(--color-text-dark);
+  min-width: 160px;
   text-align: center;
-  font-size: 0.875rem;
-  letter-spacing: 0.02em;
-  padding: 0 4px;
-  border-left: 1px solid rgba(255,255,255,0.12);
-  border-right: 1px solid rgba(255,255,255,0.12);
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
 }
 
 /* Occupancy legend */
@@ -916,7 +922,7 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
   padding: 10px 14px;
   margin-bottom: 16px;
   background: var(--color-gray-bg);
-  border-radius: 6px;
+  border-radius: 10px;
   border: 1.5px solid var(--color-gray-border);
   font-size: 0.78rem;
 }
@@ -957,8 +963,8 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
 
 /* Calendar grid container */
 .calendar-container {
-  border: 1.5px solid var(--color-gray-border);
-  border-radius: 6px;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
   overflow: hidden;
   flex: 1;
 }
@@ -967,8 +973,8 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
 .weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  background: var(--color-navy);
-  border-bottom: 2px solid var(--color-gold);
+  background: #f0f6fb;
+  border-bottom: 1px solid var(--color-gray-border);
 }
 
 .weekday {
@@ -976,12 +982,12 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
   text-align: center;
   font-weight: 700;
   font-size: 0.7rem;
-  color: rgba(255,255,255,0.75);
+  color: var(--color-text-light);
   letter-spacing: 0.08em;
 }
 
 .weekday:first-child,
-.weekday:last-child { color: var(--color-gold); }
+.weekday:last-child { color: var(--color-primary); }
 
 /* Dates grid */
 .dates-grid {
@@ -995,11 +1001,11 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
 .date-cell {
   border: none;
   padding: 10px 10px 8px;
-  min-height: 108px;
+  min-height: 102px;
   position: relative;
   background: var(--color-white);
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: all 0.15s;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1025,6 +1031,11 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
 .date-cell.today {
   background: rgba(3, 105, 161, 0.06);
   box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+.date-cell.selected {
+  background: rgba(244, 196, 0, 0.16) !important;
+  box-shadow: inset 0 0 0 2px var(--color-gold-dark);
 }
 
 .date-cell.today .date-number {
@@ -1086,7 +1097,7 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
   background: var(--color-navy);
   color: var(--color-gold);
   width: 22px; height: 22px;
-  border-radius: 5px;
+  border-radius: 7px;
   font-size: 0.7rem;
   font-weight: 800;
   margin-bottom: 6px;
@@ -1102,8 +1113,8 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
   background: var(--color-primary);
   color: var(--color-white);
   border: none;
-  padding: 5px 0;
-  border-radius: 4px;
+  padding: 6px 0;
+  border-radius: 8px;
   font-size: 0.7rem;
   cursor: pointer;
   transition: background 0.15s, transform 0.12s;
@@ -1128,11 +1139,11 @@ const deleteBooking = async (id) => { if (!confirm('Delete this booking permanen
   .bookings-panel {
     width: 100%;
     border-right: none;
-    border-bottom: 2px solid var(--color-gray-border);
+    border-bottom: 1px solid var(--color-gray-border);
     max-height: 380px;
   }
 
-  .calendar-main { padding: 16px; }
+  .calendar-main { padding: 14px; }
 }
 
 @media (max-width: 640px) {

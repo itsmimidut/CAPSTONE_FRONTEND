@@ -71,9 +71,45 @@
                 </div>
               </div>
               <div class="panel-header-right">
-                <span class="count-badge">{{ students.length }} Total</span>
-                <button class="icon-btn" title="Filter"><i class="fas fa-filter"></i></button>
+                <span class="count-badge">{{ filteredStudents.length }} / {{ students.length }} Total</span>
+                <button
+                  class="icon-btn"
+                  :class="{ active: showStudentFilters }"
+                  title="Filter"
+                  @click="showStudentFilters = !showStudentFilters"
+                ><i class="fas fa-filter"></i></button>
                 <button class="icon-btn" title="Export"><i class="fas fa-download"></i></button>
+              </div>
+            </div>
+
+            <div v-if="showStudentFilters" class="students-filter-bar">
+              <div class="filter-field filter-field--search">
+                <i class="fas fa-search"></i>
+                <input
+                  v-model.trim="studentSearchQuery"
+                  type="text"
+                  placeholder="Search student, email, coach, or booking ref"
+                />
+              </div>
+
+              <div class="filter-field">
+                <select v-model="studentStatusFilter">
+                  <option value="all">All Status</option>
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <select v-model="studentLessonFilter">
+                  <option value="all">All Lesson Types</option>
+                  <option v-for="lesson in lessonTypeOptions" :key="lesson" :value="lesson">
+                    {{ lesson }}
+                  </option>
+                </select>
               </div>
             </div>
 
@@ -90,7 +126,7 @@
                 </thead>
                 <tbody>
                   <tr
-                    v-for="student in students"
+                    v-for="student in filteredStudents"
                     :key="student.id"
                     @click="selectStudent(student)"
                     class="data-row"
@@ -134,8 +170,8 @@
                           @click.stop="approveStudent(student.id)"
                           class="act-btn approve"
                           title="Approve"
-                          :disabled="student.enrollmentStatus?.toLowerCase() === 'completed'"
-                          :class="{ 'act-btn--disabled': student.enrollmentStatus?.toLowerCase() === 'completed' }"
+                          :disabled="student.enrollmentStatus?.toLowerCase() === 'approved' || student.enrollmentStatus?.toLowerCase() === 'completed'"
+                          :class="{ 'act-btn--disabled': student.enrollmentStatus?.toLowerCase() === 'approved' || student.enrollmentStatus?.toLowerCase() === 'completed' }"
                         >
                           <i class="fas fa-check"></i>
                         </button>
@@ -143,8 +179,8 @@
                           @click.stop="editStudent(student.id)"
                           class="act-btn edit"
                           title="Schedule Training"
-                          :disabled="student.enrollmentStatus?.toLowerCase() === 'completed'"
-                          :class="{ 'act-btn--disabled': student.enrollmentStatus?.toLowerCase() === 'completed' }"
+                          :disabled="student.enrollmentStatus?.toLowerCase() === 'approved' || student.enrollmentStatus?.toLowerCase() === 'completed'"
+                          :class="{ 'act-btn--disabled': student.enrollmentStatus?.toLowerCase() === 'approved' || student.enrollmentStatus?.toLowerCase() === 'completed' }"
                         >
                           <i class="fas fa-edit"></i>
                         </button>
@@ -163,11 +199,19 @@
                       </div>
                     </td>
                   </tr>
-                  <tr v-if="!loading && students.length === 0">
+                  <tr v-else-if="!loading && students.length === 0">
                     <td colspan="5">
                       <div class="empty-state">
                         <i class="fas fa-users-slash"></i>
                         <span>No students enrolled yet</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-else-if="!loading && filteredStudents.length === 0">
+                    <td colspan="5">
+                      <div class="empty-state">
+                        <i class="fas fa-filter-circle-xmark"></i>
+                        <span>No students match your current filters</span>
                       </div>
                     </td>
                   </tr>
@@ -524,7 +568,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import AdminHeader from '../../components/Admin/AdminHeader.vue'
 import AdminSidebar from '../../components/Admin/AdminSidebar.vue'
 import { useNotificationStore } from '../../stores/notifications'
@@ -532,6 +576,7 @@ import { useNotificationStore } from '../../stores/notifications'
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const notifications = useNotificationStore()
+let autoCompleteIntervalId = null
 
 const students = ref([])
 const schedules = ref([])
@@ -542,6 +587,10 @@ const currentCoachPage = ref(0)
 const showAddCoachModal = ref(false)
 const isEditingCoach = ref(false)
 const editingIndex = ref(-1)
+const showStudentFilters = ref(false)
+const studentSearchQuery = ref('')
+const studentStatusFilter = ref('all')
+const studentLessonFilter = ref('all')
 
 const newCoach = ref({ lessonType: '', coach: '', email: '', phone: '' })
 
@@ -550,6 +599,74 @@ const totalStudents = computed(() => students.value.length)
 const paidStudents = computed(() => students.value.filter(s => s.paymentStatus === 'Paid').length)
 const pendingStudents = computed(() => students.value.filter(s => s.enrollmentStatus === 'Pending').length)
 const inactiveStudents = computed(() => students.value.filter(s => s.enrollmentStatus === 'Inactive' || s.paymentStatus === 'Unpaid').length)
+
+const lessonTypeOptions = computed(() => {
+  const unique = new Set(
+    students.value
+      .map(s => (s.lessonType || '').trim())
+      .filter(Boolean)
+  )
+  return Array.from(unique).sort((a, b) => a.localeCompare(b))
+})
+
+const filteredStudents = computed(() => {
+  const q = studentSearchQuery.value.toLowerCase()
+  return students.value.filter((student) => {
+    const status = (student.enrollmentStatus || '').toLowerCase()
+    const lessonType = (student.lessonType || '').trim()
+
+    const matchesSearch = !q || [
+      student.name,
+      student.email,
+      student.coach,
+      student.bookingReference
+    ].some(value => String(value || '').toLowerCase().includes(q))
+
+    const matchesStatus = studentStatusFilter.value === 'all' || status === studentStatusFilter.value
+    const matchesLesson = studentLessonFilter.value === 'all' || lessonType === studentLessonFilter.value
+
+    return matchesSearch && matchesStatus && matchesLesson
+  })
+})
+
+const clearStudentFilters = () => {
+  studentSearchQuery.value = ''
+  studentStatusFilter.value = 'all'
+  studentLessonFilter.value = 'all'
+}
+
+const normalizeDateKey = (value) => {
+  if (!value) return ''
+  const raw = String(value).trim()
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/)
+  if (match) return match[1]
+
+  const parsed = new Date(raw)
+  if (Number.isNaN(parsed.getTime())) return ''
+
+  const y = parsed.getFullYear()
+  const m = String(parsed.getMonth() + 1).padStart(2, '0')
+  const d = String(parsed.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const normalizeDateList = (dates) => {
+  if (Array.isArray(dates)) {
+    return dates.map(normalizeDateKey).filter(Boolean)
+  }
+
+  if (typeof dates === 'string') {
+    try {
+      const parsed = JSON.parse(dates)
+      if (Array.isArray(parsed)) return parsed.map(normalizeDateKey).filter(Boolean)
+    } catch (_) {
+      const single = normalizeDateKey(dates)
+      return single ? [single] : []
+    }
+  }
+
+  return []
+}
 
 // ── Calendar ────────────────────────────────────────────
 const currentCalendarDate = ref(new Date())
@@ -569,9 +686,11 @@ const formatMonthYear = (date) => {
 const formatSelectedDate = (date) => date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 const prevCalendarMonth = () => {
   currentCalendarDate.value = new Date(currentCalendarDate.value.getFullYear(), currentCalendarDate.value.getMonth() - 1)
+  selectedCalendarDate.value = null
 }
 const nextCalendarMonth = () => {
   currentCalendarDate.value = new Date(currentCalendarDate.value.getFullYear(), currentCalendarDate.value.getMonth() + 1)
+  selectedCalendarDate.value = null
 }
 const getDayClass = (date) => {
   const today = new Date()
@@ -582,11 +701,18 @@ const getDayClass = (date) => {
   if (cell < today && cell.toDateString() !== today.toDateString()) classes.push('past')
   return classes.join(' ')
 }
+
+const isCalendarActiveStudent = (student) => {
+  const status = (student?.enrollmentStatus || '').toLowerCase()
+  return status !== 'completed' && status !== 'cancelled'
+}
+
 const hasLessonsOnDate = (date) => {
   const y = currentCalendarDate.value.getFullYear()
   const m = String(currentCalendarDate.value.getMonth() + 1).padStart(2, '0')
   const d = String(date).padStart(2, '0')
-  return students.value.some(s => s.lessonDates?.includes(`${y}-${m}-${d}`))
+  const targetDate = `${y}-${m}-${d}`
+  return students.value.some(s => isCalendarActiveStudent(s) && normalizeDateList(s.lessonDates).includes(targetDate))
 }
 const selectCalendarDate = (date) => {
   selectedCalendarDate.value = new Date(currentCalendarDate.value.getFullYear(), currentCalendarDate.value.getMonth(), date)
@@ -596,9 +722,9 @@ const studentsForSelectedDay = computed(() => {
   const y = selectedCalendarDate.value.getFullYear()
   const m = String(selectedCalendarDate.value.getMonth() + 1).padStart(2, '0')
   const d = String(selectedCalendarDate.value.getDate()).padStart(2, '0')
-  const fmt = `${y}-${m}-${d}`
+  const targetDate = `${y}-${m}-${d}`
   return students.value
-    .filter(s => s.lessonDates?.includes(fmt))
+    .filter(s => isCalendarActiveStudent(s) && normalizeDateList(s.lessonDates).includes(targetDate))
     .map(s => ({ name: s.name, lessonType: s.lessonType, coach: s.coach, time: s.lessonTime || 'TBD' }))
 })
 
@@ -613,6 +739,8 @@ const autoMarkCompleted = async () => {
   const toMark = students.value.filter(
     s => isScheduleFinished(s) && s.enrollmentStatus?.toLowerCase() !== 'completed' && s.enrollmentStatus?.toLowerCase() !== 'cancelled'
   )
+  if (!toMark.length) return
+
   for (const student of toMark) {
     try {
       await fetch(`${API_URL}/admin/students/${student.id}/status`, {
@@ -620,6 +748,10 @@ const autoMarkCompleted = async () => {
         body: JSON.stringify({ status: 'completed' })
       })
       student.enrollmentStatus = 'Completed'
+      student.lessonDates = []
+      student.lessonDatesFormatted = []
+      student.lessonTime = 'TBD'
+      student.lessonTimeFormatted = 'TBD'
     } catch (e) { console.error('autoMarkCompleted error:', e) }
   }
 }
@@ -642,6 +774,11 @@ const fetchStudents = async () => {
               : (Array.isArray(s.lesson_dates) ? s.lesson_dates : [])
           }
         } catch (_) {}
+        lessonDates = normalizeDateList(lessonDates)
+        const status = (s.enrollment_status || 'Pending').toLowerCase()
+        if (status === 'completed') {
+          lessonDates = []
+        }
         return {
           id: s.enrollment_id, name: s.name, lessonType: s.lesson_type,
           coach: s.coach, paymentStatus: s.payment_status || 'Pending',
@@ -680,11 +817,12 @@ const fetchCalendarLessons = async () => {
     if (data.success && data.lessons) {
       for (const lesson of data.lessons) {
         const student = students.value.find(s => s.bookingReference === lesson.booking_reference)
-        if (student && lesson.dates) {
-          student.lessonDates = lesson.dates
+        const normalizedDates = normalizeDateList(lesson.dates)
+        if (student && isCalendarActiveStudent(student) && normalizedDates.length) {
+          student.lessonDates = normalizedDates
           student.lessonTime = lesson.time
           student.coach = lesson.coach_name || student.coach
-          student.lessonDatesFormatted = lesson.dates
+          student.lessonDatesFormatted = normalizedDates
           student.lessonTimeFormatted = lesson.time
         }
       }
@@ -800,6 +938,7 @@ const saveSchedule = async () => {
       }
     }
     showScheduleModal.value = false
+    await autoMarkCompleted()
   } catch (e) { alert('Error saving schedule: ' + e.message) } finally { savingSchedule.value = false }
 }
 
@@ -847,6 +986,18 @@ onMounted(async () => {
   await fetchCalendarLessons()
   await autoMarkCompleted()
   await fetchSchedules()
+
+  // Keep statuses in sync when dates become past while the page is open.
+  autoCompleteIntervalId = setInterval(() => {
+    autoMarkCompleted()
+  }, 60000)
+})
+
+onUnmounted(() => {
+  if (autoCompleteIntervalId) {
+    clearInterval(autoCompleteIntervalId)
+    autoCompleteIntervalId = null
+  }
 })
 </script>
 
@@ -1035,6 +1186,71 @@ onMounted(async () => {
   color: var(--color-primary-light);
   background: rgba(31,141,191,.06);
 }
+.icon-btn.active {
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+  background: rgba(31,141,191,.1);
+}
+
+.students-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) minmax(150px, 1fr) minmax(160px, 1fr) auto;
+  gap: 0.6rem;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid var(--color-gray-border);
+  background: #f8fbff;
+}
+
+.filter-field {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 9px;
+  background: var(--color-white);
+  min-height: 38px;
+}
+
+.filter-field--search {
+  gap: 0.4rem;
+  padding: 0 0.7rem;
+}
+
+.filter-field--search i {
+  color: var(--color-text-light);
+  font-size: 0.8rem;
+}
+
+.filter-field--search input,
+.filter-field select {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--color-text-dark);
+  font-size: 0.84rem;
+  outline: none;
+  padding: 0 0.6rem;
+}
+
+.filter-field--search input {
+  padding: 0;
+}
+
+.clear-filter-btn {
+  border: 1px solid var(--color-gray-border);
+  background: var(--color-white);
+  color: var(--color-text-light);
+  border-radius: 9px;
+  padding: 0 0.95rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.clear-filter-btn:hover {
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
 
 /* ── Students Table ───────────────────────────────────── */
 .table-wrap {
@@ -1108,7 +1324,7 @@ onMounted(async () => {
 
 .act-btn--disabled { opacity: 0.3 !important; cursor: not-allowed !important; pointer-events: none; }
 
-.row-actions { display: flex; gap: 0.3rem; opacity: 0; transition: opacity 0.15s; }
+.row-actions { display: flex; gap: 0.3rem; transition: opacity 0.15s; }
 .data-row:hover .row-actions { opacity: 1; }
 .act-btn {
   width: 28px; height: 28px; border-radius: 7px;
@@ -1132,9 +1348,17 @@ onMounted(async () => {
 .empty-state.small i { font-size: 1.5rem; }
 
 /* ── Calendar Panel ───────────────────────────────────── */
-.calendar-panel .panel-header { flex-wrap: wrap; gap: 0.75rem; }
+.calendar-panel .panel-header {
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+}
 
-.month-nav { display: flex; align-items: center; gap: 0.5rem; }
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
 .month-btn {
   width: 30px; height: 30px; border-radius: 8px;
   border: 1px solid var(--color-gray-border);
@@ -1487,7 +1711,15 @@ onMounted(async () => {
 @media (max-width: 1100px) {
   .top-row { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .calendar-panel .panel-header { flex-direction: column; align-items: flex-start; }
+  .calendar-panel .panel-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .students-filter-bar {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 @media (max-width: 640px) {
   .main-content { padding: 1rem; }
@@ -1496,5 +1728,8 @@ onMounted(async () => {
   .detail-grid { grid-template-columns: 1fr; }
   .detail-item--full { grid-column: span 1; }
   .row-actions { opacity: 1; }
+  .students-filter-bar {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

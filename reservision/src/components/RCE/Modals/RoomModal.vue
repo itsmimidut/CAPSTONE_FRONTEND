@@ -95,10 +95,10 @@
                   class="btn-extract-text"
                   @click="extractTextFromImages()"
                   :disabled="isExtractingText"
-                  :title="isExtractingText ? 'Extraction in progress...' : 'Re-extract text from uploaded images'"
+                  :title="isExtractingText ? 'Extraction in progress...' : 'Re-extract text'"
                 >
                   <i class="fas fa-wand-magic-sparkles"></i>
-                  {{ isExtractingText ? 'Extracting...' : 'Extract Text from Images' }}
+                  {{ isExtractingText ? 'Extracting...' : 'Extract Text' }}
                 </button>
               </div>
           </div>
@@ -1137,9 +1137,10 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 /* Extract Text Button */
 .extract-text-button-group {
-  display: left;
-  justify-content: flex-start;
-  margin-top: 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+  margin-left: auto;
+  margin-top: 0;
 }
 
 .btn-extract-text {

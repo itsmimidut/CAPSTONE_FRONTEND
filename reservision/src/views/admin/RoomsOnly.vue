@@ -63,7 +63,7 @@
         <!-- ── Summary pill ── -->
         <div class="rooms-summary">
           <i class="fas fa-bed summary-icon"></i>
-          Showing <strong>{{ filteredRooms.length }}</strong> room(s)sssss
+          Showing <strong>{{ filteredRooms.length }}</strong> room(s)
         </div>
 
         <!-- ── Rooms Grid ── -->
@@ -429,7 +429,7 @@ onMounted(() => { roomsStore.fetchRooms() })
   padding: 0.85rem 1rem;
 }
 :deep(.room-card .room-title) {
-  color: var(--color-white);
+  /* color: var(--color-white); */
   font-weight: 700;
   font-size: 0.95rem;
 }

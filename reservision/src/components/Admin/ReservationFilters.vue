@@ -45,12 +45,15 @@
       />
     </div>
 
-    <div class="flex gap-2 items-end">
-      <button @click="$emit('apply')" class="btn">
-        <i class="fas fa-filter mr-1"></i>Apply
+    <div class="action-buttons">
+      <button @click="$emit('apply')" class="btn btn-apply">
+        <i class="fas fa-filter"></i>
+        <span>Apply</span>
       </button>
-      <button @click="$emit('reset')" class="btn btn-outline">
-        <i class="fas fa-redo mr-1"></i>Reset
+
+      <button @click="$emit('reset')" class="btn btn-reset">
+        <i class="fas fa-rotate-left"></i>
+        <span>Reset</span>
       </button>
     </div>
   </div>
@@ -149,5 +152,65 @@ n
 
 .btn-outline:hover {
   background: #EFF6FF;
+}
+
+/* BUTTON CONTAINER */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+/* BASE BUTTON */
+.btn {
+  padding: 0.65rem 1.2rem;
+  border-radius: 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* APPLY BUTTON (PRIMARY) */
+.btn-apply {
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+  color: white;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.btn-apply:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
+}
+
+/* RESET BUTTON (SOFT / OUTLINE STYLE) */
+.btn-reset {
+  background: #F9FAFB;
+  color: #374151;
+  border: 1px solid #E5E7EB;
+}
+
+.btn-reset:hover {
+  background: #EEF2FF;
+  color: #1D4ED8;
+  border-color: #C7D2FE;
+  transform: translateY(-1px);
+}
+
+/* ICON STYLE */
+.btn i {
+  font-size: 0.8rem;
+}
+
+/* CLICK EFFECT */
+.btn:active {
+  transform: scale(0.97);
 }
 </style>

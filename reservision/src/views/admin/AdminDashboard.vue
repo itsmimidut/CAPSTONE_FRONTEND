@@ -79,8 +79,52 @@
               <i class="fas fa-download"></i>
               {{ isDownloadingReport ? 'Downloading...' : 'Download Report' }}
             </button>
+            <button @click="openSalesReportPreview" class="btn-preview" :disabled="isGeneratingSalesPreview">
+              <i class="fas fa-file-lines"></i>
+              {{ isGeneratingSalesPreview ? 'Generating...' : 'Preview Report' }}
+            </button>
           </div>
         </div>
+
+        <div class="sales-inline-filters">
+          <div class="sales-filter-field">
+            <label for="dashboardReportFrom">From</label>
+            <input id="dashboardReportFrom" v-model="salesReportFilters.from" type="date" />
+          </div>
+          <div class="sales-filter-field">
+            <label for="dashboardReportTo">To</label>
+            <input id="dashboardReportTo" v-model="salesReportFilters.to" type="date" />
+          </div>
+          <div class="sales-filter-field">
+            <label for="dashboardReportStatus">Status</label>
+            <select id="dashboardReportStatus" v-model="salesReportFilters.status">
+              <option value="all">All statuses</option>
+              <option v-for="status in reportStatusOptions" :key="status" :value="status">
+                {{ toStatusLabel(status) }}
+              </option>
+            </select>
+          </div>
+          <div class="sales-filter-field sales-filter-field--search">
+            <label for="dashboardReportSearch">Search</label>
+            <input
+              id="dashboardReportSearch"
+              v-model.trim="salesReportFilters.search"
+              type="text"
+              placeholder="Name, email, booking code"
+            />
+          </div>
+          <div class="sales-filter-actions">
+            <button class="btn-filter-apply" @click="handleGenerateInlineSalesPreview" :disabled="isGeneratingSalesPreview">
+              <i class="fas" :class="isGeneratingSalesPreview ? 'fa-spinner fa-spin' : 'fa-magnifying-glass-chart'"></i>
+              Apply
+            </button>
+            <button class="btn-filter-reset" @click="resetInlineSalesFilters" :disabled="isGeneratingSalesPreview">
+              <i class="fas fa-rotate-left"></i>
+              Reset
+            </button>
+          </div>
+        </div>
+        <p v-if="salesPreviewError" class="sales-preview-error">{{ salesPreviewError }}</p>
 
         <!-- Charts Row (Admin and Receptionist) -->
         <div v-if="canViewBookings" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -233,6 +277,133 @@
         <!-- Booking Forecast (Admin and Receptionist) -->
         <BookingForecast v-if="canViewBookings" />
       </div>
+
+      <div v-if="showSalesPreviewModal && generatedSalesReport" class="sales-preview-overlay" @click.self="showSalesPreviewModal = false">
+        <div class="sales-preview-modal">
+          <div class="sales-preview-toolbar">
+            <div>
+              <h3>Sales Report Preview</h3>
+              <p>Single-view report preview from Dashboard filters</p>
+            </div>
+            <div class="sales-preview-actions">
+              <button class="btn-download" @click="printInlineSalesReport">
+                <i class="fas fa-print"></i>
+                Print Report
+              </button>
+              <button class="btn-preview" @click="showSalesPreviewModal = false">
+                <i class="fas fa-xmark"></i>
+                Close
+              </button>
+            </div>
+          </div>
+
+          <div class="sales-preview-scroll">
+            <article class="sales-report-print" id="sales-report-print-dashboard">
+              <header class="srp-header">
+                <div class="srp-logo">ER</div>
+                <div>
+                  <h2>Eduardo's Resort</h2>
+                  <p>Reservation and POS Sales Report</p>
+                </div>
+                <div class="srp-meta">
+                  <span>Generated</span>
+                  <strong>{{ generatedSalesReport.generatedAt }}</strong>
+                </div>
+              </header>
+
+              <section class="srp-section">
+                <div class="srp-title-row">
+                  <div>
+                    <h3>Sales Report</h3>
+                    <p>{{ generatedSalesReport.dateRange }}</p>
+                  </div>
+                  <div class="srp-applied">
+                    <div><span>Status</span><strong>{{ generatedSalesReport.applied.status }}</strong></div>
+                    <div><span>Search</span><strong>{{ generatedSalesReport.applied.search }}</strong></div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="srp-cards">
+                <div class="srp-card"><span>Total Bookings</span><strong>{{ generatedSalesReport.totalBookings }}</strong></div>
+                <div class="srp-card"><span>Total Revenue</span><strong>{{ generatedSalesReport.totalRevenue }}</strong></div>
+                <div class="srp-card"><span>Peak Day</span><strong>{{ generatedSalesReport.peakDay }}</strong></div>
+                <div class="srp-card"><span>Top Service</span><strong>{{ generatedSalesReport.topService }}</strong></div>
+              </section>
+
+              <section class="srp-section">
+                <h4>Status Breakdown</h4>
+                <table class="srp-table">
+                  <thead><tr><th>Status</th><th>Bookings</th><th>Revenue</th></tr></thead>
+                  <tbody>
+                    <tr v-for="row in generatedSalesReport.statusBreakdown" :key="row.status">
+                      <td>{{ toStatusLabel(row.status) }}</td>
+                      <td>{{ row.count }}</td>
+                      <td>{{ row.revenue }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+
+              <section class="srp-grid">
+                <div class="srp-section">
+                  <h4>Category Breakdown</h4>
+                  <table class="srp-table">
+                    <thead><tr><th>Category</th><th>Bookings</th><th>Revenue</th></tr></thead>
+                    <tbody>
+                      <tr v-for="row in generatedSalesReport.categoryBreakdown" :key="row.category">
+                        <td>{{ row.category }}</td>
+                        <td>{{ row.count }}</td>
+                        <td>{{ row.revenue }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="srp-section">
+                  <h4>Payment Summary</h4>
+                  <table class="srp-table">
+                    <thead><tr><th>Method</th><th>Count</th><th>Amount</th></tr></thead>
+                    <tbody>
+                      <tr v-for="row in generatedSalesReport.paymentSummary" :key="row.method">
+                        <td>{{ row.method }}</td>
+                        <td>{{ row.count }}</td>
+                        <td>{{ row.amount }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="srp-section" v-if="generatedSalesReport.channelSummary.length">
+                <h4>Sales Channels Summary (Reservations, POS, E-Shop)</h4>
+                <table class="srp-table">
+                  <thead><tr><th>Channel</th><th>Transactions</th><th>Revenue</th></tr></thead>
+                  <tbody>
+                    <tr v-for="row in generatedSalesReport.channelSummary" :key="row.channel">
+                      <td>{{ row.channel }}</td>
+                      <td>{{ row.count }}</td>
+                      <td>{{ row.amount }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+
+              <section class="srp-section" v-if="generatedSalesReport.topPosItems.length">
+                <h4>Top POS Items</h4>
+                <table class="srp-table">
+                  <thead><tr><th>Item</th><th>Sales</th></tr></thead>
+                  <tbody>
+                    <tr v-for="row in generatedSalesReport.topPosItems" :key="row.name">
+                      <td>{{ row.name }}</td>
+                      <td>{{ row.sales }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+            </article>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 </template>
@@ -254,6 +425,13 @@ const sidebarCollapsed = ref(false)
 const isLoading = ref(false)
 const error = ref('')
 const isDownloadingReport = ref(false)
+const isGeneratingSalesPreview = ref(false)
+const showSalesPreviewModal = ref(false)
+const salesPreviewError = ref('')
+const generatedSalesReport = ref(null)
+
+const reportStatusOptions = ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show']
+const salesReportFilters = ref({ from: '', to: '', status: 'all', search: '' })
 
 // User role
 const userRole = ref('')
@@ -1184,6 +1362,251 @@ const formatDate = (dateString) => {
   })
 }
 
+const formatDateTime = (dateValue) => {
+  const date = new Date(dateValue)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+  return date.toLocaleString('en-PH', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const toStatusLabel = (status) => {
+  if (!status) return 'Unknown'
+  return String(status).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+const normalizeStatus = (status) => {
+  const normalized = String(status || '').trim().toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_')
+  if (normalized === 'noshow') return 'no_show'
+  return normalized || 'pending'
+}
+
+const detectCategoryFromSummary = (itemsSummary) => {
+  const text = String(itemsSummary || '').toLowerCase()
+  if (text.includes('swimming')) return 'Swimming'
+  if (text.includes('room')) return 'Room'
+  if (text.includes('cottage')) return 'Cottage'
+  if (text.includes('event')) return 'Event'
+  return 'Other'
+}
+
+const parseCurrencyAmount = (value) => {
+  const cleaned = String(value || '').replace(/[^0-9.-]/g, '')
+  const parsed = Number(cleaned)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const getCurrentPeriodRange = () => {
+  const now = new Date()
+  const toIso = (date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  if (currentPeriod.value.period === 'day') {
+    const day = toIso(now)
+    return { from: day, to: day }
+  }
+  if (currentPeriod.value.period === 'month') {
+    return {
+      from: toIso(new Date(now.getFullYear(), now.getMonth(), 1)),
+      to: toIso(now)
+    }
+  }
+  if (currentPeriod.value.period === 'year') {
+    return {
+      from: toIso(new Date(now.getFullYear(), 0, 1)),
+      to: toIso(now)
+    }
+  }
+  return { from: '', to: '' }
+}
+
+const getEffectiveReportDateRange = () => {
+  const periodRange = getCurrentPeriodRange()
+  return {
+    from: salesReportFilters.value.from || periodRange.from,
+    to: salesReportFilters.value.to || periodRange.to
+  }
+}
+
+const fetchReportBookings = async () => {
+  const rows = []
+  let page = 1
+  let totalPages = 1
+
+  const { from, to } = getEffectiveReportDateRange()
+
+  do {
+    const params = new URLSearchParams({ page: String(page), limit: '200' })
+    if (from) params.append('startDate', from)
+    if (to) params.append('endDate', to)
+    if (salesReportFilters.value.status !== 'all') params.append('status', salesReportFilters.value.status)
+    if (salesReportFilters.value.search) params.append('search', salesReportFilters.value.search)
+
+    const response = await fetch(`${API_BASE}/bookings/admin/reservations?${params}`)
+    const payload = await response.json()
+
+    if (!payload.success) {
+      throw new Error(payload.message || 'Failed to fetch report data')
+    }
+
+    const mappedRows = (Array.isArray(payload.data) ? payload.data : []).map(item => ({
+      id: item.booking_id,
+      status: normalizeStatus(item.booking_status),
+      reservationCode: item.booking_reference || 'N/A',
+      guestName: `${item.first_name || ''} ${item.last_name || ''}`.trim() || item.email || 'Guest',
+      email: item.email || '',
+      paymentMethod: String(item.payment_method || 'Unknown').toUpperCase(),
+      category: detectCategoryFromSummary(item.items_summary),
+      total: toFiniteNumber(item.total),
+      checkIn: item.check_in_date
+    }))
+
+    rows.push(...mappedRows)
+    totalPages = toFiniteNumber(payload.pagination?.totalPages, 1)
+    page += 1
+  } while (page <= totalPages)
+
+  return rows
+}
+
+const buildInlineSalesReport = (rows) => {
+  const totalBookings = rows.length
+  const totalRevenueNumber = rows.reduce((sum, row) => sum + row.total, 0)
+
+  const statusMap = {}
+  const categoryMap = {}
+  const paymentMap = {}
+  const dayMap = {}
+
+  for (const row of rows) {
+    if (!statusMap[row.status]) statusMap[row.status] = { count: 0, revenue: 0 }
+    if (!categoryMap[row.category]) categoryMap[row.category] = { count: 0, revenue: 0 }
+    if (!paymentMap[row.paymentMethod]) paymentMap[row.paymentMethod] = { count: 0, amount: 0 }
+
+    statusMap[row.status].count += 1
+    statusMap[row.status].revenue += row.total
+
+    categoryMap[row.category].count += 1
+    categoryMap[row.category].revenue += row.total
+
+    paymentMap[row.paymentMethod].count += 1
+    paymentMap[row.paymentMethod].amount += row.total
+
+    const dayLabel = formatDate(row.checkIn)
+    if (!dayMap[dayLabel]) dayMap[dayLabel] = { count: 0 }
+    dayMap[dayLabel].count += 1
+  }
+
+  const statusBreakdown = reportStatusOptions.map(status => ({
+    status,
+    count: statusMap[status]?.count || 0,
+    revenue: safeCurrency(statusMap[status]?.revenue || 0)
+  }))
+
+  const categoryBreakdown = Object.entries(categoryMap)
+    .map(([category, values]) => ({ category, count: values.count, revenue: safeCurrency(values.revenue), revenueRaw: values.revenue }))
+    .sort((a, b) => b.revenueRaw - a.revenueRaw)
+
+  const paymentSummary = Object.entries(paymentMap)
+    .map(([method, values]) => ({ method, count: values.count, amount: safeCurrency(values.amount), amountRaw: values.amount }))
+    .sort((a, b) => b.amountRaw - a.amountRaw)
+
+  const topService = categoryBreakdown[0]?.category || 'N/A'
+  const peakDayEntry = Object.entries(dayMap).sort((a, b) => b[1].count - a[1].count)[0]
+  const peakDay = peakDayEntry ? `${peakDayEntry[0]} (${peakDayEntry[1].count})` : 'N/A'
+
+  const channelSummary = [
+    {
+      channel: 'Reservations',
+      count: totalBookings,
+      amountRaw: totalRevenueNumber
+    }
+  ]
+
+  if (canViewRestaurant.value) {
+    channelSummary.push(
+      {
+        channel: 'Restaurant',
+        count: toFiniteNumber(restaurantStats.value.orders),
+        amountRaw: parseCurrencyAmount(restaurantStats.value.sales)
+      },
+      {
+        channel: 'POS',
+        count: toFiniteNumber(posStats.value.transactions),
+        amountRaw: parseCurrencyAmount(posStats.value.sales)
+      },
+      {
+        channel: 'E-Shop',
+        count: toFiniteNumber(eshopStats.value.orders),
+        amountRaw: parseCurrencyAmount(eshopStats.value.sales)
+      }
+    )
+  }
+
+  const channelSummaryFormatted = channelSummary.map(item => ({
+    channel: item.channel,
+    count: item.count,
+    amount: safeCurrency(item.amountRaw),
+    amountRaw: item.amountRaw
+  }))
+
+  const { from, to } = getEffectiveReportDateRange()
+
+  return {
+    generatedAt: formatDateTime(new Date()),
+    dateRange: from || to ? `${from || 'Start'} to ${to || 'Today'}` : 'All dates',
+    applied: {
+      status: salesReportFilters.value.status === 'all' ? 'All statuses' : toStatusLabel(salesReportFilters.value.status),
+      search: salesReportFilters.value.search || 'None'
+    },
+    totalBookings,
+    totalRevenue: safeCurrency(totalRevenueNumber),
+    peakDay,
+    topService,
+    statusBreakdown,
+    categoryBreakdown,
+    paymentSummary,
+    channelSummary: channelSummaryFormatted,
+    topPosItems: topPOSItems.value.slice(0, 5)
+  }
+}
+
+const handleGenerateInlineSalesPreview = async () => {
+  salesPreviewError.value = ''
+  if (salesReportFilters.value.from && salesReportFilters.value.to && salesReportFilters.value.from > salesReportFilters.value.to) {
+    salesPreviewError.value = 'Invalid date range. From date must be earlier than To date.'
+    return
+  }
+
+  isGeneratingSalesPreview.value = true
+  try {
+    const rows = await fetchReportBookings()
+    generatedSalesReport.value = buildInlineSalesReport(rows)
+    showSalesPreviewModal.value = true
+  } catch (err) {
+    salesPreviewError.value = err?.message || 'Failed to generate sales preview.'
+  } finally {
+    isGeneratingSalesPreview.value = false
+  }
+}
+
+const resetInlineSalesFilters = () => {
+  salesReportFilters.value = { from: '', to: '', status: 'all', search: '' }
+  salesPreviewError.value = ''
+}
+
+const printInlineSalesReport = () => {
+  window.print()
+}
+
 const fetchAllData = async () => {
   isLoading.value = true
   error.value = ''
@@ -1374,6 +1797,10 @@ const downloadAnalyticsData = () => {
   }
 }
 
+const openSalesReportPreview = () => {
+  handleGenerateInlineSalesPreview()
+}
+
 onMounted(() => {
   // Get user role from localStorage
   const userData = localStorage.getItem('user')
@@ -1472,6 +1899,307 @@ onMounted(() => {
   gap: 1rem;
 }
 
+.sales-inline-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: end;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.sales-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sales-filter-field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sales-filter-field input,
+.sales-filter-field select {
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 0.65rem;
+  font-size: 0.84rem;
+  color: #1f2937;
+  background: #fff;
+}
+
+.sales-filter-field input:focus,
+.sales-filter-field select:focus {
+  outline: none;
+  border-color: #2b6cb0;
+  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.12);
+}
+
+.sales-filter-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.btn-filter-apply,
+.btn-filter-reset {
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.btn-filter-apply {
+  background: #1f8dbf;
+  color: #fff;
+}
+
+.btn-filter-apply:hover {
+  background: #1e88b6;
+}
+
+.btn-filter-reset {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.btn-filter-reset:hover {
+  border-color: #2b6cb0;
+  color: #2b6cb0;
+}
+
+.sales-preview-error {
+  margin-top: -0.45rem;
+  margin-bottom: 0.95rem;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.sales-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.sales-preview-modal {
+  background: #eef5fb;
+  width: min(1160px, 100%);
+  max-height: 94vh;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sales-preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #d7e4ef;
+  background: #fff;
+}
+
+.sales-preview-toolbar h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+
+.sales-preview-toolbar p {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.sales-preview-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.sales-preview-scroll {
+  overflow: auto;
+  padding: 1rem;
+}
+
+.sales-report-print {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: #fff;
+  color: #0f172a;
+  padding: 11mm;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.16);
+}
+
+.srp-header {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 0.7rem;
+  align-items: center;
+  border-bottom: 2px solid #0c3b5e;
+  padding-bottom: 0.55rem;
+}
+
+.srp-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0c3b5e;
+  color: #f4c400;
+  font-weight: 800;
+}
+
+.srp-header h2 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+.srp-header p {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.srp-meta {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+}
+
+.srp-meta span {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.srp-meta strong {
+  font-size: 0.8rem;
+}
+
+.srp-section {
+  margin-top: 0.7rem;
+}
+
+.srp-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.srp-title-row h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.srp-title-row p {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.srp-applied {
+  border: 1px solid #dce8f3;
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  min-width: 220px;
+}
+
+.srp-applied div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+}
+
+.srp-applied span {
+  color: #64748b;
+}
+
+.srp-cards {
+  margin-top: 0.6rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.45rem;
+}
+
+.srp-card {
+  border: 1px solid #dce8f3;
+  border-radius: 8px;
+  padding: 0.45rem;
+}
+
+.srp-card span {
+  display: block;
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.srp-card strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.9rem;
+}
+
+.srp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.srp-section h4 {
+  margin: 0 0 0.35rem;
+  color: #0c3b5e;
+  font-size: 0.84rem;
+}
+
+.srp-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #dce8f3;
+}
+
+.srp-table th,
+.srp-table td {
+  border: 1px solid #dce8f3;
+  padding: 0.32rem 0.38rem;
+  font-size: 0.73rem;
+  text-align: left;
+}
+
+.srp-table th {
+  background: #f0f6fb;
+  color: #0c3b5e;
+  font-weight: 700;
+}
+
 .period-filter-buttons {
   display: inline-flex;
   gap: 0;
@@ -1514,6 +2242,27 @@ onMounted(() => {
 
 .btn-download i {
   font-size: 1rem;
+}
+
+.btn-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: #ffffff;
+  color: #2C5282;
+  border: 1px solid #2B6CB0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-preview:hover {
+  background: #EBF8FF;
+  border-color: #2C5282;
+  transform: translateY(-1px);
 }
 
 .period-btn {
@@ -1975,6 +2724,29 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .sales-inline-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-filter-actions {
+    justify-content: flex-start;
+  }
+
+  .sales-preview-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .srp-title-row,
+  .srp-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .srp-cards {
+    grid-template-columns: 1fr 1fr;
+  }
   
   .period-filter-buttons {
     width: 100%;
@@ -2002,6 +2774,45 @@ onMounted(() => {
   
   .main-content.shifted {
     grid-column: 2;
+  }
+}
+</style>
+
+<style>
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .sales-report-print,
+  .sales-report-print * {
+    visibility: visible !important;
+  }
+
+  .sales-report-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    padding: 9mm;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .sales-report-print .srp-table,
+  .sales-report-print .srp-table th,
+  .sales-report-print .srp-table td,
+  .sales-report-print .srp-card,
+  .sales-report-print .srp-applied {
+    border-color: #000 !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
   }
 }
 </style>

@@ -1,188 +1,255 @@
 <template>
   <div class="admin-layout">
-    <!-- Sidebar -->
-    <AdminSidebar :is-open="sidebarOpen" :is-collapsed="sidebarCollapsed" @close="sidebarOpen = false" />
+    <AdminSidebar
+      :is-open="sidebarOpen"
+      :is-collapsed="sidebarCollapsed"
+      @close="sidebarOpen = false"
+    />
 
-    <!-- Main Content -->
-    <main class="main-content" :class="{ shifted: sidebarCollapsed }" style="margin-top: 80px;">
-      <div class="header-container">
+    <main class="main-content" :class="{ shifted: sidebarCollapsed }">
+      <div class="header-container no-print">
         <AdminHeader
           title="Sales Report"
-          subtitle="Comprehensive Resort Sales Overview"
+          subtitle="Generate structured, printable sales reports"
           @toggle-sidebar="sidebarOpen = !sidebarOpen"
         />
       </div>
 
-      <div class="container mx-auto py-6 px-2">
-        <div v-if="loading" class="loading">Loading...</div>
-        <div v-else-if="error" class="error">{{ error }}</div>
-        <div v-else>
-          <!-- Executive Summary Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="card card-main shadow-lg hover:shadow-xl transition-shadow cursor-pointer" title="Total sales for the selected period">
-              <div class="card-label">Total Sales</div>
-              <div class="card-value">₱{{ summary.totalSales?.toLocaleString() }}</div>
-              <div class="card-desc">All revenue sources combined</div>
-            </div>
-            <div class="card shadow hover:shadow-lg transition-shadow cursor-pointer" title="Day with the highest sales">
-              <div class="card-label">Peak Day</div>
-              <div class="card-value">{{ summary.peakDay }}</div>
-              <div class="card-desc">Most profitable day</div>
-            </div>
-            <div class="card shadow hover:shadow-lg transition-shadow cursor-pointer" title="Key highlights for this period">
-              <div class="card-label">Key Highlights</div>
-              <div class="card-value">{{ summary.keyHighlights }}</div>
-            </div>
-            <div class="card shadow hover:shadow-lg transition-shadow cursor-pointer" v-if="summary.comparison" title="Comparison to previous period">
-              <div class="card-label">Comparison vs Previous</div>
-              <div class="card-value">{{ summary.comparison }}</div>
+      <div class="content-wrap">
+        <section class="panel no-print">
+          <div class="panel-head">
+            <div>
+              <h2>Report Filters</h2>
+              <p>Filter by date range, status, and customer/search terms.</p>
             </div>
           </div>
 
-          <!-- Sales Breakdown by Category -->
-          <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-chart-pie mr-2 text-[#1F8DBF]"></i>Sales Breakdown by Category
-              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="See which categories contribute most to your revenue">(info)</span>
-            </h2>
-            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">See which categories contribute most to your revenue.</p>
-            <div class="overflow-x-auto rounded-lg">
-              <table class="breakdown-table w-full">
-                <thead>
-                  <tr>
-                    <th>Category</th>
-                    <th>Revenue</th>
-                    <th>Count</th>
-                    <th>% of Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="cat in breakdown" :key="cat.category" class="hover:bg-[#F4C400]/10 transition">
-                    <td class="text-[#1F8DBF]">{{ cat.category }}</td>
-                    <td class="text-[#1E88B6]">₱{{ cat.revenue?.toLocaleString() }}</td>
-                    <td class="text-[#1E88B6]">{{ cat.count }}</td>
-                    <td class="text-[#1F8DBF] font-semibold">{{ cat.percent }}%</td>
-                  </tr>
-                </tbody>
-              </table>
+          <div class="filters-grid">
+            <div class="field">
+              <label for="fromDate">From</label>
+              <input id="fromDate" v-model="filters.from" type="date" />
+            </div>
+
+            <div class="field">
+              <label for="toDate">To</label>
+              <input id="toDate" v-model="filters.to" type="date" />
+            </div>
+
+            <div class="field">
+              <label for="statusFilter">Status</label>
+              <select id="statusFilter" v-model="filters.status">
+                <option value="all">All statuses</option>
+                <option v-for="status in statusOptions" :key="status" :value="status">
+                  {{ statusLabel(status) }}
+                </option>
+              </select>
+            </div>
+
+            <div class="field field--wide">
+              <label for="searchFilter">Search</label>
+              <input
+                id="searchFilter"
+                v-model.trim="filters.search"
+                type="text"
+                placeholder="Name, email, booking code"
+              />
             </div>
           </div>
 
-          <!-- Top-Selling Items -->
-          <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-utensils mr-2 text-[#F4C400]"></i>Top-Selling Restaurant Items
-              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Most popular menu items">(info)</span>
-            </h2>
-            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Most popular menu items among guests.</p>
-            <ol class="top-items">
-              <li v-for="item in topItems" :key="item.name" class="py-1 flex justify-between hover:bg-[#F4C400]/10 px-2 rounded transition">
-                <span class="item-name text-[#1F8DBF]">{{ item.name }}</span>
-                <span class="item-count text-[#F4C400]">{{ item.count }} sold</span>
-              </li>
-            </ol>
+          <div class="actions-row">
+            <button class="btn btn-primary" :disabled="isGenerating" @click="handleGenerateReport">
+              <i class="fas" :class="isGenerating ? 'fa-spinner fa-spin' : 'fa-file-lines'"></i>
+              {{ isGenerating ? 'Generating...' : 'Generate Report' }}
+            </button>
+
+            <button class="btn btn-secondary" :disabled="isGenerating" @click="resetFilters">
+              <i class="fas fa-rotate-left"></i>
+              Reset Filters
+            </button>
           </div>
 
-          <!-- Revenue Trend -->
-          <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-chart-line mr-2 text-[#1F8DBF]"></i>Daily Revenue Trend (Last 30 Days)
-              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Visualize sales trends">(info)</span>
-            </h2>
-            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Visualize sales trends and spot peaks or dips.</p>
-            <div class="trend-list">
-              <div v-for="trend in trends" :key="trend.period" class="trend-bar-wrap group">
-                <span class="trend-date text-[#1F8DBF]">{{ trend.period }}</span>
-                <div class="trend-bar group-hover:ring-2 group-hover:ring-[#F4C400] transition">
-                  <div class="trend-bar-inner" :style="{width: (trend.sales / (summary.totalSales/2) * 100) + '%'}"></div>
+          <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+        </section>
+
+        <section v-if="reportHistory.length" class="panel panel--history no-print">
+          <div class="panel-head compact">
+            <div>
+              <h2>Recent Reports</h2>
+              <p>Last generated summaries saved locally.</p>
+            </div>
+          </div>
+
+          <div class="history-list">
+            <div v-for="item in reportHistory" :key="item.id" class="history-chip">
+              <span>{{ item.title }}</span>
+              <strong>{{ item.totalRevenue }}</strong>
+              <small>{{ item.generatedAt }}</small>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div v-if="showPreview && report" class="preview-overlay no-print" @click.self="showPreview = false">
+        <div class="preview-modal">
+          <div class="preview-toolbar">
+            <div>
+              <h3>Sales Report Preview</h3>
+              <p>Review before printing</p>
+            </div>
+
+            <div class="toolbar-actions">
+              <button class="btn btn-primary" @click="printReport">
+                <i class="fas fa-print"></i>
+                Print Report
+              </button>
+              <button class="btn btn-secondary" @click="downloadCsv">
+                <i class="fas fa-file-csv"></i>
+                Download CSV
+              </button>
+              <button class="btn btn-ghost" @click="showPreview = false">
+                <i class="fas fa-xmark"></i>
+                Close
+              </button>
+            </div>
+          </div>
+
+          <div class="preview-scroll">
+            <article class="report-print" id="sales-report-print">
+              <header class="report-header">
+                <div class="brand-mark">ER</div>
+                <div>
+                  <h1>Eduardo's Resort</h1>
+                  <p>Comprehensive reservation and POS sales reporting</p>
                 </div>
-                <span class="trend-sales text-[#F4C400]">₱{{ trend.sales?.toLocaleString() }}</span>
-              </div>
-            </div>
-          </div>
+                <div class="doc-meta">
+                  <span>Generated</span>
+                  <strong>{{ formatDateTime(report.generatedAt) }}</strong>
+                </div>
+              </header>
 
-          <!-- Room Metrics -->
-          <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-bed mr-2 text-[#1F8DBF]"></i>Room Metrics
-              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Key performance indicators for rooms">(info)</span>
-            </h2>
-            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Key performance indicators for rooms.</p>
-            <div class="metrics-grid">
-              <div class="metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <div class="metric-label text-[#1F8DBF]">Occupancy Rate</div>
-                <div class="metric-value text-[#1E88B6]">{{ rooms.occupancyRate?.toFixed(1) }}%</div>
-              </div>
-              <div class="metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <div class="metric-label text-[#1F8DBF]">ADR</div>
-                <div class="metric-value text-[#1E88B6]">₱{{ rooms.adr?.toLocaleString(undefined, {maximumFractionDigits:2}) }}</div>
-              </div>
-              <div class="metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <div class="metric-label text-[#1F8DBF]">RevPAR</div>
-                <div class="metric-value text-[#1E88B6]">₱{{ rooms.revpar?.toLocaleString(undefined, {maximumFractionDigits:2}) }}</div>
-              </div>
-              <div class="metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <div class="metric-label text-[#1F8DBF]">Total Rooms</div>
-                <div class="metric-value text-[#1E88B6]">{{ rooms.totalRooms }}</div>
-              </div>
-              <div class="metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <div class="metric-label text-[#1F8DBF]">Total Room Nights</div>
-                <div class="metric-value text-[#1E88B6]">{{ rooms.totalRoomNights }}</div>
-              </div>
-            </div>
-          </div>
+              <section class="report-title-row">
+                <div>
+                  <h2>{{ report.title }}</h2>
+                  <p>{{ report.rangeText }}</p>
+                </div>
+                <div class="applied-filters">
+                  <div><span>Status</span><strong>{{ report.appliedFilters.status }}</strong></div>
+                  <div><span>Search</span><strong>{{ report.appliedFilters.search }}</strong></div>
+                  <div><span>Date</span><strong>{{ report.appliedFilters.dateRange }}</strong></div>
+                </div>
+              </section>
 
-          <!-- Guest Data -->
-          <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-users mr-2 text-[#F4C400]"></i>Customer & Guest Data
-              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Guest and customer breakdown">(info)</span>
-            </h2>
-            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Guest and customer breakdown.</p>
-            <div class="guest-grid">
-              <div class="guest-metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <span class="guest-label text-[#1F8DBF]">Total Guests</span>
-                <span class="guest-value text-[#1E88B6]">{{ guests.total }}</span>
-              </div>
-              <div class="guest-metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <span class="guest-label text-[#1F8DBF]">Unique Customers</span>
-                <span class="guest-value text-[#1E88B6]">{{ guests.unique }}</span>
-              </div>
-              <div class="guest-metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <span class="guest-label text-[#1F8DBF]">Walk-in Bookings</span>
-                <span class="guest-value text-[#1E88B6]">{{ guests.walkins }}</span>
-              </div>
-              <div class="guest-metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <span class="guest-label text-[#1F8DBF]">Online Bookings</span>
-                <span class="guest-value text-[#1E88B6]">{{ guests.online }}</span>
-              </div>
-            </div>
-          </div>
+              <section class="summary-grid">
+                <div class="summary-card">
+                  <span>Total Bookings</span>
+                  <strong>{{ report.totalBookings }}</strong>
+                </div>
+                <div class="summary-card">
+                  <span>Total Revenue</span>
+                  <strong>{{ currency(report.totalRevenue) }}</strong>
+                </div>
+                <div class="summary-card">
+                  <span>Peak Day</span>
+                  <strong>{{ report.peakDay.label }}</strong>
+                  <small>{{ report.peakDay.count }} bookings</small>
+                </div>
+                <div class="summary-card">
+                  <span>Top Service</span>
+                  <strong>{{ report.topService.name }}</strong>
+                  <small>{{ currency(report.topService.revenue) }}</small>
+                </div>
+              </section>
 
-          <!-- Expenses & Net Income -->
-          <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-money-bill-wave mr-2 text-[#1F8DBF]"></i>Expenses & Net Income
-              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Financial summary">(info)</span>
-            </h2>
-            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Financial summary for the period.</p>
-            <div class="finance-grid">
-              <div class="finance-metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <span class="finance-label text-[#1F8DBF]">Total Expenses</span>
-                <span class="finance-value text-[#F4C400]">₱{{ expenses?.toLocaleString() }}</span>
-              </div>
-              <div class="finance-metric hover:bg-[#F4C400]/10 transition rounded-lg">
-                <span class="finance-label text-[#1F8DBF]">Net Income</span>
-                <span class="finance-value text-[#1F8DBF]">₱{{ netIncome?.toLocaleString() }}</span>
-              </div>
-            </div>
-          </div>
+              <section class="report-section">
+                <h3>Status Breakdown</h3>
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Bookings</th>
+                      <th>Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in report.statusBreakdown" :key="item.status">
+                      <td>{{ statusLabel(item.status) }}</td>
+                      <td>{{ item.count }}</td>
+                      <td>{{ currency(item.revenue) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
 
-          <!-- Observations & Recommendations -->
-          <div class="card p-5 mb-6 shadow-md">
-            <h2 class="font-bold text-lg mb-1 flex items-center"><i class="fas fa-lightbulb mr-2 text-[#F4C400]"></i>Observations & Recommendations
-              <span class="ml-2 text-xs text-[#1F8DBF] opacity-60" title="Insights and suggestions">(info)</span>
-            </h2>
-            <p class="text-[#1E88B6] text-sm mb-3 opacity-70">Insights and suggestions to improve performance.</p>
-            <ul class="recommend-list">
-              <li class="text-[#1F8DBF]">Room occupancy is higher every Saturday.</li>
-              <li class="text-[#1F8DBF]">Weekday promotions are recommended.</li>
-              <li class="text-[#1F8DBF]">Top-selling food item: <span class="text-[#F4C400] font-semibold" v-if="topItems[0]">{{ topItems[0].name }}</span></li>
-            </ul>
+              <section class="report-section two-col">
+                <div>
+                  <h3>Category Breakdown</h3>
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th>Bookings</th>
+                        <th>Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="item in report.categoryBreakdown" :key="item.category">
+                        <td>{{ item.category }}</td>
+                        <td>{{ item.count }}</td>
+                        <td>{{ currency(item.revenue) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div>
+                  <h3>Payment Summary</h3>
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th>Method</th>
+                        <th>Count</th>
+                        <th>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="item in report.paymentSummary" :key="item.method">
+                        <td>{{ item.method }}</td>
+                        <td>{{ item.count }}</td>
+                        <td>{{ currency(item.amount) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="report-section">
+                <h3>Booking Details</h3>
+                <table class="report-table report-table--dense">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Guest</th>
+                      <th>Status</th>
+                      <th>Category</th>
+                      <th>Payment</th>
+                      <th>Check-in</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="booking in report.bookings" :key="booking.id">
+                      <td>{{ booking.reservationCode }}</td>
+                      <td>{{ booking.guestName }}</td>
+                      <td>{{ statusLabel(booking.status) }}</td>
+                      <td>{{ booking.category }}</td>
+                      <td>{{ booking.paymentMethod }}</td>
+                      <td>{{ formatDate(booking.checkIn) }}</td>
+                      <td>{{ currency(booking.total) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+            </article>
           </div>
         </div>
       </div>
@@ -190,327 +257,883 @@
   </div>
 </template>
 
-<script>
-import AdminSidebar from '../../components/Admin/AdminSidebar.vue';
-import AdminHeader from '../../components/Admin/AdminHeader.vue';
-import axios from 'axios';
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import AdminSidebar from '../../components/Admin/AdminSidebar.vue'
+import AdminHeader from '../../components/Admin/AdminHeader.vue'
 
-export default {
-  name: 'SalesReport',
-  components: { AdminSidebar, AdminHeader },
-  data() {
-    return {
-      sidebarOpen: true,
-      sidebarCollapsed: false,
-      summary: {
-        totalSales: 0,
-        peakDay: '',
-        keyHighlights: '',
-        comparison: ''
-      },
-      breakdown: [],
-      topItems: [],
-      trends: [],
-      rooms: {
-        occupancyRate: 0,
-        adr: 0,
-        revpar: 0,
-        totalRooms: 0,
-        totalRoomNights: 0
-      },
-      guests: {
-        total: 0,
-        unique: 0,
-        walkins: 0,
-        online: 0
-      },
-      expenses: 0,
-      netIncome: 0,
-      loading: true,
-      error: null
-    };
-  },
-  mounted() {
-    this.fetchSalesReport();
-    // Remove persistent focus highlight from header after navigation
-    this.$nextTick(() => {
-      if (document.activeElement) {
-        document.activeElement.blur();
-      }
-    });
-  },
-  methods: {
-    async fetchSalesReport() {
-      this.loading = true;
-      this.error = null;
-      try {
-        // Adjust the API endpoint as needed for your backend
-        const response = await axios.get('/api/restaurant/sales/report');
-        const data = response.data;
-        // Populate all metrics from backend response
-        this.summary = data.summary || this.summary;
-        this.breakdown = data.breakdown || [];
-        this.topItems = data.topItems || [];
-        this.trends = data.trends || [];
-        this.rooms = data.rooms || this.rooms;
-        this.guests = data.guests || this.guests;
-        this.expenses = data.expenses ?? 0;
-        this.netIncome = data.netIncome ?? 0;
-      } catch (err) {
-        this.error = err.response?.data?.message || err.message || 'Failed to load sales report.';
-      } finally {
-        this.loading = false;
-      }
-    }
+const API_BASE = 'http://localhost:8000/api/bookings/admin/reservations'
+const route = useRoute()
+
+const sidebarOpen = ref(true)
+const sidebarCollapsed = ref(false)
+
+const isGenerating = ref(false)
+const showPreview = ref(false)
+const errorMessage = ref('')
+const report = ref(null)
+const reportHistory = ref([])
+
+const statusOptions = [
+  'pending',
+  'confirmed',
+  'checked_in',
+  'checked_out',
+  'cancelled',
+  'no_show'
+]
+
+const filters = ref({
+  from: '',
+  to: '',
+  status: 'all',
+  search: ''
+})
+
+const todayISO = computed(() => new Date().toISOString().split('T')[0])
+
+const statusLabel = (value) => {
+  if (!value) return 'Unknown'
+  return String(value).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+const currency = (value) => {
+  const amount = Number(value || 0)
+  return amount.toLocaleString('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
+const formatDate = (value) => {
+  if (!value) return 'N/A'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+  return date.toLocaleDateString('en-PH', { month: 'short', day: '2-digit', year: 'numeric' })
+}
+
+const formatDateTime = (value) => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+  return date.toLocaleString('en-PH', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const normalizeStatus = (status) => {
+  const normalized = String(status || '').trim().toLowerCase().replace(/-/g, '_')
+  if (normalized === 'checked in') return 'checked_in'
+  if (normalized === 'checked out') return 'checked_out'
+  if (normalized === 'noshow') return 'no_show'
+  return normalized || 'pending'
+}
+
+const detectCategory = (itemsSummary) => {
+  const text = String(itemsSummary || '').toLowerCase()
+  if (text.includes('swimming')) return 'Swimming'
+  if (text.includes('cottage')) return 'Cottage'
+  if (text.includes('event')) return 'Event'
+  if (text.includes('room')) return 'Room'
+  return 'Other'
+}
+
+const mapBooking = (raw) => {
+  return {
+    id: raw.booking_id,
+    reservationCode: raw.booking_reference || 'N/A',
+    guestName: `${raw.first_name || ''} ${raw.last_name || ''}`.trim() || raw.email || 'Guest',
+    email: raw.email || '',
+    status: normalizeStatus(raw.booking_status),
+    checkIn: raw.check_in_date,
+    checkOut: raw.check_out_date,
+    paymentMethod: (raw.payment_method || 'Unknown').toUpperCase(),
+    total: Number(raw.total || 0),
+    category: detectCategory(raw.items_summary),
+    itemsSummary: raw.items_summary || ''
   }
-};
+}
+
+const buildParams = (page = 1, limit = 100) => {
+  const params = new URLSearchParams()
+  params.append('page', String(page))
+  params.append('limit', String(limit))
+
+  if (filters.value.search) params.append('search', filters.value.search)
+  if (filters.value.status && filters.value.status !== 'all') params.append('status', filters.value.status)
+  if (filters.value.from) params.append('startDate', filters.value.from)
+  if (filters.value.to) params.append('endDate', filters.value.to)
+
+  return params.toString()
+}
+
+const fetchFilteredBookings = async () => {
+  const rows = []
+  let page = 1
+  let totalPages = 1
+
+  do {
+    const response = await fetch(`${API_BASE}?${buildParams(page, 200)}`)
+    const payload = await response.json()
+
+    if (!payload.success) {
+      throw new Error(payload.message || 'Failed to fetch report data')
+    }
+
+    const pageRows = Array.isArray(payload.data) ? payload.data.map(mapBooking) : []
+    rows.push(...pageRows)
+
+    totalPages = Number(payload.pagination?.totalPages || 1)
+    page += 1
+  } while (page <= totalPages)
+
+  return rows
+}
+
+const applySearchFilter = (rows) => {
+  const q = filters.value.search.trim().toLowerCase()
+  if (!q) return rows
+
+  return rows.filter((row) => {
+    return [row.guestName, row.email, row.reservationCode]
+      .some((value) => String(value || '').toLowerCase().includes(q))
+  })
+}
+
+const aggregateMapToArray = (mapObj, keyName, valueNames) => {
+  return Object.entries(mapObj)
+    .map(([key, values]) => ({ [keyName]: key, ...values }))
+    .sort((a, b) => b[valueNames[0]] - a[valueNames[0]])
+}
+
+const buildSalesReport = (rows) => {
+  const totalBookings = rows.length
+  const totalRevenue = rows.reduce((sum, row) => sum + Number(row.total || 0), 0)
+
+  const statusMap = {}
+  const categoryMap = {}
+  const paymentMap = {}
+  const dayMap = {}
+
+  for (const row of rows) {
+    const status = row.status || 'pending'
+    const category = row.category || 'Other'
+    const method = row.paymentMethod || 'UNKNOWN'
+
+    if (!statusMap[status]) statusMap[status] = { count: 0, revenue: 0 }
+    if (!categoryMap[category]) categoryMap[category] = { count: 0, revenue: 0 }
+    if (!paymentMap[method]) paymentMap[method] = { count: 0, amount: 0 }
+
+    statusMap[status].count += 1
+    statusMap[status].revenue += Number(row.total || 0)
+
+    categoryMap[category].count += 1
+    categoryMap[category].revenue += Number(row.total || 0)
+
+    paymentMap[method].count += 1
+    paymentMap[method].amount += Number(row.total || 0)
+
+    const dayKey = formatDate(row.checkIn)
+    if (!dayMap[dayKey]) dayMap[dayKey] = { count: 0, revenue: 0 }
+    dayMap[dayKey].count += 1
+    dayMap[dayKey].revenue += Number(row.total || 0)
+  }
+
+  const statusBreakdown = statusOptions.map((status) => ({
+    status,
+    count: statusMap[status]?.count || 0,
+    revenue: statusMap[status]?.revenue || 0
+  }))
+
+  const categoryBreakdown = aggregateMapToArray(categoryMap, 'category', ['revenue'])
+  const paymentSummary = aggregateMapToArray(paymentMap, 'method', ['amount'])
+
+  const topService = categoryBreakdown[0]
+    ? { name: categoryBreakdown[0].category, revenue: categoryBreakdown[0].revenue }
+    : { name: 'N/A', revenue: 0 }
+
+  const peakEntry = Object.entries(dayMap).sort((a, b) => b[1].count - a[1].count)[0]
+  const peakDay = peakEntry
+    ? { label: peakEntry[0], count: peakEntry[1].count, revenue: peakEntry[1].revenue }
+    : { label: 'N/A', count: 0, revenue: 0 }
+
+  const dateRangeText = filters.value.from || filters.value.to
+    ? `${filters.value.from || 'Start'} to ${filters.value.to || 'Today'}`
+    : 'All dates'
+
+  return {
+    id: Date.now(),
+    title: 'Sales Report',
+    generatedAt: new Date().toISOString(),
+    rangeText: dateRangeText,
+    appliedFilters: {
+      status: filters.value.status === 'all' ? 'All statuses' : statusLabel(filters.value.status),
+      search: filters.value.search || 'None',
+      dateRange: dateRangeText
+    },
+    totalBookings,
+    totalRevenue,
+    statusBreakdown,
+    categoryBreakdown,
+    paymentSummary,
+    peakDay,
+    topService,
+    bookings: rows
+  }
+}
+
+const syncHistory = (newReport) => {
+  const snapshot = {
+    id: newReport.id,
+    title: `${newReport.title} (${newReport.rangeText})`,
+    totalRevenue: currency(newReport.totalRevenue),
+    generatedAt: formatDateTime(newReport.generatedAt)
+  }
+
+  reportHistory.value = [snapshot, ...reportHistory.value].slice(0, 5)
+  localStorage.setItem('salesReportHistory', JSON.stringify(reportHistory.value))
+}
+
+const handleGenerateReport = async () => {
+  errorMessage.value = ''
+
+  if (filters.value.from && filters.value.to && filters.value.from > filters.value.to) {
+    errorMessage.value = 'Invalid date range: From date must be before To date.'
+    return
+  }
+
+  isGenerating.value = true
+  try {
+    const fetchedRows = await fetchFilteredBookings()
+    const searchedRows = applySearchFilter(fetchedRows)
+
+    const nextReport = buildSalesReport(searchedRows)
+    report.value = nextReport
+    syncHistory(nextReport)
+    showPreview.value = true
+  } catch (error) {
+    errorMessage.value = error.message || 'Failed to generate report.'
+  } finally {
+    isGenerating.value = false
+  }
+}
+
+const resetFilters = () => {
+  filters.value = {
+    from: '',
+    to: '',
+    status: 'all',
+    search: ''
+  }
+  errorMessage.value = ''
+}
+
+const applyPeriodPreset = (period) => {
+  const today = new Date()
+  const toIso = (date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  let fromDate = null
+  if (period === 'day') {
+    fromDate = new Date(today)
+  } else if (period === 'month') {
+    fromDate = new Date(today.getFullYear(), today.getMonth(), 1)
+  } else if (period === 'year') {
+    fromDate = new Date(today.getFullYear(), 0, 1)
+  }
+
+  if (!fromDate) return
+  filters.value.from = toIso(fromDate)
+  filters.value.to = toIso(today)
+}
+
+const printReport = () => {
+  window.print()
+}
+
+const toCsvField = (value) => {
+  const text = String(value ?? '')
+  if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+    return `"${text.replace(/"/g, '""')}"`
+  }
+  return text
+}
+
+const downloadCsv = () => {
+  if (!report.value) return
+
+  const header = ['Booking Code', 'Guest Name', 'Email', 'Status', 'Category', 'Payment Method', 'Check-in', 'Check-out', 'Total']
+  const rows = report.value.bookings.map((item) => [
+    item.reservationCode,
+    item.guestName,
+    item.email,
+    statusLabel(item.status),
+    item.category,
+    item.paymentMethod,
+    formatDate(item.checkIn),
+    formatDate(item.checkOut),
+    Number(item.total || 0).toFixed(2)
+  ])
+
+  const csv = [header, ...rows]
+    .map((line) => line.map(toCsvField).join(','))
+    .join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `sales-report-${todayISO.value}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+onMounted(() => {
+  try {
+    const stored = JSON.parse(localStorage.getItem('salesReportHistory') || '[]')
+    if (Array.isArray(stored)) reportHistory.value = stored.slice(0, 5)
+  } catch (_) {
+    reportHistory.value = []
+  }
+
+  const periodQuery = String(route.query.period || '').toLowerCase()
+  if (['day', 'month', 'year'].includes(periodQuery)) {
+    applyPeriodPreset(periodQuery)
+  }
+
+  if (String(route.query.autoPreview || '') === '1') {
+    handleGenerateReport()
+  }
+})
 </script>
 
 <style scoped>
+.admin-layout {
+  --color-primary: #0369a1;
+  --color-primary-light: #1f8dbf;
+  --color-primary-dark: #1e88b6;
+  --color-gold: #f4c400;
+  --color-navy: #0c3b5e;
+  --color-white: #ffffff;
+  --color-bg: #f4f8fc;
+  --color-border: #dce8f3;
+  --color-text: #1f2937;
+  --color-muted: #64748b;
+
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
 .main-content {
-  margin-top: 80px;
+  margin-left: 0;
+  padding-top: 64px;
+  transition: margin-left 0.3s ease;
 }
-/* Modern Sales Report Styles - Tropical Resort Palette */
-.sales-report {
-  max-width: 900px;
-  margin: 2.5rem auto;
-  background: #f8fafc;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(31, 141, 191, 0.1);
-  padding: 2.5rem 2rem 2rem 2rem;
-  font-family: 'Segoe UI', Arial, sans-serif;
+
+.main-content.shifted {
+  margin-left: 72px;
 }
-.report-title {
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: #1F8DBF;
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+
+@media (min-width: 768px) {
+  .main-content {
+    margin-left: 262px;
+  }
 }
-.icon {
-  font-size: 1.5rem;
-  vertical-align: middle;
-  color: #F4C400;
+
+.header-container {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
 }
-.summary-cards {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
-  flex-wrap: wrap;
-}
-.card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(31, 141, 191, 0.1);
-  padding: 1.2rem 1.5rem;
-  min-width: 180px;
-  flex: 1 1 180px;
+
+.content-wrap {
+  max-width: 1240px;
+  margin: 1.25rem auto;
+  padding: 0 1rem 2rem;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  border: 1px solid rgba(31, 141, 191, 0.1);
+  gap: 1rem;
 }
-.card-main {
-  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(31, 141, 191, 0.3);
-  border: none;
+
+.panel {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(3, 105, 161, 0.08);
+  padding: 1rem 1rem 1.1rem;
 }
-.card-label {
+
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.panel-head h2 {
+  margin: 0;
   font-size: 1rem;
-  opacity: 0.9;
-  color: inherit;
+  color: var(--color-text);
 }
-.card-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-top: 0.2rem;
-  color: inherit;
+
+.panel-head p {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.84rem;
 }
-.card-desc {
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.34rem;
+}
+
+.field--wide {
+  grid-column: span 1;
+}
+
+.field label {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.field input,
+.field select {
+  height: 38px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  padding: 0 0.7rem;
   font-size: 0.85rem;
-  color: #1E88B6;
-  margin-top: 0.2rem;
-}
-.card-main .card-desc {
-  color: rgba(255, 255, 255, 0.8);
-}
-.section {
-  margin-bottom: 2.5rem;
+  color: var(--color-text);
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(31, 141, 191, 0.1);
-  padding: 1.5rem 1.2rem 1.2rem 1.2rem;
-  border: 1px solid rgba(31, 141, 191, 0.1);
 }
-.breakdown-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-  background: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid rgba(31, 141, 191, 0.2);
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(31, 141, 191, 0.15);
 }
-.breakdown-table th, .breakdown-table td {
-  padding: 0.7rem 1rem;
-  text-align: left;
+
+.actions-row {
+  margin-top: 0.9rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
-.breakdown-table th {
-  background: #1F8DBF;
-  color: #fff;
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 38px;
+  border-radius: 10px;
+  padding: 0 1rem;
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-navy);
+  color: var(--color-white);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary);
+}
+
+.btn-secondary {
+  border-color: var(--color-border);
+  background: var(--color-white);
+  color: var(--color-text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.btn-ghost {
+  border-color: #fbcaca;
+  background: #fff8f8;
+  color: #b91c1c;
+}
+
+.panel--history {
+  padding-top: 0.8rem;
+}
+
+.panel-head.compact {
+  margin-bottom: 0.65rem;
+}
+
+.history-list {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.history-chip {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  background: #f9fcff;
+}
+
+.history-chip span {
+  font-size: 0.78rem;
+  color: var(--color-text);
   font-weight: 600;
 }
-.breakdown-table tr:nth-child(even) {
-  background: rgba(31, 141, 191, 0.05);
+
+.history-chip strong {
+  font-size: 0.8rem;
+  color: var(--color-primary);
 }
-.top-items {
-  margin: 1rem 0 0 1.2rem;
-  padding: 0;
-  list-style: decimal inside;
+
+.history-chip small {
+  font-size: 0.72rem;
+  color: var(--color-muted);
 }
-.item-name {
-  font-weight: 500;
-  color: #1F8DBF;
+
+.error-message {
+  margin-top: 0.75rem;
+  color: #b91c1c;
+  font-size: 0.84rem;
+  font-weight: 600;
 }
-.item-count {
-  color: #F4C400;
-  margin-left: 0.5rem;
-}
-.trend-list {
-  margin-top: 1.2rem;
-}
-.trend-bar-wrap {
+
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1200;
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  margin-bottom: 0.5rem;
+  justify-content: center;
+  padding: 1rem;
 }
-.trend-date {
-  width: 90px;
-  font-size: 0.95rem;
-  color: #1F8DBF;
-}
-.trend-bar {
-  flex: 1;
-  background: rgba(31, 141, 191, 0.1);
-  border-radius: 6px;
-  height: 16px;
+
+.preview-modal {
+  background: #eef5fb;
+  border-radius: 16px;
+  width: min(1200px, 100%);
+  max-height: 94vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
-.trend-bar-inner {
-  background: linear-gradient(90deg, #1F8DBF 60%, #F4C400 100%);
-  height: 100%;
-  border-radius: 6px;
+
+.preview-toolbar {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #d6e3ef;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  background: #ffffff;
 }
-.trend-sales {
-  width: 110px;
+
+.preview-toolbar h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.preview-toolbar p {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-muted);
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.preview-scroll {
+  overflow: auto;
+  padding: 1rem;
+  background: #eaf2f9;
+}
+
+.report-print {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: #ffffff;
+  color: #111827;
+  padding: 12mm;
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.14);
+}
+
+.report-header {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  border-bottom: 2px solid #0c3b5e;
+  padding-bottom: 0.6rem;
+}
+
+.brand-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: #0c3b5e;
+  color: #f4c400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.report-header h1 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.report-header p {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.doc-meta {
   text-align: right;
-  font-weight: 500;
-  color: #F4C400;
-}
-.metrics-grid {
   display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-top: 1.2rem;
+  flex-direction: column;
+  gap: 0.12rem;
 }
-.metric {
-  background: rgba(31, 141, 191, 0.05);
-  border-radius: 8px;
-  padding: 1rem 1.2rem;
-  min-width: 140px;
-  flex: 1 1 140px;
-  text-align: center;
-  border: 1px solid rgba(31, 141, 191, 0.1);
+
+.doc-meta span {
+  color: #64748b;
+  font-size: 0.72rem;
 }
-.metric-label {
-  font-size: 1rem;
-  color: #1F8DBF;
+
+.doc-meta strong {
+  font-size: 0.8rem;
 }
-.metric-value {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #1E88B6;
-}
-.guest-grid {
+
+.report-title-row {
   display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-top: 1.2rem;
+  justify-content: space-between;
+  gap: 0.9rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
 }
-.guest-metric {
-  background: rgba(31, 141, 191, 0.05);
-  border-radius: 8px;
-  padding: 1rem 1.2rem;
-  min-width: 140px;
-  flex: 1 1 140px;
-  text-align: center;
-  border: 1px solid rgba(31, 141, 191, 0.1);
+
+.report-title-row h2 {
+  margin: 0;
+  font-size: 1.04rem;
 }
-.guest-label {
-  font-size: 1rem;
-  color: #1F8DBF;
+
+.report-title-row p {
+  margin: 0.22rem 0 0;
+  color: #475569;
+  font-size: 0.8rem;
 }
-.guest-value {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #1E88B6;
+
+.applied-filters {
+  min-width: 260px;
+  border: 1px solid #d9e6f2;
+  border-radius: 10px;
+  padding: 0.5rem 0.6rem;
 }
-.finance-grid {
+
+.applied-filters div {
   display: flex;
-  gap: 2rem;
-  margin-top: 1.2rem;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+  padding: 0.12rem 0;
 }
-.finance-metric {
-  background: rgba(31, 141, 191, 0.05);
-  border-radius: 8px;
-  padding: 1rem 1.2rem;
-  min-width: 180px;
-  flex: 1 1 180px;
-  text-align: center;
-  border: 1px solid rgba(31, 141, 191, 0.1);
+
+.applied-filters span {
+  color: #64748b;
 }
-.finance-label {
-  font-size: 1rem;
-  color: #1F8DBF;
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
 }
-.finance-value {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #F4C400;
+
+.summary-card {
+  border: 1px solid #dce8f3;
+  border-radius: 10px;
+  padding: 0.55rem;
 }
-.recommend-list {
-  margin: 1rem 0 0 1.2rem;
-  padding: 0;
-  list-style: disc inside;
+
+.summary-card span {
+  font-size: 0.72rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
-.recommend-list li {
-  color: #1F8DBF;
-  margin-bottom: 0.3rem;
+
+.summary-card strong {
+  margin-top: 0.24rem;
+  display: block;
+  font-size: 0.96rem;
 }
-.loading {
-  color: #1F8DBF;
-  font-size: 1.2rem;
-  text-align: center;
-  margin: 2rem 0;
+
+.summary-card small {
+  color: #64748b;
+  font-size: 0.72rem;
 }
-.error {
-  color: #F4C400;
-  font-size: 1.1rem;
-  text-align: center;
-  margin: 2rem 0;
+
+.report-section {
+  margin-top: 0.75rem;
 }
-@media (max-width: 700px) {
-  .sales-report {
-    padding: 1rem 0.2rem;
+
+.report-section h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  color: #0c3b5e;
+}
+
+.report-section.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #dce8f3;
+}
+
+.report-table th,
+.report-table td {
+  border: 1px solid #dce8f3;
+  padding: 0.34rem 0.4rem;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.report-table th {
+  background: #f0f6fb;
+  color: #0c3b5e;
+  font-weight: 700;
+}
+
+.report-table--dense th,
+.report-table--dense td {
+  font-size: 0.7rem;
+}
+
+@media (max-width: 1100px) {
+  .filters-grid {
+    grid-template-columns: 1fr 1fr;
   }
-  .summary-cards, .metrics-grid, .guest-grid, .finance-grid {
+
+  .field--wide {
+    grid-column: span 2;
+  }
+
+  .preview-toolbar {
     flex-direction: column;
-    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .report-title-row,
+  .report-section.two-col {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field--wide {
+    grid-column: span 1;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<style>
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .report-print,
+  .report-print * {
+    visibility: visible !important;
+  }
+
+  .report-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    padding: 10mm;
+    box-shadow: none !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  .report-print .summary-card,
+  .report-print .report-table,
+  .report-print .report-table th,
+  .report-print .report-table td,
+  .report-print .applied-filters {
+    border-color: #000 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 8mm;
   }
 }
 </style>
