@@ -1,6 +1,9 @@
 <template>
   <!-- ══ POS MODE ══ -->
-  <div v-if="posMode" class="page-header pos-mode">
+  <div
+    v-if="posMode"
+    :class="['page-header', 'pos-mode', { 'page-header--fullscreen': isFullscreen }]"
+  >
 
     <!-- LEFT: Brand -->
     <div class="header-left">
@@ -94,7 +97,7 @@
   </div>
 
   <!-- ══ NORMAL MODE ══ -->
-  <div v-else class="page-header">
+  <div v-else :class="['page-header', { 'page-header--fullscreen': isFullscreen }]">
 
     <div class="header-left">
       <button class="menu-btn" @click="$emit('toggle-sidebar')">
@@ -228,6 +231,37 @@ const userInitial = computed(() => (props.userName?.charAt(0) || 'A').toUpperCas
 
 @media (min-width: 768px) {
   .page-header { margin-left: 262px; }
+}
+
+.page-header--fullscreen {
+  margin-left: 0 !important;
+  left: 0;
+  right: 0;
+}
+
+.page-header.pos-mode.page-header--fullscreen {
+  height: 56px;
+  padding: 0 .75rem;
+}
+
+.page-header.pos-mode.page-header--fullscreen .pos-search-input {
+  height: 34px;
+  font-size: .82rem;
+}
+
+.page-header.pos-mode.page-header--fullscreen .pos-action-btn {
+  height: 32px;
+  padding: 0 .6rem;
+}
+
+.page-header.pos-mode.page-header--fullscreen .pos-cat-btn {
+  height: 36px;
+  min-width: 44px;
+}
+
+.page-header.pos-mode.page-header--fullscreen .header-avatar {
+  width: 32px;
+  height: 32px;
 }
 
 /* ── Layout helpers ── */

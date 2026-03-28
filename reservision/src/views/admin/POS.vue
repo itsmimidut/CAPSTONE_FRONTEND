@@ -205,11 +205,16 @@
               <div class="panel-icon"><i class="fas fa-history"></i></div>
               <div>
                 <div class="panel-title">POS Transaction History</div>
-                <div class="panel-sub">{{ filteredTransactionHistory.length }} transaction{{ filteredTransactionHistory.length !== 1 ? 's' : '' }}</div>
+                <div class="panel-sub">
+                  {{ filteredTransactionHistory.length }} transaction{{ filteredTransactionHistory.length !== 1 ? 's' : '' }}
+                  <span v-if="filteredTransactionHistory.length > 0">
+                    • Page {{ currentTransactionPage }} of {{ totalTransactionPages }}
+                  </span>
+                </div>
               </div>
             </div>
             <div class="trans-actions">
-              <button @click="exportAllTransactions" class="btn-export">
+              <button @click="openTransactionsExportPreview" class="btn-export">
                 <i class="fas fa-file-excel"></i> Export Excel
               </button>
               <button @click="returnToPOS" class="btn-returnpos">
@@ -243,7 +248,7 @@
                 </tr>
                 <tr
                   v-else
-                  v-for="trans in filteredTransactionHistory"
+                  v-for="trans in paginatedTransactionHistory"
                   :key="trans.receiptNo"
                   :class="['trans-row', trans.source === 'eshop' && !viewedTransactions.has(trans.receiptNo) ? 'trans-row--new' : '']"
                 >
@@ -283,6 +288,102 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div v-if="filteredTransactionHistory.length > transactionItemsPerPage" class="pagination-wrap">
+            <button
+              class="pagination-btn"
+              :disabled="currentTransactionPage === 1"
+              @click="goToTransactionPage(currentTransactionPage - 1)"
+            >
+              <i class="fas fa-chevron-left"></i> Prev
+            </button>
+
+            <button
+              v-for="page in transactionPageNumbers"
+              :key="`page-${page}`"
+              class="pagination-btn"
+              :class="{ 'pagination-btn--active': page === currentTransactionPage }"
+              @click="goToTransactionPage(page)"
+            >
+              {{ page }}
+            </button>
+
+            <button
+              class="pagination-btn"
+              :disabled="currentTransactionPage === totalTransactionPages"
+              @click="goToTransactionPage(currentTransactionPage + 1)"
+            >
+              Next <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <div v-if="showTransactionsExportPreview" class="modal-overlay" @click.self="showTransactionsExportPreview = false">
+            <div class="modal-box modal-box--preview" @click.stop>
+              <div class="modal-head">
+                <div class="modal-head-left">
+                  <div class="modal-head-icon"><i class="fas fa-file-lines"></i></div>
+                  <div>
+                    <div class="modal-title">POS Report Preview</div>
+                    <div class="modal-sub">Review data first before downloading</div>
+                  </div>
+                </div>
+                <button @click="showTransactionsExportPreview = false" class="modal-close-btn"><i class="fas fa-times"></i></button>
+              </div>
+
+              <div class="modal-body">
+                <div class="preview-stats-grid">
+                  <div class="preview-stat-card">
+                    <span class="preview-stat-label">Transactions</span>
+                    <strong class="preview-stat-value">{{ exportPreviewTransactions.length }}</strong>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span class="preview-stat-label">Total Sales</span>
+                    <strong class="preview-stat-value">₱{{ exportPreviewTotalSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span class="preview-stat-label">Cash</span>
+                    <strong class="preview-stat-value">{{ exportPreviewCashCount }}</strong>
+                  </div>
+                  <div class="preview-stat-card">
+                    <span class="preview-stat-label">GCash</span>
+                    <strong class="preview-stat-value">{{ exportPreviewGcashCount }}</strong>
+                  </div>
+                </div>
+
+                <div class="preview-table-wrap">
+                  <table class="preview-table">
+                    <thead>
+                      <tr>
+                        <th>Receipt</th>
+                        <th>Items</th>
+                        <th>Type</th>
+                        <th>Payment</th>
+                        <th>Total</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="trans in exportPreviewTransactions" :key="`preview-${trans.receiptNo}`">
+                        <td>POS-{{ trans.receiptNo }}</td>
+                        <td>{{ getItemsPreview(trans.items) }}</td>
+                        <td>{{ trans.type || '-' }}</td>
+                        <td>{{ trans.payment || '-' }}</td>
+                        <td>₱{{ Number(trans.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+                        <td>{{ formatPreviewDate(trans.date) }}</td>
+                        <td>{{ formatPreviewTime(trans.date, trans.time) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="modal-foot">
+                <button @click="showTransactionsExportPreview = false" class="btn-cancel"><i class="fas fa-times"></i> Cancel</button>
+                <button @click="exportAllTransactions" class="btn-action btn-action--green"><i class="fas fa-file-excel"></i> Download Excel</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -648,7 +749,6 @@ import QRCode              from 'qrcode'
 import { useAuthStore }    from '../../stores/auth'
 import { useNotificationStore } from '../../stores/notifications'
 import axios from 'axios'
-import * as XLSX from 'xlsx'
 
 const API_BASE = 'http://localhost:8000/api/pos'
 const DEFAULT_SIZE_OPTIONS = [
@@ -686,6 +786,9 @@ export default {
       viewedTransactions: new Set(JSON.parse(localStorage.getItem('viewedEshopOrders') || '[]')),
       toastMessage: '', toastType: 'success',
       showBookingModal: false, pendingBookingItem: null,
+      currentTransactionPage: 1,
+      transactionItemsPerPage: 10,
+      showTransactionsExportPreview: false,
       showTransactionDetails: false, selectedTransaction: null,
       showCustomizationModal: false,
       pendingCustomItem: null,
@@ -733,6 +836,45 @@ export default {
         return true
       })
     },
+    totalTransactionPages() {
+      return Math.max(1, Math.ceil(this.filteredTransactionHistory.length / this.transactionItemsPerPage))
+    },
+    paginatedTransactionHistory() {
+      const start = (this.currentTransactionPage - 1) * this.transactionItemsPerPage
+      const end = start + this.transactionItemsPerPage
+      return this.filteredTransactionHistory.slice(start, end)
+    },
+    transactionPageNumbers() {
+      const total = this.totalTransactionPages
+      const current = this.currentTransactionPage
+      const pages = []
+
+      if (total <= 7) {
+        for (let i = 1; i <= total; i++) pages.push(i)
+        return pages
+      }
+
+      let start = Math.max(1, current - 2)
+      let end = Math.min(total, current + 2)
+
+      if (start === 1) end = 5
+      if (end === total) start = total - 4
+
+      for (let i = start; i <= end; i++) pages.push(i)
+      return pages
+    },
+    exportPreviewTransactions() {
+      return this.userRole === 'admin' ? this.transactionHistory : this.filteredTransactionHistory
+    },
+    exportPreviewTotalSales() {
+      return this.exportPreviewTransactions.reduce((sum, t) => sum + Number(t.total || 0), 0)
+    },
+    exportPreviewCashCount() {
+      return this.exportPreviewTransactions.filter(t => String(t.payment || '').toLowerCase() === 'cash').length
+    },
+    exportPreviewGcashCount() {
+      return this.exportPreviewTransactions.filter(t => String(t.payment || '').toLowerCase() === 'gcash').length
+    },
     eshopPendingCount() { return this.transactionHistory.filter(t => t.source === 'eshop' && !this.viewedTransactions.has(t.receiptNo)).length },
     groupedRestaurantItems() {
       const cat = this.categories.find(c => c.id === 'restaurant'); if (!cat) return []
@@ -763,8 +905,7 @@ export default {
       return sizeExtra + addOnsExtra
     },
     customizedItemUnitPrice() {
-      const basePrice = Number(this.pendingCustomItem?.price || 0)
-      return basePrice + this.customizationExtraAmount
+      return this.customizationExtraAmount
     }
   },
   watch: {
@@ -772,7 +913,15 @@ export default {
     currentCategory(newCat)  { if (newCat !== 'restaurant') this.restaurantTypeFilter='all' },
     paymentMethod(newMethod) { if (newMethod !== 'Cash') this.cashReceived = '' },
     showPaymentPanel(isOpen) { if (isOpen) this.focusPaymentAmountInput() },
-    eshopPendingCount(n)      { this.notifications.setEshopPending(n) }
+    eshopPendingCount(n)      { this.notifications.setEshopPending(n) },
+    filteredTransactionHistory() {
+      if (this.currentTransactionPage > this.totalTransactionPages) {
+        this.currentTransactionPage = this.totalTransactionPages
+      }
+      if (this.currentTransactionPage < 1) {
+        this.currentTransactionPage = 1
+      }
+    }
   },
   beforeUnmount() {
     document.removeEventListener('keydown', this._fsKeyHandler)
@@ -887,6 +1036,11 @@ export default {
     returnToPOS() {
       this.showTransaction = false
     },
+    goToTransactionPage(page) {
+      const target = Number(page)
+      if (!Number.isFinite(target)) return
+      this.currentTransactionPage = Math.min(this.totalTransactionPages, Math.max(1, target))
+    },
     isTabExpanded(tab) {
       if (tab === 'scanner') return this.hoveredTab === 'scanner' || this.isCheckinScannerOpen;
       if (tab === 'transaction') return this.hoveredTab === 'transaction' || this.showTransaction;
@@ -983,7 +1137,8 @@ export default {
         return {
           id,
           label,
-          priceDelta: Number(size?.priceDelta || size?.price || 0)
+          // Keep explicit 0 values (e.g., Regular +0) instead of falling back to absolute price.
+          priceDelta: Number(size?.priceDelta ?? size?.price ?? 0)
         }
       })
     },
@@ -998,7 +1153,7 @@ export default {
         return {
           id,
           name,
-          price: Number(addon?.price || addon?.amount || 0)
+          price: Number(addon?.price ?? addon?.amount ?? 0)
         }
       })
     },
@@ -1181,6 +1336,35 @@ export default {
       })
     },
     getItemsPreview(items) { const l=items.map(i=>i.name).join(', '); return l.length>35?l.substring(0,35)+'…':l },
+    formatPreviewDate(dateValue) {
+      if (!dateValue) return '-'
+      const raw = String(dateValue).trim()
+      const parsed = new Date(raw)
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: '2-digit' })
+      }
+      if (raw.includes('T')) return raw.split('T')[0]
+      return raw
+    },
+    formatPreviewTime(dateValue, explicitTime) {
+      const providedTime = String(explicitTime || '').trim()
+      if (providedTime) return providedTime.length > 8 ? providedTime.slice(0, 8) : providedTime
+
+      const rawDate = String(dateValue || '').trim()
+      if (!rawDate) return '-'
+
+      const parsed = new Date(rawDate)
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
+      }
+
+      if (rawDate.includes('T')) {
+        const isoTime = (rawDate.split('T')[1] || '').replace('Z', '').split('.')[0]
+        return isoTime || '-'
+      }
+
+      return '-'
+    },
     viewDetails(receiptNo) {
       const t=this.transactionHistory.find(x=>x.receiptNo===receiptNo); if(!t) return
       this.viewedTransactions.add(receiptNo)
@@ -1283,13 +1467,202 @@ export default {
       try { await axios.delete(`${API_BASE}/transactions`); this.transactionHistory=[] }
       catch { this.showToast('Failed to clear history','error') }
     },
-    exportAllTransactions() {
-      if (!this.transactionHistory.length) { this.showToast('No transactions to export','error'); return }
-      const data = this.transactionHistory.map((t,i) => ({ 'No.':i+1, 'Receipt No.':`POS-${t.receiptNo}`, 'Items':t.items.map(i=>`${i.name} (₱${i.price})`).join('; '), 'Type':t.type, 'Payment Method':t.payment, 'Total':t.total, 'Date':t.date, 'Time':t.time }))
-      const wb=XLSX.utils.book_new(); const ws=XLSX.utils.json_to_sheet(data)
-      XLSX.utils.book_append_sheet(wb,ws,'Transactions')
-      const fn=`POS_Transactions_${new Date().toISOString().split('T')[0]}.xlsx`
-      XLSX.writeFile(wb,fn); this.showToast(`Export successful! ${fn}`,'success')
+    openTransactionsExportPreview() {
+      if (!this.exportPreviewTransactions.length) {
+        this.showToast('No transactions to export', 'error')
+        return
+      }
+      this.showTransactionsExportPreview = true
+    },
+    async exportAllTransactions() {
+      if (!this.exportPreviewTransactions.length) { this.showToast('No transactions to export','error'); return }
+
+      try {
+        const ExcelJS = (await import('exceljs')).default
+        const workbook = new ExcelJS.Workbook()
+        workbook.creator = "Eduardo's Resort"
+        workbook.created = new Date()
+
+        const ws = workbook.addWorksheet('POS Report', {
+          pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1 }
+        })
+
+        ws.columns = [
+          { width: 14 },
+          { width: 22 },
+          { width: 40 },
+          { width: 14 },
+          { width: 16 },
+          { width: 16 },
+          { width: 14 },
+          { width: 12 }
+        ]
+
+        const C_DARK_BLUE = 'FF0C3B5E'
+        const C_LOGO_BG = 'FF0C3B5E'
+        const C_HDR_BG = 'FFE8F4FD'
+        const C_TBL_HDR = 'FFF0F6FB'
+        const C_CARD_BDR = 'FFDCE8F3'
+        const C_WHITE = 'FFFFFFFF'
+        const C_ROW_ALT = 'FFF8FBFF'
+        const C_GREY_TEXT = 'FF64748B'
+
+        const bdr = c => ({ style: 'thin', color: { argb: c } })
+        const cardBorder = { top: bdr(C_CARD_BDR), bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR) }
+        const safeNum = value => {
+          const parsed = Number(value)
+          return Number.isFinite(parsed) ? parsed : 0
+        }
+        const safeCurrency = value => `₱${safeNum(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+        const secHdr = (cell, text) => {
+          cell.value = text
+          cell.font = { bold: true, size: 10, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
+          cell.border = cardBorder
+          cell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+        }
+
+        const th = (cell, text, right = false) => {
+          cell.value = text
+          cell.font = { bold: true, size: 10, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
+          cell.border = cardBorder
+          cell.alignment = { horizontal: right ? 'right' : 'left', indent: right ? 0 : 1 }
+        }
+
+        const td = (cell, value, right = false, bold = false, alt = false) => {
+          cell.value = value
+          cell.font = { size: 10, name: 'Calibri', bold }
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: alt ? C_ROW_ALT : C_WHITE } }
+          cell.border = cardBorder
+          cell.alignment = { horizontal: right ? 'right' : 'left', indent: right ? 0 : 1 }
+        }
+
+        const txRows = this.userRole === 'admin' ? this.transactionHistory : this.filteredTransactionHistory
+        const totalSales = txRows.reduce((sum, t) => sum + safeNum(t.total), 0)
+        const cashCount = txRows.filter(t => String(t.payment || '').toLowerCase() === 'cash').length
+        const gcashCount = txRows.filter(t => String(t.payment || '').toLowerCase() === 'gcash').length
+
+        let r = 1
+
+        ws.getCell(`A${r}`).value = 'ER'
+        ws.getCell(`A${r}`).font = { bold: true, size: 14, color: { argb: C_WHITE }, name: 'Calibri' }
+        ws.getCell(`A${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_LOGO_BG } }
+        ws.getCell(`A${r}`).alignment = { horizontal: 'center', vertical: 'middle' }
+        ws.getCell(`A${r}`).border = cardBorder
+
+        ws.mergeCells(`B${r}:E${r}`)
+        ws.getCell(`B${r}`).value = "Eduardo's Resort"
+        ws.getCell(`B${r}`).font = { bold: true, size: 15, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+        ws.getCell(`B${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+        ws.getCell(`B${r}`).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+
+        ws.getCell(`F${r}`).value = 'Generated'
+        ws.getCell(`F${r}`).font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+        ws.getCell(`F${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+        ws.getCell(`F${r}`).alignment = { horizontal: 'right' }
+
+        ws.mergeCells(`G${r}:H${r}`)
+        ws.getCell(`G${r}`).value = new Date().toLocaleString('en-PH', {
+          month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        })
+        ws.getCell(`G${r}`).font = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+        ws.getCell(`G${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+        ws.getCell(`G${r}`).alignment = { horizontal: 'right' }
+        ws.getRow(r).height = 28
+        r++
+
+        ws.mergeCells(`A${r}:H${r}`)
+        ws.getCell(`A${r}`).value = 'POS Transactions Report'
+        ws.getCell(`A${r}`).font = { italic: true, size: 10, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+        ws.getCell(`A${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+        ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
+        ws.getRow(r).height = 16
+        r++
+
+        r++
+
+        const cards = [
+          { label: 'TRANSACTIONS', value: String(txRows.length) },
+          { label: 'TOTAL SALES', value: safeCurrency(totalSales) },
+          { label: 'CASH', value: String(cashCount) },
+          { label: 'GCASH', value: String(gcashCount) }
+        ]
+        const cardCols = ['A', 'C', 'E', 'G']
+
+        cards.forEach(({ label }, i) => {
+          const cell = ws.getCell(`${cardCols[i]}${r}`)
+          cell.value = label
+          cell.font = { size: 8, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+          cell.border = { top: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR), bottom: { style: 'hair', color: { argb: C_CARD_BDR } } }
+          cell.alignment = { horizontal: 'left', indent: 1 }
+        })
+        ws.getRow(r).height = 14
+        r++
+
+        cards.forEach(({ value }, i) => {
+          const cell = ws.getCell(`${cardCols[i]}${r}`)
+          cell.value = value
+          cell.font = { bold: true, size: 12, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+          cell.border = { bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR), top: { style: 'hair', color: { argb: C_CARD_BDR } } }
+          cell.alignment = { horizontal: 'left', indent: 1, vertical: 'middle' }
+        })
+        ws.getRow(r).height = 22
+        r++
+
+        r++
+
+        ws.mergeCells(`A${r}:H${r}`)
+        secHdr(ws.getCell(`A${r}`), 'Transactions List')
+        ws.getRow(r).height = 16
+        r++
+
+        th(ws.getCell(`A${r}`), 'No.', true)
+        th(ws.getCell(`B${r}`), 'Receipt')
+        th(ws.getCell(`C${r}`), 'Items')
+        th(ws.getCell(`D${r}`), 'Type')
+        th(ws.getCell(`E${r}`), 'Payment')
+        th(ws.getCell(`F${r}`), 'Total', true)
+        th(ws.getCell(`G${r}`), 'Date')
+        th(ws.getCell(`H${r}`), 'Time')
+        r++
+
+        txRows.forEach((t, i) => {
+          const alt = i % 2 === 1
+          const items = Array.isArray(t.items)
+            ? t.items.map(item => `${item.name} (${safeCurrency(item.price)})`).join('; ')
+            : ''
+          td(ws.getCell(`A${r}`), i + 1, true, false, alt)
+          td(ws.getCell(`B${r}`), `POS-${t.receiptNo}`, false, false, alt)
+          td(ws.getCell(`C${r}`), items || '-', false, false, alt)
+          td(ws.getCell(`D${r}`), t.type || '-', false, false, alt)
+          td(ws.getCell(`E${r}`), t.payment || '-', false, false, alt)
+          td(ws.getCell(`F${r}`), safeCurrency(t.total), true, false, alt)
+          td(ws.getCell(`G${r}`), t.date || '-', false, false, alt)
+          td(ws.getCell(`H${r}`), t.time || '-', false, false, alt)
+          r++
+        })
+
+        const buffer = await workbook.xlsx.writeBuffer()
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = URL.createObjectURL(blob)
+        const anchor = document.createElement('a')
+        anchor.href = url
+        const fn = `POS_Transactions_Report_${new Date().toISOString().split('T')[0]}.xlsx`
+        anchor.download = fn
+        document.body.appendChild(anchor)
+        anchor.click()
+        document.body.removeChild(anchor)
+        URL.revokeObjectURL(url)
+        this.showTransactionsExportPreview = false
+        this.showToast(`Export successful! ${fn}`,'success')
+      } catch (e) {
+        console.error(e)
+        this.showToast('Failed to export transactions report','error')
+      }
     },
     downloadReceipt(receiptNo) {
       const trans = this.transactionHistory.find(t => t.receiptNo === receiptNo);
@@ -1377,12 +1750,12 @@ export default {
 
 .pos-container {
   flex: 1;
-  padding: 1.25rem 1.5rem;
+  padding: .35rem 1rem;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
-@media (max-width: 768px) { .pos-container { padding: .75rem; } }
+@media (max-width: 768px) { .pos-container { padding: .35rem 1rem; } }
 
 /* ── Payment Workspace Overlay ── */
 .pay-overlay {
@@ -2051,6 +2424,9 @@ export default {
   box-shadow: 0 2px 16px rgba(3,105,161,.08);
   overflow: hidden;
   flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   animation: fadeUp .25s ease both;
 }
 
@@ -2092,8 +2468,66 @@ export default {
 }
 .btn-danger-outline:hover { background: #ef4444; color: var(--color-white); border-color: #ef4444; }
 
-.trans-table-wrap { overflow-x: auto; padding: 0 1.25rem 1.25rem; }
-.trans-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.trans-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 1rem .20rem;
+}
+.pagination-wrap {
+  padding: .5rem 1.25rem .85rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .45rem;
+  flex-wrap: wrap;
+  background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,1) 100%);
+  border-top: 1px solid var(--color-gray-border);
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+}
+
+.pagination-btn {
+  border: 1px solid var(--color-gray-border);
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  border-radius: 10px;
+  min-width: 38px;
+  height: 36px;
+  padding: 0 .7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: var(--color-primary-light);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.pagination-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.pagination-btn--active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.pagination-btn--active:hover {
+  color: var(--color-white);
+  transform: none;
+}
+.trans-table { width: 100%; border-collapse: collapse; font-size: .865rem; }
 
 .trans-table thead th {
   padding: .8rem .9rem; text-align: left;
@@ -2101,17 +2535,20 @@ export default {
   text-transform: uppercase; letter-spacing: .6px;
   background: var(--color-gray-bg);
   border-bottom: 2px solid rgba(244,196,0,.25);
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 .trans-table thead th:first-child { border-radius: 10px 0 0 0; }
 .trans-table thead th:last-child  { border-radius: 0 10px 0 0; }
 .text-center { text-align: center; }
 
-.trans-row { border-bottom: 0.5px solid var(--color-gray-border); transition: background .12s; }
+.trans-row { border-bottom: 0.1px solid var(--color-gray-border); transition: background .12s; }
 .trans-row:hover { background: rgba(3,105,161,.03); }
 .trans-row:last-child { border-bottom: none; }
 .trans-row--new { background: rgba(244,196,0,.05); border-left: 3px solid var(--color-gold); }
 
-.trans-table td { padding: .8rem .9rem; color: var(--color-text-dark); vertical-align: middle; }
+.trans-table td { padding: .49rem .8rem; color: var(--color-text-dark); vertical-align: middle; }
 
 /* Trans table cells */
 .receipt-cell { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
@@ -2183,6 +2620,123 @@ export default {
   width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
   box-shadow: 0 24px 60px rgba(12,59,94,.22);
   animation: popIn .22s ease;
+}
+
+.modal-box--preview {
+  max-width: 1260px;
+  width: 98vw;
+  max-height: 96vh;
+}
+
+.modal-box--preview .modal-body {
+  padding: .7rem .9rem .65rem;
+  gap: .55rem;
+  overflow: hidden;
+}
+
+.preview-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .4rem;
+}
+
+.preview-stat-card {
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  padding: .45rem .58rem;
+  display: flex;
+  flex-direction: column;
+  gap: .12rem;
+}
+
+.preview-stat-label {
+  font-size: .58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .35px;
+  color: var(--color-text-light);
+  line-height: 1.2;
+}
+
+.preview-stat-value {
+  font-size: .82rem;
+  line-height: 1.15;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.preview-table-wrap {
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+  background: var(--color-white);
+  max-height: none;
+  overflow: hidden;
+}
+
+.preview-table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: .72rem;
+}
+
+.preview-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f0f6fb;
+  font-size: .6rem;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: var(--color-navy);
+  padding: .38rem .45rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-gray-border);
+}
+
+.preview-table tbody td {
+  font-size: .66rem;
+  padding: .33rem .45rem;
+  color: var(--color-text-dark);
+  border-bottom: 1px solid #edf2f7;
+  vertical-align: top;
+  line-height: 1.4;
+}
+
+.preview-table tbody tr:nth-child(even) td {
+  background: #fbfdff;
+}
+
+.preview-table tbody td:nth-child(1) {
+  font-weight: 700;
+  color: var(--color-navy);
+  min-width: 120px;
+}
+
+.preview-table tbody td:nth-child(2) {
+  min-width: 160px;
+  max-width: 240px;
+}
+
+.preview-table tbody td:nth-child(5) {
+  text-align: right;
+  font-weight: 700;
+  color: #0f766e;
+  white-space: nowrap;
+}
+
+.preview-table tbody td:nth-child(6),
+.preview-table tbody td:nth-child(7) {
+  white-space: nowrap;
+  font-size: .62rem;
+}
+
+@media (min-width: 1024px) {
+  .modal-box--preview .modal-body {
+    zoom: .82;
+  }
 }
 
 .modal-head {
@@ -2374,6 +2928,11 @@ export default {
   .category-switch { width: 100%; justify-content: flex-start; }
   .customize-chip-grid,
   .customize-addon-list { grid-template-columns: 1fr; }
+  .trans-table-wrap { padding: 0 .7rem .2rem; }
+  .pagination-wrap { justify-content: center; padding: .45rem .7rem .7rem; }
+  .modal-box--preview { max-width: 100%; border-radius: 16px; }
+  .preview-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .preview-table { min-width: 760px; }
   /* responsive handled by Vue getTabStyle */
 }
 

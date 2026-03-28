@@ -90,6 +90,51 @@ const emit   = defineEmits(['book'])
 const router = useRouter()
 const isPreviewOpen = ref(false)
 
+const parsePriceNumber = (value) => {
+  const cleaned = String(value || '').replace(/[^\d.]/g, '')
+  const parsed = Number.parseFloat(cleaned)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const toSafeId = (value) => {
+  const raw = String(value || '').trim().toLowerCase()
+  return raw ? raw.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : `room-${Date.now()}`
+}
+
+const persistSelectedRoomToPendingBooking = () => {
+  const numericRoomId = Number(props.roomId)
+  const resolvedId = Number.isFinite(numericRoomId) ? numericRoomId : toSafeId(props.title)
+
+  const item = {
+    id: resolvedId,
+    item_id: Number.isFinite(numericRoomId) ? numericRoomId : null,
+    name: props.title,
+    price: parsePriceNumber(props.price),
+    desc: '',
+    description: '',
+    amenities: [],
+    imgs: props.imageUrl ? [props.imageUrl] : [],
+    perNight: true,
+    maxGuests: 2,
+    category: 'Room',
+    categoryType: 'room',
+    status: 'Available'
+  }
+
+  const payload = {
+    items: [{ item, qty: 1, guests: 1 }],
+    checkIn: null,
+    checkOut: null,
+    nights: 0,
+    adults: 1,
+    children: 0,
+    source: 'dashboard-recommendation',
+    updatedAt: new Date().toISOString()
+  }
+
+  localStorage.setItem('pendingBooking', JSON.stringify(payload))
+}
+
 function openPreview() {
   isPreviewOpen.value = true
   document.body.style.overflow = 'hidden'
@@ -104,7 +149,13 @@ async function handleBookNow() {
   emit('book', { id: props.roomId, title: props.title, price: props.price, imageUrl: props.imageUrl })
   if (isPreviewOpen.value) closePreview()
   if (props.redirectOnBook) {
-    await router.push({ path: '/customer', query: { activeSection: 'book' } })
+    try {
+      persistSelectedRoomToPendingBooking()
+    } catch (error) {
+      console.warn('Unable to persist selected room for reservation redirect:', error)
+    }
+
+    await router.push({ path: '/customer', query: { activeSection: 'book', source: 'dashboard' } })
   }
 }
 </script>

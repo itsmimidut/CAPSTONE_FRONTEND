@@ -113,7 +113,7 @@
                       :key="gi + '-' + pi"
                       class="product-card"
                       :class="{ 'is-added': isProductAdded(product.name) }"
-                      @click="addToCart(product)"
+                      @click="openCustomizationModal(product)"
                     >
                       <div class="product-body">
                         <div class="product-info">
@@ -125,7 +125,7 @@
                           <button
                             class="add-btn"
                             :class="{ added: isProductAdded(product.name) }"
-                            @click.stop="addToCart(product)"
+                            @click.stop="openCustomizationModal(product)"
                           >
                             <i :class="isProductAdded(product.name) ? 'fas fa-check' : 'fas fa-plus'"></i>
                           </button>
@@ -169,11 +169,16 @@
             <div v-else class="cart-body">
               <div class="cart-items-wrap">
                 <transition-group name="cart-item-anim" tag="div" class="cart-items-list">
-                  <div v-for="(item, idx) in cart" :key="item.name" class="cart-item">
+                  <div v-for="(item, idx) in cart" :key="item.cartKey || `${item.name}-${idx}`" class="cart-item">
                     <div class="ci-avatar">{{ item.name.charAt(0) }}</div>
                     <div class="ci-info">
                       <h4 class="ci-name">{{ item.name }}</h4>
                       <p class="ci-unit">₱{{ item.price }} each</p>
+                      <div v-if="item.customization" class="ci-meta">
+                        <span>Size: {{ item.customization.sizeLabel }}</span>
+                        <span v-if="item.customization.addOns?.length">Add-ons: {{ item.customization.addOns.map(a => a.name).join(', ') }}</span>
+                        <span v-if="item.customization.specialRequest">Note: {{ item.customization.specialRequest }}</span>
+                      </div>
                     </div>
                     <div class="ci-controls">
                       <button class="qty-btn" @click="changeQty(idx, -1)"><i class="fas fa-minus"></i></button>
@@ -358,6 +363,94 @@
       </div>
     </transition>
 
+    <!-- Item Customization Modal -->
+    <div v-if="showCustomizationModal && pendingCustomItem" class="modal-overlay" @click.self="closeCustomizationModal">
+      <div class="modal-box" @click.stop>
+        <div class="modal-head">
+          <div class="modal-head-left">
+            <div class="modal-head-icon modal-head-icon--gold"><i class="fas fa-sliders-h"></i></div>
+            <div>
+              <div class="modal-title">Customize Item</div>
+              <div class="modal-sub">{{ pendingCustomItem.name }} • Base ₱{{ Number(pendingCustomItem.price || 0).toLocaleString() }}</div>
+            </div>
+          </div>
+          <button @click="closeCustomizationModal" class="modal-close-btn"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-ruler-combined"></i> Size</div>
+            <div class="customize-chip-grid">
+              <button
+                v-for="size in customizationSizeOptions"
+                :key="size.id"
+                type="button"
+                :class="['customize-chip', customizationForm.sizeId === size.id ? 'customize-chip--active' : '']"
+                @click="customizationForm.sizeId = size.id"
+              >
+                <span>{{ size.label }}</span>
+                <small>{{ size.priceDelta > 0 ? `+₱${size.priceDelta}` : 'Included' }}</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-plus-circle"></i> Add-ons</div>
+            <div v-if="customizationAddOnOptions.length > 0" class="customize-addon-list">
+              <label
+                v-for="addon in customizationAddOnOptions"
+                :key="addon.id"
+                class="customize-addon-item"
+              >
+                <input
+                  type="checkbox"
+                  :value="addon.id"
+                  v-model="customizationForm.selectedAddOnIds"
+                >
+                <span>{{ addon.name }}</span>
+                <strong>+₱{{ addon.price }}</strong>
+              </label>
+            </div>
+            <div v-else class="customize-addon-list customize-addon-list--disabled">
+              <div class="customize-addon-empty">No add-ons available for this item</div>
+            </div>
+          </div>
+
+          <div class="modal-section">
+            <div class="modal-section-title"><i class="fas fa-sticky-note"></i> Special Request</div>
+            <textarea
+              v-model="customizationForm.specialRequest"
+              class="field-textarea"
+              rows="3"
+              placeholder="No onions, less ice, extra hot, etc."
+            ></textarea>
+          </div>
+
+          <div class="modal-section">
+            <div class="detail-row">
+              <span class="detail-key">Base Price</span>
+              <span class="detail-val">₱{{ Number(pendingCustomItem.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">Customizations</span>
+              <span class="detail-val">₱{{ customizationExtraAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="detail-row detail-row--total">
+              <span class="detail-key">Item Total</span>
+              <span class="detail-total">₱{{ customizedItemUnitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-foot">
+          <button @click="closeCustomizationModal" class="ghost-btn">Cancel</button>
+          <button @click="confirmCustomization" class="primary-btn">
+            <i class="fas fa-check-circle"></i> Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Floating Cart FAB -->
     <transition name="fab-pop">
       <button v-show="currentStage === 1 && totalItems > 0" class="fab-cart" @click="proceedToCart">
@@ -375,6 +468,8 @@ import { ref, computed, onMounted } from 'vue'
 
 const API_BASE = 'http://localhost:8000/api/pos'
 const stageTabs = ['Browse Menu', 'Review Cart', 'Checkout']
+const DEFAULT_SIZE_OPTIONS = [{ id: 'regular', label: 'Regular', priceDelta: 0 }]
+const DEFAULT_ADDON_OPTIONS = []
 
 const cart              = ref([])
 const currentLocType    = ref('Room')
@@ -413,6 +508,15 @@ const fallbackRestaurant = [
 ]
 
 const products = ref([...fallbackRestaurant])
+const showCustomizationModal = ref(false)
+const pendingCustomItem = ref(null)
+const customizationSizeOptions = ref([...DEFAULT_SIZE_OPTIONS])
+const customizationAddOnOptions = ref([...DEFAULT_ADDON_OPTIONS])
+const customizationForm = ref({
+  sizeId: 'regular',
+  selectedAddOnIds: [],
+  specialRequest: ''
+})
 
 const totalItems = computed(() => cart.value.reduce((s, i) => s + i.qty, 0))
 const cartTotal  = computed(() => cart.value.reduce((s, i) => s + i.price * i.qty, 0))
@@ -430,6 +534,19 @@ const groupedProducts = computed(() => {
 })
 
 const sortedGroups = computed(() => [...groupedProducts.value].sort((a, b) => b.items.length - a.items.length))
+const selectedCustomizationSize = computed(() =>
+  customizationSizeOptions.value.find(s => s.id === customizationForm.value.sizeId) || customizationSizeOptions.value[0]
+)
+const selectedCustomizationAddOns = computed(() => {
+  const selected = new Set(customizationForm.value.selectedAddOnIds || [])
+  return customizationAddOnOptions.value.filter(addon => selected.has(addon.id))
+})
+const customizationExtraAmount = computed(() => {
+  const sizeExtra = Number(selectedCustomizationSize.value?.priceDelta || 0)
+  const addOnsExtra = selectedCustomizationAddOns.value.reduce((sum, addon) => sum + Number(addon.price || 0), 0)
+  return sizeExtra + addOnsExtra
+})
+const customizedItemUnitPrice = computed(() => Number(pendingCustomItem.value?.price || 0) + customizationExtraAmount.value)
 
 const goToStage     = (s) => { currentStage.value = s; window.scrollTo({ top: 0, behavior: 'smooth' }) }
 const previousStage = ()  => currentStage.value > 1 && goToStage(currentStage.value - 1)
@@ -438,10 +555,95 @@ const proceedToCheckout = () => { if (!cart.value.length) return alert('Cart is 
 
 const isProductAdded = (name) => addedProducts.value.has(name)
 
-const addToCart = (product) => {
-  const ex = cart.value.find(i => i.name === product.name)
+const normalizeSizeOptions = (rawSizes) => {
+  if (!Array.isArray(rawSizes) || rawSizes.length === 0) return [...DEFAULT_SIZE_OPTIONS]
+  return rawSizes.map((size, index) => {
+    const label = String(size?.label || size?.name || `Option ${index + 1}`).trim()
+    const id = String(size?.id || label || `size-${index + 1}`).trim().toLowerCase().replace(/\s+/g, '-')
+    return {
+      id,
+      label,
+      priceDelta: Number(size?.priceDelta ?? size?.price ?? 0)
+    }
+  })
+}
+
+const normalizeAddOnOptions = (rawAddons) => {
+  if (!Array.isArray(rawAddons) || rawAddons.length === 0) return [...DEFAULT_ADDON_OPTIONS]
+  return rawAddons.map((addon, index) => {
+    const name = String(addon?.name || addon?.label || `Add-on ${index + 1}`).trim()
+    const id = String(addon?.id || name || `addon-${index + 1}`).trim().toLowerCase().replace(/\s+/g, '-')
+    return {
+      id,
+      name,
+      price: Number(addon?.price ?? addon?.amount ?? 0)
+    }
+  })
+}
+
+const openCustomizationModal = (product) => {
+  pendingCustomItem.value = {
+    name: product.name,
+    price: Number(product.price || 0),
+    desc: product.desc || ''
+  }
+  customizationSizeOptions.value = normalizeSizeOptions(product.sizes)
+  customizationAddOnOptions.value = normalizeAddOnOptions(product.addons)
+  customizationForm.value = {
+    sizeId: customizationSizeOptions.value[0]?.id || 'regular',
+    selectedAddOnIds: [],
+    specialRequest: ''
+  }
+  showCustomizationModal.value = true
+}
+
+const closeCustomizationModal = () => {
+  showCustomizationModal.value = false
+  pendingCustomItem.value = null
+}
+
+const confirmCustomization = () => {
+  if (!pendingCustomItem.value) return
+  const customPayload = {
+    sizeId: selectedCustomizationSize.value?.id || 'regular',
+    sizeLabel: selectedCustomizationSize.value?.label || 'Regular',
+    sizePriceDelta: Number(selectedCustomizationSize.value?.priceDelta || 0),
+    addOns: selectedCustomizationAddOns.value.map(addon => ({ id: addon.id, name: addon.name, price: Number(addon.price || 0) })),
+    specialRequest: String(customizationForm.value.specialRequest || '').trim()
+  }
+  addToCart(pendingCustomItem.value, customPayload)
+  closeCustomizationModal()
+}
+
+const addToCart = (product, customization = null) => {
+  const basePrice = Number(product.price || 0)
+  const sizeExtra = Number(customization?.sizePriceDelta || 0)
+  const addOnsExtra = Array.isArray(customization?.addOns)
+    ? customization.addOns.reduce((sum, addon) => sum + Number(addon.price || 0), 0)
+    : 0
+  const unitPrice = basePrice + sizeExtra + addOnsExtra
+
+  const signature = customization
+    ? JSON.stringify({
+      sizeId: customization.sizeId || 'regular',
+      addOns: (customization.addOns || []).map(addon => addon.id).sort(),
+      specialRequest: (customization.specialRequest || '').trim().toLowerCase()
+    })
+    : 'default'
+
+  const ex = cart.value.find(i => i.name === product.name && (i.customizationSignature || 'default') === signature)
   if (ex) ex.qty++
-  else cart.value.push({ ...product, qty: 1 })
+  else {
+    cart.value.push({
+      ...product,
+      price: unitPrice,
+      basePrice,
+      qty: 1,
+      customization: customization || null,
+      customizationSignature: signature,
+      cartKey: `${product.name}__${signature}`
+    })
+  }
   addedProducts.value.add(product.name)
   setTimeout(() => addedProducts.value.delete(product.name), 900)
 }
@@ -489,7 +691,13 @@ const fetchProducts = async () => {
     if (!r.ok) throw new Error('Failed')
     const data = await r.json()
     if (Array.isArray(data) && data.length)
-      products.value = data.map(i => ({ name: i.name || 'Unnamed', price: parseFloat(i.price) || 0, desc: i.description || 'Other' }))
+      products.value = data.map(i => ({
+        name: i.name || 'Unnamed',
+        price: parseFloat(i.price) || 0,
+        desc: i.description || 'Other',
+        sizes: Array.isArray(i.sizes) ? i.sizes : [],
+        addons: Array.isArray(i.addons) ? i.addons : []
+      }))
   } catch { loadError.value = 'Unable to load menu.'; products.value = [...fallbackRestaurant] }
   finally { isLoading.value = false }
 }
@@ -1140,6 +1348,155 @@ onMounted(fetchProducts)
 .fab-pop-leave-active  { animation: fabIn 0.2s ease reverse; }
 @keyframes fabIn { from { opacity: 0; transform: scale(0.7) translateY(18px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
+/* ── Item Customization Modal ───────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 59, 94, 0.58);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1200;
+  padding: 1rem;
+}
+
+.modal-box {
+  width: min(680px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 14px 42px rgba(12, 59, 94, 0.28);
+  border: 1px solid #dbeafe;
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border-bottom: 2px solid #f4c400;
+  background: #0c3b5e;
+}
+
+.modal-head-left { display: flex; align-items: center; gap: 0.7rem; }
+.modal-head-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.modal-head-icon--gold { color: #f4c400; }
+.modal-title { color: #fff; font-size: 0.95rem; font-weight: 800; }
+.modal-sub { color: rgba(255, 255, 255, 0.7); font-size: 0.72rem; }
+
+.modal-close-btn {
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.modal-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.9rem; }
+.modal-section {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  padding: 0.85rem;
+}
+.modal-section-title {
+  color: #0c3b5e;
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin-bottom: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.customize-chip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.55rem;
+}
+
+.customize-chip {
+  border: 1.5px solid #dbeafe;
+  background: #fff;
+  border-radius: 10px;
+  padding: 0.65rem;
+  text-align: left;
+  color: #0c3b5e;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.customize-chip small { color: #64748b; font-size: 0.74rem; }
+.customize-chip--active {
+  border-color: #0369a1;
+  background: #e0f2fe;
+  box-shadow: 0 0 0 2px rgba(3, 105, 161, 0.14);
+}
+
+.customize-addon-list { display: flex; flex-direction: column; gap: 0.45rem; }
+.customize-addon-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.55rem;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8rem;
+}
+.customize-addon-item strong { color: #0369a1; }
+.customize-addon-list--disabled {
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 0.7rem;
+}
+.customize-addon-empty { font-size: 0.76rem; color: #64748b; }
+
+.detail-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; }
+.detail-row + .detail-row { margin-top: 0.35rem; }
+.detail-row--total {
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid #dbeafe;
+  font-weight: 800;
+  color: #0c3b5e;
+}
+.detail-total { color: #0369a1; font-size: 1.18rem; }
+
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  padding: 0.85rem 1rem;
+  border-top: 1px solid #dbeafe;
+}
+
+.ci-meta {
+  margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.14rem;
+  font-size: 0.66rem;
+  color: #64748b;
+}
+
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .eshop-header { height: auto; padding: 0.7rem 1rem; flex-wrap: wrap; gap: 0.7rem; }
@@ -1152,6 +1509,7 @@ onMounted(fetchProducts)
   .ghost-btn { justify-content: center; }
   .fab-label { display: none; }
   .fab-cart  { padding: 0.85rem; border-radius: 50%; }
+  .modal-box { width: 100%; max-height: 94vh; }
 }
 
 @media (max-width: 480px) {

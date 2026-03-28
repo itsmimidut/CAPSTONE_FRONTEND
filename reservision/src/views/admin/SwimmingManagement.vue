@@ -78,7 +78,8 @@
                   title="Filter"
                   @click="showStudentFilters = !showStudentFilters"
                 ><i class="fas fa-filter"></i></button>
-                <button class="icon-btn" title="Export"><i class="fas fa-download"></i></button>
+                <button class="icon-btn" title="Attendance List" @click="openAttendancePreview"><i class="fas fa-clipboard-check"></i></button>
+                <button class="icon-btn" title="Export" @click="openSwimmingReportPreview"><i class="fas fa-download"></i></button>
               </div>
             </div>
 
@@ -562,6 +563,147 @@
           </div>
         </div>
 
+        <!-- ───── Attendance Preview Modal ───── -->
+        <div v-if="showAttendancePreview" class="modal-overlay" @click="showAttendancePreview = false">
+          <div class="modal-box modal-box--attendance" @click.stop>
+            <div class="modal-head">
+              <h3>Attendance List Preview</h3>
+              <button class="close-btn" @click="showAttendancePreview = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body attendance-preview-body">
+              <div class="attendance-preview-meta">
+                <span><strong>{{ attendancePreviewRows.length }}</strong> enrolled students with booking reference</span>
+                <button class="btn-pri" @click="exportAttendanceList">
+                  <i class="fas fa-file-excel" style="margin-right:6px"></i> Download Excel
+                </button>
+              </div>
+
+              <div v-if="attendancePreviewRows.length" class="attendance-preview-wrap">
+                <table class="attendance-preview-table">
+                  <thead>
+                    <tr>
+                      <th>No.</th>
+                      <th>Booking Ref</th>
+                      <th>Student</th>
+                      <th>Lesson</th>
+                      <th>Coach</th>
+                      <th>Session Dates</th>
+                      <th>Time Slot</th>
+                      <th>Attendance</th>
+                      <th>Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, idx) in attendancePreviewRows" :key="`${row.bookingRef}-${idx}`">
+                      <td>{{ idx + 1 }}</td>
+                      <td class="mono">{{ row.bookingRef }}</td>
+                      <td>{{ row.studentName }}</td>
+                      <td>{{ row.lessonType }}</td>
+                      <td>{{ row.coach }}</td>
+                      <td>{{ row.scheduleDates }}</td>
+                      <td>{{ row.timeSlot }}</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div v-else class="empty-state small">
+                <i class="fas fa-clipboard"></i>
+                <span>No attendance rows to preview for current filters</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ───── Swimming Report Preview Modal ───── -->
+        <div v-if="showSwimmingReportPreview" class="modal-overlay" @click="showSwimmingReportPreview = false">
+          <div class="modal-box modal-box--attendance" @click.stop>
+            <div class="modal-head">
+              <h3>Swimming Report Preview</h3>
+              <button class="close-btn" @click="showSwimmingReportPreview = false"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body attendance-preview-body">
+              <div class="attendance-preview-meta">
+                <span>
+                  <strong>{{ swimmingReportPreview.totalStudents }}</strong> students | 
+                  Paid: <strong>{{ swimmingReportPreview.paid }}</strong> | 
+                  Pending: <strong>{{ swimmingReportPreview.pending }}</strong>
+                </span>
+                <button class="btn-pri" @click="exportSwimmingReport">
+                  <i class="fas fa-file-excel" style="margin-right:6px"></i> Download Excel
+                </button>
+              </div>
+
+              <div v-if="swimmingReportPreview.totalStudents" class="report-preview-grid">
+                <div class="preview-card">
+                  <h4>Status Breakdown</h4>
+                  <table class="attendance-preview-table">
+                    <thead>
+                      <tr><th>Status</th><th>Count</th><th>%</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="row in swimmingReportPreview.statusRows" :key="`status-${row.label}`">
+                        <td>{{ row.label }}</td>
+                        <td>{{ row.count }}</td>
+                        <td>{{ row.pct }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="preview-card">
+                  <h4>Lesson Breakdown</h4>
+                  <table class="attendance-preview-table">
+                    <thead>
+                      <tr><th>Lesson</th><th>Count</th><th>%</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="row in swimmingReportPreview.lessonRows" :key="`lesson-${row.label}`">
+                        <td>{{ row.label }}</td>
+                        <td>{{ row.count }}</td>
+                        <td>{{ row.pct }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div v-if="swimmingReportPreview.totalStudents" class="attendance-preview-wrap">
+                <table class="attendance-preview-table">
+                  <thead>
+                    <tr>
+                      <th>No.</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Lesson</th>
+                      <th>Coach</th>
+                      <th>Status</th>
+                      <th>Payment</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(student, idx) in swimmingReportPreview.rows" :key="`report-row-${student.id}-${idx}`">
+                      <td>{{ idx + 1 }}</td>
+                      <td>{{ student.name || 'N/A' }}</td>
+                      <td>{{ student.email || '-' }}</td>
+                      <td>{{ student.lessonType || '-' }}</td>
+                      <td>{{ student.coach || '-' }}</td>
+                      <td>{{ roleLabelFromStatus(student.enrollmentStatus) }}</td>
+                      <td>{{ student.paymentStatus || 'Pending' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div v-else class="empty-state small">
+                <i class="fas fa-file-lines"></i>
+                <span>No rows to preview for current filters</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </main>
   </div>
@@ -591,6 +733,8 @@ const showStudentFilters = ref(false)
 const studentSearchQuery = ref('')
 const studentStatusFilter = ref('all')
 const studentLessonFilter = ref('all')
+const showAttendancePreview = ref(false)
+const showSwimmingReportPreview = ref(false)
 
 const newCoach = ref({ lessonType: '', coach: '', email: '', phone: '' })
 
@@ -977,6 +1121,555 @@ const saveCoach = () => {
     schedules.value.push({ ...newCoach.value, time: '' })
   }
   closeAddCoachModal()
+}
+
+const toFiniteNumber = value => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const safeCurrency = value => `₱${toFiniteNumber(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const roleLabelFromStatus = status => {
+  const s = String(status || '').toLowerCase()
+  if (s === 'approved') return 'Approved'
+  if (s === 'pending') return 'Pending'
+  if (s === 'inactive') return 'Inactive'
+  if (s === 'completed') return 'Completed'
+  if (s === 'cancelled') return 'Cancelled'
+  return status || 'N/A'
+}
+
+const formatAttendanceDates = (student) => {
+  const dates = Array.isArray(student.lessonDatesFormatted) && student.lessonDatesFormatted.length
+    ? student.lessonDatesFormatted
+    : normalizeDateList(student.lessonDates)
+
+  if (!dates.length) return 'TBD'
+
+  return dates
+    .map(dateStr => {
+      const dt = new Date(`${dateStr}T00:00:00`)
+      if (Number.isNaN(dt.getTime())) return dateStr
+      return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    })
+    .join(', ')
+}
+
+const buildAttendanceRows = () => filteredStudents.value
+  .filter(student => String(student.bookingReference || '').trim().length > 0)
+  .map(student => ({
+    bookingRef: student.bookingReference,
+    studentName: student.name || 'N/A',
+    email: student.email || '-',
+    phone: student.phone || '-',
+    lessonType: student.lessonType || '-',
+    coach: student.coach || 'Unassigned',
+    scheduleDates: formatAttendanceDates(student),
+    timeSlot: student.lessonTimeFormatted || student.lessonTime || 'TBD',
+    enrollmentStatus: roleLabelFromStatus(student.enrollmentStatus),
+    paymentStatus: student.paymentStatus || 'Pending',
+    attendance: '',
+    remarks: ''
+  }))
+
+const attendancePreviewRows = computed(() => buildAttendanceRows())
+
+const swimmingReportPreview = computed(() => {
+  const rows = filteredStudents.value
+
+  const paid = rows.filter(s => String(s.paymentStatus || '').toLowerCase() === 'paid').length
+  const pending = rows.filter(s => String(s.enrollmentStatus || '').toLowerCase() === 'pending').length
+
+  const statusCounts = rows.reduce((acc, s) => {
+    const key = String(s.enrollmentStatus || 'Pending').toLowerCase()
+    acc[key] = (acc[key] || 0) + 1
+    return acc
+  }, {})
+
+  const lessonCounts = rows.reduce((acc, s) => {
+    const key = String(s.lessonType || 'N/A').trim() || 'N/A'
+    acc[key] = (acc[key] || 0) + 1
+    return acc
+  }, {})
+
+  const total = rows.length || 1
+
+  const statusRows = Object.entries(statusCounts)
+    .map(([status, count]) => ({
+      label: roleLabelFromStatus(status),
+      count,
+      pct: `${((count / total) * 100).toFixed(2)}%`
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  const lessonRows = Object.entries(lessonCounts)
+    .map(([lesson, count]) => ({
+      label: lesson,
+      count,
+      pct: `${((count / total) * 100).toFixed(2)}%`
+    }))
+    .sort((a, b) => b.count - a.count)
+
+  return {
+    rows,
+    totalStudents: rows.length,
+    paid,
+    pending,
+    statusRows,
+    lessonRows
+  }
+})
+
+const openAttendancePreview = () => {
+  if (!attendancePreviewRows.value.length) {
+    alert('No enrolled students with booking reference found for current filters.')
+    return
+  }
+  showAttendancePreview.value = true
+}
+
+const openSwimmingReportPreview = () => {
+  if (!swimmingReportPreview.value.totalStudents) {
+    alert('No students found for current filters.')
+    return
+  }
+  showSwimmingReportPreview.value = true
+}
+
+const exportAttendanceList = async () => {
+  try {
+    const attendanceRows = buildAttendanceRows()
+
+    if (!attendanceRows.length) {
+      alert('No enrolled students with booking reference found for current filters.')
+      return
+    }
+
+    const ExcelJS = (await import('exceljs')).default
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = "Eduardo's Resort"
+    workbook.created = new Date()
+
+    const ws = workbook.addWorksheet('Attendance List', {
+      pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1 }
+    })
+
+    ws.columns = [
+      { width: 6 },
+      { width: 18 },
+      { width: 22 },
+      { width: 24 },
+      { width: 14 },
+      { width: 18 },
+      { width: 18 },
+      { width: 30 },
+      { width: 16 },
+      { width: 14 },
+      { width: 14 },
+      { width: 14 },
+      { width: 18 }
+    ]
+
+    const C_DARK_BLUE = 'FF0C3B5E'
+    const C_HDR_BG = 'FFE8F4FD'
+    const C_TBL_HDR = 'FFF0F6FB'
+    const C_WHITE = 'FFFFFFFF'
+    const C_ROW_ALT = 'FFF8FBFF'
+    const C_CARD_BDR = 'FFDCE8F3'
+    const C_GREY_TEXT = 'FF64748B'
+
+    const bdr = c => ({ style: 'thin', color: { argb: c } })
+    const cardBorder = { top: bdr(C_CARD_BDR), bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR) }
+
+    ws.mergeCells('A1:B1')
+    ws.mergeCells('C1:I1')
+    ws.mergeCells('J1:K1')
+    ws.mergeCells('L1:M1')
+
+    const logo = ws.getCell('A1')
+    logo.value = 'ER'
+    logo.font = { bold: true, size: 14, color: { argb: C_WHITE }, name: 'Calibri' }
+    logo.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_DARK_BLUE } }
+    logo.alignment = { horizontal: 'center', vertical: 'middle' }
+    logo.border = cardBorder
+
+    const title = ws.getCell('C1')
+    title.value = "Swimming Attendance List"
+    title.font = { bold: true, size: 14, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    title.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    title.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+
+    const generatedLabel = ws.getCell('J1')
+    generatedLabel.value = 'Generated'
+    generatedLabel.font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    generatedLabel.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    generatedLabel.alignment = { horizontal: 'right', vertical: 'middle' }
+
+    const generatedValue = ws.getCell('L1')
+    generatedValue.value = new Date().toLocaleString('en-PH', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    generatedValue.font = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    generatedValue.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    generatedValue.alignment = { horizontal: 'left', vertical: 'middle' }
+    ws.getRow(1).height = 28
+
+    ws.mergeCells('A2:M2')
+    const subtitle = ws.getCell('A2')
+    subtitle.value = `Enrolled students with booking reference | Status: ${studentStatusFilter.value === 'all' ? 'All' : roleLabelFromStatus(studentStatusFilter.value)} | Lesson: ${studentLessonFilter.value === 'all' ? 'All' : studentLessonFilter.value} | Search: ${studentSearchQuery.value || 'None'}`
+    subtitle.font = { italic: true, size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    subtitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    subtitle.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+    ws.getRow(2).height = 18
+
+    const headers = [
+      'No.',
+      'Booking Ref',
+      'Student Name',
+      'Email',
+      'Phone',
+      'Lesson Type',
+      'Coach',
+      'Session Dates',
+      'Time Slot',
+      'Enrollment',
+      'Payment',
+      'Attendance',
+      'Remarks'
+    ]
+
+    const headerRow = ws.getRow(4)
+    headers.forEach((text, index) => {
+      const cell = headerRow.getCell(index + 1)
+      cell.value = text
+      cell.font = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
+      cell.border = cardBorder
+      cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true }
+    })
+    headerRow.height = 22
+
+    attendanceRows.forEach((row, index) => {
+      const alt = index % 2 === 1
+      const excelRow = ws.addRow([
+        index + 1,
+        row.bookingRef,
+        row.studentName,
+        row.email,
+        row.phone,
+        row.lessonType,
+        row.coach,
+        row.scheduleDates,
+        row.timeSlot,
+        row.enrollmentStatus,
+        row.paymentStatus,
+        row.attendance,
+        row.remarks
+      ])
+
+      excelRow.height = 20
+      excelRow.eachCell((cell, colIdx) => {
+        cell.font = { size: 9, name: 'Calibri' }
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: alt ? C_ROW_ALT : C_WHITE } }
+        cell.border = cardBorder
+        cell.alignment = { horizontal: colIdx === 1 ? 'center' : 'left', vertical: 'middle', wrapText: colIdx === 8 || colIdx === 13 }
+      })
+    })
+
+    const totalRow = ws.addRow(['', '', '', '', '', '', '', '', '', '', '', '', ''])
+    totalRow.getCell(1).value = 'Total with Booking'
+    totalRow.getCell(1).font = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    totalRow.getCell(2).value = attendanceRows.length
+    totalRow.getCell(2).font = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    totalRow.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
+      cell.border = cardBorder
+      cell.alignment = { vertical: 'middle' }
+    })
+
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `Swimming_Attendance_List_${new Date().toISOString().split('T')[0]}.xlsx`
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Failed to export attendance list:', error)
+    alert('Failed to export attendance list. Please try again.')
+  }
+}
+
+const exportSwimmingReport = async () => {
+  try {
+    const ExcelJS = (await import('exceljs')).default
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = "Eduardo's Resort"
+    workbook.created = new Date()
+
+    const ws = workbook.addWorksheet('Swimming Report', {
+      pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1 }
+    })
+
+    ws.columns = [
+      { width: 24 },
+      { width: 28 },
+      { width: 20 },
+      { width: 18 },
+      { width: 18 },
+      { width: 16 }
+    ]
+
+    const C_DARK_BLUE = 'FF0C3B5E'
+    const C_LOGO_BG = 'FF0C3B5E'
+    const C_HDR_BG = 'FFE8F4FD'
+    const C_TBL_HDR = 'FFF0F6FB'
+    const C_CARD_BDR = 'FFDCE8F3'
+    const C_WHITE = 'FFFFFFFF'
+    const C_ROW_ALT = 'FFF8FBFF'
+    const C_GREY_TEXT = 'FF64748B'
+
+    const bdr = c => ({ style: 'thin', color: { argb: c } })
+    const cardBorder = { top: bdr(C_CARD_BDR), bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR) }
+
+    const secHdr = (cell, text) => {
+      cell.value = text
+      cell.font = { bold: true, size: 10, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
+      cell.border = cardBorder
+      cell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+    }
+
+    const th = (cell, text, right = false) => {
+      cell.value = text
+      cell.font = { bold: true, size: 10, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
+      cell.border = cardBorder
+      cell.alignment = { horizontal: right ? 'right' : 'left', indent: right ? 0 : 1 }
+    }
+
+    const td = (cell, value, right = false, bold = false, alt = false) => {
+      cell.value = value
+      cell.font = { size: 10, name: 'Calibri', bold }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: alt ? C_ROW_ALT : C_WHITE } }
+      cell.border = cardBorder
+      cell.alignment = { horizontal: right ? 'right' : 'left', indent: right ? 0 : 1 }
+    }
+
+    const rows = filteredStudents.value
+    const statusCounts = rows.reduce((acc, s) => {
+      const status = String(s.enrollmentStatus || 'Pending').toLowerCase()
+      acc[status] = (acc[status] || 0) + 1
+      return acc
+    }, {})
+
+    const lessonCounts = rows.reduce((acc, s) => {
+      const lesson = String(s.lessonType || 'N/A').trim() || 'N/A'
+      acc[lesson] = (acc[lesson] || 0) + 1
+      return acc
+    }, {})
+
+    const estimatedRevenue = rows.reduce((sum, s) => {
+      const raw = String(s.paymentStatus || '').toLowerCase() === 'paid' ? 500 : 0
+      return sum + raw
+    }, 0)
+
+    const generatedAt = new Date().toLocaleString('en-PH', {
+      month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    })
+
+    let r = 1
+
+    ws.getCell(`A${r}`).value = 'ER'
+    ws.getCell(`A${r}`).font = { bold: true, size: 14, color: { argb: C_WHITE }, name: 'Calibri' }
+    ws.getCell(`A${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_LOGO_BG } }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'center', vertical: 'middle' }
+    ws.getCell(`A${r}`).border = cardBorder
+
+    ws.mergeCells(`B${r}:D${r}`)
+    ws.getCell(`B${r}`).value = "Eduardo's Resort"
+    ws.getCell(`B${r}`).font = { bold: true, size: 15, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`B${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`B${r}`).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+
+    ws.getCell(`E${r}`).value = 'Generated'
+    ws.getCell(`E${r}`).font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`E${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`E${r}`).alignment = { horizontal: 'right' }
+
+    ws.getCell(`F${r}`).value = generatedAt
+    ws.getCell(`F${r}`).font = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`F${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`F${r}`).alignment = { horizontal: 'right' }
+    ws.getRow(r).height = 28
+    r++
+
+    ws.mergeCells(`A${r}:F${r}`)
+    ws.getCell(`A${r}`).value = 'Swimming Management Report'
+    ws.getCell(`A${r}`).font = { italic: true, size: 10, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`A${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.getRow(r).height = 16
+    r++
+
+    ws.mergeCells(`A${r}:C${r}`)
+    ws.getCell(`A${r}`).value = `Status Filter: ${studentStatusFilter.value === 'all' ? 'All' : roleLabelFromStatus(studentStatusFilter.value)}`
+    ws.getCell(`A${r}`).font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.mergeCells(`D${r}:F${r}`)
+    ws.getCell(`D${r}`).value = `Lesson Filter: ${studentLessonFilter.value === 'all' ? 'All' : studentLessonFilter.value}`
+    ws.getCell(`D${r}`).font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`D${r}`).alignment = { horizontal: 'left', indent: 1 }
+    r++
+
+    ws.mergeCells(`A${r}:F${r}`)
+    ws.getCell(`A${r}`).value = `Search: ${studentSearchQuery.value || 'None'}`
+    ws.getCell(`A${r}`).font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
+    r++
+
+    r++
+
+    const cards = [
+      { label: 'TOTAL STUDENTS', value: String(rows.length) },
+      { label: 'PAID', value: String(rows.filter(s => String(s.paymentStatus || '').toLowerCase() === 'paid').length) },
+      { label: 'PENDING', value: String(rows.filter(s => String(s.enrollmentStatus || '').toLowerCase() === 'pending').length) },
+      { label: 'EST. REVENUE', value: safeCurrency(estimatedRevenue) }
+    ]
+    const cardCols = ['A', 'B', 'C', 'D']
+
+    cards.forEach(({ label }, i) => {
+      const cell = ws.getCell(`${cardCols[i]}${r}`)
+      cell.value = label
+      cell.font = { size: 8, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+      cell.border = { top: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR), bottom: { style: 'hair', color: { argb: C_CARD_BDR } } }
+      cell.alignment = { horizontal: 'left', indent: 1 }
+    })
+    ws.getRow(r).height = 14
+    r++
+
+    cards.forEach(({ value }, i) => {
+      const cell = ws.getCell(`${cardCols[i]}${r}`)
+      cell.value = value
+      cell.font = { bold: true, size: 12, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+      cell.border = { bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR), top: { style: 'hair', color: { argb: C_CARD_BDR } } }
+      cell.alignment = { horizontal: 'left', indent: 1, vertical: 'middle' }
+    })
+    ws.getRow(r).height = 22
+    r++
+
+    r++
+
+    ws.mergeCells(`A${r}:F${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Enrollment Status Breakdown')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Status')
+    th(ws.getCell(`B${r}`), 'Count', true)
+    th(ws.getCell(`C${r}`), 'Percent', true)
+    r++
+
+    const statusRows = Object.entries(statusCounts)
+      .map(([status, count]) => ({ status: roleLabelFromStatus(status), count }))
+      .sort((a, b) => b.count - a.count)
+
+    statusRows.forEach((row, i) => {
+      const alt = i % 2 === 1
+      const pct = rows.length ? `${((row.count / rows.length) * 100).toFixed(2)}%` : '0.00%'
+      td(ws.getCell(`A${r}`), row.status, false, false, alt)
+      td(ws.getCell(`B${r}`), row.count, true, false, alt)
+      td(ws.getCell(`C${r}`), pct, true, false, alt)
+      r++
+    })
+
+    if (!statusRows.length) {
+      td(ws.getCell(`A${r}`), 'No students found for current filters')
+      ws.mergeCells(`A${r}:C${r}`)
+      r++
+    }
+
+    r++
+
+    ws.mergeCells(`A${r}:F${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Lesson Type Breakdown')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Lesson Type')
+    th(ws.getCell(`B${r}`), 'Count', true)
+    th(ws.getCell(`C${r}`), 'Percent', true)
+    r++
+
+    const lessonRows = Object.entries(lessonCounts)
+      .map(([lessonType, count]) => ({ lessonType, count }))
+      .sort((a, b) => b.count - a.count)
+
+    lessonRows.forEach((row, i) => {
+      const alt = i % 2 === 1
+      const pct = rows.length ? `${((row.count / rows.length) * 100).toFixed(2)}%` : '0.00%'
+      td(ws.getCell(`A${r}`), row.lessonType, false, false, alt)
+      td(ws.getCell(`B${r}`), row.count, true, false, alt)
+      td(ws.getCell(`C${r}`), pct, true, false, alt)
+      r++
+    })
+
+    if (!lessonRows.length) {
+      td(ws.getCell(`A${r}`), 'No lesson data available')
+      ws.mergeCells(`A${r}:C${r}`)
+      r++
+    }
+
+    r++
+
+    ws.mergeCells(`A${r}:F${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Students List')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Name')
+    th(ws.getCell(`B${r}`), 'Email')
+    th(ws.getCell(`C${r}`), 'Lesson')
+    th(ws.getCell(`D${r}`), 'Coach')
+    th(ws.getCell(`E${r}`), 'Status')
+    th(ws.getCell(`F${r}`), 'Payment')
+    r++
+
+    rows.forEach((student, i) => {
+      const alt = i % 2 === 1
+      td(ws.getCell(`A${r}`), student.name || 'N/A', false, false, alt)
+      td(ws.getCell(`B${r}`), student.email || '-', false, false, alt)
+      td(ws.getCell(`C${r}`), student.lessonType || '-', false, false, alt)
+      td(ws.getCell(`D${r}`), student.coach || '-', false, false, alt)
+      td(ws.getCell(`E${r}`), roleLabelFromStatus(student.enrollmentStatus), false, false, alt)
+      td(ws.getCell(`F${r}`), student.paymentStatus || 'Pending', false, false, alt)
+      r++
+    })
+
+    if (!rows.length) {
+      td(ws.getCell(`A${r}`), 'No students found for current filters')
+      ws.mergeCells(`A${r}:F${r}`)
+      r++
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `Swimming_Management_Report_${new Date().toISOString().split('T')[0]}.xlsx`
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Failed to export swimming report:', error)
+    alert('Failed to export swimming report. Please try again.')
+  }
 }
 
 watch(() => pendingStudents.value, (n) => notifications.setSwimmingPending(n))
@@ -1552,9 +2245,95 @@ onUnmounted(() => {
   animation: slideUp 0.25s ease;
 }
 .modal-box--wide { max-width: 560px; }
+.modal-box--attendance {
+  max-width: 1320px;
+  width: 98vw;
+  max-height: 96vh;
+}
 @keyframes slideUp {
   from { transform: translateY(20px); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
+}
+
+.attendance-preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  overflow: hidden;
+}
+
+.attendance-preview-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+}
+
+.attendance-preview-wrap {
+  max-height: none;
+  overflow: hidden;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+}
+
+.attendance-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+}
+
+.attendance-preview-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f0f6fb;
+  color: var(--color-text-light);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+  padding: 0.35rem 0.42rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-gray-border);
+}
+
+.attendance-preview-table td {
+  padding: 0.34rem 0.42rem;
+  border-bottom: 1px solid #edf2f7;
+  color: var(--color-text-dark);
+  vertical-align: top;
+}
+
+.attendance-preview-table tbody tr:nth-child(even) {
+  background: #fafcff;
+}
+
+.report-preview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.preview-card {
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.preview-card h4 {
+  margin: 0;
+  padding: 0.45rem 0.58rem;
+  font-size: 0.72rem;
+  color: var(--color-text-dark);
+  background: #f8fbff;
+  border-bottom: 1px solid var(--color-gray-border);
+}
+
+@media (min-width: 1024px) {
+  .modal-box--attendance .attendance-preview-body {
+    zoom: 0.8;
+  }
 }
 
 .modal-head {
@@ -1729,6 +2508,9 @@ onUnmounted(() => {
   .detail-item--full { grid-column: span 1; }
   .row-actions { opacity: 1; }
   .students-filter-bar {
+    grid-template-columns: 1fr;
+  }
+  .report-preview-grid {
     grid-template-columns: 1fr;
   }
 }

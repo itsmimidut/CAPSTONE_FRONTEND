@@ -131,6 +131,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import AdminHeader from '../../components/admin/AdminHeader.vue'
 import CustomerSidebar from '../../components/Customer/CustomerSidebar.vue'
@@ -144,6 +145,7 @@ import OrderHistory from '../../components/Customer/OrderHistory.vue'
 
 const apiBase = 'http://localhost:8000/api'
 const auth    = useAuthStore()
+const route   = useRoute()
 const apiRoot = (import.meta.env.VITE_API_URL || apiBase).replace(/\/api\/?$/, '')
 const roomFallbackImage = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=60'
 
@@ -183,7 +185,16 @@ const menuItems = [
 ]
 
 const customerName    = computed(() => auth.user?.name  || 'Guest')
-const customerEmail   = computed(() => auth.user?.email || '')
+const customerEmail   = computed(() => {
+  const fromAuth = auth.user?.email || auth.user?.Email || ''
+  if (fromAuth) return String(fromAuth)
+  try {
+    const stored = JSON.parse(localStorage.getItem('user') || '{}')
+    return String(stored?.email || stored?.Email || '').trim()
+  } catch {
+    return ''
+  }
+})
 const customerInitial = computed(() => (customerName.value?.charAt(0) || 'G').toUpperCase())
 
 const headerTitle = computed(() => ({
@@ -241,12 +252,42 @@ const formatDate = (v) => {
   return Number.isNaN(d.getTime()) ? v : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+const toStatusLabel = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return 'Pending'
+  return raw
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+}
+
 const statusClass = (status) => {
   const s = String(status || '').toLowerCase()
+  if (s.includes('checked'))  return 'text-green-700 font-semibold'
+  if (s.includes('complete')) return 'text-green-700 font-semibold'
   if (s.includes('confirm')) return 'text-green-600 font-semibold'
   if (s.includes('pending'))  return 'text-yellow-600 font-semibold'
   if (s.includes('cancel'))   return 'text-red-600 font-semibold'
   return 'text-blue-600 font-semibold'
+}
+
+const buildActivityText = (booking) => {
+  const items = String(booking?.items_summary || '').trim() || 'Booking created'
+  const ref = booking?.booking_reference ? `Ref ${booking.booking_reference}` : null
+  const range = booking?.check_in_date
+    ? `${formatDate(booking.check_in_date)}${booking?.check_out_date ? ` to ${formatDate(booking.check_out_date)}` : ''}`
+    : null
+  const payment = booking?.payment_status ? `Payment: ${toStatusLabel(booking.payment_status)}` : null
+  return [items, ref, range, payment].filter(Boolean).join(' • ')
+}
+
+const applySectionFromRouteQuery = (query = {}) => {
+  const raw = String(query.activeSection || query.section || query.ActiveSection || '').trim().toLowerCase()
+  if (!raw) return
+  if (menuItems.some(item => item.id === raw)) {
+    activeSection.value = raw
+  }
 }
 
 const parseImages = (value) => {
@@ -296,11 +337,23 @@ const buildSummaryCards = (bookings) => {
 
 // ── API calls ─────────────────────────────────────────
 const fetchBookings = async () => {
-  if (!customerEmail.value) return []
-  const res = await fetch(`${apiBase}/bookings?email=${encodeURIComponent(customerEmail.value)}`)
+  const userId = auth.user?.id || auth.user?.user_id || null
+  let email = customerEmail.value
+
+  if (!userId && !email) return []
+
+  const endpoint = userId
+    ? `${apiBase}/bookings/user/${encodeURIComponent(userId)}/history`
+    : `${apiBase}/bookings/email/${encodeURIComponent(email)}/history`
+
+  const res = await fetch(endpoint)
   if (!res.ok) throw new Error('Failed to load bookings')
+
   const payload = await res.json()
-  return payload.data || []
+  if (!payload?.success) throw new Error(payload?.error || 'Failed to load bookings')
+
+  const bookings = payload?.data?.bookings
+  return Array.isArray(bookings) ? bookings : []
 }
 
 const fetchRooms = async () => {
@@ -329,8 +382,8 @@ const loadDashboardData = async () => {
 
     recentActivity.value = bookings.slice(0, 5).map(b => ({
       date:        formatDate(b.created_at || b.check_in_date),
-      activity:    b.items_summary || 'Booking created',
-      status:      b.booking_status || 'Pending',
+      activity:    buildActivityText(b),
+      status:      toStatusLabel(b.booking_status),
       statusClass: statusClass(b.booking_status),
     }))
 
@@ -355,6 +408,7 @@ const loadDashboardData = async () => {
         title: room.name,
         price: `PHP ${Number(room.price || 0).toLocaleString()} / night`,
         imageUrl,
+        roomId: room.item_id ?? room.id ?? null,
       }
     })
 
@@ -384,13 +438,16 @@ const loadDashboardData = async () => {
 }
 
 onMounted(() => {
-  const param = typeof window !== 'undefined'
-    ? new URLSearchParams(window.location.search).get('section') ||
-      new URLSearchParams(window.location.search).get('ActiveSection')
-    : null
-  if (param) activeSection.value = param
+  applySectionFromRouteQuery(route.query)
   loadDashboardData()
 })
+
+watch(
+  () => route.query,
+  (query) => {
+    applySectionFromRouteQuery(query)
+  }
+)
 </script>
 
 <style scoped>

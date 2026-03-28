@@ -56,9 +56,13 @@
               <p class="section-subtitle">All guest bookings and their current status</p>
             </div>
             <div class="header-actions">
-              <button @click="exportData" class="btn-outline">
+              <button @click="openExportPreview" class="btn-outline">
                 <i class="fas fa-download"></i>
                 <span>Export</span>
+              </button>
+              <button @click="printReservationList" class="btn-outline">
+                <i class="fas fa-print"></i>
+                <span>Print List</span>
               </button>
               <button @click="createNew" class="btn-primary">
                 <i class="fas fa-plus"></i>
@@ -173,7 +177,8 @@
               <h2 class="section-title">Recent Reservations</h2>
             </div>
             <div class="header-actions">
-              <button @click="exportData" class="btn-outline btn-icon"><i class="fas fa-download"></i></button>
+              <button @click="openExportPreview" class="btn-outline btn-icon"><i class="fas fa-download"></i></button>
+              <button @click="printReservationList" class="btn-outline btn-icon" title="Print List"><i class="fas fa-print"></i></button>
               <button @click="createNew" class="btn-primary btn-icon"><i class="fas fa-plus"></i></button>
             </div>
           </div>
@@ -247,6 +252,185 @@
     </main>
 
     <!-- ── Toast ── -->
+    <div v-if="showExportPreview" class="preview-overlay" @click.self="showExportPreview = false">
+      <div class="preview-modal">
+        <div class="preview-head">
+          <div>
+            <h3 class="preview-title">Reservation Report Preview</h3>
+            <p class="preview-sub">Review the report first before downloading Excel</p>
+          </div>
+          <button @click="showExportPreview = false" class="preview-close" aria-label="Close preview">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="preview-body">
+          <div v-if="exportPreviewLoading" class="preview-loading">
+            <div class="loading-spinner"></div>
+            <p>Preparing report preview…</p>
+          </div>
+
+          <div v-else-if="exportPreviewReport" class="report-preview-sheet-wrap">
+            <div class="report-preview-sheet">
+              <div class="report-sheet-head">
+                <div class="report-sheet-brand">
+                  <div class="report-sheet-badge">ER</div>
+                  <div>
+                    <div class="report-sheet-name">Eduardo's Resort</div>
+                    <div class="report-sheet-caption">Reservation and POS Sales Report</div>
+                  </div>
+                </div>
+                <div class="report-sheet-meta-right">
+                  <div><span>Generated</span><strong>{{ exportPreviewReport.generatedAt }}</strong></div>
+                </div>
+              </div>
+
+              <div class="report-sheet-subhead">
+                <div>
+                  <span class="report-meta-key">Date Range</span>
+                  <strong class="report-meta-val">{{ exportPreviewReport.dateRange }}</strong>
+                </div>
+                <div>
+                  <span class="report-meta-key">Status</span>
+                  <strong class="report-meta-val">{{ exportPreviewReport.applied.status }}</strong>
+                </div>
+                <div>
+                  <span class="report-meta-key">Search</span>
+                  <strong class="report-meta-val">{{ exportPreviewReport.applied.search }}</strong>
+                </div>
+              </div>
+
+              <div class="preview-cards">
+                <div class="preview-card">
+                  <span class="preview-label">Total Bookings</span>
+                  <strong class="preview-value">{{ exportPreviewReport.totalBookings }}</strong>
+                </div>
+                <div class="preview-card">
+                  <span class="preview-label">Total Revenue</span>
+                  <strong class="preview-value">{{ exportPreviewReport.totalRevenue }}</strong>
+                </div>
+                <div class="preview-card">
+                  <span class="preview-label">Peak Day</span>
+                  <strong class="preview-value">{{ exportPreviewReport.peakDay }}</strong>
+                </div>
+                <div class="preview-card">
+                  <span class="preview-label">Top Service</span>
+                  <strong class="preview-value">{{ exportPreviewReport.topService }}</strong>
+                </div>
+              </div>
+
+              <div class="preview-doc-section">
+                <h4 class="preview-doc-title">Status Breakdown</h4>
+                <table class="preview-table">
+                  <thead>
+                    <tr><th>Status</th><th>Bookings</th><th>Revenue</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="row in exportPreviewReport.statusBreakdown" :key="`status-${row.status}`">
+                      <td>{{ toStatusLabel(row.status) }}</td>
+                      <td>{{ row.count }}</td>
+                      <td>{{ row.revenue }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="preview-grid">
+                <div class="preview-panel">
+                  <h4>Category Breakdown</h4>
+                  <table class="preview-table">
+                    <thead>
+                      <tr><th>Category</th><th>Bookings</th><th>Revenue</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="row in exportPreviewReport.categoryBreakdown" :key="`cat-${row.category}`">
+                        <td>{{ row.category }}</td>
+                        <td>{{ row.count }}</td>
+                        <td>{{ row.revenue }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="preview-panel">
+                  <h4>Payment Summary</h4>
+                  <table class="preview-table">
+                    <thead>
+                      <tr><th>Method</th><th>Count</th><th>Amount</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="row in exportPreviewReport.paymentSummary" :key="`pay-${row.method}`">
+                        <td>{{ row.method }}</td>
+                        <td>{{ row.count }}</td>
+                        <td>{{ row.amount }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="preview-grid">
+                <div class="preview-panel">
+                  <h4>Top Booked Items by Category</h4>
+                  <table class="preview-table">
+                    <thead>
+                      <tr><th>Category</th><th>Top Item</th><th>Bookings</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="row in exportPreviewReport.topBookedItemsByCategory" :key="`top-${row.category}`">
+                        <td>{{ row.category }}</td>
+                        <td>{{ row.name }}</td>
+                        <td>{{ row.count }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="preview-panel">
+                  <h4>Sales Channels Summary</h4>
+                  <table class="preview-table">
+                    <thead>
+                      <tr><th>Channel</th><th>Transactions</th><th>Revenue</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="row in exportPreviewReport.channelSummary" :key="`channel-${row.channel}`">
+                        <td>{{ row.channel }}</td>
+                        <td>{{ row.count }}</td>
+                        <td>{{ row.amount }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="preview-doc-section">
+                <h4 class="preview-doc-title">Top POS Items</h4>
+                <table class="preview-table">
+                  <thead>
+                    <tr><th>Item</th><th>Sales</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, index) in (exportPreviewReport.topPosItems.length ? exportPreviewReport.topPosItems : [{ item: 'N/A', sales: safeCurrency(0) }])" :key="`pos-item-${index}`">
+                      <td>{{ row.item || row.name || 'N/A' }}</td>
+                      <td>{{ row.sales || row.amount || safeCurrency(0) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-foot">
+          <button @click="showExportPreview = false" class="btn-outline">Cancel</button>
+          <button @click="exportData" class="btn-primary" :disabled="exportPreviewLoading || !exportPreviewReport">
+            <i class="fas fa-file-excel"></i>
+            <span>Download Excel</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <transition name="toast">
       <div
         v-if="toastMessage"
@@ -263,7 +447,6 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import * as XLSX from 'xlsx'
 import AdminSidebar          from '../../components/admin/AdminSidebar.vue'
 import AdminHeader           from '../../components/admin/AdminHeader.vue'
 import ReservationStats      from '../../components/admin/ReservationStats.vue'
@@ -283,6 +466,9 @@ const reservationCalendar  = ref(null)
 const isCheckinScannerOpen = ref(false)
 const toastMessage         = ref('')
 const toastType            = ref('success')
+const showExportPreview    = ref(false)
+const exportPreviewLoading = ref(false)
+const exportPreviewReport  = ref(null)
 
 const filters = ref({ search: '', status: '', from: '', to: '' })
 
@@ -321,6 +507,7 @@ const mapBooking = b => ({
   id:               b.booking_id,
   guest_name:       `${b.first_name || ''} ${b.last_name || ''}`.trim() || b.email || 'Guest',
   email:            b.email || 'N/A',
+  phone:            b.phone || 'N/A',
   reservation_code: b.booking_reference,
   check_in:         b.check_in_date,
   check_out:        b.check_out_date,
@@ -467,21 +654,607 @@ const createNew = () => showToast('Create new reservation coming soon', 'info')
 
 const toPercent = (v, t) => (!t ? '0.00%' : `${((v / t) * 100).toFixed(2)}%`)
 
-const exportData = async () => {
+const toFiniteNumber = value => {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const safeCurrency = value => `₱${toFiniteNumber(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+const formatDateTime = dateValue => {
+  const dt = new Date(dateValue)
+  if (Number.isNaN(dt.getTime())) return 'N/A'
+  return dt.toLocaleString('en-PH', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const getEffectiveDateRangeLabel = () => {
+  const from = filters.value.from || 'Start'
+  const to = filters.value.to || 'Today'
+  if (!filters.value.from && !filters.value.to) return 'All dates'
+  return `${from} to ${to}`
+}
+
+const normalizeStatusKey = status => {
+  const s = String(status || '').toLowerCase()
+  if (s === 'checked_out') return 'checked_in'
+  if (s === 'no_show') return 'cancelled'
+  return s || 'pending'
+}
+
+const toStatusLabel = status => ({
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  checked_in: 'Checked In',
+  cancelled: 'Cancelled'
+}[status] || formatStatus(status || 'pending'))
+
+const normalizePaymentMethod = method => {
+  const m = String(method || '').trim().toLowerCase()
+  if (m === 'gcash' || m === 'g cash') return 'GCash'
+  if (m === 'cash') return 'Cash'
+  return method || 'N/A'
+}
+
+const getCategoryFromItems = list => {
+  const s = String(list || '').toLowerCase()
+  if (s.includes('room')) return 'Room'
+  if (s.includes('cottage')) return 'Cottage'
+  if (s.includes('event')) return 'Event'
+  if (s.includes('swimming')) return 'Swimming'
+  return 'Other'
+}
+
+const extractTopBookedItemName = (itemsList, category) => {
+  if (!itemsList || itemsList === 'N/A') return null
+  const entries = String(itemsList)
+    .split(',')
+    .map(part => part.trim())
+    .filter(Boolean)
+
+  const categoryKey = String(category || '').toLowerCase()
+  const matched = entries.find(entry => entry.toLowerCase().includes(categoryKey))
+  return matched || null
+}
+
+const getGuestCount = row => toFiniteNumber(row.adults) + toFiniteNumber(row.children)
+
+
+const getPrintRows = rows => rows
+  .map(row => ({
+    reservationId: row.id,
+    guestName: row.guest_name || 'Guest',
+    contactNumber: row.phone || 'N/A',
+    checkIn: getCheckInDisplay(row),
+    checkOut: getCheckOutDisplay(row),
+    accommodation: row.items_list || 'N/A',
+    guests: getGuestCount(row),
+    status: toStatusLabel(normalizeStatusKey(row.status)),
+    paymentStatus: row.payment_status || 'N/A',
+  }))
+
+const getPrintFilterLabel = () => {
+  const parts = []
+  if (filters.value.from || filters.value.to) parts.push(`Date: ${getEffectiveDateRangeLabel()}`)
+  if (filters.value.status && filters.value.status !== 'all') parts.push(`Status: ${toStatusLabel(filters.value.status)}`)
+  if (filters.value.search) parts.push(`Search: ${filters.value.search}`)
+  return parts.length ? parts.join(' | ') : 'All reservations'
+}
+
+const escapeHtml = value => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+
+const printReservationList = async () => {
   try {
     const all = await fetchAllForExport()
-    const details = all.map((b, i) => ({
-      'No.': i + 1, 'Guest Name': b.guest_name, 'Email': b.email,
-      'Check In': getCheckInDisplay(b), 'Check Out': getCheckOutDisplay(b),
-      'Booking Type': getItemLabel(b.items_list), 'Payment Method': b.payment_method,
-      'Booking Code': b.reservation_code, 'Status': formatStatus(b.status), 'Amount': b.total
-    }))
+    const rows = getPrintRows(all)
+    if (!rows.length) return showToast('No reservations available to print', 'error')
 
-    const wb = XLSX.utils.book_new()
-    const ws = XLSX.utils.json_to_sheet(details)
-    ws['!cols'] = [5, 20, 25, 12, 12, 20, 15, 15, 12, 12].map(w => ({ wch: w }))
-    XLSX.utils.book_append_sheet(wb, ws, 'Booking Details')
-    XLSX.writeFile(wb, `Reservations_${new Date().toISOString().split('T')[0]}.xlsx`)
+    const printWindow = window.open('', '_blank', 'width=1400,height=900')
+    if (!printWindow) return showToast('Allow pop-ups to print the reservation list', 'error')
+
+    const totalGuests = rows.reduce((sum, row) => sum + row.guests, 0)
+    const htmlRows = rows.map(row => `
+      <tr>
+        <td>${escapeHtml(row.reservationId)}</td>
+        <td>${escapeHtml(row.guestName)}</td>
+        <td>${escapeHtml(row.contactNumber)}</td>
+        <td>${escapeHtml(row.checkIn)}</td>
+        <td>${escapeHtml(row.checkOut)}</td>
+        <td>${escapeHtml(row.accommodation)}</td>
+        <td style="text-align:center">${escapeHtml(row.guests)}</td>
+        <td>${escapeHtml(row.status)}</td>
+        <td>${escapeHtml(row.paymentStatus)}</td>
+        <td style="min-width:120px"></td>
+      </tr>`).join('')
+
+    printWindow.document.write(`<!doctype html>
+<html>
+<head>
+  <title>Reservation List</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 12mm; color: #111827; }
+    .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px; }
+    .brand { display:flex; gap:10px; align-items:center; }
+    .badge { background:#0C3B5E; color:#fff; font-weight:700; padding:8px 12px; border-radius:4px; }
+    .title { font-size:18px; font-weight:700; color:#0C3B5E; }
+    .subtitle, .meta { font-size:12px; color:#475569; }
+    .summary { margin: 10px 0 12px; font-size: 12px; }
+    table { width:100%; border-collapse:collapse; font-size:11px; }
+    th, td { border:1px solid #cbd5e1; padding:6px 7px; vertical-align:top; }
+    th { background:#f1f5f9; text-align:left; font-size:10px; text-transform:uppercase; }
+    tfoot td { font-weight:700; background:#f8fafc; }
+    .footer { margin-top: 12px; font-size: 11px; color:#475569; }
+    @page { size: A4 landscape; margin: 10mm; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <div class="badge">ER</div>
+      <div>
+        <div class="title">Eduardo's Resort</div>
+        <div class="subtitle">Reservation List - Printable Backup Copy</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div>Generated: ${escapeHtml(formatDateTime(new Date()))}</div>
+      <div>Filters: ${escapeHtml(getPrintFilterLabel())}</div>
+    </div>
+  </div>
+  <div class="summary">Total Records: ${rows.length} | Total Guests: ${totalGuests}</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Reservation ID</th>
+        <th>Guest Name</th>
+        <th>Contact Number</th>
+        <th>Check-in Date</th>
+        <th>Check-out Date</th>
+        <th>Accommodation / Room / Cottage</th>
+        <th>Guests</th>
+        <th>Status</th>
+        <th>Payment Status</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>${htmlRows}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="6">Totals</td>
+        <td style="text-align:center">${totalGuests}</td>
+        <td colspan="3"></td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+  <div class="footer">Staff signature: ________________________ Date: ____________</div>
+</body>
+</html>`)
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+      printWindow.onafterprint = () => printWindow.close()
+    }, 250)
+  } catch {
+    showToast('Failed to print reservation list', 'error')
+  }
+}
+
+const buildReservationSalesReport = rows => {
+  const statusOrder = ['pending', 'confirmed', 'checked_in', 'cancelled']
+  const topItemMap = { Room: {}, Cottage: {}, Event: {} }
+  const statusMap = {}
+  const categoryMap = {}
+  const paymentMap = { Cash: { count: 0, amountRaw: 0 }, GCash: { count: 0, amountRaw: 0 } }
+  const dayMap = {}
+  let totalRevenueRaw = 0
+
+  for (const row of rows) {
+    const status = normalizeStatusKey(row.status)
+    const category = getCategoryFromItems(row.items_list)
+    const method = normalizePaymentMethod(row.payment_method)
+    const amount = toFiniteNumber(row.total)
+
+    if (!statusMap[status]) statusMap[status] = { count: 0, revenueRaw: 0 }
+    statusMap[status].count += 1
+    statusMap[status].revenueRaw += amount
+
+    if (!categoryMap[category]) categoryMap[category] = { count: 0, revenueRaw: 0 }
+    categoryMap[category].count += 1
+    categoryMap[category].revenueRaw += amount
+
+    if (!paymentMap[method]) paymentMap[method] = { count: 0, amountRaw: 0 }
+    paymentMap[method].count += 1
+    paymentMap[method].amountRaw += amount
+
+    totalRevenueRaw += amount
+
+    const dayLabel = getCheckInDisplay(row)
+    if (dayLabel && dayLabel !== 'N/A') {
+      if (!dayMap[dayLabel]) dayMap[dayLabel] = 0
+      dayMap[dayLabel] += 1
+    }
+
+    if (topItemMap[category]) {
+      const itemName = extractTopBookedItemName(row.items_list, category)
+      if (itemName) topItemMap[category][itemName] = (topItemMap[category][itemName] || 0) + 1
+    }
+  }
+
+  const statusBreakdown = statusOrder.map(status => ({
+    status,
+    count: statusMap[status]?.count || 0,
+    revenue: safeCurrency(statusMap[status]?.revenueRaw || 0)
+  }))
+
+  const categoryBreakdown = Object.entries(categoryMap)
+    .map(([category, values]) => ({
+      category,
+      count: values.count,
+      revenue: safeCurrency(values.revenueRaw),
+      revenueRaw: values.revenueRaw
+    }))
+    .sort((a, b) => b.revenueRaw - a.revenueRaw)
+
+  const paymentSummary = Object.entries(paymentMap)
+    .map(([method, values]) => ({
+      method,
+      count: values.count,
+      amount: safeCurrency(values.amountRaw),
+      amountRaw: values.amountRaw
+    }))
+    .sort((a, b) => b.amountRaw - a.amountRaw)
+
+  const peakEntry = Object.entries(dayMap).sort((a, b) => b[1] - a[1])[0]
+  const peakDay = peakEntry ? `${peakEntry[0]} (${peakEntry[1]})` : 'N/A'
+
+  const topService = categoryBreakdown[0]?.category || 'N/A'
+
+  const topBookedItemsByCategory = ['Room', 'Cottage', 'Event'].map(category => {
+    const items = Object.entries(topItemMap[category] || {}).sort((a, b) => b[1] - a[1])
+    if (!items.length) return { category, name: 'N/A', count: 0 }
+    return { category, name: items[0][0], count: items[0][1] }
+  })
+
+  const channelSummary = [{
+    channel: 'Reservations',
+    count: rows.length,
+    amount: safeCurrency(totalRevenueRaw)
+  }]
+
+  return {
+    generatedAt: formatDateTime(new Date()),
+    dateRange: getEffectiveDateRangeLabel(),
+    applied: {
+      status: !filters.value.status || filters.value.status === 'all' ? 'All statuses' : toStatusLabel(filters.value.status),
+      search: filters.value.search || 'None'
+    },
+    totalBookings: rows.length,
+    totalRevenue: safeCurrency(totalRevenueRaw),
+    peakDay,
+    topService,
+    statusBreakdown,
+    categoryBreakdown,
+    paymentSummary,
+    topBookedItemsByCategory,
+    channelSummary,
+    topPosItems: []
+  }
+}
+
+const openExportPreview = async () => {
+  showExportPreview.value = true
+  exportPreviewLoading.value = true
+  exportPreviewReport.value = null
+  try {
+    const all = await fetchAllForExport()
+    exportPreviewReport.value = buildReservationSalesReport(all)
+  } catch {
+    exportPreviewReport.value = null
+    showToast('Failed to load export preview', 'error')
+  } finally {
+    exportPreviewLoading.value = false
+  }
+}
+
+const exportData = async () => {
+  try {
+    let report = exportPreviewReport.value
+    if (!report) {
+      const all = await fetchAllForExport()
+      report = buildReservationSalesReport(all)
+      exportPreviewReport.value = report
+    }
+
+    const ExcelJS = (await import('exceljs')).default
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = "Eduardo's Resort"
+    workbook.created = new Date()
+
+    const ws = workbook.addWorksheet('Sales Report', {
+      pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1 }
+    })
+
+    ws.columns = [
+      { width: 28 },
+      { width: 14 },
+      { width: 20 },
+      { width: 3  },
+      { width: 28 },
+      { width: 14 },
+      { width: 20 }
+    ]
+
+    const C_DARK_BLUE = 'FF0C3B5E'
+    const C_LOGO_BG = 'FF0C3B5E'
+    const C_HDR_BG = 'FFE8F4FD'
+    const C_TBL_HDR = 'FFF0F6FB'
+    const C_CARD_BDR = 'FFDCE8F3'
+    const C_WHITE = 'FFFFFFFF'
+    const C_ROW_ALT = 'FFF8FBFF'
+    const C_GREY_TEXT = 'FF64748B'
+
+    const bdr = c => ({ style: 'thin', color: { argb: c } })
+    const cardBorder = { top: bdr(C_CARD_BDR), bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR) }
+
+    const secHdr = (cell, text) => {
+      cell.value = text
+      cell.font = { bold: true, size: 10, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
+      cell.border = cardBorder
+      cell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+    }
+
+    const th = (cell, text, right = false) => {
+      cell.value = text
+      cell.font = { bold: true, size: 10, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
+      cell.border = cardBorder
+      cell.alignment = { horizontal: right ? 'right' : 'left', indent: right ? 0 : 1 }
+    }
+
+    const td = (cell, value, right = false, bold = false, alt = false) => {
+      cell.value = value
+      cell.font = { size: 10, name: 'Calibri', bold }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: alt ? C_ROW_ALT : C_WHITE } }
+      cell.border = cardBorder
+      cell.alignment = { horizontal: right ? 'right' : 'left', indent: right ? 0 : 1 }
+    }
+
+    let r = 1
+
+    ws.getCell(`A${r}`).value = 'ER'
+    ws.getCell(`A${r}`).font = { bold: true, size: 14, color: { argb: C_WHITE }, name: 'Calibri' }
+    ws.getCell(`A${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_LOGO_BG } }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'center', vertical: 'middle' }
+    ws.getCell(`A${r}`).border = cardBorder
+
+    ws.mergeCells(`B${r}:E${r}`)
+    ws.getCell(`B${r}`).value = "Eduardo's Resort"
+    ws.getCell(`B${r}`).font = { bold: true, size: 15, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`B${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`B${r}`).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+
+    ws.getCell(`F${r}`).value = 'Generated'
+    ws.getCell(`F${r}`).font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`F${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`F${r}`).alignment = { horizontal: 'right' }
+
+    ws.getCell(`G${r}`).value = report.generatedAt
+    ws.getCell(`G${r}`).font = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`G${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`G${r}`).alignment = { horizontal: 'right' }
+    ws.getRow(r).height = 28
+    r++
+
+    ws.mergeCells(`A${r}:G${r}`)
+    ws.getCell(`A${r}`).value = 'Reservation and POS Sales Report'
+    ws.getCell(`A${r}`).font = { italic: true, size: 10, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`A${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.getRow(r).height = 16
+    r++
+
+    r++
+
+    ws.mergeCells(`A${r}:C${r}`)
+    ws.getCell(`A${r}`).value = 'Sales Report'
+    ws.getCell(`A${r}`).font = { bold: true, size: 12, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.getCell(`E${r}`).value = 'Status'
+    ws.getCell(`E${r}`).font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`E${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+    ws.getCell(`E${r}`).border = cardBorder
+    ws.getCell(`E${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.mergeCells(`F${r}:G${r}`)
+    ws.getCell(`F${r}`).value = report.applied.status
+    ws.getCell(`F${r}`).font = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`F${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+    ws.getCell(`F${r}`).border = cardBorder
+    ws.getRow(r).height = 18
+    r++
+
+    ws.mergeCells(`A${r}:C${r}`)
+    ws.getCell(`A${r}`).value = report.dateRange
+    ws.getCell(`A${r}`).font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.getCell(`E${r}`).value = 'Search'
+    ws.getCell(`E${r}`).font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`E${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+    ws.getCell(`E${r}`).border = cardBorder
+    ws.getCell(`E${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.mergeCells(`F${r}:G${r}`)
+    ws.getCell(`F${r}`).value = report.applied.search
+    ws.getCell(`F${r}`).font = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`F${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+    ws.getCell(`F${r}`).border = cardBorder
+    ws.getRow(r).height = 16
+    r++
+
+    r++
+
+    const cards = [
+      { label: 'TOTAL BOOKINGS', value: String(report.totalBookings) },
+      { label: 'TOTAL REVENUE', value: report.totalRevenue },
+      { label: 'PEAK DAY', value: report.peakDay },
+      { label: 'TOP SERVICE', value: report.topService }
+    ]
+    const cardCols = ['A', 'C', 'E', 'G']
+
+    cards.forEach(({ label }, i) => {
+      const cell = ws.getCell(`${cardCols[i]}${r}`)
+      cell.value = label
+      cell.font = { size: 8, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+      cell.border = { top: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR), bottom: { style: 'hair', color: { argb: C_CARD_BDR } } }
+      cell.alignment = { horizontal: 'left', indent: 1 }
+    })
+    ws.getRow(r).height = 14
+    r++
+
+    cards.forEach(({ value }, i) => {
+      const cell = ws.getCell(`${cardCols[i]}${r}`)
+      cell.value = value
+      cell.font = { bold: true, size: 12, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+      cell.border = { bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR), top: { style: 'hair', color: { argb: C_CARD_BDR } } }
+      cell.alignment = { horizontal: 'left', indent: 1, vertical: 'middle' }
+    })
+    ws.getRow(r).height = 22
+    r++
+
+    r++
+
+    ws.mergeCells(`A${r}:G${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Status Breakdown')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Status')
+    th(ws.getCell(`B${r}`), 'Bookings', true)
+    th(ws.getCell(`C${r}`), 'Revenue', true)
+    r++
+
+    report.statusBreakdown.forEach((row, i) => {
+      const alt = i % 2 === 1
+      td(ws.getCell(`A${r}`), toStatusLabel(row.status), false, false, alt)
+      td(ws.getCell(`B${r}`), row.count, true, false, alt)
+      td(ws.getCell(`C${r}`), row.revenue, true, false, alt)
+      r++
+    })
+
+    r++
+
+    ws.mergeCells(`A${r}:C${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Category Breakdown')
+    ws.mergeCells(`E${r}:G${r}`)
+    secHdr(ws.getCell(`E${r}`), 'Payment Summary')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Category')
+    th(ws.getCell(`B${r}`), 'Bookings', true)
+    th(ws.getCell(`C${r}`), 'Revenue', true)
+    th(ws.getCell(`E${r}`), 'Method')
+    th(ws.getCell(`F${r}`), 'Count', true)
+    th(ws.getCell(`G${r}`), 'Amount', true)
+    r++
+
+    const maxCPRows = Math.max(report.categoryBreakdown.length, report.paymentSummary.length, 1)
+    for (let i = 0; i < maxCPRows; i++) {
+      const alt = i % 2 === 1
+      const c = report.categoryBreakdown[i]
+      const p = report.paymentSummary[i]
+      if (c) {
+        td(ws.getCell(`A${r}`), c.category, false, false, alt)
+        td(ws.getCell(`B${r}`), c.count, true, false, alt)
+        td(ws.getCell(`C${r}`), c.revenue, true, false, alt)
+      }
+      if (p) {
+        td(ws.getCell(`E${r}`), p.method, false, false, alt)
+        td(ws.getCell(`F${r}`), p.count, true, false, alt)
+        td(ws.getCell(`G${r}`), p.amount, true, false, alt)
+      }
+      r++
+    }
+
+    r++
+
+    ws.mergeCells(`A${r}:G${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Top Booked Items by Category (Room, Cottage, Event)')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Category')
+    th(ws.getCell(`B${r}`), 'Top Item')
+    th(ws.getCell(`C${r}`), 'Bookings', true)
+    r++
+
+    report.topBookedItemsByCategory.forEach((row, i) => {
+      const alt = i % 2 === 1
+      td(ws.getCell(`A${r}`), row.category, false, false, alt)
+      td(ws.getCell(`B${r}`), row.name, false, false, alt)
+      td(ws.getCell(`C${r}`), row.count, true, false, alt)
+      r++
+    })
+
+    r++
+
+    ws.mergeCells(`A${r}:G${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Sales Channels Summary (Reservations, POS, E-Shop)')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Channel')
+    th(ws.getCell(`B${r}`), 'Transactions', true)
+    th(ws.getCell(`C${r}`), 'Revenue', true)
+    r++
+
+    report.channelSummary.forEach((row, i) => {
+      const alt = i % 2 === 1
+      td(ws.getCell(`A${r}`), row.channel, false, false, alt)
+      td(ws.getCell(`B${r}`), row.count, true, false, alt)
+      td(ws.getCell(`C${r}`), row.amount, true, false, alt)
+      r++
+    })
+
+    r++
+
+    ws.mergeCells(`A${r}:G${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Top POS Items')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Item')
+    th(ws.getCell(`B${r}`), 'Sales', true)
+    r++
+
+    td(ws.getCell(`A${r}`), 'N/A')
+    td(ws.getCell(`B${r}`), safeCurrency(0), true)
+
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `Reservations_Sales_Report_${new Date().toISOString().split('T')[0]}.xlsx`
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
+
+    showExportPreview.value = false
     showToast('Export successful', 'success')
   } catch { showToast('Failed to export data', 'error') }
 }
@@ -612,6 +1385,310 @@ onUnmounted(() => {
 .btn-outline:hover { background: var(--color-gray-bg); border-color: var(--color-gold); color: var(--color-navy); transform: translateY(-1px); }
 .btn-outline i { font-size: .8rem; }
 .btn-icon { width: 38px; padding: 0; justify-content: center; }
+
+/* ── Export Preview Modal ── */
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(12, 59, 94, .5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .45rem;
+}
+
+.preview-modal {
+  width: min(1180px, 98vw);
+  max-height: 96vh;
+  background: var(--color-white);
+  border-radius: 18px;
+  border: 1px solid var(--color-gray-border);
+  box-shadow: 0 24px 48px rgba(12, 59, 94, .25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .8rem 1rem;
+  background: var(--color-navy);
+  border-bottom: 3px solid var(--color-gold);
+}
+
+.preview-title {
+  margin: 0;
+  font-size: .95rem;
+  font-weight: 800;
+  color: var(--color-white);
+}
+
+.preview-sub {
+  margin: .2rem 0 0;
+  font-size: .74rem;
+  color: rgba(255, 255, 255, .72);
+}
+
+.preview-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .3);
+  background: rgba(255, 255, 255, .12);
+  color: var(--color-white);
+  cursor: pointer;
+}
+
+.preview-close:hover { background: rgba(255, 255, 255, .2); }
+
+.preview-body {
+  padding: .65rem .9rem;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+
+.report-preview-sheet-wrap {
+  display: flex;
+}
+
+.report-preview-sheet {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid #d8e3ee;
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+  padding: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+}
+
+.report-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: .55rem;
+  border-bottom: 1px solid var(--color-gray-border);
+}
+
+.report-sheet-brand {
+  display: flex;
+  gap: .65rem;
+  align-items: center;
+}
+
+.report-sheet-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--color-navy);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+
+.report-sheet-name {
+  font-size: .92rem;
+  font-weight: 800;
+  color: var(--color-navy);
+}
+
+.report-sheet-caption {
+  margin-top: .18rem;
+  font-size: .72rem;
+  color: var(--color-text-light);
+}
+
+.report-sheet-meta-right {
+  font-size: .72rem;
+  color: var(--color-text-light);
+}
+
+.report-sheet-meta-right div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .15rem;
+}
+
+.report-sheet-meta-right strong {
+  color: var(--color-text-dark);
+  font-size: .78rem;
+}
+
+.report-sheet-subhead {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .5rem;
+  padding: .58rem .72rem;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+  background: var(--color-gray-bg);
+}
+
+.report-meta-key {
+  display: block;
+  font-size: .6rem;
+  text-transform: uppercase;
+  letter-spacing: .35px;
+  color: var(--color-text-light);
+  font-weight: 700;
+}
+
+.report-meta-val {
+  display: block;
+  margin-top: .1rem;
+  color: var(--color-text-dark);
+  font-size: .76rem;
+}
+
+.preview-loading {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .7rem;
+  color: var(--color-text-light);
+}
+
+.preview-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .45rem;
+}
+
+.preview-card {
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+  padding: .5rem .62rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.preview-label {
+  display: block;
+  font-size: .6rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  letter-spacing: .35px;
+}
+
+.preview-value {
+  font-size: .86rem;
+  color: var(--color-navy);
+  font-weight: 800;
+}
+
+.preview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem 1rem;
+  font-size: .78rem;
+  color: var(--color-text-light);
+  padding: .7rem .85rem;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 10px;
+  background: var(--color-gray-bg);
+}
+
+.preview-meta strong { color: var(--color-text-dark); }
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .55rem;
+}
+
+.preview-doc-section {
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-white);
+}
+
+.preview-doc-title {
+  margin: 0;
+  padding: .52rem .7rem;
+  font-size: .72rem;
+  font-weight: 800;
+  color: var(--color-navy);
+  background: #edf4fb;
+  border-bottom: 1px solid var(--color-gray-border);
+}
+
+.preview-panel {
+  border: 1px solid var(--color-gray-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-white);
+}
+
+.preview-panel h4 {
+  margin: 0;
+  padding: .52rem .7rem;
+  font-size: .72rem;
+  font-weight: 800;
+  color: var(--color-navy);
+  background: var(--color-gray-bg);
+  border-bottom: 1px solid var(--color-gray-border);
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .72rem;
+}
+
+.preview-table th,
+.preview-table td {
+  padding: .38rem .55rem;
+  border-bottom: 1px solid #eef2f7;
+  text-align: left;
+}
+
+.preview-table th {
+  font-size: .6rem;
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.preview-table td:nth-child(2),
+.preview-table td:nth-child(3),
+.preview-table th:nth-child(2),
+.preview-table th:nth-child(3) {
+  white-space: nowrap;
+}
+
+.preview-table tbody tr:last-child td { border-bottom: none; }
+
+.preview-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: .6rem;
+  padding: .55rem 1rem .75rem;
+  border-top: 1px solid var(--color-gray-border);
+  background: #fafcff;
+}
+
+@media (min-width: 1024px) {
+  .report-preview-sheet {
+    zoom: .8;
+  }
+}
 
 /* ── Table ── */
 .res-table {
@@ -774,6 +1851,13 @@ onUnmounted(() => {
   .desktop-table { display: none; }
   .mobile-cards  { display: block; }
   .mobile-header { border-bottom: none; padding-bottom: 0; margin-bottom: 1rem; }
+  .preview-modal { width: 100%; max-height: 92vh; border-radius: 14px; }
+  .preview-head, .preview-body, .preview-foot { padding-left: .85rem; padding-right: .85rem; }
+  .preview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .preview-grid { grid-template-columns: 1fr; }
+  .report-sheet-head { flex-direction: column; align-items: flex-start; }
+  .report-sheet-meta-right div { align-items: flex-start; }
+  .report-sheet-subhead { grid-template-columns: 1fr; }
 }
 
 .booking-card {

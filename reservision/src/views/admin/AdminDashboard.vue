@@ -374,6 +374,20 @@
                 </div>
               </section>
 
+              <section class="srp-section" v-if="generatedSalesReport.topBookedItemsByCategory.length">
+                <h4>Top Booked Items by Category (Room, Cottage, Event)</h4>
+                <table class="srp-table">
+                  <thead><tr><th>Category</th><th>Top Item</th><th>Bookings</th></tr></thead>
+                  <tbody>
+                    <tr v-for="row in generatedSalesReport.topBookedItemsByCategory" :key="row.category">
+                      <td>{{ row.category }}</td>
+                      <td>{{ row.name }}</td>
+                      <td>{{ row.count }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+
               <section class="srp-section" v-if="generatedSalesReport.channelSummary.length">
                 <h4>Sales Channels Summary (Reservations, POS, E-Shop)</h4>
                 <table class="srp-table">
@@ -410,7 +424,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import * as XLSX from 'xlsx'
+// exceljs is loaded dynamically in downloadAnalyticsData
 import AdminSidebar from '../../components/admin/AdminSidebar.vue'
 import AdminHeader from '../../components/admin/AdminHeader.vue'
 import StatsGrid from '../../components/admin/StatsGrid.vue'
@@ -1400,6 +1414,25 @@ const parseCurrencyAmount = (value) => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+const extractTopBookedItemName = (itemsSummary, category) => {
+  const parts = String(itemsSummary || '')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+
+  if (parts.length === 0) return null
+
+  const categoryKeywordMap = {
+    Room: ['room'],
+    Cottage: ['cottage'],
+    Event: ['event']
+  }
+
+  const keywords = categoryKeywordMap[category] || []
+  const matched = parts.find(part => keywords.some(keyword => part.toLowerCase().includes(keyword)))
+  return matched || parts[0]
+}
+
 const getCurrentPeriodRange = () => {
   const now = new Date()
   const toIso = (date) => {
@@ -1465,6 +1498,7 @@ const fetchReportBookings = async () => {
       email: item.email || '',
       paymentMethod: String(item.payment_method || 'Unknown').toUpperCase(),
       category: detectCategoryFromSummary(item.items_summary),
+      itemName: extractTopBookedItemName(item.items_summary, detectCategoryFromSummary(item.items_summary)),
       total: toFiniteNumber(item.total),
       checkIn: item.check_in_date
     }))
@@ -1485,6 +1519,11 @@ const buildInlineSalesReport = (rows) => {
   const categoryMap = {}
   const paymentMap = {}
   const dayMap = {}
+  const topItemMap = {
+    Room: {},
+    Cottage: {},
+    Event: {}
+  }
 
   for (const row of rows) {
     if (!statusMap[row.status]) statusMap[row.status] = { count: 0, revenue: 0 }
@@ -1503,6 +1542,10 @@ const buildInlineSalesReport = (rows) => {
     const dayLabel = formatDate(row.checkIn)
     if (!dayMap[dayLabel]) dayMap[dayLabel] = { count: 0 }
     dayMap[dayLabel].count += 1
+
+    if (topItemMap[row.category] && row.itemName) {
+      topItemMap[row.category][row.itemName] = (topItemMap[row.category][row.itemName] || 0) + 1
+    }
   }
 
   const statusBreakdown = reportStatusOptions.map(status => ({
@@ -1558,6 +1601,23 @@ const buildInlineSalesReport = (rows) => {
     amountRaw: item.amountRaw
   }))
 
+  const topBookedItemsByCategory = ['Room', 'Cottage', 'Event'].map(category => {
+    const entries = Object.entries(topItemMap[category] || {})
+      .sort((a, b) => b[1] - a[1])
+    if (entries.length === 0) {
+      return {
+        category,
+        name: 'N/A',
+        count: 0
+      }
+    }
+    return {
+      category,
+      name: entries[0][0],
+      count: entries[0][1]
+    }
+  })
+
   const { from, to } = getEffectiveReportDateRange()
 
   return {
@@ -1575,6 +1635,7 @@ const buildInlineSalesReport = (rows) => {
     categoryBreakdown,
     paymentSummary,
     channelSummary: channelSummaryFormatted,
+    topBookedItemsByCategory,
     topPosItems: topPOSItems.value.slice(0, 5)
   }
 }
@@ -1667,128 +1728,328 @@ const handleQuickAction = (actionKey) => {
   }
 }
 
-const downloadAnalyticsData = () => {
+const downloadAnalyticsData = async () => {
   try {
     isDownloadingReport.value = true
 
-    const workbook = XLSX.utils.book_new()
-    const generatedAt = new Date()
+    if (salesReportFilters.value.from && salesReportFilters.value.to && salesReportFilters.value.from > salesReportFilters.value.to) {
+      throw new Error('Invalid date range. From date must be earlier than To date.')
+    }
 
-    const summaryRows = [
-      {
-        'Metric': 'Report Period',
-        'Value': currentPeriod.value.period.toUpperCase(),
-        'Trend': ''
-      },
-      {
-        'Metric': 'Generated Date',
-        'Value': generatedAt.toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }),
-        'Trend': ''
-      },
-      {
-        'Metric': 'Generated Time',
-        'Value': generatedAt.toLocaleTimeString('en-PH'),
-        'Trend': ''
-      },
-      {
-        'Metric': 'Generated By',
-        'Value': userRole.value.toUpperCase().replace('_', ' '),
-        'Trend': ''
-      }
+    const rows = await fetchReportBookings()
+    const report = buildInlineSalesReport(rows)
+    generatedSalesReport.value = report
+
+    // ---- ExcelJS: single styled sheet mirroring the preview modal ----
+    const ExcelJS = (await import('exceljs')).default
+    const workbook = new ExcelJS.Workbook()
+    workbook.creator = "Eduardo's Resort"
+    workbook.created = new Date()
+
+    const ws = workbook.addWorksheet('Sales Report', {
+      pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1 }
+    })
+
+    // 7 columns: A-C left tables, D spacer, E-G right tables
+    ws.columns = [
+      { width: 28 }, // A
+      { width: 14 }, // B
+      { width: 20 }, // C
+      { width: 3  }, // D – spacer
+      { width: 28 }, // E
+      { width: 14 }, // F
+      { width: 20 }, // G
     ]
 
-    if (canViewBookings.value) {
-      statsData.value.forEach(stat => {
-        const trendText = stat.trend > 0 ? `+${stat.trend}%` : stat.trend < 0 ? `${stat.trend}%` : '0%'
-        summaryRows.push({
-          'Metric': stat.label,
-          'Value': stat.value,
-          'Trend': trendText
-        })
+    // ---- Design tokens (matches preview CSS: #0c3b5e, #f0f6fb, #dce8f3, #64748b) ----
+    const C_DARK_BLUE = 'FF0C3B5E' // preview h2, h4, th color
+    const C_MED_BLUE  = 'FF1A6090' // softer accent for subtitle
+    const C_LOGO_BG   = 'FF0C3B5E' // srp-logo bg
+    const C_HDR_BG    = 'FFE8F4FD' // srp-header area (very light blue)
+    const C_TBL_HDR   = 'FFF0F6FB' // preview .srp-table th background
+    const C_SEC_BG    = 'FFF6FAFF' // section name row background (barely blue)
+    const C_CARD_BDR  = 'FFDCE8F3' // preview border #dce8f3
+    const C_WHITE     = 'FFFFFFFF'
+    const C_ROW_ALT   = 'FFF8FBFF' // subtle alternating row
+    const C_GREY_TEXT = 'FF64748B' // preview .srp-card span / .srp-applied span
+
+    const bdr = (c) => ({ style: 'thin', color: { argb: c } })
+    const cardBorder = { top: bdr(C_CARD_BDR), bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR) }
+
+    // Section h4-equivalent: dark blue bold text, very light bg, bottom border accent
+    const secHdr = (cell, text) => {
+      cell.value     = text
+      cell.font      = { bold: true, size: 10, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
+      cell.border    = cardBorder
+      cell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+    }
+
+    // Table column header: matches .srp-table th
+    const th = (cell, text, right = false) => {
+      cell.value     = text
+      cell.font      = { bold: true, size: 10, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
+      cell.border    = cardBorder
+      cell.alignment = { horizontal: right ? 'right' : 'left', indent: right ? 0 : 1 }
+    }
+
+    // Data cell: matches .srp-table td
+    const td = (cell, value, right = false, bold = false, alt = false) => {
+      cell.value     = value
+      cell.font      = { size: 10, name: 'Calibri', bold }
+      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: alt ? C_ROW_ALT : C_WHITE } }
+      cell.border    = cardBorder
+      cell.alignment = { horizontal: right ? 'right' : 'left', indent: right ? 0 : 1 }
+    }
+
+    let r = 1
+
+    // ===== HEADER – matches .srp-header =====
+    // ER logo cell + resort name
+    ws.getCell(`A${r}`).value     = 'ER'
+    ws.getCell(`A${r}`).font      = { bold: true, size: 14, color: { argb: C_WHITE }, name: 'Calibri' }
+    ws.getCell(`A${r}`).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_LOGO_BG } }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'center', vertical: 'middle' }
+    ws.getCell(`A${r}`).border    = cardBorder
+
+    ws.mergeCells(`B${r}:E${r}`)
+    ws.getCell(`B${r}`).value     = "Eduardo's Resort"
+    ws.getCell(`B${r}`).font      = { bold: true, size: 15, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`B${r}`).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`B${r}`).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+
+    ws.getCell(`F${r}`).value     = 'Generated'
+    ws.getCell(`F${r}`).font      = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`F${r}`).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`F${r}`).alignment = { horizontal: 'right' }
+
+    ws.getCell(`G${r}`).value     = report.generatedAt
+    ws.getCell(`G${r}`).font      = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`G${r}`).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`G${r}`).alignment = { horizontal: 'right' }
+    ws.getRow(r).height = 28
+    r++
+
+    ws.mergeCells(`A${r}:G${r}`)
+    ws.getCell(`A${r}`).value     = 'Reservation and POS Sales Report'
+    ws.getCell(`A${r}`).font      = { italic: true, size: 10, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`A${r}`).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.getRow(r).height = 16
+    r++
+
+    r++ // blank
+
+    // ===== TITLE ROW – matches .srp-title-row =====
+    // Left: "Sales Report" title + date range
+    ws.mergeCells(`A${r}:C${r}`)
+    ws.getCell(`A${r}`).value     = 'Sales Report'
+    ws.getCell(`A${r}`).font      = { bold: true, size: 12, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
+    // Right: filters box – matches .srp-applied
+    ws.getCell(`E${r}`).value     = 'Status'
+    ws.getCell(`E${r}`).font      = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`E${r}`).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+    ws.getCell(`E${r}`).border    = cardBorder
+    ws.getCell(`E${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.mergeCells(`F${r}:G${r}`)
+    ws.getCell(`F${r}`).value     = report.applied.status
+    ws.getCell(`F${r}`).font      = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`F${r}`).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+    ws.getCell(`F${r}`).border    = cardBorder
+    ws.getRow(r).height = 18
+    r++
+
+    ws.mergeCells(`A${r}:C${r}`)
+    ws.getCell(`A${r}`).value     = report.dateRange
+    ws.getCell(`A${r}`).font      = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.getCell(`E${r}`).value     = 'Search'
+    ws.getCell(`E${r}`).font      = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+    ws.getCell(`E${r}`).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+    ws.getCell(`E${r}`).border    = cardBorder
+    ws.getCell(`E${r}`).alignment = { horizontal: 'left', indent: 1 }
+    ws.mergeCells(`F${r}:G${r}`)
+    ws.getCell(`F${r}`).value     = report.applied.search
+    ws.getCell(`F${r}`).font      = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+    ws.getCell(`F${r}`).fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+    ws.getCell(`F${r}`).border    = cardBorder
+    ws.getRow(r).height = 16
+    r++
+
+    r++ // blank
+
+    // ===== SUMMARY CARDS – matches .srp-cards (4 equal cards) =====
+    // Cards displayed as 2-row pairs (label on top, bold value below) at cols A, C, E, G
+    const cards = [
+      { label: 'TOTAL BOOKINGS', value: String(report.totalBookings) },
+      { label: 'TOTAL REVENUE',  value: report.totalRevenue },
+      { label: 'PEAK DAY',       value: report.peakDay },
+      { label: 'TOP SERVICE',    value: report.topService },
+    ]
+    const cardCols = ['A', 'C', 'E', 'G']
+
+    // Label row
+    cards.forEach(({ label }, i) => {
+      const cell = ws.getCell(`${cardCols[i]}${r}`)
+      cell.value     = label
+      cell.font      = { size: 8, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
+      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+      cell.border    = { top: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR), bottom: { style: 'hair', color: { argb: C_CARD_BDR } } }
+      cell.alignment = { horizontal: 'left', indent: 1 }
+    })
+    ws.getRow(r).height = 14
+    r++
+
+    // Value row
+    cards.forEach(({ value }, i) => {
+      const cell = ws.getCell(`${cardCols[i]}${r}`)
+      cell.value     = value
+      cell.font      = { bold: true, size: 12, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
+      cell.fill      = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
+      cell.border    = { bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR), top: { style: 'hair', color: { argb: C_CARD_BDR } } }
+      cell.alignment = { horizontal: 'left', indent: 1, vertical: 'middle' }
+    })
+    ws.getRow(r).height = 22
+    r++
+
+    r++ // blank
+
+    // ===== STATUS BREAKDOWN – full-width (matches standalone srp-section in preview) =====
+    ws.mergeCells(`A${r}:G${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Status Breakdown')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Status')
+    th(ws.getCell(`B${r}`), 'Bookings', true)
+    th(ws.getCell(`C${r}`), 'Revenue',  true)
+    r++
+
+    report.statusBreakdown.forEach((row, i) => {
+      const alt = i % 2 === 1
+      td(ws.getCell(`A${r}`), toStatusLabel(row.status), false, false, alt)
+      td(ws.getCell(`B${r}`), row.count,   true, false, alt)
+      td(ws.getCell(`C${r}`), row.revenue, true, false, alt)
+      r++
+    })
+
+    r++ // blank
+
+    // ===== CATEGORY BREAKDOWN (left) | PAYMENT SUMMARY (right) – matches .srp-grid =====
+    ws.mergeCells(`A${r}:C${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Category Breakdown')
+    ws.mergeCells(`E${r}:G${r}`)
+    secHdr(ws.getCell(`E${r}`), 'Payment Summary')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Category')
+    th(ws.getCell(`B${r}`), 'Bookings', true)
+    th(ws.getCell(`C${r}`), 'Revenue',  true)
+    th(ws.getCell(`E${r}`), 'Method')
+    th(ws.getCell(`F${r}`), 'Count',    true)
+    th(ws.getCell(`G${r}`), 'Amount',   true)
+    r++
+
+    const catRows = report.categoryBreakdown
+    const payRows = report.paymentSummary
+    const maxCPRows = Math.max(catRows.length, payRows.length, 1)
+    for (let i = 0; i < maxCPRows; i++) {
+      const alt = i % 2 === 1
+      if (catRows[i]) {
+        td(ws.getCell(`A${r}`), catRows[i].category, false, false, alt)
+        td(ws.getCell(`B${r}`), catRows[i].count,    true,  false, alt)
+        td(ws.getCell(`C${r}`), catRows[i].revenue,  true,  false, alt)
+      }
+      if (payRows[i]) {
+        td(ws.getCell(`E${r}`), payRows[i].method, false, false, alt)
+        td(ws.getCell(`F${r}`), payRows[i].count,  true,  false, alt)
+        td(ws.getCell(`G${r}`), payRows[i].amount, true,  false, alt)
+      }
+      r++
+    }
+
+    r++ // blank
+
+    // ===== TOP BOOKED ITEMS BY CATEGORY – matches srp-section =====
+    ws.mergeCells(`A${r}:G${r}`)
+    secHdr(ws.getCell(`A${r}`), 'Top Booked Items by Category (Room, Cottage, Event)')
+    ws.getRow(r).height = 16
+    r++
+
+    th(ws.getCell(`A${r}`), 'Category')
+    th(ws.getCell(`B${r}`), 'Top Item')
+    th(ws.getCell(`C${r}`), 'Bookings', true)
+    r++
+
+    report.topBookedItemsByCategory.forEach((row, i) => {
+      const alt = i % 2 === 1
+      td(ws.getCell(`A${r}`), row.category, false, false, alt)
+      td(ws.getCell(`B${r}`), row.name,     false, false, alt)
+      td(ws.getCell(`C${r}`), row.count,    true,  false, alt)
+      r++
+    })
+
+    r++ // blank
+
+    // ===== SALES CHANNELS SUMMARY – matches srp-section =====
+    if (report.channelSummary.length) {
+      ws.mergeCells(`A${r}:G${r}`)
+      secHdr(ws.getCell(`A${r}`), 'Sales Channels Summary (Reservations, POS, E-Shop)')
+      ws.getRow(r).height = 16
+      r++
+
+      th(ws.getCell(`A${r}`), 'Channel')
+      th(ws.getCell(`B${r}`), 'Transactions', true)
+      th(ws.getCell(`C${r}`), 'Revenue',      true)
+      r++
+
+      report.channelSummary.forEach((row, i) => {
+        const alt = i % 2 === 1
+        td(ws.getCell(`A${r}`), row.channel, false, false, alt)
+        td(ws.getCell(`B${r}`), row.count,   true,  false, alt)
+        td(ws.getCell(`C${r}`), row.amount,  true,  false, alt)
+        r++
+      })
+
+      r++ // blank
+    }
+
+    // ===== TOP POS ITEMS – matches srp-section =====
+    if (report.topPosItems.length) {
+      ws.mergeCells(`A${r}:G${r}`)
+      secHdr(ws.getCell(`A${r}`), 'Top POS Items')
+      ws.getRow(r).height = 16
+      r++
+
+      th(ws.getCell(`A${r}`), 'Item')
+      th(ws.getCell(`B${r}`), 'Sales', true)
+      r++
+
+      report.topPosItems.forEach((row, i) => {
+        const alt = i % 2 === 1
+        td(ws.getCell(`A${r}`), row.name,  false, false, alt)
+        td(ws.getCell(`B${r}`), row.sales, true,  false, alt)
+        r++
       })
     }
 
-    const summarySheet = XLSX.utils.json_to_sheet(summaryRows)
-    summarySheet['!cols'] = [{ wch: 28 }, { wch: 28 }, { wch: 20 }]
-    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary Statistics')
+    // ---- Download ----
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url    = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href  = url
+    const ts     = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    anchor.download = `Eduardos-Resort-SalesReport-${ts}.xlsx`
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
 
-    const revenueRows = (revenueChartData.value.labels || []).map((label, index) => ({
-      'Period': label,
-      'Revenue Amount': toFiniteNumber(revenueChartData.value.datasets?.[0]?.data?.[index])
-    }))
-
-    const revenueSheet = XLSX.utils.json_to_sheet(
-      revenueRows.length > 0 ? revenueRows : [{ 'Period': 'No Data', 'Revenue Amount': 0 }]
-    )
-    revenueSheet['!cols'] = [{ wch: 24 }, { wch: 20 }]
-    XLSX.utils.book_append_sheet(workbook, revenueSheet, 'Revenue Trend')
-
-    const bookingsByTypeRows = (bookingsChartData.value.labels || []).map((label, index) => ({
-      'Booking Type': label,
-      'Number of Bookings': toFiniteNumber(bookingsChartData.value.datasets?.[0]?.data?.[index])
-    }))
-
-    const bookingsByTypeSheet = XLSX.utils.json_to_sheet(
-      bookingsByTypeRows.length > 0 ? bookingsByTypeRows : [{ 'Booking Type': 'No Data', 'Number of Bookings': 0 }]
-    )
-    bookingsByTypeSheet['!cols'] = [{ wch: 24 }, { wch: 20 }]
-    XLSX.utils.book_append_sheet(workbook, bookingsByTypeSheet, 'Bookings By Type')
-
-    if (canViewRestaurant.value) {
-      const restaurantRows = [
-        {
-          'Category': 'Restaurant',
-          'Total Sales': restaurantStats.value.sales,
-          'Transaction Count': restaurantStats.value.orders,
-          'Trend': `${restaurantStats.value.trend}%`
-        },
-        {
-          'Category': 'POS',
-          'Total Sales': posStats.value.sales,
-          'Transaction Count': posStats.value.transactions,
-          'Trend': `${posStats.value.trend}%`
-        },
-        {
-          'Category': 'E-Shop',
-          'Total Sales': eshopStats.value.sales,
-          'Transaction Count': eshopStats.value.orders,
-          'Trend': `${eshopStats.value.trend}%`
-        }
-      ]
-
-      const restaurantSheet = XLSX.utils.json_to_sheet(restaurantRows)
-      restaurantSheet['!cols'] = [{ wch: 18 }, { wch: 20 }, { wch: 20 }, { wch: 12 }]
-      XLSX.utils.book_append_sheet(workbook, restaurantSheet, 'Restaurant POS')
-
-      const topItemsRows = [
-        ...topMenuItems.value.map((item, index) => ({
-          'List Type': 'Top Menu Items',
-          'Rank': index + 1,
-          'Item Name': item.name,
-          'Total Sales': item.sales
-        })),
-        ...topPOSItems.value.map((item, index) => ({
-          'List Type': 'Top POS Items',
-          'Rank': index + 1,
-          'Item Name': item.name,
-          'Total Sales': item.sales
-        }))
-      ]
-
-      const topItemsSheet = XLSX.utils.json_to_sheet(
-        topItemsRows.length > 0
-          ? topItemsRows
-          : [{ 'List Type': 'No Data', 'Rank': '', 'Item Name': '', 'Total Sales': '' }]
-      )
-      topItemsSheet['!cols'] = [{ wch: 18 }, { wch: 8 }, { wch: 30 }, { wch: 18 }]
-      XLSX.utils.book_append_sheet(workbook, topItemsSheet, 'Top Items')
-    }
-
-    const timestamp = generatedAt.toISOString().replace(/:/g, '-').split('.')[0]
-    const filename = `Eduardos-Resort-Analytics-${currentPeriod.value.period}-${timestamp}.xlsx`
-    XLSX.writeFile(workbook, filename)
-    
-    console.log('Analytics report downloaded successfully')
+    console.log('Sales report downloaded successfully')
   } catch (err) {
     console.error('Error downloading analytics data:', err)
     alert('Failed to download report. Please try again.')
@@ -1998,13 +2259,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 0.45rem;
 }
 
 .sales-preview-modal {
   background: #eef5fb;
-  width: min(1160px, 100%);
-  max-height: 94vh;
+  width: min(1280px, 99vw);
+  max-height: 98vh;
   border-radius: 14px;
   overflow: hidden;
   display: flex;
@@ -2016,20 +2277,20 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.85rem;
   border-bottom: 1px solid #d7e4ef;
   background: #fff;
 }
 
 .sales-preview-toolbar h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: #1f2937;
 }
 
 .sales-preview-toolbar p {
   margin: 0.2rem 0 0;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: #64748b;
 }
 
@@ -2040,33 +2301,36 @@ onMounted(() => {
 }
 
 .sales-preview-scroll {
-  overflow: auto;
-  padding: 1rem;
+  overflow: hidden;
+  padding: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sales-report-print {
-  width: 210mm;
-  min-height: 297mm;
+  width: min(1140px, 100%);
+  min-height: auto;
   margin: 0 auto;
   background: #fff;
   color: #0f172a;
-  padding: 11mm;
+  padding: 7mm;
   box-shadow: 0 4px 20px rgba(15, 23, 42, 0.16);
 }
 
 .srp-header {
   display: grid;
   grid-template-columns: 52px 1fr auto;
-  gap: 0.7rem;
+  gap: 0.55rem;
   align-items: center;
   border-bottom: 2px solid #0c3b5e;
-  padding-bottom: 0.55rem;
+  padding-bottom: 0.4rem;
 }
 
 .srp-logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2077,12 +2341,12 @@ onMounted(() => {
 
 .srp-header h2 {
   margin: 0;
-  font-size: 1.02rem;
+  font-size: 0.92rem;
 }
 
 .srp-header p {
   margin: 0.2rem 0 0;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   color: #64748b;
 }
 
@@ -2094,47 +2358,47 @@ onMounted(() => {
 }
 
 .srp-meta span {
-  font-size: 0.7rem;
+  font-size: 0.62rem;
   color: #64748b;
 }
 
 .srp-meta strong {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
 }
 
 .srp-section {
-  margin-top: 0.7rem;
+  margin-top: 0.45rem;
 }
 
 .srp-title-row {
   display: flex;
   justify-content: space-between;
-  gap: 0.6rem;
+  gap: 0.45rem;
 }
 
 .srp-title-row h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.88rem;
 }
 
 .srp-title-row p {
   margin: 0.2rem 0 0;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   color: #64748b;
 }
 
 .srp-applied {
   border: 1px solid #dce8f3;
   border-radius: 8px;
-  padding: 0.45rem 0.55rem;
-  min-width: 220px;
+  padding: 0.34rem 0.46rem;
+  min-width: 190px;
 }
 
 .srp-applied div {
   display: flex;
   justify-content: space-between;
   gap: 0.4rem;
-  font-size: 0.72rem;
+  font-size: 0.64rem;
 }
 
 .srp-applied span {
@@ -2142,21 +2406,21 @@ onMounted(() => {
 }
 
 .srp-cards {
-  margin-top: 0.6rem;
+  margin-top: 0.4rem;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.45rem;
+  gap: 0.35rem;
 }
 
 .srp-card {
   border: 1px solid #dce8f3;
   border-radius: 8px;
-  padding: 0.45rem;
+  padding: 0.34rem 0.4rem;
 }
 
 .srp-card span {
   display: block;
-  font-size: 0.7rem;
+  font-size: 0.62rem;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -2164,20 +2428,20 @@ onMounted(() => {
 
 .srp-card strong {
   display: block;
-  margin-top: 0.2rem;
-  font-size: 0.9rem;
+  margin-top: 0.14rem;
+  font-size: 0.8rem;
 }
 
 .srp-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.55rem;
+  gap: 0.4rem;
 }
 
 .srp-section h4 {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.2rem;
   color: #0c3b5e;
-  font-size: 0.84rem;
+  font-size: 0.74rem;
 }
 
 .srp-table {
@@ -2189,8 +2453,8 @@ onMounted(() => {
 .srp-table th,
 .srp-table td {
   border: 1px solid #dce8f3;
-  padding: 0.32rem 0.38rem;
-  font-size: 0.73rem;
+  padding: 0.24rem 0.3rem;
+  font-size: 0.64rem;
   text-align: left;
 }
 
@@ -2198,6 +2462,12 @@ onMounted(() => {
   background: #f0f6fb;
   color: #0c3b5e;
   font-weight: 700;
+}
+
+@media (min-width: 1024px) {
+  .sales-report-print {
+    zoom: 0.8;
+  }
 }
 
 .period-filter-buttons {
