@@ -1,38 +1,42 @@
 <template>
-  <div class="user-management">
+  <div class="admin-dashboard">
     <AdminSidebar 
       :is-open="sidebarOpen"
       :is-collapsed="sidebarCollapsed"
       @close="sidebarOpen = false"
     />
 
-      <div class="header-container">
-        <AdminHeader 
-          title="User Management"
-          subtitle="Manage roles, permissions & accounts"
-          @toggle-sidebar="sidebarOpen = !sidebarOpen"
+    <AdminHeader 
+      title="User Management"
+      subtitle="Manage roles, permissions & accounts"
+      @toggle-sidebar="sidebarOpen = !sidebarOpen"
+    />
+
+    <main class="main-content">
+      <div class="content-container">
+
+        <UserStatsGrid :stats="userStats" />
+
+        <UserControls
+          v-model:searchQuery="searchQuery"
+          v-model:roleFilter="roleFilter"
+          @add-user="openAddUserModal"
+          @export="openExportPreview"
         />
+
+        <UserTable
+          :users="paginatedUsers"
+          :currentPage="currentPage"
+          :totalPages="totalPages"
+          :totalUsers="filteredUsers.length"
+          @edit="openEditModal"
+          @delete="openDeleteModal"
+          @role-change="handleRoleChange"
+          @page-change="handlePageChange"
+        />
+
       </div>
-
-    <UserStatsGrid :stats="userStats" />
-
-    <UserControls
-      v-model:searchQuery="searchQuery"
-      v-model:roleFilter="roleFilter"
-      @add-user="openAddUserModal"
-      @export="openExportPreview"
-    />
-
-    <UserTable
-      :users="paginatedUsers"
-      :currentPage="currentPage"
-      :totalPages="totalPages"
-      :totalUsers="filteredUsers.length"
-      @edit="openEditModal"
-      @delete="openDeleteModal"
-      @role-change="handleRoleChange"
-      @page-change="handlePageChange"
-    />
+    </main>
 
     <UserModal
       v-model:show="showUserModal"
@@ -49,80 +53,130 @@
       @confirm="handleDeleteUser"
     />
 
-    <div v-if="showExportPreview" class="export-preview-overlay" @click.self="showExportPreview = false">
-      <div class="export-preview-modal">
-        <div class="export-preview-header">
-          <h3>User Report Preview</h3>
-          <button class="preview-close-btn" @click="showExportPreview = false" aria-label="Close preview">×</button>
+    <div v-if="showExportPreview" class="sales-preview-overlay" @click.self="showExportPreview = false">
+      <div class="sales-preview-modal">
+        <div class="sales-preview-toolbar">
+          <div>
+            <h3>User Management Report</h3>
+            <p>Review before downloading Excel</p>
+          </div>
+          <div class="sales-preview-actions">
+            <button class="btn-download" @click="exportUsers">
+              <i class="fas fa-download"></i>
+              Download Excel
+            </button>
+            <button class="btn-preview" @click="printUserReportPreview">
+              <i class="fas fa-print"></i>
+              Print
+            </button>
+            <button class="btn-preview" @click="showExportPreview = false">
+              <i class="fas fa-xmark"></i>
+              Close
+            </button>
+          </div>
         </div>
 
-        <div class="export-preview-body">
-          <div class="export-preview-meta">
-            <span><strong>{{ exportPreviewRows.length }}</strong> users</span>
-            <span>Role: <strong>{{ roleFilter === 'all' ? 'All Roles' : toRoleLabel(roleFilter) }}</strong></span>
-            <span>Search: <strong>{{ searchQuery || 'None' }}</strong></span>
-          </div>
+        <div class="sales-preview-scroll">
+          <article class="sales-report-print" id="user-report-print">
+            <header class="srp-header">
+              <div class="srp-logo">ER</div>
+              <div>
+                <h2>Eduardo's Resort</h2>
+                <p>User Management Report</p>
+              </div>
+              <div class="srp-meta">
+                <span>Generated</span>
+                <strong>{{ reportGenAt }}</strong>
+              </div>
+            </header>
 
-          <div class="export-preview-grid">
-            <section class="preview-card">
-              <h4>Role Breakdown</h4>
-              <table class="preview-table">
-                <thead>
-                  <tr>
-                    <th>Role</th>
-                    <th>Count</th>
-                    <th>Percent</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in exportRoleRows" :key="row.role">
-                    <td>{{ row.role }}</td>
-                    <td>{{ row.count }}</td>
-                    <td>{{ row.percent }}</td>
-                  </tr>
-                  <tr v-if="!exportRoleRows.length">
-                    <td colspan="3">No users found for current filters.</td>
-                  </tr>
-                </tbody>
-              </table>
+            <section class="srp-section">
+              <div class="srp-title-row">
+                <div>
+                  <h3>User Report</h3>
+                  <p>{{ exportPreviewRows.length }} users | Role: {{ roleFilter === 'all' ? 'All Roles' : toRoleLabel(roleFilter) }}</p>
+                </div>
+              </div>
             </section>
 
-            <section class="preview-card preview-card--wide">
-              <h4>Users List</h4>
-              <div class="preview-table-wrap">
-                <table class="preview-table">
+            <section class="srp-cards">
+              <div class="srp-card">
+                <span>Total</span>
+                <strong>{{ exportPreviewRows.length }}</strong>
+              </div>
+              <div class="srp-card">
+                <span>Admins</span>
+                <strong>{{ userStats.admins }}</strong>
+              </div>
+              <div class="srp-card">
+                <span>Staff</span>
+                <strong>{{ userStats.staff }}</strong>
+              </div>
+              <div class="srp-card">
+                <span>Customers</span>
+                <strong>{{ userStats.customers }}</strong>
+              </div>
+            </section>
+
+            <section class="srp-grid">
+              <div class="srp-section">
+                <h4>Role Breakdown</h4>
+                <table class="srp-table">
                   <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Role</th>
-                      <th>Phone</th>
-                    </tr>
+                    <tr><th>Role</th><th>Count</th><th>Percent</th></tr>
                   </thead>
                   <tbody>
-                    <tr v-for="user in exportPreviewRows" :key="user.id">
-                      <td>{{ user.name || 'N/A' }}</td>
-                      <td>{{ user.email || 'N/A' }}</td>
-                      <td>{{ toRoleLabel(user.role) }}</td>
-                      <td>{{ user.phone || '-' }}</td>
+                    <tr v-for="row in exportRoleRows" :key="row.role">
+                      <td>{{ row.role }}</td>
+                      <td>{{ row.count }}</td>
+                      <td>{{ row.percent }}</td>
                     </tr>
-                    <tr v-if="!exportPreviewRows.length">
-                      <td colspan="4">No users found for current filters.</td>
+                    <tr v-if="!exportRoleRows.length">
+                      <td colspan="3">No users found for current filters.</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
+              <div class="srp-section">
+                <h4>Account Summary</h4>
+                <table class="srp-table">
+                  <thead>
+                    <tr><th>Metric</th><th>Value</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Total Users</td><td>{{ exportPreviewRows.length }}</td></tr>
+                    <tr><td>Admins</td><td>{{ userStats.admins }}</td></tr>
+                    <tr><td>Staff</td><td>{{ userStats.staff }}</td></tr>
+                    <tr><td>Customers</td><td>{{ userStats.customers }}</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
-          </div>
-        </div>
 
-        <div class="export-preview-footer">
-          <button class="btn-secondary" @click="showExportPreview = false">Cancel</button>
-          <button class="btn-primary" @click="exportUsers">Download Excel</button>
+            <section class="srp-section">
+              <h4>Users List</h4>
+              <table class="srp-table">
+                <thead>
+                  <tr><th>Name</th><th>Email</th><th>Role</th><th>Phone</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="user in exportPreviewRows" :key="user.id">
+                    <td>{{ user.name || 'N/A' }}</td>
+                    <td>{{ user.email || 'N/A' }}</td>
+                    <td>{{ toRoleLabel(user.role) }}</td>
+                    <td>{{ user.phone || '-' }}</td>
+                  </tr>
+                  <tr v-if="!exportPreviewRows.length">
+                    <td colspan="4">No users found for current filters.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+          </article>
         </div>
       </div>
     </div>
-  </div>
+    </div>
 </template>
 
 <script setup>
@@ -145,6 +199,7 @@ const currentPage = ref(1);
 const showUserModal = ref(false);
 const showConfirmModal = ref(false);
 const showExportPreview = ref(false);
+const reportGenAt = ref('');
 const editingUser = ref(null);
 const deletingUserId = ref(null);
 const loading = ref(false);
@@ -398,6 +453,7 @@ function openExportPreview() {
     alert('No users found for current filters.');
     return;
   }
+  reportGenAt.value = new Date().toLocaleString('en-PH', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   showExportPreview.value = true;
 }
 
@@ -628,6 +684,43 @@ async function exportUsers() {
   }
 }
 
+function printUserReportPreview() {
+  const el = document.getElementById('user-report-print');
+  if (!el) return;
+  const w = window.open('', '_blank', 'width=900,height=700');
+  const styles = `
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 8mm; }
+    .sales-report-print { width: 100%; background: #fff; }
+    .srp-header { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; background: #0c3b5e; color: #fff; border-radius: 6px 6px 0 0; margin-bottom: 10px; }
+    .srp-logo { width: 44px; height: 44px; border-radius: 8px; background: #0c3b5e; color: #f4c400; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; border: 2px solid #f4c400; }
+    .srp-header h2 { margin: 0; font-size: 15px; color: #fff; }
+    .srp-header p { margin: 2px 0 0; font-size: 10px; color: #93c5fd; }
+    .srp-meta { text-align: right; font-size: 9px; color: #93c5fd; }
+    .srp-meta strong { display: block; color: #fde68a; }
+    .srp-section { margin: 10px 0; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .srp-section h4 { margin: 0 0 8px; font-size: 11px; color: #0c3b5e; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    .srp-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
+    .srp-title-row h3 { margin: 0; font-size: 12px; color: #0c3b5e; }
+    .srp-title-row p { margin: 2px 0 0; font-size: 9px; color: #64748b; }
+    .srp-cards { display: flex; gap: 8px; padding: 8px 0; margin: 8px 0; flex-wrap: wrap; }
+    .srp-card { flex: 1; min-width: 140px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+    .srp-card span { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 2px; }
+    .srp-card strong { font-size: 16px; font-weight: 800; color: #1e293b; }
+    .srp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+    .srp-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    .srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; font-size: 8px; text-transform: uppercase; padding: 5px 6px; border: 1px solid #e2e8f0; text-align: left; }
+    .srp-table td { padding: 4px 6px; border: 1px solid #e2e8f0; color: #1e293b; font-size: 9px; }
+    .srp-table tr:nth-child(even) td { background: #f8fafc; }
+    @page { size: A4 portrait; margin: 8mm; }
+  `;
+  w.document.write(`<!DOCTYPE html><html><head><title>User Management Report</title><style>${styles}</style></head><body>${el.outerHTML}</body></html>`);
+  w.document.close();
+  w.focus();
+  w.print();
+  w.close();
+}
+
 onMounted(async () => {
   await fetchUsers();
   await fetchStats();
@@ -635,247 +728,154 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.user-management {
-  padding: 20px;
-  margin-left: 260px;
-  margin-top: 90px; /* keeps content below fixed header */
-  transition: padding 0.3s ease;
-  background: linear-gradient(135deg, #1F8DBF/5 0%, #F4C400/5 100%);
-  min-height: calc(100vh - 90px);
+/* ── Eduardo's Resort Color Palette ── */
+.admin-dashboard {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-gray-bg:       #EEF5FB;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
 }
 
-@media (max-width: 767px) {
-  .user-management {
-    margin-left: 0;
-    padding: 20px;
-    margin-top: 90px;
-  }
+/* ── Layout ── */
+.admin-dashboard {
+  min-height: 100vh;
+  background: var(--color-gray-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
-/* Remove the extra white box styling */
-.header-container {
-  padding: 0;
-  background: transparent;
-  border: none;
-  margin: 0;
+.main-content {
+  margin-left: 0;
+  padding-top: 64px;
+  transition: margin-left 0.3s ease;
+}
+@media (min-width: 768px) {
+  .main-content { margin-left: 262px; }
 }
 
-/* Sidebar */
-.admin-sidebar {
+.content-container {
+  padding: 1.5rem 1.75rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+@media (max-width: 768px) {
+  .content-container { padding: 0.85rem; }
+}
+
+/* ── srp-* shared print report classes ── */
+.sales-preview-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 260px;
-  height: 100vh;
-  background: linear-gradient(165deg, #1F8DBF 0%, #1E88B6 100%);
-  box-shadow: 2px 0 10px rgba(31, 141, 191, 0.2);
-  border-right: 2px solid #F4C400;
-  z-index: 1000;
-}
-
-body {
-  overflow-x: hidden;
-  background: #ffffff;
-}
-
-/* Stats Cards - Will be applied via the component */
-:global(.stats-card) {
-  background: white;
-  border: 1px solid #1F8DBF/20;
-  border-radius: 8px;
-}
-
-:global(.stats-card .stat-value) {
-  color: #1F8DBF;
-}
-
-:global(.stats-card .stat-label) {
-  color: #1E88B6/80;
-}
-
-/* Table Styles */
-:global(.user-table) {
-  border: 1px solid #1F8DBF/20;
-}
-
-:global(.user-table th) {
-  background: #1F8DBF/10;
-  color: #1F8DBF;
-  font-weight: 600;
-}
-
-:global(.user-table td) {
-  color: #1E88B6;
-}
-
-:global(.user-table tr:hover) {
-  background: #F4C400/5;
-}
-
-/* Buttons */
-:global(.btn-primary) {
-  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding : 8px 16px;
-  transition: all 0.3s ease;
-}
-
-:global(.btn-primary:hover) {
-  background: linear-gradient(135deg, #1E88B6 0%, #1F8DBF 100%);
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.3);
-}
-
-:global(.btn-secondary) {
-  background: white;
-  color: #1F8DBF;
-  border: 1px solid #1F8DBF;
-  border-radius: 4px;
-  padding: 8px 16px;
-  transition: all 0.3s ease;
-}
-
-:global(.btn-secondary:hover) {
-  background: #F4C400;
-  color: #1F8DBF;
-  border-color: #F4C400;
-}
-
-/* Form Controls */
-:global(.form-input) {
-  border: 1px solid #1F8DBF/20;
-  border-radius: 4px;
-  color: #1E88B6;
-}
-
-:global(.form-input:focus) {
-  border-color: #F4C400;
-  outline: none;
-  box-shadow: 0 0 0 2px #F4C400/20;
-}
-
-:global(.form-label) {
-  color: #1F8DBF;
-  font-weight: 500;
-}
-
-/* Badges/Role Tags */
-:global(.role-badge) {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-:global(.role-badge.admin) {
-  background: #1F8DBF/10;
-  color: #1F8DBF;
-  border: 1px solid #1F8DBF/30;
-}
-
-:global(.role-badge.staff) {
-  background: #F4C400/10;
-  color: #F4C400;
-  border: 1px solid #F4C400/30;
-}
-
-:global(.role-badge.customer) {
-  background: #1E88B6/10;
-  color: #1E88B6;
-  border: 1px solid #1E88B6/30;
-}
-
-/* Pagination */
-:global(.pagination-button) {
-  border: 1px solid #1F8DBF/20;
-  color: #1F8DBF;
-  background: white;
-  border-radius: 4px;
-}
-
-:global(.pagination-button:hover) {
-  background: #F4C400;
-  color: #1F8DBF;
-  border-color: #F4C400;
-}
-
-:global(.pagination-button.active) {
-  background: #1F8DBF;
-  color: white;
-  border-color: #1F8DBF;
-}
-
-/* Modal */
-:global(.modal-overlay) {
-  background: rgba(31, 141, 191, 0.5);
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .45rem;
+  background: rgba(12,59,94,.55);
   backdrop-filter: blur(4px);
 }
-
-:global(.modal-content) {
-  background: white;
-  border: 2px solid #F4C400;
+.sales-preview-modal {
+  background: #fff;
+  border: 2px solid #f4c400;
+  border-radius: 10px;
+  box-shadow: 0 20px 48px rgba(15,23,42,.35);
+  width: min(1240px, 98vw);
+  max-height: 96vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sales-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .65rem 1rem;
+  border-bottom: 2px solid #0c3b5e;
+  background: #0c3b5e;
+  color: #fff;
+  flex-shrink: 0;
+}
+.sales-preview-toolbar h3 { margin: 0; font-size: .92rem; color: #f4c400; }
+.sales-preview-toolbar p  { margin: 2px 0 0; font-size: .72rem; color: #93c5fd; }
+.sales-preview-actions { display: flex; gap: .45rem; }
+.sales-preview-scroll { flex: 1; overflow-y: auto; padding: 1rem; }
+.sales-report-print { width: 100%; background: #fff; }
+/* header */
+.srp-header {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #0c3b5e;
+  color: #fff;
+  border-radius: 6px 6px 0 0;
+  margin-bottom: 10px;
+}
+.srp-logo {
+  width: 44px; height: 44px;
   border-radius: 8px;
+  background: #0c3b5e;
+  color: #f4c400;
+  font-weight: 800; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #f4c400;
 }
-
-:global(.modal-header) {
-  border-bottom: 2px solid #1F8DBF;
-  color: #1F8DBF;
+.srp-header h2 { margin: 0; font-size: 15px; color: #fff; }
+.srp-header p  { margin: 2px 0 0; font-size: 10px; color: #93c5fd; }
+.srp-meta { text-align: right; font-size: 9px; color: #93c5fd; }
+.srp-meta strong { display: block; color: #fde68a; }
+/* sections */
+.srp-section { margin: 10px 0; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
+.srp-section h4 { margin: 0 0 8px; font-size: 11px; color: #0c3b5e; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+.srp-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.srp-title-row h3 { margin: 0; font-size: 12px; color: #0c3b5e; }
+.srp-title-row p  { margin: 2px 0 0; font-size: 9px; color: #64748b; }
+.srp-applied { display: flex; gap: 18px; font-size: 9px; }
+.srp-applied div { display: flex; flex-direction: column; }
+.srp-applied span { color: #64748b; }
+.srp-applied strong { color: #0c3b5e; }
+/* cards */
+.srp-cards { display: flex; gap: 8px; padding: 8px 0; margin: 8px 0; flex-wrap: wrap; }
+.srp-card { flex: 1; min-width: 140px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+.srp-card span { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 2px; }
+.srp-card strong { font-size: 16px; font-weight: 800; color: #1e293b; }
+/* grid */
+.srp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+/* table */
+.srp-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+.srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; font-size: 8px; text-transform: uppercase; padding: 5px 6px; border: 1px solid #e2e8f0; text-align: left; }
+.srp-table td { padding: 4px 6px; border: 1px solid #e2e8f0; color: #1e293b; }
+.srp-table tr:nth-child(even) td { background: #f8fafc; }
+/* loading */
+.srp-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; gap: 1rem; color: #64748b; }
+.srp-spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #0c3b5e; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+/* buttons */
+.btn-download {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: #f4c400; color: #0c3b5e;
+  border: none; border-radius: 7px;
+  padding: .45rem .95rem; font-size: .8rem; font-weight: 700;
+  cursor: pointer; transition: background .18s;
 }
-
-:global(.modal-footer) {
-  border-top: 1px solid #1F8DBF/20;
+.btn-download:disabled { opacity: .55; cursor: not-allowed; }
+.btn-download:not(:disabled):hover { background: #ffd700; }
+.btn-preview {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: rgba(255,255,255,.12); color: #fff;
+  border: 1px solid rgba(255,255,255,.28); border-radius: 7px;
+  padding: .45rem .95rem; font-size: .8rem; font-weight: 600;
+  cursor: pointer; transition: background .18s;
 }
-
-/* Search/Filter Controls */
-:global(.search-input) {
-  border: 1px solid #1F8DBF/20;
-  border-radius: 4px;
-  color: #1E88B6;
-}
-
-:global(.search-input:focus) {
-  border-color: #F4C400;
-  outline: none;
-}
-
-:global(.filter-select) {
-  border: 1px solid #1F8DBF/20;
-  border-radius: 4px;
-  color: #1F8DBF;
-  background: white;
-}
-
-/* Export Button */
-:global(.export-button) {
-  background: #F4C400;
-  color: #1F8DBF;
-  border: none;
-  border-radius: 4px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-:global(.export-button:hover) {
-  background: #1F8DBF;
-  color: white;
-}
-
-/* Add User Button */
-:global(.add-user-button) {
-  background: #1F8DBF;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-:global(.add-user-button:hover) {
-  background: #F4C400;
-  color: #1F8DBF;
-}
-
+.btn-preview:disabled { opacity: .55; cursor: not-allowed; }
+.btn-preview:not(:disabled):hover { background: rgba(255,255,255,.22); }
+/* legacy export-preview-overlay — replaced, keep minimal for safety */
 .export-preview-overlay {
   position: fixed;
   inset: 0;
@@ -884,13 +884,13 @@ body {
   align-items: center;
   justify-content: center;
   padding: .45rem;
-  background: rgba(31, 141, 191, 0.55);
+  background: rgba(12, 59, 94, 0.55);
   backdrop-filter: blur(4px);
 }
 
 .export-preview-modal {
   background: #fff;
-  border: 2px solid #F4C400;
+  border: 2px solid var(--color-gold);
   border-radius: 10px;
   box-shadow: 0 20px 48px rgba(15, 23, 42, 0.35);
   width: min(1240px, 98vw);
@@ -904,20 +904,20 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 2px solid #1F8DBF;
+  border-bottom: 2px solid var(--color-primary-light);
   padding: 0.6rem 0.85rem;
 }
 
 .export-preview-header h3 {
   margin: 0;
-  color: #1F8DBF;
+  color: var(--color-primary-light);
   font-size: 0.92rem;
 }
 
 .preview-close-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-gray-border);
   border-radius: 6px;
   background: #fff;
   color: #374151;
@@ -925,10 +925,7 @@ body {
   line-height: 1;
   cursor: pointer;
 }
-
-.preview-close-btn:hover {
-  background: #f9fafb;
-}
+.preview-close-btn:hover { background: #f9fafb; }
 
 .export-preview-body {
   padding: 0.65rem 0.85rem;
@@ -940,7 +937,7 @@ body {
   flex-wrap: wrap;
   gap: 0.6rem;
   font-size: 0.72rem;
-  color: #1e88b6;
+  color: var(--color-primary-dark);
   margin-bottom: 0.55rem;
 }
 
@@ -962,18 +959,13 @@ body {
   padding: 0.45rem 0.58rem;
   border-bottom: 1px solid #e5edf5;
   font-size: 0.72rem;
-  color: #1f8dbf;
+  color: var(--color-primary-light);
   background: #f6fbff;
 }
 
-.preview-card--wide {
-  min-width: 0;
-}
+.preview-card--wide { min-width: 0; }
 
-.preview-table-wrap {
-  max-height: none;
-  overflow: hidden;
-}
+.preview-table-wrap { overflow: hidden; }
 
 .preview-table {
   width: 100%;
@@ -994,7 +986,7 @@ body {
   font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.35px;
-  color: #1f8dbf;
+  color: var(--color-primary-light);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -1008,16 +1000,45 @@ body {
   border-top: 1px solid #e5edf5;
 }
 
+.btn-secondary {
+  background: white;
+  color: var(--color-primary-light);
+  border: 1px solid var(--color-primary-light);
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.btn-secondary:hover {
+  background: var(--color-gold);
+  color: var(--color-navy);
+  border-color: var(--color-gold);
+}
+
+.btn-primary {
+  background: var(--color-navy);
+  color: var(--color-white);
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 8px rgba(12, 59, 94, 0.22);
+}
+.btn-primary:hover {
+  background: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(3, 105, 161, 0.28);
+}
+.btn-primary i { color: var(--color-gold); }
+
 @media (min-width: 1024px) {
-  .export-preview-body {
-    zoom: 0.8;
-  }
+  .export-preview-body { zoom: 0.8; }
 }
-
 @media (max-width: 900px) {
-  .export-preview-grid {
-    grid-template-columns: 1fr;
-  }
+  .export-preview-grid { grid-template-columns: 1fr; }
 }
-
 </style>

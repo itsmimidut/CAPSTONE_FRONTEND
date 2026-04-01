@@ -81,7 +81,7 @@
       <div class="container-custom text-center relative z-10">
         <h2 class="cta-title">Be Part of Our Story</h2>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <router-link to="/reservation" class="cta-btn-primary">Book Your Stay</router-link>
+          <router-link to="/customer" class="cta-btn-primary">Book Your Stay</router-link>
           <router-link to="/gallery" class="cta-btn-outline">View Gallery</router-link>
         </div>
       </div>
@@ -148,7 +148,7 @@ const values = [
   height: 100vh;
   min-height: 100vh;
   max-height: 100vh;
-  background-image: url('https://www.eduardosresort.com/images/IMG_4224.JPG');
+  background-image: url('/images/herobg.jpg');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;

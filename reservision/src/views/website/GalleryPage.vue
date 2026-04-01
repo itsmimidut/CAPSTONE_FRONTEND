@@ -222,7 +222,7 @@ onUnmounted(() => { window.removeEventListener('keydown', handleKeydown); docume
   height: 100vh;
   min-height: 100vh;
   max-height: 100vh;
-  background-image: url('https://www.eduardosresort.com/images/IMG_4224.JPG');
+  background-image: url('/images/herobg.jpg');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;

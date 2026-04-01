@@ -57,6 +57,9 @@
               <i class="fas fa-plus"></i>
               <span>Add New Room</span>
             </button>
+            <button class="btn-add" @click="openPromoModal()">
+                <i class="fas fa-tags"></i> <span class="hidden sm:inline">Manage Promos</span><span class="sm:hidden">Promos</span>
+            </button>
           </div>
         </div>
 
@@ -72,6 +75,7 @@
             v-for="room in filteredRooms"
             :key="room.item_id"
             :room="room"
+            @promo="openPromoModalForRoom(room)"
             @edit="openRoomModal(room)"
             @delete="deleteRoom(room.item_id)"
           />
@@ -97,6 +101,13 @@
       @save="handleSaveRoom"
       @close="closeRoomModal"
     />
+
+    <PromoFormModal
+      v-model:show="promoModal.show"
+      :initial-promo="promoModal.data"
+      :available-items="roomsStore.rooms"
+      @save="savePromo"
+    />
   </div>
 </template>
 
@@ -108,6 +119,7 @@ import AdminSidebar from '../../components/Admin/AdminSidebar.vue'
 import StatCard     from '../../components/RCE/StatCard.vue'
 import RoomCard     from '../../components/RCE/RoomCard.vue'
 import RoomModal    from '../../components/RCE/Modals/RoomModal.vue'
+import PromoFormModal from '../../components/RCE/Modals/PromoModal.vue'
 
 const roomsStore      = useRoomsStore()
 const sidebarOpen      = ref(false)
@@ -117,6 +129,7 @@ const typeFilter       = ref('all')
 const statusFilter     = ref('all')
 const showRoomModal    = ref(false)
 const editingRoom      = ref(null)
+const promoModal       = ref({ show: false, data: null })
 
 const roomsOnly = computed(() =>
   roomsStore.rooms.filter(r => {
@@ -146,6 +159,29 @@ const filteredRooms = computed(() =>
 
 const openRoomModal  = (room = null) => { editingRoom.value = room; showRoomModal.value = true }
 const closeRoomModal = () => { showRoomModal.value = false; editingRoom.value = null }
+const openPromoModal = () => {
+  promoModal.value = { show: true, data: null }
+}
+
+const openPromoModalForRoom = (room) => {
+  const roomNumber = String(room?.room_number || '').trim()
+  const roomLabel = roomNumber ? `${room.name} (${roomNumber})` : room?.name || 'Selected Room'
+  promoModal.value = {
+    show: true,
+    data: {
+      name: `${room?.name || 'Room'} Promo`,
+      code: '',
+      description: `Promo for ${roomLabel}.`,
+      discount_type: 'percent',
+      discount_value: 0,
+      applies_to_category: 'rooms',
+      item_ids: room?.item_id ? [String(room.item_id)] : [],
+      min_subtotal: 0,
+      usage_limit: null,
+      is_active: true
+    }
+  }
+}
 
 const handleSaveRoom = async (roomData) => {
   try {
@@ -161,6 +197,16 @@ const deleteRoom = async (id) => {
   if (!confirm('Delete room?')) return
   try { await roomsStore.deleteRoom(id) }
   catch (error) { console.error('Error deleting room:', error) }
+}
+
+const savePromo = async (promoData) => {
+  try {
+    await roomsStore.savePromo(promoData)
+    promoModal.value = { show: false, data: null }
+  } catch (error) {
+    console.error('Error saving promo:', error)
+    alert('Error saving promo: ' + (error.response?.data?.error || error.message))
+  }
 }
 
 onMounted(() => { roomsStore.fetchRooms() })

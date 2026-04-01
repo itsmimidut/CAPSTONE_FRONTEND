@@ -29,6 +29,9 @@
       </div>
 
       <div class="room-actions">
+        <button class="btn btn-promo" @click="$emit('promo', event)">
+          <i class="fas fa-ticket-alt"></i> Promo
+        </button>
         <button class="btn btn-outline" @click="$emit('edit')">
           <i class="fas fa-edit"></i> Edit
         </button>
@@ -50,7 +53,7 @@ const props = defineProps({
   event: { type: Object, required: true }
 })
 
-const emit = defineEmits(['edit', 'delete'])
+const emit = defineEmits(['edit', 'delete', 'promo'])
 
 const BACKEND_URL = 'http://localhost:8000'
 
@@ -240,6 +243,16 @@ const formatDate = (date) => {
 
 .btn-danger:hover {
   background: #FEE2E2;
+}
+
+.btn-promo {
+  border-color: #FDE68A;
+  color: #92400E;
+  background: #FFFBEB;
+}
+
+.btn-promo:hover {
+  background: #FEF3C7;
 }
 
 .btn i {

@@ -238,7 +238,7 @@
             <!-- Total -->
             <div class="total-pill">
               <span class="total-label">Total</span>
-              <span class="total-val">₱{{ booking.total.toLocaleString() }}</span>
+              <span class="total-val">₱{{ (Number(booking.total) || 0).toLocaleString() }}</span>
             </div>
 
           </div>

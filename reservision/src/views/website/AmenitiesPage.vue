@@ -132,7 +132,7 @@
 
         <div class="mt-20 text-center reveal">
           <div class="inline-block relative group">
-            <router-link :to="pageConfig.cta.buttonLink || '/reservation'" class="cta-btn">
+            <router-link :to="pageConfig.cta.buttonLink || '/customer'" class="cta-btn">
               <i class="fas fa-calendar-check text-lg"></i>
               {{ pageConfig.cta.buttonText }}
             </router-link>
@@ -166,7 +166,7 @@ const defaultConfig = {
     titleLine2: 'Amenities',
     subtitle:
       'From Olympic-sized pools to elegant dining and air-conditioned cottages - every detail is crafted for your ultimate relaxation, joy, and unforgettable memories.',
-    backgroundImage: 'https://www.eduardosresort.com/images/IMG_4224.JPG'
+    backgroundImage: '/images/herobg.jpg'
   },
   categories: [
     {
@@ -179,21 +179,21 @@ const defaultConfig = {
           description: 'Dive into our expansive pool with crystal-clear, temperature-controlled water. Perfect for laps, family swims, or floating under the tropical sun.',
           images: ['/images/img1.jpg', '/images/img3.jpg', '/images/img5.jpg'],
           bookable: false,
-          buttonLink: '/reservation'
+          buttonLink: '/customer'
         },
         {
           title: 'Kiddie Pool w/ Slide',
           description: 'A colorful, shallow splash zone with a twisting slide designed just for little ones. Safe, supervised, and endlessly entertaining.',
           images: ['/images/img1.jpg', '/images/img2.jpg'],
           bookable: false,
-          buttonLink: '/reservation'
+          buttonLink: '/customer'
         },
         {
           title: 'Swimming Club',
           description: 'Join exclusive aqua-aerobics, swim lessons, or friendly competitions. Certified coaches ensure fun and fitness for all ages.',
           images: ['/images/img7.jpg', '/images/img1.jpg'],
           bookable: false,
-          buttonLink: '/reservation'
+          buttonLink: '/customer'
         }
       ]
     },
@@ -207,28 +207,28 @@ const defaultConfig = {
           description: 'Savor tropical cocktails and gourmet Filipino-international fusion dishes while overlooking the pools. Open from sunrise to midnight.',
           images: ['/images/img8.jpg', 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80'],
           bookable: false,
-          buttonLink: '/reservation'
+          buttonLink: '/customer'
         },
         {
           title: 'Function Hall',
           description: 'Elegant, air-conditioned venue for weddings, corporate events, or birthdays. State-of-the-art AV and catering services included.',
           images: ['https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=800&q=80'],
           bookable: false,
-          buttonLink: '/reservation'
+          buttonLink: '/customer'
         },
         {
           title: 'Air-Conditioned Cottages',
           description: 'Private, stylish cottages with plush beds, en-suite bathrooms, and scenic views. Your serene home-away-from-home.',
           images: ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80', '/images/img10.jpg'],
           bookable: true,
-          buttonLink: '/reservation'
+          buttonLink: '/customer'
         }
       ]
     }
   ],
   cta: {
     buttonText: 'Book Your Experience Today',
-    buttonLink: '/reservation',
+    buttonLink: '/customer',
     helperText: 'Experience world-class amenities designed for unforgettable moments with family and friends.'
   }
 }

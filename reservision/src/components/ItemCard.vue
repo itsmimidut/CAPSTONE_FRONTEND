@@ -127,7 +127,10 @@ export default {
   },
   computed: {
     qtyOptions() {
-      return this.item.perNight ? [1] : [1, 2, 3, 4, 5]
+      const maxQty = this.item.perNight
+        ? Math.max(1, Number(this.item.availableQuantity || 1))
+        : 5
+      return Array.from({ length: maxQty }, (_, index) => index + 1)
     }
   },
   methods: {
@@ -138,7 +141,10 @@ export default {
       this.currentImgIdx = (this.currentImgIdx - 1 + this.item.imgs.length) % this.item.imgs.length
     },
     handleBook() {
-      const safeQty = this.item.perNight ? 1 : this.qty
+      const maxQty = this.item.perNight
+        ? Math.max(1, Number(this.item.availableQuantity || 1))
+        : 5
+      const safeQty = Math.min(Math.max(1, Number(this.qty || 1)), maxQty)
       this.$emit('book', this.item, safeQty, this.guests)
       this.qty = 1
       this.guests = 1

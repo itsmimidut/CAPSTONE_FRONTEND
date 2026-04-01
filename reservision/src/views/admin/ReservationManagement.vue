@@ -252,76 +252,83 @@
     </main>
 
     <!-- ── Toast ── -->
-    <div v-if="showExportPreview" class="preview-overlay" @click.self="showExportPreview = false">
-      <div class="preview-modal">
-        <div class="preview-head">
+    <div v-if="showExportPreview" class="sales-preview-overlay" @click.self="showExportPreview = false">
+      <div class="sales-preview-modal">
+        <div class="sales-preview-toolbar">
           <div>
-            <h3 class="preview-title">Reservation Report Preview</h3>
-            <p class="preview-sub">Review the report first before downloading Excel</p>
+            <h3>Reservation Report Preview</h3>
+            <p>Review before downloading Excel</p>
           </div>
-          <button @click="showExportPreview = false" class="preview-close" aria-label="Close preview">
-            <i class="fas fa-times"></i>
-          </button>
+          <div class="sales-preview-actions">
+            <button class="btn-download" @click="exportData" :disabled="exportPreviewLoading || !exportPreviewReport">
+              <i class="fas fa-download"></i>
+              {{ exportPreviewLoading ? 'Loading…' : 'Download Excel' }}
+            </button>
+            <button class="btn-preview" @click="printReservationReportPreview" :disabled="exportPreviewLoading || !exportPreviewReport">
+              <i class="fas fa-print"></i>
+              Print
+            </button>
+            <button class="btn-preview" @click="showExportPreview = false">
+              <i class="fas fa-xmark"></i>
+              Close
+            </button>
+          </div>
         </div>
 
-        <div class="preview-body">
-          <div v-if="exportPreviewLoading" class="preview-loading">
-            <div class="loading-spinner"></div>
+        <div class="sales-preview-scroll">
+          <div v-if="exportPreviewLoading" class="srp-loading">
+            <div class="srp-spinner"></div>
             <p>Preparing report preview…</p>
           </div>
 
-          <div v-else-if="exportPreviewReport" class="report-preview-sheet-wrap">
-            <div class="report-preview-sheet">
-              <div class="report-sheet-head">
-                <div class="report-sheet-brand">
-                  <div class="report-sheet-badge">ER</div>
+          <article v-else-if="exportPreviewReport" class="sales-report-print" id="reservation-report-print">
+            <header class="srp-header">
+              <div class="srp-logo">ER</div>
+              <div>
+                <h2>Eduardo's Resort</h2>
+                <p>Reservation and POS Sales Report</p>
+              </div>
+              <div class="srp-meta">
+                <span>Generated</span>
+                <strong>{{ exportPreviewReport.generatedAt }}</strong>
+              </div>
+            </header>
+
+              <section class="srp-section">
+                <div class="srp-title-row">
                   <div>
-                    <div class="report-sheet-name">Eduardo's Resort</div>
-                    <div class="report-sheet-caption">Reservation and POS Sales Report</div>
+                    <h3>Sales Report</h3>
+                    <p>{{ exportPreviewReport.dateRange }}</p>
+                  </div>
+                  <div class="srp-applied">
+                    <div><span>Status</span><strong>{{ exportPreviewReport.applied.status }}</strong></div>
+                    <div><span>Search</span><strong>{{ exportPreviewReport.applied.search }}</strong></div>
                   </div>
                 </div>
-                <div class="report-sheet-meta-right">
-                  <div><span>Generated</span><strong>{{ exportPreviewReport.generatedAt }}</strong></div>
-                </div>
-              </div>
+              </section>
 
-              <div class="report-sheet-subhead">
-                <div>
-                  <span class="report-meta-key">Date Range</span>
-                  <strong class="report-meta-val">{{ exportPreviewReport.dateRange }}</strong>
+              <section class="srp-cards">
+                <div class="srp-card">
+                  <span>Total</span>
+                  <strong>{{ exportPreviewReport.totalBookings }}</strong>
                 </div>
-                <div>
-                  <span class="report-meta-key">Status</span>
-                  <strong class="report-meta-val">{{ exportPreviewReport.applied.status }}</strong>
+                <div class="srp-card">
+                  <span>Revenue</span>
+                  <strong>{{ exportPreviewReport.totalRevenue }}</strong>
                 </div>
-                <div>
-                  <span class="report-meta-key">Search</span>
-                  <strong class="report-meta-val">{{ exportPreviewReport.applied.search }}</strong>
+                <div class="srp-card">
+                  <span>Peak Day</span>
+                  <strong>{{ exportPreviewReport.peakDay }}</strong>
                 </div>
-              </div>
+                <div class="srp-card">
+                  <span>Top Service</span>
+                  <strong>{{ exportPreviewReport.topService }}</strong>
+                </div>
+              </section>
 
-              <div class="preview-cards">
-                <div class="preview-card">
-                  <span class="preview-label">Total Bookings</span>
-                  <strong class="preview-value">{{ exportPreviewReport.totalBookings }}</strong>
-                </div>
-                <div class="preview-card">
-                  <span class="preview-label">Total Revenue</span>
-                  <strong class="preview-value">{{ exportPreviewReport.totalRevenue }}</strong>
-                </div>
-                <div class="preview-card">
-                  <span class="preview-label">Peak Day</span>
-                  <strong class="preview-value">{{ exportPreviewReport.peakDay }}</strong>
-                </div>
-                <div class="preview-card">
-                  <span class="preview-label">Top Service</span>
-                  <strong class="preview-value">{{ exportPreviewReport.topService }}</strong>
-                </div>
-              </div>
-
-              <div class="preview-doc-section">
-                <h4 class="preview-doc-title">Status Breakdown</h4>
-                <table class="preview-table">
+              <section class="srp-section">
+                <h4>Status Breakdown</h4>
+                <table class="srp-table">
                   <thead>
                     <tr><th>Status</th><th>Bookings</th><th>Revenue</th></tr>
                   </thead>
@@ -333,12 +340,12 @@
                     </tr>
                   </tbody>
                 </table>
-              </div>
+              </section>
 
-              <div class="preview-grid">
-                <div class="preview-panel">
+              <section class="srp-grid">
+                <div class="srp-section">
                   <h4>Category Breakdown</h4>
-                  <table class="preview-table">
+                  <table class="srp-table">
                     <thead>
                       <tr><th>Category</th><th>Bookings</th><th>Revenue</th></tr>
                     </thead>
@@ -352,9 +359,9 @@
                   </table>
                 </div>
 
-                <div class="preview-panel">
+                <div class="srp-section">
                   <h4>Payment Summary</h4>
-                  <table class="preview-table">
+                  <table class="srp-table">
                     <thead>
                       <tr><th>Method</th><th>Count</th><th>Amount</th></tr>
                     </thead>
@@ -367,12 +374,12 @@
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </section>
 
-              <div class="preview-grid">
-                <div class="preview-panel">
+              <section class="srp-grid">
+                <div class="srp-section">
                   <h4>Top Booked Items by Category</h4>
-                  <table class="preview-table">
+                  <table class="srp-table">
                     <thead>
                       <tr><th>Category</th><th>Top Item</th><th>Bookings</th></tr>
                     </thead>
@@ -386,9 +393,9 @@
                   </table>
                 </div>
 
-                <div class="preview-panel">
+                <div class="srp-section">
                   <h4>Sales Channels Summary</h4>
-                  <table class="preview-table">
+                  <table class="srp-table">
                     <thead>
                       <tr><th>Channel</th><th>Transactions</th><th>Revenue</th></tr>
                     </thead>
@@ -401,11 +408,11 @@
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </section>
 
-              <div class="preview-doc-section">
-                <h4 class="preview-doc-title">Top POS Items</h4>
-                <table class="preview-table">
+              <section class="srp-section">
+                <h4>Top POS Items</h4>
+                <table class="srp-table">
                   <thead>
                     <tr><th>Item</th><th>Sales</th></tr>
                   </thead>
@@ -416,17 +423,8 @@
                     </tr>
                   </tbody>
                 </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="preview-foot">
-          <button @click="showExportPreview = false" class="btn-outline">Cancel</button>
-          <button @click="exportData" class="btn-primary" :disabled="exportPreviewLoading || !exportPreviewReport">
-            <i class="fas fa-file-excel"></i>
-            <span>Download Excel</span>
-          </button>
+              </section>
+          </article>
         </div>
       </div>
     </div>
@@ -1265,6 +1263,46 @@ const prevPage     = () => { if (currentPage.value > 1) { currentPage.value--; f
 const nextPage     = () => { if (currentPage.value < totalPages.value) { currentPage.value++; fetchBookings() } }
 const showToast    = (msg, type = 'success') => { toastMessage.value = msg; toastType.value = type; setTimeout(() => toastMessage.value = '', 4000) }
 
+const printReservationReportPreview = () => {
+  const reportEl = document.getElementById('reservation-report-print')
+  if (!reportEl) return
+  const styles = `
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 8mm; }
+    .sales-report-print { width: 100%; background: #fff; }
+    .srp-header { display: grid; grid-template-columns: 52px 1fr auto; gap: 0.55rem; align-items: center; border-bottom: 2px solid #0c3b5e; padding-bottom: 0.4rem; margin-bottom: 0.5rem; }
+    .srp-logo { width: 44px; height: 44px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: #0c3b5e; color: #f4c400; font-weight: 800; font-size: 0.9rem; }
+    .srp-header h2 { margin: 0; font-size: 0.92rem; color: #0c3b5e; }
+    .srp-header p { margin: 0.2rem 0 0; font-size: 0.7rem; color: #64748b; }
+    .srp-meta { text-align: right; display: flex; flex-direction: column; gap: 0.08rem; }
+    .srp-meta span { font-size: 0.62rem; color: #64748b; }
+    .srp-meta strong { font-size: 0.72rem; }
+    .srp-section { margin-top: 0.45rem; }
+    .srp-title-row { display: flex; justify-content: space-between; gap: 0.45rem; }
+    .srp-title-row h3 { margin: 0; font-size: 0.88rem; color: #0c3b5e; }
+    .srp-title-row p { margin: 0.2rem 0 0; font-size: 0.68rem; color: #64748b; }
+    .srp-applied { border: 1px solid #dce8f3; border-radius: 8px; padding: 0.34rem 0.46rem; min-width: 190px; }
+    .srp-applied div { display: flex; justify-content: space-between; gap: 0.4rem; font-size: 0.64rem; }
+    .srp-applied span { color: #64748b; }
+    .srp-cards { margin-top: 0.4rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; }
+    .srp-card { border: 1px solid #dce8f3; border-radius: 8px; padding: 0.34rem 0.4rem; background: #fff; }
+    .srp-card span { display: block; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 0.1rem; }
+    .srp-card strong { font-size: 0.8rem; font-weight: 800; color: #1e293b; }
+    .srp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+    .srp-section h4 { margin: 0 0 0.2rem; color: #0c3b5e; font-size: 0.74rem; }
+    .srp-table { width: 100%; border-collapse: collapse; border: 1px solid #dce8f3; }
+    .srp-table th, .srp-table td { border: 1px solid #dce8f3; padding: 0.24rem 0.3rem; font-size: 0.64rem; text-align: left; }
+    .srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; }
+    @page { size: A4 portrait; margin: 8mm; }
+  `
+  const win = window.open('', '', 'left=0,top=0,width=900,height=700,toolbar=0,scrollbars=1,status=0')
+  if (!win) return
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reservation Report</title><style>${styles}</style></head><body>${reportEl.outerHTML}</body></html>`)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print(); win.close() }, 400)
+}
+
 let pollInterval = null; let visHandler = null
 onMounted(() => {
   fetchBookings()
@@ -1922,4 +1960,48 @@ onUnmounted(() => {
 .toast--error   { background: #dc2626; }
 .toast-enter-active, .toast-leave-active { transition: all .3s ease; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(12px); }
+
+/* ── srp-* Report Preview Modal ── */
+.sales-preview-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 0.45rem; }
+.sales-preview-modal { background: #eef5fb; width: min(1280px, 99vw); max-height: 98vh; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.sales-preview-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 0.7rem; padding: 0.6rem 0.85rem; border-bottom: 1px solid #d7e4ef; background: #fff; flex-shrink: 0; }
+.sales-preview-toolbar h3 { margin: 0; font-size: 0.9rem; color: #1f2937; }
+.sales-preview-toolbar p  { margin: 0.2rem 0 0; font-size: 0.72rem; color: #64748b; }
+.sales-preview-actions { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+.sales-preview-scroll { overflow-y: auto; overflow-x: hidden; flex: 1; min-height: 0; padding: 0.55rem; display: flex; align-items: flex-start; justify-content: center; }
+.sales-report-print { width: min(1140px, 100%); margin: 0 auto; background: #fff; color: #0f172a; padding: 7mm; box-shadow: 0 4px 20px rgba(15,23,42,0.16); }
+.srp-header { display: grid; grid-template-columns: 52px 1fr auto; gap: 0.55rem; align-items: center; border-bottom: 2px solid #0c3b5e; padding-bottom: 0.4rem; }
+.srp-logo { width: 44px; height: 44px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: #0c3b5e; color: #f4c400; font-weight: 800; }
+.srp-header h2 { margin: 0; font-size: 0.92rem; color: #0c3b5e; }
+.srp-header p  { margin: 0.2rem 0 0; font-size: 0.7rem; color: #64748b; }
+.srp-meta { text-align: right; display: flex; flex-direction: column; gap: 0.08rem; }
+.srp-meta span   { font-size: 0.62rem; color: #64748b; }
+.srp-meta strong { font-size: 0.72rem; }
+.srp-section { margin-top: 0.45rem; }
+.srp-title-row { display: flex; justify-content: space-between; gap: 0.45rem; }
+.srp-title-row h3 { margin: 0; font-size: 0.88rem; color: #0c3b5e; }
+.srp-title-row p  { margin: 0.2rem 0 0; font-size: 0.68rem; color: #64748b; }
+.srp-applied { border: 1px solid #dce8f3; border-radius: 8px; padding: 0.34rem 0.46rem; min-width: 190px; }
+.srp-applied div  { display: flex; justify-content: space-between; gap: 0.4rem; font-size: 0.64rem; }
+.srp-applied span { color: #64748b; }
+.srp-cards { margin-top: 0.4rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; }
+.srp-card { border: 1px solid #dce8f3; border-radius: 8px; padding: 0.34rem 0.4rem; background: #fff; }
+.srp-card span { display: block; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 0.1rem; }
+.srp-card strong { font-size: 0.8rem; font-weight: 800; color: #1e293b; }
+.srp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.srp-section h4 { margin: 0 0 0.2rem; color: #0c3b5e; font-size: 0.74rem; }
+.srp-table { width: 100%; border-collapse: collapse; border: 1px solid #dce8f3; }
+.srp-table th, .srp-table td { border: 1px solid #dce8f3; padding: 0.24rem 0.3rem; font-size: 0.64rem; text-align: left; }
+.srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; }
+.srp-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 3rem; }
+.srp-spinner { width: 32px; height: 32px; border: 3px solid #dce8f3; border-top-color: #0c3b5e; border-radius: 50%; animation: srp-spin 0.7s linear infinite; }
+@keyframes srp-spin { to { transform: rotate(360deg); } }
+@media screen and (min-width: 1024px) { .sales-report-print { zoom: 0.8; } }
+@media screen and (max-height: 820px) { .sales-report-print { zoom: 0.7; } }
+.btn-download { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem; background: linear-gradient(135deg, #2B6CB0 0%, #2C5282 100%); color: white; border: none; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-download:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(43,108,176,0.3); }
+.btn-download:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.btn-preview { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.1rem; background: #fff; color: #2C5282; border: 1px solid #2B6CB0; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-preview:hover { background: #EBF8FF; transform: translateY(-1px); }
+.btn-preview:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 </style>

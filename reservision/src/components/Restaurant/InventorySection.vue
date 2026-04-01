@@ -11,48 +11,15 @@
         <button class="btn-header btn-outline" @click="showMenuIngredientsModal = true">
           <i class="fas fa-link"></i> View Menu Links
         </button>
-          <button class="btn-header btn-outline" @click="openInventoryPreview">
-            <i class="fas fa-file-export"></i>
-            Export Report
-          </button>
-          <button class="btn-header btn-outline" @click="showAddIngredientsModal = true">
+        <button class="btn-header btn-outline" @click="showAddIngredientsModal = true">
             <i class="fas fa-plus-circle"></i> Link Ingredients
           </button>
+        <button class="btn-header btn-export" @click="openInventoryPreview">
+          <i class="fas fa-download"></i> Export Report
+        </button>
         <button class="btn-header btn-primary" @click="showAddItemModal = true">
           <i class="fas fa-plus"></i> Add New Item
         </button>
-      </div>
-    </div>
-
-    <!-- ── Stats Row ── -->
-    <div class="stats-row">
-      <div class="stat-chip">
-        <div class="stat-icon icon-blue"><i class="fas fa-boxes"></i></div>
-        <div class="stat-body">
-          <div class="stat-value">{{ inventory.length }}</div>
-          <div class="stat-label">Total Items</div>
-        </div>
-      </div>
-      <div class="stat-chip">
-        <div class="stat-icon icon-green"><i class="fas fa-check-circle"></i></div>
-        <div class="stat-body">
-          <div class="stat-value val-green">{{ inventory.filter(i => i.status === 'good').length }}</div>
-          <div class="stat-label">Well Stocked</div>
-        </div>
-      </div>
-      <div class="stat-chip">
-        <div class="stat-icon icon-amber"><i class="fas fa-exclamation-triangle"></i></div>
-        <div class="stat-body">
-          <div class="stat-value val-amber">{{ inventory.filter(i => i.status === 'low').length }}</div>
-          <div class="stat-label">Low Stock</div>
-        </div>
-      </div>
-      <div class="stat-chip">
-        <div class="stat-icon icon-red"><i class="fas fa-times-circle"></i></div>
-        <div class="stat-body">
-          <div class="stat-value val-red">{{ inventory.filter(i => i.status === 'critical').length }}</div>
-          <div class="stat-label">Critical</div>
-        </div>
       </div>
     </div>
 
@@ -345,104 +312,121 @@
     </div>
 
     <!-- ══ INVENTORY REPORT PREVIEW ══ -->
-    <div v-if="showInventoryPreview" class="report-preview-overlay" @click.self="showInventoryPreview = false">
-      <div class="report-preview-modal">
-        <div class="report-preview-head">
+    <div v-if="showInventoryPreviewModal" class="sales-preview-overlay" @click.self="showInventoryPreviewModal = false">
+      <div class="sales-preview-modal">
+        <div class="sales-preview-toolbar">
           <div>
-            <h3 class="report-preview-title">Inventory Report Preview</h3>
-            <p class="report-preview-sub">Review the report before downloading Excel</p>
+            <h3>Restaurant Inventory Report</h3>
+            <p>Review before downloading Excel</p>
           </div>
-          <button class="modal-close-btn" @click="showInventoryPreview = false"><i class="fas fa-times"></i></button>
+          <div class="sales-preview-actions">
+            <button class="btn-download" @click="exportInventoryReport">
+              <i class="fas fa-download"></i> Download Excel
+            </button>
+            <button class="btn-preview" @click="printInventoryReportPreview">
+              <i class="fas fa-print"></i> Print
+            </button>
+            <button class="btn-preview" @click="showInventoryPreviewModal = false">
+              <i class="fas fa-xmark"></i> Close
+            </button>
+          </div>
         </div>
-
-        <div class="report-preview-body">
-          <article v-if="inventoryPreviewReport" class="inventory-report-sheet">
-            <header class="irs-header">
-              <div class="irs-brand">
-                <div class="irs-logo">ER</div>
-                <div>
-                  <h4>Eduardo's Resort</h4>
-                  <p>Inventory Status Report</p>
-                </div>
+        <div class="sales-preview-scroll">
+          <article class="sales-report-print" id="inventory-report-print">
+            <header class="srp-header">
+              <div class="srp-logo">ER</div>
+              <div>
+                <h2>Eduardo's Resort</h2>
+                <p>Restaurant Inventory Report</p>
               </div>
-              <div class="irs-meta">
+              <div class="srp-meta">
                 <span>Generated</span>
-                <strong>{{ inventoryPreviewReport.generatedAt }}</strong>
+                <strong>{{ inventoryReportGenAt }}</strong>
               </div>
             </header>
 
-            <section class="irs-filters">
-              <div>
-                <span>Search</span>
-                <strong>{{ inventoryPreviewReport.applied.search }}</strong>
-              </div>
-              <div>
-                <span>Status</span>
-                <strong>{{ inventoryPreviewReport.applied.status }}</strong>
-              </div>
-              <div>
-                <span>Total Visible</span>
-                <strong>{{ inventoryPreviewReport.totalItems }}</strong>
+            <section class="srp-section">
+              <div class="srp-title-row">
+                <div>
+                  <h3>Inventory Report</h3>
+                  <p>{{ props.inventory.length }} total items</p>
+                </div>
               </div>
             </section>
 
-            <section class="irs-cards">
-              <div class="irs-card"><span>Total Items</span><strong>{{ inventoryPreviewReport.totalItems }}</strong></div>
-              <div class="irs-card"><span>Total Quantity</span><strong>{{ inventoryPreviewReport.totalQty }}</strong></div>
-              <div class="irs-card"><span>Low/Critical</span><strong>{{ inventoryPreviewReport.lowCriticalCount }}</strong></div>
-              <div class="irs-card"><span>Healthy Stock</span><strong>{{ inventoryPreviewReport.healthyPct }}</strong></div>
+            <section class="srp-cards">
+              <div class="srp-card">
+                <span>Total Items</span>
+                <strong>{{ inventoryReportStats.total }}</strong>
+              </div>
+              <div class="srp-card">
+                <span>Low Stock</span>
+                <strong>{{ inventoryReportStats.lowStock }}</strong>
+              </div>
+              <div class="srp-card">
+                <span>Out of Stock</span>
+                <strong>{{ inventoryReportStats.outOfStock }}</strong>
+              </div>
+              <div class="srp-card">
+                <span>Categories</span>
+                <strong>{{ inventoryReportStats.categories }}</strong>
+              </div>
             </section>
 
-            <section class="irs-section">
-              <h5>Status Breakdown</h5>
-              <table class="irs-table">
-                <thead>
-                  <tr><th>Status</th><th>Count</th><th>Percent</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in inventoryPreviewReport.statusRows" :key="row.status">
-                    <td>{{ row.status }}</td>
-                    <td>{{ row.count }}</td>
-                    <td>{{ row.percent }}</td>
-                  </tr>
-                </tbody>
-              </table>
+            <section class="srp-grid">
+              <div class="srp-section">
+                <h4>Category Breakdown</h4>
+                <table class="srp-table">
+                  <thead><tr><th>Category</th><th>Items</th></tr></thead>
+                  <tbody>
+                    <tr v-for="row in inventoryCategoryBreakdown" :key="row.category">
+                      <td>{{ row.category || 'Uncategorized' }}</td>
+                      <td>{{ row.count }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="srp-section">
+                <h4>Low Stock Items</h4>
+                <table class="srp-table">
+                  <thead><tr><th>Item</th><th>Qty</th><th>Threshold</th></tr></thead>
+                  <tbody>
+                    <tr v-for="item in inventoryLowStockItems" :key="item.id">
+                      <td>{{ item.item }}</td>
+                      <td>{{ item.quantity }} {{ item.unit }}</td>
+                      <td>{{ item.threshold }}</td>
+                    </tr>
+                    <tr v-if="!inventoryLowStockItems.length">
+                      <td colspan="3">All items are sufficiently stocked.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
 
-            <section class="irs-section">
-              <h5>Inventory Items</h5>
-              <table class="irs-table">
+            <section class="srp-section">
+              <h4>Full Inventory List</h4>
+              <table class="srp-table">
                 <thead>
                   <tr>
-                    <th>Item Name</th>
-                    <th>Quantity</th>
-                    <th>Unit</th>
-                    <th>Threshold</th>
-                    <th>Status</th>
+                    <th>Item</th><th>Category</th><th>Qty</th><th>Unit</th>
+                    <th>Threshold</th><th>Status</th><th>Supplier</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in inventoryPreviewReport.items" :key="item.id">
+                  <tr v-for="item in props.inventory" :key="item.id">
                     <td>{{ item.item }}</td>
+                    <td>{{ item.category || '-' }}</td>
                     <td>{{ item.quantity }}</td>
                     <td>{{ item.unit }}</td>
                     <td>{{ item.threshold }}</td>
                     <td>{{ item.status }}</td>
-                  </tr>
-                  <tr v-if="inventoryPreviewReport.items.length === 0">
-                    <td colspan="5">No inventory items found for current filter</td>
+                    <td>{{ item.supplier || '-' }}</td>
                   </tr>
                 </tbody>
               </table>
             </section>
           </article>
-        </div>
-
-        <div class="report-preview-foot">
-          <button class="btn-cancel" @click="showInventoryPreview = false">Cancel</button>
-          <button class="btn-submit" @click="exportInventoryReport" :disabled="!inventoryPreviewReport">
-            <i class="fas fa-file-excel"></i> Download Excel
-          </button>
         </div>
       </div>
     </div>
@@ -463,8 +447,8 @@ const showAddItemModal         = ref(false)
 const showEditModal            = ref(false)
 const showMenuIngredientsModal = ref(false)
 const showAddIngredientsModal  = ref(false)
-const showInventoryPreview     = ref(false)
-const inventoryPreviewReport   = ref(null)
+const showInventoryPreviewModal = ref(false)
+const inventoryReportGenAt      = ref('')
 const menuIngredientLinks      = ref([])
 const loadingLinks             = ref(false)
 const availableMenus           = ref([])
@@ -472,7 +456,6 @@ const selectedMenuId           = ref('')
 const newIngredient            = ref({ inventory_id: '', quantity_needed: 0 })
 const addedIngredientsBuffer   = ref([])
 const editingItem              = ref(null)
-
 const newItem = ref({ item: '', quantity: 0, unit: '', threshold: 0, image_url: '' })
 
 const currentPage  = ref(1)
@@ -507,61 +490,6 @@ const selectedMenuCurrentIngredients = computed(() => {
   const menu = menuIngredientLinks.value.find(m => m.menu_id === Number(selectedMenuId.value))
   return menu?.ingredients || []
 })
-
-const formatPreviewDateTime = value => new Date(value).toLocaleString('en-PH', {
-  month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-})
-
-const toStatusLabel = status => {
-  const normalized = String(status || '').toLowerCase()
-  if (normalized === 'good') return 'Good'
-  if (normalized === 'low') return 'Low'
-  if (normalized === 'critical') return 'Critical'
-  return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : 'Unknown'
-}
-
-const buildInventoryPreviewReport = () => {
-  const statusRowsBase = ['good', 'low', 'critical'].map(status => {
-    const count = filteredInventory.value.filter(item => String(item.status || '').toLowerCase() === status).length
-    const total = filteredInventory.value.length
-    return {
-      status: toStatusLabel(status),
-      count,
-      percent: total ? `${((count / total) * 100).toFixed(2)}%` : '0.00%'
-    }
-  })
-
-  const totalItems = filteredInventory.value.length
-  const totalQty = filteredInventory.value.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
-  const lowCriticalCount = filteredInventory.value.filter(item => ['low', 'critical'].includes(String(item.status || '').toLowerCase())).length
-  const healthyPct = totalItems ? `${((statusRowsBase[0].count / totalItems) * 100).toFixed(2)}%` : '0.00%'
-
-  return {
-    generatedAt: formatPreviewDateTime(new Date()),
-    applied: {
-      search: searchQuery.value || 'None',
-      status: filterStatus.value ? toStatusLabel(filterStatus.value) : 'All Status'
-    },
-    totalItems,
-    totalQty,
-    lowCriticalCount,
-    healthyPct,
-    statusRows: statusRowsBase,
-    items: filteredInventory.value.map(item => ({
-      id: item.id || item.inventory_id,
-      item: item.item || item.item_name || 'N/A',
-      quantity: Number(item.quantity || 0),
-      unit: item.unit || '-',
-      threshold: Number(item.threshold || 0),
-      status: toStatusLabel(item.status)
-    }))
-  }
-}
-
-const openInventoryPreview = () => {
-  inventoryPreviewReport.value = buildInventoryPreviewReport()
-  showInventoryPreview.value = true
-}
 
 const handleEdit = (item) => { editingItem.value = { ...item }; showEditModal.value = true }
 
@@ -673,207 +601,123 @@ const closeAddIngredientsModal = () => {
   addedIngredientsBuffer.value = []
 }
 
-const exportInventoryReport = async () => {
-  try {
-    const report = inventoryPreviewReport.value || buildInventoryPreviewReport()
-    const ExcelJS = (await import('exceljs')).default
-    const workbook = new ExcelJS.Workbook()
-    workbook.creator = "Eduardo's Resort"
-    workbook.created = new Date()
-
-    const ws = workbook.addWorksheet('Inventory Report', {
-      pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1 }
-    })
-
-    ws.columns = [
-      { width: 28 },
-      { width: 14 },
-      { width: 18 },
-      { width: 16 },
-      { width: 16 },
-      { width: 18 }
-    ]
-
-    const C_DARK_BLUE = 'FF0C3B5E'
-    const C_LOGO_BG = 'FF0C3B5E'
-    const C_HDR_BG = 'FFE8F4FD'
-    const C_TBL_HDR = 'FFF0F6FB'
-    const C_CARD_BDR = 'FFDCE8F3'
-    const C_WHITE = 'FFFFFFFF'
-    const C_ROW_ALT = 'FFF8FBFF'
-    const C_GREY_TEXT = 'FF64748B'
-
-    const bdr = c => ({ style: 'thin', color: { argb: c } })
-    const cardBorder = { top: bdr(C_CARD_BDR), bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR) }
-
-    const secHdr = (cell, text) => {
-      cell.value = text
-      cell.font = { bold: true, size: 10, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
-      cell.border = cardBorder
-      cell.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
-    }
-
-    const th = (cell, text, right = false) => {
-      cell.value = text
-      cell.font = { bold: true, size: 10, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_TBL_HDR } }
-      cell.border = cardBorder
-      cell.alignment = { horizontal: right ? 'right' : 'left', indent: right ? 0 : 1 }
-    }
-
-    const td = (cell, value, right = false, bold = false, alt = false) => {
-      cell.value = value
-      cell.font = { size: 10, name: 'Calibri', bold }
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: alt ? C_ROW_ALT : C_WHITE } }
-      cell.border = cardBorder
-      cell.alignment = { horizontal: right ? 'right' : 'left', indent: right ? 0 : 1 }
-    }
-
-    const statusRows = report.statusRows
-    const totalItems = report.totalItems
-    const totalQty = report.totalQty
-    const lowCriticalCount = report.lowCriticalCount
-    const healthyPct = report.healthyPct
-
-    let r = 1
-
-    ws.getCell(`A${r}`).value = 'ER'
-    ws.getCell(`A${r}`).font = { bold: true, size: 14, color: { argb: C_WHITE }, name: 'Calibri' }
-    ws.getCell(`A${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_LOGO_BG } }
-    ws.getCell(`A${r}`).alignment = { horizontal: 'center', vertical: 'middle' }
-    ws.getCell(`A${r}`).border = cardBorder
-
-    ws.mergeCells(`B${r}:D${r}`)
-    ws.getCell(`B${r}`).value = "Eduardo's Resort"
-    ws.getCell(`B${r}`).font = { bold: true, size: 15, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
-    ws.getCell(`B${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
-    ws.getCell(`B${r}`).alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
-
-    ws.getCell(`E${r}`).value = 'Generated'
-    ws.getCell(`E${r}`).font = { size: 9, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
-    ws.getCell(`E${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
-    ws.getCell(`E${r}`).alignment = { horizontal: 'right' }
-
-    ws.getCell(`F${r}`).value = report.generatedAt
-    ws.getCell(`F${r}`).font = { bold: true, size: 9, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
-    ws.getCell(`F${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
-    ws.getCell(`F${r}`).alignment = { horizontal: 'right' }
-    ws.getRow(r).height = 28
-    r++
-
-    ws.mergeCells(`A${r}:F${r}`)
-    ws.getCell(`A${r}`).value = 'Inventory Status Report'
-    ws.getCell(`A${r}`).font = { italic: true, size: 10, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
-    ws.getCell(`A${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_HDR_BG } }
-    ws.getCell(`A${r}`).alignment = { horizontal: 'left', indent: 1 }
-    ws.getRow(r).height = 16
-    r++
-
-    r++
-
-    const cards = [
-      { label: 'TOTAL ITEMS', value: String(totalItems) },
-      { label: 'TOTAL QUANTITY', value: String(totalQty) },
-      { label: 'LOW/CRITICAL', value: String(lowCriticalCount) },
-      { label: 'HEALTHY STOCK', value: healthyPct }
-    ]
-    const cardCols = ['A', 'B', 'C', 'D']
-
-    cards.forEach(({ label }, i) => {
-      const cell = ws.getCell(`${cardCols[i]}${r}`)
-      cell.value = label
-      cell.font = { size: 8, color: { argb: C_GREY_TEXT }, name: 'Calibri' }
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
-      cell.border = { top: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR), bottom: { style: 'hair', color: { argb: C_CARD_BDR } } }
-      cell.alignment = { horizontal: 'left', indent: 1 }
-    })
-    ws.getRow(r).height = 14
-    r++
-
-    cards.forEach(({ value }, i) => {
-      const cell = ws.getCell(`${cardCols[i]}${r}`)
-      cell.value = value
-      cell.font = { bold: true, size: 12, color: { argb: C_DARK_BLUE }, name: 'Calibri' }
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C_WHITE } }
-      cell.border = { bottom: bdr(C_CARD_BDR), left: bdr(C_CARD_BDR), right: bdr(C_CARD_BDR), top: { style: 'hair', color: { argb: C_CARD_BDR } } }
-      cell.alignment = { horizontal: 'left', indent: 1, vertical: 'middle' }
-    })
-    ws.getRow(r).height = 22
-    r++
-
-    r++
-
-    ws.mergeCells(`A${r}:F${r}`)
-    secHdr(ws.getCell(`A${r}`), 'Status Breakdown')
-    ws.getRow(r).height = 16
-    r++
-
-    th(ws.getCell(`A${r}`), 'Status')
-    th(ws.getCell(`B${r}`), 'Count', true)
-    th(ws.getCell(`C${r}`), 'Percent', true)
-    r++
-
-    statusRows.forEach((row, i) => {
-      const alt = i % 2 === 1
-      const percent = totalItems ? `${((row.count / totalItems) * 100).toFixed(2)}%` : '0.00%'
-      td(ws.getCell(`A${r}`), row.status, false, false, alt)
-      td(ws.getCell(`B${r}`), row.count, true, false, alt)
-      td(ws.getCell(`C${r}`), percent, true, false, alt)
-      r++
-    })
-
-    r++
-
-    ws.mergeCells(`A${r}:F${r}`)
-    secHdr(ws.getCell(`A${r}`), 'Inventory Items')
-    ws.getRow(r).height = 16
-    r++
-
-    th(ws.getCell(`A${r}`), 'Item Name')
-    th(ws.getCell(`B${r}`), 'Quantity', true)
-    th(ws.getCell(`C${r}`), 'Unit')
-    th(ws.getCell(`D${r}`), 'Threshold', true)
-    th(ws.getCell(`E${r}`), 'Status')
-    r++
-
-    report.items.forEach((item, i) => {
-      const alt = i % 2 === 1
-      td(ws.getCell(`A${r}`), item.item, false, false, alt)
-      td(ws.getCell(`B${r}`), item.quantity, true, false, alt)
-      td(ws.getCell(`C${r}`), item.unit, false, false, alt)
-      td(ws.getCell(`D${r}`), item.threshold, true, false, alt)
-      td(ws.getCell(`E${r}`), String(item.status || '').toUpperCase(), false, false, alt)
-      r++
-    })
-
-    if (!report.items.length) {
-      td(ws.getCell(`A${r}`), 'No inventory items found for current filter')
-      ws.mergeCells(`A${r}:E${r}`)
-      r++
-    }
-
-    const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `Inventory_Report_${new Date().toISOString().split('T')[0]}.xlsx`
-    document.body.appendChild(anchor)
-    anchor.click()
-    document.body.removeChild(anchor)
-    URL.revokeObjectURL(url)
-    showInventoryPreview.value = false
-    alert('Inventory report exported successfully')
-  } catch (e) {
-    console.error(e)
-    alert('Failed to export inventory report')
-  }
-}
-
 watch([searchQuery, filterStatus], () => { currentPage.value = 1 })
 watch(showAddIngredientsModal, v => { if (v) { fetchAvailableMenus(); fetchMenuIngredientLinks() } })
 watch(showMenuIngredientsModal, v => { if (v) fetchMenuIngredientLinks() })
+
+// ── Inventory Report ──
+const inventoryReportStats = computed(() => ({
+  total:      props.inventory.length,
+  lowStock:   props.inventory.filter(i => i.quantity > 0 && i.quantity <= i.threshold).length,
+  outOfStock: props.inventory.filter(i => i.quantity === 0).length,
+  categories: new Set(props.inventory.map(i => i.category || 'Uncategorized')).size
+}))
+
+const inventoryCategoryBreakdown = computed(() => {
+  const counts = {}
+  props.inventory.forEach(i => {
+    const cat = i.category || 'Uncategorized'
+    counts[cat] = (counts[cat] || 0) + 1
+  })
+  return Object.entries(counts).map(([category, count]) => ({ category, count })).sort((a, b) => b.count - a.count)
+})
+
+const inventoryLowStockItems = computed(() =>
+  props.inventory.filter(i => i.quantity <= i.threshold)
+)
+
+function openInventoryPreview() {
+  inventoryReportGenAt.value = new Date().toLocaleString('en-PH', {
+    month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
+  showInventoryPreviewModal.value = true
+}
+
+async function exportInventoryReport() {
+  const ExcelJS = (await import('exceljs')).default
+  const wb = new ExcelJS.Workbook()
+  const ws = wb.addWorksheet('Inventory Report')
+
+  ws.columns = [
+    { header: 'Item',      key: 'item',      width: 28 },
+    { header: 'Category',  key: 'category',  width: 20 },
+    { header: 'Qty',       key: 'quantity',  width: 10 },
+    { header: 'Unit',      key: 'unit',      width: 10 },
+    { header: 'Threshold', key: 'threshold', width: 12 },
+    { header: 'Status',    key: 'status',    width: 14 },
+    { header: 'Supplier',  key: 'supplier',  width: 22 },
+  ]
+
+  const hdr = ws.getRow(1)
+  hdr.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+  hdr.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0C3B5E' } }
+  hdr.alignment = { vertical: 'middle', horizontal: 'center' }
+  hdr.height = 18
+
+  props.inventory.forEach(i => {
+    ws.addRow({
+      item:      i.item || '-',
+      category:  i.category || '-',
+      quantity:  Number(i.quantity ?? 0),
+      unit:      i.unit || '-',
+      threshold: Number(i.threshold ?? 0),
+      status:    i.status || '-',
+      supplier:  i.supplier || '-',
+    })
+  })
+
+  ws.eachRow((row, n) => {
+    if (n === 1) return
+    row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: n % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } }
+    row.alignment = { vertical: 'middle' }
+  })
+
+  const buf = await wb.xlsx.writeBuffer()
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `Inventory_Report_${new Date().toISOString().split('T')[0]}.xlsx`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function printInventoryReportPreview() {
+  const el = document.getElementById('inventory-report-print')
+  if (!el) return
+  const w = window.open('', '_blank', 'width=900,height=700')
+  const styles = `
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 8mm; }
+    .sales-report-print { width: 100%; background: #fff; }
+    .srp-header { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; background: #0c3b5e; color: #fff; border-radius: 6px 6px 0 0; margin-bottom: 10px; }
+    .srp-logo { width: 44px; height: 44px; border-radius: 8px; background: #0c3b5e; color: #f4c400; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; border: 2px solid #f4c400; }
+    .srp-header h2 { margin: 0; font-size: 15px; color: #fff; }
+    .srp-header p { margin: 2px 0 0; font-size: 10px; color: #93c5fd; }
+    .srp-meta { text-align: right; font-size: 9px; color: #93c5fd; }
+    .srp-meta strong { display: block; color: #fde68a; }
+    .srp-section { margin: 10px 0; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .srp-section h4 { margin: 0 0 8px; font-size: 11px; color: #0c3b5e; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    .srp-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
+    .srp-title-row h3 { margin: 0; font-size: 12px; color: #0c3b5e; }
+    .srp-title-row p { margin: 2px 0 0; font-size: 9px; color: #64748b; }
+    .srp-cards { display: flex; gap: 8px; padding: 8px 0; margin: 8px 0; flex-wrap: wrap; }
+    .srp-card { flex: 1; min-width: 140px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+    .srp-card span { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 2px; }
+    .srp-card strong { font-size: 16px; font-weight: 800; color: #1e293b; }
+    .srp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+    .srp-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    .srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; font-size: 8px; text-transform: uppercase; padding: 5px 6px; border: 1px solid #e2e8f0; text-align: left; }
+    .srp-table td { padding: 4px 6px; border: 1px solid #e2e8f0; color: #1e293b; font-size: 9px; }
+    .srp-table tr:nth-child(even) td { background: #f8fafc; }
+    @page { size: A4 portrait; margin: 8mm; }
+  `
+  w.document.write(`<!DOCTYPE html><html><head><title>Inventory Report</title><style>${styles}</style></head><body>${el.outerHTML}</body></html>`)
+  w.document.close()
+  w.focus()
+  w.print()
+  w.close()
+}
 </script>
 
 <style scoped>
@@ -980,53 +824,114 @@ watch(showMenuIngredientsModal, v => { if (v) fetchMenuIngredientLinks() })
 }
 .btn-primary i { color: var(--color-gold); }
 
-/* ────────────────────────────────────────────
-   STATS ROW  — #dbeafe chips, no borders
-──────────────────────────────────────────── */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.65rem;
-  margin-bottom: 1.1rem;
+.btn-export {
+  background: #0c3b5e;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(12,59,94,0.22);
 }
-
-.stat-chip {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.55rem 0.85rem;
-  background: #dbeafe;
-  border-radius: 10px;
-  border: none;
-  box-shadow: 0 1px 4px rgba(3,105,161,0.07);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+.btn-export:hover {
+  background: #0369a1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(3,105,161,0.28);
 }
-.stat-chip:hover { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(3,105,161,0.1); }
+.btn-export i { color: #f4c400; }
 
-.stat-icon {
-  width: 36px; height: 36px;
-  border-radius: 9px;
+/* ── Inventory Report Preview Overlay ── */
+.sales-preview-overlay {
+  position: fixed; inset: 0; z-index: 2100;
+  background: rgba(0,0,0,0.55);
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.95rem; flex-shrink: 0;
+  padding: 16px;
 }
-.icon-blue  { background: rgba(31,141,191,0.15); color: var(--color-primary-light); }
-.icon-green { background: rgba(34,197,94,0.15);  color: #15803d; }
-.icon-amber { background: rgba(217,119,6,0.15);  color: #b45309; }
-.icon-red   { background: rgba(239,68,68,0.15);  color: #dc2626; }
-
-.stat-body { display: flex; flex-direction: column; }
-.stat-value {
-  font-size: 1.3rem; font-weight: 800; line-height: 1;
-  color: var(--color-primary-light);
+.sales-preview-modal {
+  background: #fff;
+  border: 2px solid #f4c400;
+  border-radius: 10px;
+  box-shadow: 0 20px 48px rgba(15,23,42,.35);
+  width: min(1240px, 98vw);
+  max-height: 96vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
 }
-.val-green { color: #15803d; }
-.val-amber { color: #b45309; }
-.val-red   { color: #dc2626; }
-.stat-label {
-  font-size: 0.68rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.4px;
-  color: var(--color-text-light); margin-top: 2px;
+.sales-preview-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .65rem 1rem;
+  border-bottom: 2px solid #0c3b5e;
+  background: #0c3b5e;
+  color: #fff;
+  flex-shrink: 0;
 }
+.sales-preview-toolbar h3 { margin: 0; font-size: .92rem; color: #f4c400; }
+.sales-preview-toolbar p  { margin: 2px 0 0; font-size: .72rem; color: #93c5fd; }
+.sales-preview-actions { display: flex; gap: .45rem; }
+.sales-preview-scroll { flex: 1; overflow-y: auto; padding: 1rem; }
+.sales-report-print { width: 100%; background: #fff; }
+.srp-header {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #0c3b5e;
+  color: #fff;
+  border-radius: 6px 6px 0 0;
+  margin-bottom: 10px;
+}
+.srp-logo {
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  background: #0c3b5e;
+  color: #f4c400;
+  font-weight: 800; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #f4c400;
+}
+.srp-header h2 { margin: 0; font-size: 15px; color: #fff; }
+.srp-header p  { margin: 2px 0 0; font-size: 10px; color: #93c5fd; }
+.srp-meta { text-align: right; font-size: 9px; color: #93c5fd; }
+.srp-meta strong { display: block; color: #fde68a; }
+.srp-section {
+  margin: 10px 0; padding: 8px 12px;
+  border: 1px solid #e2e8f0; border-radius: 6px;
+}
+.srp-section h4 {
+  margin: 0 0 8px;
+  font-size: 11px; color: #0c3b5e;
+  font-weight: 700;
+  border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;
+}
+.srp-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.srp-title-row h3 { margin: 0; font-size: 12px; color: #0c3b5e; }
+.srp-title-row p  { margin: 2px 0 0; font-size: 9px; color: #64748b; }
+.srp-cards { display: flex; gap: 8px; padding: 8px 0; margin: 8px 0; flex-wrap: wrap; }
+.srp-card { flex: 1; min-width: 140px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+.srp-card span { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 2px; }
+.srp-card strong { font-size: 16px; font-weight: 800; color: #1e293b; }
+.srp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.srp-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+.srp-table th {
+  background: #f0f6fb; color: #0c3b5e;
+  font-weight: 700; font-size: 8px; text-transform: uppercase;
+  padding: 5px 6px; border: 1px solid #e2e8f0; text-align: left;
+}
+.srp-table td { padding: 4px 6px; border: 1px solid #e2e8f0; color: #1e293b; font-size: 9px; }
+.srp-table tr:nth-child(even) td { background: #f8fafc; }
+.btn-download {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: #f4c400; color: #0c3b5e;
+  border: none; border-radius: 7px;
+  padding: .45rem .95rem; font-size: .8rem; font-weight: 700;
+  cursor: pointer; transition: background .18s;
+}
+.btn-download:not(:disabled):hover { background: #ffd700; }
+.btn-preview {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: rgba(255,255,255,.12); color: #fff;
+  border: 1px solid rgba(255,255,255,.28); border-radius: 7px;
+  padding: .45rem .95rem; font-size: .8rem; font-weight: 600;
+  cursor: pointer; transition: background .18s;
+}
+.btn-preview:not(:disabled):hover { background: rgba(255,255,255,.22); }
 
 /* ────────────────────────────────────────────
    CONTROLS BAR  — #dbeafe bg, no borders
@@ -1310,212 +1215,6 @@ watch(showMenuIngredientsModal, v => { if (v) fetchMenuIngredientLinks() })
 }
 .modal-foot--right { justify-content: flex-end; }
 
-/* ── Inventory Report Preview ── */
-.report-preview-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  background: rgba(12,59,94,0.55);
-  backdrop-filter: blur(5px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: .45rem;
-}
-
-.report-preview-modal {
-  width: min(1260px, 99vw);
-  max-height: 98vh;
-  background: #eef5fb;
-  border-radius: 16px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 50px rgba(12,59,94,0.2);
-}
-
-.report-preview-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: .8rem;
-  padding: .7rem .9rem;
-  background: var(--color-navy);
-  border-bottom: 3px solid var(--color-gold);
-}
-
-.report-preview-title {
-  margin: 0;
-  font-size: .95rem;
-  font-weight: 800;
-  color: var(--color-white);
-}
-
-.report-preview-sub {
-  margin: .15rem 0 0;
-  font-size: .72rem;
-  color: rgba(255,255,255,.72);
-}
-
-.report-preview-body {
-  padding: .55rem;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.inventory-report-sheet {
-  width: min(1140px, 100%);
-  background: var(--color-white);
-  color: #0f172a;
-  padding: 7mm;
-  box-shadow: 0 4px 20px rgba(15,23,42,0.12);
-  border-radius: 12px;
-}
-
-.irs-header {
-  display: grid;
-  grid-template-columns: 42px 1fr auto;
-  gap: .5rem;
-  align-items: center;
-  border-bottom: 2px solid var(--color-navy);
-  padding-bottom: .35rem;
-}
-
-.irs-brand {
-  display: contents;
-}
-
-.irs-logo {
-  width: 42px;
-  height: 42px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-navy);
-  color: var(--color-gold);
-  font-weight: 800;
-}
-
-.irs-header h4 {
-  margin: 0;
-  font-size: .92rem;
-  color: var(--color-navy);
-}
-
-.irs-header p {
-  margin: .15rem 0 0;
-  font-size: .7rem;
-  color: var(--color-text-light);
-}
-
-.irs-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: .06rem;
-}
-
-.irs-meta span {
-  font-size: .62rem;
-  color: var(--color-text-light);
-}
-
-.irs-meta strong {
-  font-size: .72rem;
-}
-
-.irs-filters {
-  margin-top: .42rem;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: .35rem;
-  padding: .42rem .55rem;
-  border: 1px solid #dce8f3;
-  border-radius: 8px;
-  background: #f0f6fb;
-}
-
-.irs-filters span,
-.irs-card span {
-  display: block;
-  font-size: .6rem;
-  color: var(--color-text-light);
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-.irs-filters strong {
-  display: block;
-  margin-top: .08rem;
-  font-size: .72rem;
-}
-
-.irs-cards {
-  margin-top: .38rem;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: .32rem;
-}
-
-.irs-card {
-  border: 1px solid #dce8f3;
-  border-radius: 8px;
-  padding: .34rem .4rem;
-}
-
-.irs-card strong {
-  display: block;
-  margin-top: .14rem;
-  font-size: .8rem;
-  color: var(--color-navy);
-}
-
-.irs-section {
-  margin-top: .42rem;
-}
-
-.irs-section h5 {
-  margin: 0 0 .2rem;
-  font-size: .74rem;
-  color: var(--color-navy);
-}
-
-.irs-table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid #dce8f3;
-}
-
-.irs-table th,
-.irs-table td {
-  border: 1px solid #dce8f3;
-  padding: .24rem .3rem;
-  font-size: .64rem;
-  text-align: left;
-}
-
-.irs-table th {
-  background: #f0f6fb;
-  color: var(--color-navy);
-  font-weight: 700;
-}
-
-.report-preview-foot {
-  display: flex;
-  justify-content: flex-end;
-  gap: .6rem;
-  padding: .5rem .9rem .7rem;
-  border-top: 1px solid #d7e4ef;
-  background: #fff;
-}
-
-@media (min-width: 1024px) {
-  .inventory-report-sheet { zoom: .8; }
-}
-
 .btn-cancel {
   padding: 0.52rem 1.1rem; border-radius: 9px;
   background: var(--color-white); color: var(--color-text-light);
@@ -1636,13 +1335,6 @@ watch(showMenuIngredientsModal, v => { if (v) fetchMenuIngredientLinks() })
   .section-header { flex-direction: column; align-items: flex-start; }
   .header-buttons { width: 100%; }
   .btn-header { flex: 1; justify-content: center; }
-  .report-preview-modal { width: 100%; max-height: 94vh; }
-  .report-preview-body { overflow: auto; padding: .65rem; }
-  .inventory-report-sheet { width: 100%; padding: .7rem; }
-  .irs-header { grid-template-columns: 1fr; }
-  .irs-meta { align-items: flex-start; }
-  .irs-filters { grid-template-columns: 1fr; }
-  .irs-cards { grid-template-columns: repeat(2, 1fr); }
   .form-row { grid-template-columns: 1fr; }
   .links-grid { grid-template-columns: 1fr; }
   .ing-input-row { flex-wrap: wrap; }

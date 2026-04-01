@@ -139,6 +139,53 @@
           </div>
         </div>
 
+        <!-- Promo & Discount -->
+        <div class="border rounded-lg p-4 bg-gray-50">
+          <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-tag mr-2 text-blue-600"></i>Promo & Discount
+          </h4>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-sm font-semibold text-gray-700 mb-2 block">Promo Code</label>
+              <div class="flex gap-2">
+                <input
+                  v-model.trim="form.promoCode"
+                  type="text"
+                  class="w-full border rounded px-3 py-2 focus:border-blue-600 focus:outline-none"
+                  placeholder="e.g., SUMMER20"
+                  @keyup.enter="applyPromo"
+                >
+                <button
+                  type="button"
+                  @click="applyPromo"
+                  class="px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                >
+                  Apply
+                </button>
+              </div>
+              <p v-if="promoError" class="text-xs text-red-600 mt-2">{{ promoError }}</p>
+              <p v-else-if="appliedPromo" class="text-xs text-green-700 mt-2">
+                Applied {{ appliedPromo.code }} ({{ appliedPromo.type === 'percent' ? `${appliedPromo.value}%` : `₱${Number(appliedPromo.value || 0).toLocaleString()}` }} off)
+              </p>
+            </div>
+
+            <div>
+              <label class="text-sm font-semibold text-gray-700 mb-2 block">People Discount (%)</label>
+              <input
+                v-model.number="form.peopleDiscountPercent"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                class="w-full border rounded px-3 py-2 focus:border-blue-600 focus:outline-none"
+                placeholder="Optional"
+              >
+              <p class="text-xs text-gray-500 mt-2">Applies to {{ totalGuests }} guest{{ totalGuests !== 1 ? 's' : '' }}</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Special Requests -->
         <div class="border rounded-lg p-4 bg-gray-50">
           <h4 class="font-bold text-gray-800 mb-4 flex items-center">
@@ -161,7 +208,15 @@
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-gray-700">{{ durationCount }} {{ isCottage ? `day${durationCount > 1 ? 's' : ''}` : `night${durationCount > 1 ? 's' : ''}` }}:</span>
-              <span class="font-semibold">₱{{ (itemPrice * durationCount).toLocaleString() }}</span>
+              <span class="font-semibold">₱{{ subtotal.toLocaleString() }}</span>
+            </div>
+            <div v-if="promoDiscountAmount > 0" class="flex justify-between text-sm text-green-700">
+              <span>Promo Discount:</span>
+              <span class="font-semibold">-₱{{ promoDiscountAmount.toLocaleString() }}</span>
+            </div>
+            <div v-if="peopleDiscountAmount > 0" class="flex justify-between text-sm text-green-700">
+              <span>People Discount:</span>
+              <span class="font-semibold">-₱{{ peopleDiscountAmount.toLocaleString() }}</span>
             </div>
             <div class="border-t border-blue-300 pt-2 flex justify-between text-lg">
               <span class="font-bold text-gray-800">Total:</span>
@@ -210,6 +265,10 @@ export default {
     itemCategory: {
       type: String,
       default: ''
+    },
+    promos: {
+      type: Array,
+      default: () => []
     }
   },
   data() {
@@ -223,8 +282,12 @@ export default {
         children: 0,
         checkIn: '',
         checkOut: '',
+        promoCode: '',
+        peopleDiscountPercent: 0,
         specialRequests: ''
-      }
+      },
+      appliedPromo: null,
+      promoError: ''
     };
   },
   computed: {
@@ -254,6 +317,35 @@ export default {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return this.isCottage ? diffDays + 1 : diffDays;
     },
+    categoryKey() {
+      const raw = String(this.itemCategory || '').toLowerCase();
+      if (raw === 'rooms') return 'room';
+      if (raw.includes('cottage')) return 'cottage';
+      if (raw.includes('event')) return 'event';
+      return raw;
+    },
+    totalGuests() {
+      return Number(this.form.adults || 0) + Number(this.form.children || 0);
+    },
+    subtotal() {
+      return Number(this.itemPrice || 0) * Number(this.durationCount || 0);
+    },
+    promoDiscountAmount() {
+      if (!this.appliedPromo || this.subtotal <= 0) return 0;
+      const value = Number(this.appliedPromo.value || 0);
+      if (!Number.isFinite(value) || value <= 0) return 0;
+
+      if (this.appliedPromo.type === 'percent') {
+        return Math.min(this.subtotal, (this.subtotal * value) / 100);
+      }
+      return Math.min(this.subtotal, value);
+    },
+    peopleDiscountAmount() {
+      const percent = Number(this.form.peopleDiscountPercent || 0);
+      if (!Number.isFinite(percent) || percent <= 0) return 0;
+      const baseAfterPromo = Math.max(0, this.subtotal - this.promoDiscountAmount);
+      return Math.min(baseAfterPromo, (baseAfterPromo * Math.min(percent, 100)) / 100);
+    },
     isDateRangeValid() {
       if (!this.form.checkIn || !this.form.checkOut) return false;
       const checkIn = new Date(this.form.checkIn);
@@ -261,7 +353,7 @@ export default {
       return this.isCottage ? checkOut >= checkIn : checkOut > checkIn;
     },
     lineTotal() {
-      return this.itemPrice * this.durationCount;
+      return Math.max(0, this.subtotal - this.promoDiscountAmount - this.peopleDiscountAmount);
     },
     isFormValid() {
       return (
@@ -276,6 +368,77 @@ export default {
     }
   },
   methods: {
+    isPromoActive(promo) {
+      const now = new Date();
+      const start = promo.startDate ? new Date(promo.startDate) : null;
+      const end = promo.endDate ? new Date(promo.endDate) : null;
+      if (start && now < start) return false;
+      if (end && now > end) return false;
+      return true;
+    },
+    getMinGuestsFromPromo(promo) {
+      const text = `${promo.code || ''} ${promo.description || ''}`.toLowerCase();
+      const patterns = [
+        /min(?:imum)?\s*(?:of)?\s*(\d+)\s*(?:pax|people|persons|guests|heads?)/,
+        /(\d+)\s*(?:pax|people|persons|guests|heads?)\s*(?:and up|or more|minimum|min)/
+      ];
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) return Number(match[1]);
+      }
+      return null;
+    },
+    isPromoCategoryApplicable(promo) {
+      const text = `${promo.code || ''} ${promo.description || ''}`.toLowerCase();
+      const mentionsRoom = /\broom(s)?\b/.test(text);
+      const mentionsCottage = /\bcottage(s)?\b/.test(text);
+      const mentionsEvent = /\bevent(s)?\b/.test(text);
+      const hasCategoryHint = mentionsRoom || mentionsCottage || mentionsEvent;
+
+      if (!hasCategoryHint) return true;
+      if (this.categoryKey === 'room') return mentionsRoom;
+      if (this.categoryKey === 'cottage') return mentionsCottage;
+      if (this.categoryKey === 'event') return mentionsEvent;
+      return false;
+    },
+    applyPromo() {
+      const enteredCode = String(this.form.promoCode || '').trim();
+      this.promoError = '';
+      this.appliedPromo = null;
+
+      if (!enteredCode) return;
+
+      const promo = (this.promos || []).find(
+        p => String(p.code || '').toLowerCase() === enteredCode.toLowerCase()
+      );
+
+      if (!promo) {
+        this.promoError = 'Promo code not found.';
+        return;
+      }
+
+      if (!this.isPromoActive(promo)) {
+        this.promoError = 'Promo code is not active.';
+        return;
+      }
+
+      if (!this.isPromoCategoryApplicable(promo)) {
+        this.promoError = 'Promo code is not applicable to this category.';
+        return;
+      }
+
+      const minGuests = this.getMinGuestsFromPromo(promo);
+      if (minGuests && this.totalGuests < minGuests) {
+        this.promoError = `Promo requires at least ${minGuests} guests.`;
+        return;
+      }
+
+      this.appliedPromo = {
+        code: String(promo.code || '').toUpperCase(),
+        type: String(promo.type || '').toLowerCase() === 'fixed' ? 'fixed' : 'percent',
+        value: Number(promo.value || 0)
+      };
+    },
     incrementAdults() {
       this.form.adults++;
     },
@@ -306,6 +469,12 @@ export default {
         checkOut: this.form.checkOut,
         specialRequests: this.form.specialRequests,
         nights: this.durationCount,
+        subtotal: this.subtotal,
+        promoCode: this.appliedPromo?.code || null,
+        promoDiscount: this.promoDiscountAmount,
+        peopleDiscountPercent: Number(this.form.peopleDiscountPercent || 0),
+        peopleDiscountAmount: this.peopleDiscountAmount,
+        totalDiscount: this.promoDiscountAmount + this.peopleDiscountAmount,
         lineTotal: this.lineTotal
       });
       
@@ -322,8 +491,12 @@ export default {
         children: 0,
         checkIn: '',
         checkOut: '',
+        promoCode: '',
+        peopleDiscountPercent: 0,
         specialRequests: ''
       };
+      this.appliedPromo = null;
+      this.promoError = '';
     },
     closeModal() {
       this.$emit('close');

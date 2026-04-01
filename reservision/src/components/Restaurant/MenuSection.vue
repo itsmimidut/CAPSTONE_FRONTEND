@@ -19,31 +19,6 @@
       </div>
     </div>
 
-    <!-- ── Stats Chips ── -->
-    <div class="stats-container">
-      <div class="stat-chip stat-chip--blue">
-        <div class="stat-chip-icon"><i class="fas fa-utensils"></i></div>
-        <div class="stat-chip-body">
-          <span class="stat-chip-value">{{ menu.length }}</span>
-          <span class="stat-chip-label">Total Items</span>
-        </div>
-      </div>
-      <div class="stat-chip stat-chip--green">
-        <div class="stat-chip-icon"><i class="fas fa-check-circle"></i></div>
-        <div class="stat-chip-body">
-          <span class="stat-chip-value">{{ menu.filter(i => i.available).length }}</span>
-          <span class="stat-chip-label">Available</span>
-        </div>
-      </div>
-      <div class="stat-chip stat-chip--red">
-        <div class="stat-chip-icon"><i class="fas fa-ban"></i></div>
-        <div class="stat-chip-body">
-          <span class="stat-chip-value">{{ menu.filter(i => !i.available).length }}</span>
-          <span class="stat-chip-label">Unavailable</span>
-        </div>
-      </div>
-    </div>
-
     <!-- ── Search & Filter ── -->
     <div class="controls-bar">
       <div class="search-box">

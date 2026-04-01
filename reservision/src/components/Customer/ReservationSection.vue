@@ -33,13 +33,26 @@
             <label class="search-label"><i class="fas fa-tag sl-icon"></i> Promo Code</label>
             <div class="search-input-wrap">
               <i class="fas fa-tag search-input-icon"></i>
-              <input placeholder="Optional" class="search-input" />
+              <input
+                v-model.trim="promoCode"
+                placeholder="Optional"
+                class="search-input"
+                @keyup.enter="handleSearch"
+              />
             </div>
+
+            <p v-if="promoError" class="promo-message promo-error">{{ promoError }}</p>
+            <p v-else-if="appliedPromo" class="promo-message promo-success">
+              Promo applied:
+              <strong>{{ appliedPromo.code }}</strong>
+              <span v-if="appliedPromo.type === 'percent'"> — {{ appliedPromo.value }}% off</span>
+              <span v-else-if="appliedPromo.type === 'fixed'"> — ₱{{ Number(appliedPromo.value || 0).toLocaleString() }} off</span>
+            </p>
           </div>
 
           <button class="search-go-btn" @click="handleSearch">
             <i class="fas fa-search"></i>
-            <span class="search-go-text">Search</span>
+            <span class="search-go-text">Apply</span>
           </button>
         </div>
 
@@ -472,321 +485,593 @@ export default {
         imgs: [],
         current: 0,
         title: ''
-      }
+      },
+      promoCode: '',
+      appliedPromo: null,
+      promoError: '',
+      isPromoChecking: false
     }
   },
-  computed: {
+    computed: {
     nights() {
       if (!this.checkIn || !this.checkOut) return 0
       return Math.ceil((this.checkOut - this.checkIn) / 86400000)
     },
-    total() {
+
+    subtotal() {
       return this.booking.reduce((sum, b) => {
-        const base = b.item.price * b.qty
+        const base = Number(b.item.price || 0) * Number(b.qty || 0)
         return sum + (b.item.perNight && this.nights ? base * this.nights : base)
       }, 0)
     },
+
+    discountAmount() {
+      if (!this.appliedPromo) return 0
+
+      const type = String(this.appliedPromo.type || '').toLowerCase()
+      const value = Number(this.appliedPromo.value || 0)
+
+      if (type === 'percent') {
+        return Math.min(this.subtotal, this.subtotal * (value / 100))
+      }
+
+      if (type === 'fixed') {
+        return Math.min(this.subtotal, value)
+      }
+
+      return 0
+    },
+
+    total() {
+      return Math.max(0, this.subtotal - this.discountAmount)
+    },
+
     dateStr() {
       const fmt = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
       if (this.checkIn && this.checkOut) return `${fmt(this.checkIn)} – ${fmt(this.checkOut)}`
       if (this.checkIn) return fmt(this.checkIn)
       return 'Select Dates'
     },
+
     guestStr() {
       let s = `${this.adults} Adult${this.adults > 1 ? 's' : ''}`
       if (this.children) s += `, ${this.children} Child${this.children > 1 ? 'ren' : ''}`
       return s
     },
+
+    totalGuests() {
+      return Number(this.adults || 0) + Number(this.children || 0)
+    },
+
     bookedDateItems() {
       return this.booking.filter(b => b?.item?.perNight)
         .map(b => ({ item_id: b.item.item_id, category: b.item.category, name: b.item.name }))
     },
+
     dateSensitiveRooms() {
       return [...this.itemData.rooms, ...this.itemData.cottages, ...this.itemData.events].filter(i => i?.perNight)
     },
+
+    groupedCategoryItems() {
+      return this.groupItemsByAvailability(this.itemData[this.currentCategory] || [])
+    },
+
     visibleCategoryItems() {
-      const items = this.itemData[this.currentCategory] || []
-      if (!this.checkIn || !this.checkOut) return items
-      return items.filter(item => !item?.perNight || !this.isItemBookedInRange(item.item_id, this.checkIn, this.checkOut))
+      const guests = this.totalGuests
+      const hasDateRange = !!this.checkIn && !!this.checkOut
+
+      return this.groupedCategoryItems.filter(item => {
+        const fitsGuests = !item?.perNight || Number(item.maxGuests || 0) >= guests
+
+        // If no dates yet, allow browsing all per-night items
+        const isAvailable = !item?.perNight || !hasDateRange || (item.availableQuantity || 0) > 0
+
+        return fitsGuests && isAvailable
+      })
     },
+
     hiddenFullyBookedCount() {
-      return Math.max(0, (this.itemData[this.currentCategory] || []).length - this.visibleCategoryItems.length)
+      const hasDateRange = !!this.checkIn && !!this.checkOut
+      if (!hasDateRange) return 0
+
+      return Math.max(0, this.groupedCategoryItems.length - this.visibleCategoryItems.length)
     },
+
     sortedSwimmingDates() {
       return [...this.swimmingFormData.dates].sort((a, b) => new Date(a) - new Date(b))
     }
   },
-  methods: {
-    parseImageArray(value) {
-      if (!value) return []
-      if (Array.isArray(value)) return value
-      try {
-        const parsed = JSON.parse(value)
-        return Array.isArray(parsed) ? parsed : []
-      } catch {
-        return []
-      }
-    },
-    resolveImageUrl(rawPath) {
-      if (!rawPath) return ''
-      const path = String(rawPath).trim()
-      if (!path) return ''
-
-      if (
-        path.startsWith('http://') ||
-        path.startsWith('https://') ||
-        path.startsWith('data:') ||
-        path.startsWith('blob:')
-      ) return path
-
-      if (path.startsWith('//')) return `${window.location.protocol}${path}`
-      if (path.startsWith('/')) return `${this.apiRoot}${path}`
-      return `${this.apiRoot}/${path.replace(/^\.?\//, '')}`
-    },
-    normalizeImages(rawImages, fallbackImage, primaryImageIndex = 0) {
-      const resolved = this.parseImageArray(rawImages)
-        .map(img => this.resolveImageUrl(img))
-        .filter(Boolean)
-
-      if (!resolved.length) return [fallbackImage]
-
-      const idx = Number(primaryImageIndex)
-      if (Number.isInteger(idx) && idx >= 0 && idx < resolved.length && idx !== 0) {
-        const [primary] = resolved.splice(idx, 1)
-        resolved.unshift(primary)
-      }
-
-      return resolved
-    },
-    getCatIcon(cat) {
-      const icons = { rooms: 'fas fa-bed', cottages: 'fas fa-home', food: 'fas fa-utensils', events: 'fas fa-calendar-alt', swimming: 'fas fa-swimmer' }
-      return icons[cat] || 'fas fa-th'
-    },
-
-    // ── Image preview ──────────────────────────────
-    openImagePreview(imgs, title, startIdx = 0) {
-      this.imagePreview = { show: true, imgs: Array.isArray(imgs) ? imgs : [imgs], current: startIdx, title: title || '' }
-      document.body.style.overflow = 'hidden'
-    },
-    closeImagePreview() {
-      this.imagePreview.show = false
-      document.body.style.overflow = ''
-    },
-    prevPreviewImg() {
-      const len = this.imagePreview.imgs.length
-      this.imagePreview.current = (this.imagePreview.current - 1 + len) % len
-    },
-    nextPreviewImg() {
-      this.imagePreview.current = (this.imagePreview.current + 1) % this.imagePreview.imgs.length
-    },
-
-    // ── Date helpers ───────────────────────────────
-    toLocalDateKey(date) {
-      if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null
-      const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2,'0'), d = String(date.getDate()).padStart(2,'0')
-      return `${y}-${m}-${d}`
-    },
-    normalizeDateKey(dateLike) {
-      if (!dateLike) return null
-      if (dateLike instanceof Date) return this.toLocalDateKey(dateLike)
-      const raw = String(dateLike).trim(), match = raw.match(/^(\d{4}-\d{2}-\d{2})/)
-      if (match) return match[1]
-      const p = new Date(raw)
-      return Number.isNaN(p.getTime()) ? null : this.toLocalDateKey(p)
-    },
-
-    // ── API ────────────────────────────────────────
-    async fetchOccupiedDates() {
-      try {
-        const res = await fetch(`${this.apiBaseUrl}/bookings/occupied-dates`)
-        const data = await res.json()
-        let records = []
-        if (Array.isArray(data)) records = data
-        else if (data && Array.isArray(data.data)) records = data.data
-        else if (data?.data && typeof data.data === 'object') {
-          for (const key of ['occupiedDates','rows','occupied_dates','dates']) {
-            if (Array.isArray(data.data[key])) { records = data.data[key]; break }
-          }
-        } else if (data && Array.isArray(data.occupied_dates)) records = data.occupied_dates
-        this.occupiedDates = records
-          .filter(i => i && (i.inventory_item_id || i.inventoryItemId || i.inventory_id))
-          .map(i => ({ inventoryItemId: i.inventory_item_id ?? i.inventoryItemId ?? i.inventory_id, occupiedDate: i.occupied_date ?? i.occupiedDate ?? i.date }))
-      } catch { this.occupiedDates = [] }
-    },
-
-    async fetchInventoryItems() {
-      try {
-        this.loading = true
-        const res = await fetch(`${this.apiBaseUrl}/rooms`)
-        const data = await res.json()
-        let items = Array.isArray(data) ? data : (data.success && data.data ? data.data : [])
-        this.itemData.rooms = []; this.itemData.cottages = []; this.itemData.events = []; this.itemData.food = []
-        items.forEach(item => {
-          const images = this.normalizeImages(item.images, this.fallbackRoomImage, item.primaryImageIndex)
-          const ct = (item.category_type || '').toLowerCase()
-          const fi = { id: item.item_id, item_id: item.item_id, name: item.name || 'Unnamed', price: parseFloat(item.price) || 0, desc: item.description || '', description: item.description || '', amenities: [], imgs: images, perNight: true, maxGuests: item.max_guests || 2, category: item.category, status: item.status, categoryType: ct }
-          if (ct === 'room') this.itemData.rooms.push(fi)
-          else if (ct === 'cottage') this.itemData.cottages.push(fi)
-          else if (ct === 'event') this.itemData.events.push(fi)
-        })
-        await this.fetchMenuItems()
-      } catch (e) { console.error(e) } finally { this.loading = false }
-    },
-
-    async fetchMenuItems() {
-      try {
-        const res = await fetch(`${this.apiBaseUrl}/restaurant/menu`)
-        const data = await res.json()
-        if (data.success && data.data) {
-          data.data.slice(0,5).forEach(item => {
-            const images = this.normalizeImages(item.image, this.fallbackFoodImage, item.primaryImageIndex)
-            this.itemData.food.push({ id: 'm'+item.item_id, item_id: item.item_id, name: item.name, price: parseFloat(item.price), desc: item.description, description: item.description, amenities: [], imgs: images, perNight: false, maxGuests: 1, category: 'Food' })
-          })
+    methods: {
+      parseImageArray(value) {
+        if (!value) return []
+        if (Array.isArray(value)) return value
+        try {
+          const parsed = JSON.parse(value)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
         }
-      } catch {}
-    },
+      },
+      resolveImageUrl(rawPath) {
+        if (!rawPath) return ''
+        const path = String(rawPath).trim()
+        if (!path) return ''
 
-    // ── Booking logic ──────────────────────────────
-    isRoomBookedOnDate(roomItemId, date) {
-      const dk = this.normalizeDateKey(date)
-      if (!dk) return false
-      const rid = Number(roomItemId)
-      return this.occupiedDates.some(e => {
-        if (Number(e.inventoryItemId ?? e.inventory_item_id) !== rid) return false
-        return this.normalizeDateKey(e.occupiedDate ?? e.occupied_date ?? e.date) === dk
-      })
-    },
-    isItemBookedInRange(itemId, s, e) {
-      if (!itemId || !s || !e || e <= s) return false
-      const c = new Date(s)
-      while (c < e) { if (this.isRoomBookedOnDate(itemId, c)) return true; c.setDate(c.getDate()+1) }
-      return false
-    },
-    isAnySelectedRoomBookedOnDate(date) {
-      const rooms = this.booking.filter(b => ['room','rooms'].includes((b.item.categoryType || b.item.category || '').toLowerCase()))
-      return rooms.length > 0 && rooms.some(b => this.isRoomBookedOnDate(b.item.item_id, date))
-    },
-    hasBookedDateInRange(s, e) {
-      if (!s || !e || e <= s) return false
-      const c = new Date(s)
-      while (c < e) { if (this.isAnySelectedRoomBookedOnDate(c)) return true; c.setDate(c.getDate()+1) }
-      return false
-    },
-    selectDate(date) {
-      this.calendarValidationError = ''
-      if (this.isAnySelectedRoomBookedOnDate(date)) { this.calendarValidationError = 'One of your selected rooms is occupied on this date.'; return }
-      if (!this.checkIn || (this.checkIn && this.checkOut)) { this.checkIn = date; this.checkOut = null }
-      else if (date > this.checkIn) {
-        if (this.hasBookedDateInRange(this.checkIn, date)) { this.calendarValidationError = 'Your range includes occupied date(s).'; return }
-        this.checkOut = date
-      } else { this.checkIn = date; this.checkOut = null }
-    },
-    clearBooking() { this.booking = []; this.checkIn = null; this.checkOut = null; localStorage.removeItem('pendingBooking') },
-    prevMonth() { this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth()-1) },
-    nextMonth() { this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth()+1) },
-    clearDates() { this.checkIn = null; this.checkOut = null; this.calendarValidationError = '' },
-    changeAdults(d) { this.adults = Math.max(1, this.adults + d) },
-    changeChildren(d) { this.children = Math.max(0, this.children + d) },
+        if (
+          path.startsWith('http://') ||
+          path.startsWith('https://') ||
+          path.startsWith('data:') ||
+          path.startsWith('blob:')
+        ) return path
 
-    addToBooking(item, qty, guests) {
-      if (item.category === 'Swimming') {
-        this.selectedSwimmingProgram = item
-        this.swimmingFormData = { participants: 1, dates: [], time: '', newDate: '' }
-        this.swimmingCalendarMonth = new Date()
-        this.showSwimmingForm = true
-        return
-      }
-      if (item.perNight && this.checkIn && this.checkOut && this.isItemBookedInRange(item.item_id, this.checkIn, this.checkOut)) {
-        alert(`${item.name} is occupied for the selected dates.`); return
-      }
-      const ex = this.booking.find(b => b.item.id === item.id)
-      if (ex) { ex.qty += qty; ex.guests = guests } else this.booking.push({ item, qty, guests })
-      localStorage.setItem('pendingBooking', JSON.stringify({ items: this.booking, checkIn: this.checkIn, checkOut: this.checkOut, nights: this.nights, adults: this.adults, children: this.children }))
-    },
-    removeFromBooking(itemId) {
-      this.booking = this.booking.filter(b => b.item.id !== itemId)
-      if (!this.booking.length) { this.checkIn = null; this.checkOut = null; localStorage.removeItem('pendingBooking') }
-      else localStorage.setItem('pendingBooking', JSON.stringify({ items: this.booking, checkIn: this.checkIn, checkOut: this.checkOut, nights: this.nights, adults: this.adults, children: this.children }))
-    },
-    openViewMore(item) { this.selectedItem = item; this.showViewMore = true },
-    proceedToCheckout() {
-      if (!this.booking.length) return
-      if (this.booking.some(b => b.item.perNight) && (!this.checkIn || !this.checkOut)) return
-      localStorage.setItem('pendingBooking', JSON.stringify({ items: this.booking, checkIn: this.checkIn, checkOut: this.checkOut, nights: this.nights, adults: this.adults, children: this.children, total: this.total, subtotal: this.total }))
-      this.showBookingConfirmation = true
-    },
-    handleViewReservations() {
-      this.showBookingConfirmation = false
-      this.booking = []; this.checkIn = null; this.checkOut = null
-      localStorage.removeItem('pendingBooking')
-      alert('Booking completed! View your reservations in the Reservations tab.')
-    },
-    handleSearch() {
-      if (!this.checkIn) { this.showCalendar = true; return }
-      this.mobileSearchOpen = false
-      this.$nextTick(() => { document.querySelector('.main-layout')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) })
-    },
+        if (path.startsWith('//')) return `${window.location.protocol}${path}`
+        if (path.startsWith('/')) return `${this.apiRoot}${path}`
+        return `${this.apiRoot}/${path.replace(/^\.?\//, '')}`
+      },
+      normalizeImages(rawImages, fallbackImage, primaryImageIndex = 0) {
+        const resolved = this.parseImageArray(rawImages)
+          .map(img => this.resolveImageUrl(img))
+          .filter(Boolean)
 
-    // ── Swimming ───────────────────────────────────
-    toggleSwimmingDate(ds) {
-      if (!ds) return
-      const i = this.swimmingFormData.dates.indexOf(ds)
-      if (i > -1) this.swimmingFormData.dates.splice(i, 1)
-      else {
-        if (this.swimmingFormData.dates.length >= 10) { alert('Maximum 10 session dates'); return }
-        this.swimmingFormData.dates.push(ds)
-      }
-    },
-    getSwimmingCalendarDays() {
-      const year = this.swimmingCalendarMonth.getFullYear(), month = this.swimmingCalendarMonth.getMonth()
-      const first = new Date(year, month, 1), startDow = first.getDay()
-      const dim = new Date(year, month+1, 0).getDate(), prev = new Date(year, month, 0).getDate()
-      const today = new Date(); today.setHours(0,0,0,0)
-      const days = []
-      for (let i = startDow-1; i >= 0; i--) days.push({ date: prev-i, isCurrentMonth: false, dateString: '', isSelected: false, isPast: true })
-      for (let d = 1; d <= dim; d++) {
-        const dt = new Date(year, month, d)
-        const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
-        days.push({ date: d, isCurrentMonth: true, dateString: ds, isSelected: this.swimmingFormData.dates.includes(ds), isPast: dt < today })
-      }
-      for (let d = 1; days.length < 42; d++) days.push({ date: d, isCurrentMonth: false, dateString: '', isSelected: false, isPast: false })
-      return days
-    },
-    getSwimmingMonthYear() { return this.swimmingCalendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) },
-    prevSwimmingMonth() { this.swimmingCalendarMonth = new Date(this.swimmingCalendarMonth.getFullYear(), this.swimmingCalendarMonth.getMonth()-1) },
-    nextSwimmingMonth() { this.swimmingCalendarMonth = new Date(this.swimmingCalendarMonth.getFullYear(), this.swimmingCalendarMonth.getMonth()+1) },
-    formatDateDisplay(ds) { return new Date(ds+'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) },
-    calculateSwimmingTotal() { return (this.selectedSwimmingProgram?.price || 0) * (this.swimmingFormData.participants || 0) },
-    closeSwimmingForm() { this.showSwimmingForm = false; this.selectedSwimmingProgram = null; this.swimmingFormData = { participants: 1, dates: [], time: '', newDate: '' }; this.swimmingCalendarMonth = new Date() },
-    submitSwimmingBooking() {
-      if (!this.swimmingFormData.participants || this.swimmingFormData.participants < 1) { alert('Please enter number of participants'); return }
-      if (!this.swimmingFormData.dates.length) { alert('Please select at least one date'); return }
-      if (this.swimmingFormData.dates.length > 10) { alert('Maximum 10 session dates'); return }
-      if (!this.swimmingFormData.time) { alert('Please select a time slot'); return }
-      const total = this.calculateSwimmingTotal()
-      this.booking.push({ item: { ...this.selectedSwimmingProgram, price: total }, qty: 1, guests: this.swimmingFormData.participants, swimmingDetails: { dates: [...this.swimmingFormData.dates], time: this.swimmingFormData.time, participants: this.swimmingFormData.participants, packagePrice: this.selectedSwimmingProgram.price, totalSessions: 10, selectedDates: this.swimmingFormData.dates.length } })
-      localStorage.setItem('pendingBooking', JSON.stringify({ items: this.booking, checkIn: this.checkIn, checkOut: this.checkOut, nights: this.nights, adults: this.adults, children: this.children }))
-      this.closeSwimmingForm()
-    },
+        if (!resolved.length) return [fallbackImage]
 
-    // ── Contact form ───────────────────────────────
-    submitContactForm() {
-      const required = ['contactFirstName','contactLastName','contactPhone','contactEmail','contactAddress','contactCity','contactPostal']
-      if (required.some(k => !this[k]?.trim())) return
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.contactEmail)) return
-      if (this.contactPhone.length !== 10 || !/^\d+$/.test(this.contactPhone)) return
-      localStorage.setItem('completedBooking', JSON.stringify({
-        items: this.booking, checkIn: this.checkIn, checkOut: this.checkOut,
-        nights: this.nights, adults: this.adults, children: this.children, total: this.total,
-        customer: { firstName: this.contactFirstName, lastName: this.contactLastName, fullName: `${this.contactFirstName} ${this.contactLastName}` },
-        contact: { phone: '+63'+this.contactPhone, email: this.contactEmail, address: this.contactAddress, city: this.contactCity, country: this.contactCountry, postal: this.contactPostal },
-        specialRequests: this.contactSpecialRequests
-      }))
-      const bookingId = 'BK' + Date.now().toString().slice(-8)
-      this.confirmationEmail = this.contactEmail; this.confirmationBookingId = bookingId; this.showContactForm = false
-      setTimeout(() => this.$router.push({ name: 'BookingConfirmation', query: { email: this.contactEmail, bookingId } }), 500)
-      setTimeout(() => { this.booking = []; this.checkIn = null; this.checkOut = null; localStorage.removeItem('pendingBooking') }, 1000)
+        const idx = Number(primaryImageIndex)
+        if (Number.isInteger(idx) && idx >= 0 && idx < resolved.length && idx !== 0) {
+          const [primary] = resolved.splice(idx, 1)
+          resolved.unshift(primary)
+        }
+
+        return resolved
+      },
+      getCatIcon(cat) {
+        const icons = { rooms: 'fas fa-bed', cottages: 'fas fa-home', food: 'fas fa-utensils', events: 'fas fa-calendar-alt', swimming: 'fas fa-swimmer' }
+        return icons[cat] || 'fas fa-th'
+      },
+      getItemGroupKey(item) {
+        return [item.categoryType || item.category || '', item.name || '', item.price || 0, item.maxGuests || 0].join('::')
+      },
+      getAvailableInventoryIds(item) {
+        // Prefer pre-computed availableInventoryIds set by groupItemsByAvailability
+        if (Array.isArray(item.availableInventoryIds)) return item.availableInventoryIds
+
+        const candidateIds = Array.isArray(item.inventoryItemIds) && item.inventoryItemIds.length
+          ? item.inventoryItemIds
+          : (item.item_id ? [item.item_id] : [])
+
+        if (!item?.perNight || !this.checkIn || !this.checkOut) return candidateIds
+
+        return candidateIds.filter(id => !this.isItemBookedInRange(id, this.checkIn, this.checkOut))
+      },
+      groupItemsByAvailability(items) {
+        if (!Array.isArray(items) || !items.length) return []
+        if (['food', 'swimming'].includes(this.currentCategory)) return items
+
+        const groups = new Map()
+
+        items.forEach(item => {
+          const itemStatus = String(item.status || '').toLowerCase()
+          // Only exclude items under maintenance — 'Occupied' rooms can still be booked for future dates
+          if (itemStatus === 'under maintenance' || itemStatus === 'maintenance') return
+
+          const key = this.getItemGroupKey(item)
+
+          if (!groups.has(key)) {
+            groups.set(key, {
+              ...item,
+              groupKey: key,
+              inventoryItemIds: [],
+              // totalStock = count of non-maintenance unit rows for this room type
+              totalStock: 0
+            })
+          }
+
+          const groupedItem = groups.get(key)
+          groupedItem.inventoryItemIds.push(item.item_id)
+          // Each row represents exactly 1 physical unit
+          groupedItem.totalStock += 1
+        })
+
+        return Array.from(groups.values()).map(groupedItem => {
+          // availableQuantity = number of unit IDs that are NOT booked in selected date range
+          const availableIds = groupedItem.perNight && this.checkIn && this.checkOut
+            ? groupedItem.inventoryItemIds.filter(
+                id => !this.isItemBookedInRange(id, this.checkIn, this.checkOut)
+              )
+            : groupedItem.inventoryItemIds
+          return {
+            ...groupedItem,
+            totalInventoryQuantity: groupedItem.totalStock,
+            // availableInventoryIds lets addToBooking pick real free unit IDs directly
+            availableInventoryIds: availableIds,
+            availableQuantity: availableIds.length
+          }
+        })
+      },
+      getSelectedInventoryIds(bookingItem) {
+        if (Array.isArray(bookingItem?.selectedInventoryItemIds) && bookingItem.selectedInventoryItemIds.length) {
+          return bookingItem.selectedInventoryItemIds
+        }
+        if (bookingItem?.item?.item_id) return [bookingItem.item.item_id]
+        return []
+      },
+
+      // ── Image preview ──────────────────────────────
+      openImagePreview(imgs, title, startIdx = 0) {
+        this.imagePreview = { show: true, imgs: Array.isArray(imgs) ? imgs : [imgs], current: startIdx, title: title || '' }
+        document.body.style.overflow = 'hidden'
+      },
+      closeImagePreview() {
+        this.imagePreview.show = false
+        document.body.style.overflow = ''
+      },
+      prevPreviewImg() {
+        const len = this.imagePreview.imgs.length
+        this.imagePreview.current = (this.imagePreview.current - 1 + len) % len
+      },
+      nextPreviewImg() {
+        this.imagePreview.current = (this.imagePreview.current + 1) % this.imagePreview.imgs.length
+      },
+
+      // ── Date helpers ───────────────────────────────
+      toLocalDateKey(date) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null
+        const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2,'0'), d = String(date.getDate()).padStart(2,'0')
+        return `${y}-${m}-${d}`
+      },
+      normalizeDateKey(dateLike) {
+        if (!dateLike) return null
+        if (dateLike instanceof Date) return this.toLocalDateKey(dateLike)
+        const raw = String(dateLike).trim(), match = raw.match(/^(\d{4}-\d{2}-\d{2})/)
+        if (match) return match[1]
+        const p = new Date(raw)
+        return Number.isNaN(p.getTime()) ? null : this.toLocalDateKey(p)
+      },
+
+      // ── API ────────────────────────────────────────
+      async fetchOccupiedDates() {
+        try {
+          const res = await fetch(`${this.apiBaseUrl}/bookings/occupied-dates`)
+          const data = await res.json()
+          let records = []
+          if (Array.isArray(data)) records = data
+          else if (data && Array.isArray(data.data)) records = data.data
+          else if (data?.data && typeof data.data === 'object') {
+            for (const key of ['occupiedDates','rows','occupied_dates','dates']) {
+              if (Array.isArray(data.data[key])) { records = data.data[key]; break }
+            }
+          } else if (data && Array.isArray(data.occupied_dates)) records = data.occupied_dates
+          this.occupiedDates = records
+            .filter(i => i && (i.inventory_item_id || i.inventoryItemId || i.inventory_id))
+            .map(i => ({ inventoryItemId: i.inventory_item_id ?? i.inventoryItemId ?? i.inventory_id, occupiedDate: i.occupied_date ?? i.occupiedDate ?? i.date }))
+        } catch { this.occupiedDates = [] }
+      },
+
+      async fetchInventoryItems() {
+        try {
+          this.loading = true
+          const res = await fetch(`${this.apiBaseUrl}/rooms`)
+          const data = await res.json()
+          let items = Array.isArray(data) ? data : (data.success && data.data ? data.data : [])
+          this.itemData.rooms = []; this.itemData.cottages = []; this.itemData.events = []; this.itemData.food = []
+          items.forEach(item => {
+            const images = this.normalizeImages(item.images, this.fallbackRoomImage, item.primaryImageIndex)
+            const ct = (item.category_type || '').toLowerCase()
+            const category = (item.category || '').toLowerCase()
+            const fi = {
+              id: item.item_id,
+              item_id: item.item_id,
+              name: item.name || 'Unnamed',
+              price: parseFloat(item.price) || 0,
+              desc: item.description || '',
+              description: item.description || '',
+              amenities: [],
+              imgs: images,
+              perNight: true,
+              maxGuests: item.max_guests || 2,
+              category: item.category,
+              status: item.status,
+              categoryType: ct,
+              // Each row is 1 physical unit — quantity column is no longer used for logic
+              quantity: 1,
+              unit_number: item.unit_number || 1,
+              unit_label: item.unit_label || null
+            }
+
+            if (category === 'room' || ct === 'room' || ct.includes('room')) this.itemData.rooms.push(fi)
+            else if (category === 'cottage' || ct === 'cottage' || ct.includes('cottage')) this.itemData.cottages.push(fi)
+            else if (category === 'event' || ct === 'event' || ct.includes('event')) this.itemData.events.push(fi)
+          })
+          await this.fetchMenuItems()
+        } catch (e) { console.error(e) } finally { this.loading = false }
+      },
+
+      async fetchMenuItems() {
+        try {
+          const res = await fetch(`${this.apiBaseUrl}/restaurant/menu`)
+          const data = await res.json()
+          if (data.success && data.data) {
+            data.data.slice(0,5).forEach(item => {
+              const images = this.normalizeImages(item.image, this.fallbackFoodImage, item.primaryImageIndex)
+              this.itemData.food.push({ id: 'm'+item.item_id, item_id: item.item_id, name: item.name, price: parseFloat(item.price), desc: item.description, description: item.description, amenities: [], imgs: images, perNight: false, maxGuests: 1, category: 'Food' })
+            })
+          }
+        } catch {}
+      },
+
+      // ── Booking logic ──────────────────────────────
+      isRoomBookedOnDate(roomItemId, date) {
+        const dk = this.normalizeDateKey(date)
+        if (!dk) return false
+        const rid = Number(roomItemId)
+        return this.occupiedDates.some(e => {
+          if (Number(e.inventoryItemId ?? e.inventory_item_id) !== rid) return false
+          return this.normalizeDateKey(e.occupiedDate ?? e.occupied_date ?? e.date) === dk
+        })
+      },
+      isItemBookedInRange(itemId, s, e) {
+        if (!itemId || !s || !e || e <= s) return false
+        const c = new Date(s)
+        while (c < e) { if (this.isRoomBookedOnDate(itemId, c)) return true; c.setDate(c.getDate()+1) }
+        return false
+      },
+      isAnySelectedRoomBookedOnDate(date) {
+        const rooms = this.booking.filter(b => ['room', 'rooms', 'cottage', 'event'].includes((b.item.categoryType || b.item.category || '').toLowerCase()))
+        return rooms.length > 0 && rooms.some(b => this.getSelectedInventoryIds(b).some(id => this.isRoomBookedOnDate(id, date)))
+      },
+      hasBookedDateInRange(s, e) {
+        if (!s || !e || e <= s) return false
+        const c = new Date(s)
+        while (c < e) { if (this.isAnySelectedRoomBookedOnDate(c)) return true; c.setDate(c.getDate()+1) }
+        return false
+      },
+      selectDate(date) {
+        this.calendarValidationError = ''
+        if (this.isAnySelectedRoomBookedOnDate(date)) { this.calendarValidationError = 'One of your selected rooms is occupied on this date.'; return }
+        if (!this.checkIn || (this.checkIn && this.checkOut)) { this.checkIn = date; this.checkOut = null }
+        else if (date > this.checkIn) {
+          if (this.hasBookedDateInRange(this.checkIn, date)) { this.calendarValidationError = 'Your range includes occupied date(s).'; return }
+          this.checkOut = date
+        } else { this.checkIn = date; this.checkOut = null }
+      },
+      clearBooking() { this.booking = []; this.checkIn = null; this.checkOut = null; localStorage.removeItem('pendingBooking') },
+      prevMonth() { this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth()-1) },
+      nextMonth() { this.currentMonth = new Date(this.currentMonth.getFullYear(), this.currentMonth.getMonth()+1) },
+      clearDates() { this.checkIn = null; this.checkOut = null; this.calendarValidationError = '' },
+      changeAdults(d) { this.adults = Math.max(1, this.adults + d) },
+      changeChildren(d) { this.children = Math.max(0, this.children + d) },
+
+      addToBooking(item, qty, guests) {
+        if (item.category === 'Swimming') {
+          this.selectedSwimmingProgram = item
+          this.swimmingFormData = { participants: 1, dates: [], time: '', newDate: '' }
+          this.swimmingCalendarMonth = new Date()
+          this.showSwimmingForm = true
+          return
+        }
+
+        if (item.perNight && (!this.checkIn || !this.checkOut)) {
+          this.showCalendar = true
+          alert('Please select check-in and check-out dates first.')
+          return
+        }
+
+        if (item.perNight && (!item.availableQuantity || item.availableQuantity < 1)) {
+          alert(`No available ${item.name.toLowerCase()} left for the selected dates.`); return
+        }
+
+        const bookingKey = item.groupKey || this.getItemGroupKey(item)
+        const requestedQty = Math.max(1, Number(qty || 1))
+        const existing = this.booking.find(b => (b.item.groupKey || this.getItemGroupKey(b.item)) === bookingKey)
+
+        if (item.perNight) {
+          // Use pre-computed availableInventoryIds (already filtered by date conflicts)
+          const availableIds = Array.isArray(item.availableInventoryIds)
+            ? item.availableInventoryIds
+            : (Array.isArray(item.inventoryItemIds) ? item.inventoryItemIds : [item.item_id])
+          const alreadySelected = existing ? this.getSelectedInventoryIds(existing) : []
+          // Remove already-selected IDs from the free pool
+          const remainingIds = availableIds.filter(id => !alreadySelected.includes(id))
+
+          if (existing && existing.qty + requestedQty > availableIds.length) {
+            alert(`Only ${availableIds.length} ${item.name} unit(s) are available for your selected dates.`)
+            return
+          }
+
+          if (!existing && requestedQty > availableIds.length) {
+            alert(`Only ${availableIds.length} ${item.name} unit(s) are available for your selected dates.`)
+            return
+          }
+
+          const reservedIds = remainingIds.slice(0, requestedQty)
+
+          if (reservedIds.length < requestedQty) {
+            alert(`Only ${availableIds.length} ${item.name} unit(s) are available for your selected dates.`)
+            return
+          }
+
+          if (existing) {
+            existing.qty += requestedQty
+            existing.guests = guests
+            existing.selectedInventoryItemIds = [...alreadySelected, ...reservedIds]
+          } else {
+            this.booking.push({
+              item: { ...item },
+              qty: requestedQty,
+              guests,
+              selectedInventoryItemIds: reservedIds
+            })
+          }
+        } else {
+          if (existing) {
+            existing.qty += requestedQty
+            existing.guests = guests
+          } else {
+            this.booking.push({ item, qty: requestedQty, guests })
+          }
+        }
+
+        this.saveBookingToStorage()
+      },
+      removeFromBooking(itemId) {
+        this.booking = this.booking.filter(b => b.item.id !== itemId)
+        if (!this.booking.length) { this.checkIn = null; this.checkOut = null; localStorage.removeItem('pendingBooking') }
+        else this.saveBookingToStorage()
+      },
+      openViewMore(item) { this.selectedItem = item; this.showViewMore = true },
+      proceedToCheckout() {
+        if (!this.booking.length) return
+        if (this.booking.some(b => b.item.perNight) && (!this.checkIn || !this.checkOut)) return
+        this.saveBookingToStorage()
+        this.showBookingConfirmation = true
+      },
+      handleViewReservations() {
+        this.showBookingConfirmation = false
+        this.booking = []; this.checkIn = null; this.checkOut = null
+        localStorage.removeItem('pendingBooking')
+        alert('Booking completed! View your reservations in the Reservations tab.')
+      },
+      async handleSearch() {
+        this.promoError = ''
+
+        // Promo validation is optional, but if user entered one, validate it
+        if (this.promoCode) {
+          const promoOk = await this.validatePromoCode()
+          if (!promoOk) return
+        } else {
+          this.appliedPromo = null
+        }
+
+        this.mobileSearchOpen = false
+
+        this.$nextTick(() => {
+          document.querySelector('.main-layout')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          })
+        })
+      },
+
+      // ── Swimming ───────────────────────────────────
+      toggleSwimmingDate(ds) {
+        if (!ds) return
+        const i = this.swimmingFormData.dates.indexOf(ds)
+        if (i > -1) this.swimmingFormData.dates.splice(i, 1)
+        else {
+          if (this.swimmingFormData.dates.length >= 10) { alert('Maximum 10 session dates'); return }
+          this.swimmingFormData.dates.push(ds)
+        }
+      },
+      getSwimmingCalendarDays() {
+        const year = this.swimmingCalendarMonth.getFullYear(), month = this.swimmingCalendarMonth.getMonth()
+        const first = new Date(year, month, 1), startDow = first.getDay()
+        const dim = new Date(year, month+1, 0).getDate(), prev = new Date(year, month, 0).getDate()
+        const today = new Date(); today.setHours(0,0,0,0)
+        const days = []
+        for (let i = startDow-1; i >= 0; i--) days.push({ date: prev-i, isCurrentMonth: false, dateString: '', isSelected: false, isPast: true })
+        for (let d = 1; d <= dim; d++) {
+          const dt = new Date(year, month, d)
+          const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+          days.push({ date: d, isCurrentMonth: true, dateString: ds, isSelected: this.swimmingFormData.dates.includes(ds), isPast: dt < today })
+        }
+        for (let d = 1; days.length < 42; d++) days.push({ date: d, isCurrentMonth: false, dateString: '', isSelected: false, isPast: false })
+        return days
+      },
+      getSwimmingMonthYear() { return this.swimmingCalendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) },
+      prevSwimmingMonth() { this.swimmingCalendarMonth = new Date(this.swimmingCalendarMonth.getFullYear(), this.swimmingCalendarMonth.getMonth()-1) },
+      nextSwimmingMonth() { this.swimmingCalendarMonth = new Date(this.swimmingCalendarMonth.getFullYear(), this.swimmingCalendarMonth.getMonth()+1) },
+      formatDateDisplay(ds) { return new Date(ds+'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) },
+      calculateSwimmingTotal() { return (this.selectedSwimmingProgram?.price || 0) * (this.swimmingFormData.participants || 0) },
+      closeSwimmingForm() { this.showSwimmingForm = false; this.selectedSwimmingProgram = null; this.swimmingFormData = { participants: 1, dates: [], time: '', newDate: '' }; this.swimmingCalendarMonth = new Date() },
+      submitSwimmingBooking() {
+        if (!this.swimmingFormData.participants || this.swimmingFormData.participants < 1) { alert('Please enter number of participants'); return }
+        if (!this.swimmingFormData.dates.length) { alert('Please select at least one date'); return }
+        if (this.swimmingFormData.dates.length > 10) { alert('Maximum 10 session dates'); return }
+        if (!this.swimmingFormData.time) { alert('Please select a time slot'); return }
+        const total = this.calculateSwimmingTotal()
+        this.booking.push({ item: { ...this.selectedSwimmingProgram, price: total }, qty: 1, guests: this.swimmingFormData.participants, swimmingDetails: { dates: [...this.swimmingFormData.dates], time: this.swimmingFormData.time, participants: this.swimmingFormData.participants, packagePrice: this.selectedSwimmingProgram.price, totalSessions: 10, selectedDates: this.swimmingFormData.dates.length } })
+        this.saveBookingToStorage()
+        this.closeSwimmingForm()
+      },
+
+      // ── Contact form ───────────────────────────────
+      submitContactForm() {
+        const required = ['contactFirstName','contactLastName','contactPhone','contactEmail','contactAddress','contactCity','contactPostal']
+        if (required.some(k => !this[k]?.trim())) return
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.contactEmail)) return
+        if (this.contactPhone.length !== 10 || !/^\d+$/.test(this.contactPhone)) return
+        localStorage.setItem('completedBooking', JSON.stringify({
+          items: this.booking, checkIn: this.checkIn, checkOut: this.checkOut,
+          nights: this.nights, adults: this.adults, children: this.children, total: this.total,
+          customer: { firstName: this.contactFirstName, lastName: this.contactLastName, fullName: `${this.contactFirstName} ${this.contactLastName}` },
+          contact: { phone: '+63'+this.contactPhone, email: this.contactEmail, address: this.contactAddress, city: this.contactCity, country: this.contactCountry, postal: this.contactPostal },
+          specialRequests: this.contactSpecialRequests
+        }))
+        const bookingId = 'BK' + Date.now().toString().slice(-8)
+        this.confirmationEmail = this.contactEmail; this.confirmationBookingId = bookingId; this.showContactForm = false
+        setTimeout(() => this.$router.push({ name: 'BookingConfirmation', query: { email: this.contactEmail, bookingId } }), 500)
+        setTimeout(() => { this.booking = []; this.checkIn = null; this.checkOut = null; localStorage.removeItem('pendingBooking') }, 1000)
+      },
+
+      clearPromoState() {
+    this.appliedPromo = null
+    this.promoError = ''
+  },
+
+  normalizePromoPayload(promo) {
+    if (!promo) return null
+
+    return {
+      code: promo.code || promo.promo_code || this.promoCode,
+      type: String(promo.type || promo.discount_type || '').toLowerCase(),
+      value: Number(promo.value || promo.discount_value || promo.amount || 0),
+      category: promo.category || promo.applies_to_category || null,
+      itemIds: Array.isArray(promo.item_ids) ? promo.item_ids : []
     }
+  },
+
+  async validatePromoCode() {
+    this.promoError = ''
+    this.appliedPromo = null
+
+    if (!this.promoCode) return true
+
+    this.isPromoChecking = true
+
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/promos/validate?code=${encodeURIComponent(this.promoCode)}`)
+      const data = await res.json()
+
+      if (!res.ok || !data?.success || !data?.valid) {
+        this.promoError = data?.message || 'Invalid or expired promo code.'
+        return false
+      }
+
+      this.appliedPromo = this.normalizePromoPayload(data.promo || data.data || {})
+      return true
+    } catch (err) {
+      console.error('Promo validation failed:', err)
+      this.promoError = 'Failed to validate promo code.'
+      return false
+    } finally {
+      this.isPromoChecking = false
+    }
+  },
+
+  saveBookingToStorage() {
+    localStorage.setItem('pendingBooking', JSON.stringify({
+      items: this.booking,
+      checkIn: this.checkIn,
+      checkOut: this.checkOut,
+      nights: this.nights,
+      adults: this.adults,
+      children: this.children,
+      subtotal: this.subtotal,
+      discountAmount: this.discountAmount,
+      total: this.total,
+      promoCode: this.promoCode,
+      appliedPromo: this.appliedPromo
+    }))
+  },
   },
 
   mounted() {
@@ -799,6 +1084,8 @@ export default {
         if (d.adults) this.adults = d.adults
         if (d.children) this.children = d.children
         if (d.items?.length) this.booking = d.items
+        if (d.promoCode) this.promoCode = d.promoCode
+        if (d.appliedPromo) this.appliedPromo = d.appliedPromo
       } catch {}
     }
     this.fetchInventoryItems()
@@ -947,6 +1234,14 @@ export default {
 .search-go-btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 5px 14px rgba(3,105,161,0.3); }
 
 .search-go-text { display: inline; }
+
+/* ── Promo messages ─────────────────────────────────────────── */
+.promo-message {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+}
+.promo-success { color: #047857; }
+.promo-error   { color: #b91c1c; }
 
 /* On small screens stack the fields */
 @media (max-width: 640px) {

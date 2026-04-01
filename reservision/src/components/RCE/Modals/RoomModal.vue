@@ -10,7 +10,7 @@
           </div>
           <div>
             <h3 class="modal-title">{{ editing ? `Edit ${entityLabel}` : `Add New ${entityLabel}` }}</h3>
-            <p class="modal-sub">Fill in the details belowsss</p>
+            <p class="modal-sub">Fill in the details below</p>
           </div>
         </div>
         <button class="close-modal" @click="close">×</button>

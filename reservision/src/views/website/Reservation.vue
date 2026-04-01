@@ -657,6 +657,7 @@ export default {
           }
           
           const categoryType = (item.category_type || '').toLowerCase()
+          const category = (item.category || '').toLowerCase()
 
           const formattedItem = {
             id: item.item_id,
@@ -677,13 +678,13 @@ export default {
           // Categorize using category_type field
           console.log(`📌 Item: ${item.name}, category_type: "${item.category_type}"`)
           
-          if (categoryType === 'room') {
+          if (category === 'room' || categoryType === 'room' || categoryType.includes('room')) {
             this.itemData.rooms.push(formattedItem)
             console.log('  ➡️ Added to rooms')
-          } else if (categoryType === 'cottage') {
+          } else if (category === 'cottage' || categoryType === 'cottage' || categoryType.includes('cottage')) {
             this.itemData.cottages.push(formattedItem)
             console.log('  ➡️ Added to cottages')
-          } else if (categoryType === 'event') {
+          } else if (category === 'event' || categoryType === 'event' || categoryType.includes('event')) {
             this.itemData.events.push(formattedItem)
             console.log('  ➡️ Added to events')
           } else {

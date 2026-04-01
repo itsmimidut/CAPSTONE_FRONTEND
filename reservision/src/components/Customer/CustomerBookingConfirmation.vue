@@ -19,14 +19,14 @@
               <label class="form-label">First Name <span class="req">*</span></label>
               <div class="input-wrap">
                 <i class="fas fa-user input-icon"></i>
-                <input type="text" class="form-input" v-model="guest.firstName" placeholder="Juan" />
+                <input type="text" class="form-input form-input--readonly" v-model="guest.firstName" placeholder="Juan" />
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Last Name <span class="req">*</span></label>
               <div class="input-wrap">
                 <i class="fas fa-user input-icon"></i>
-                <input type="text" class="form-input" v-model="guest.lastName" placeholder="Dela Cruz" />
+                <input type="text" class="form-input form-input--readonly" v-model="guest.lastName" placeholder="Dela Cruz" />
               </div>
             </div>
           </div>
@@ -83,14 +83,14 @@
               <label class="form-label">Phone Number <span class="req">*</span></label>
               <div class="phone-input-wrap">
                 <span class="phone-prefix">+63</span>
-                <input type="tel" class="form-input phone-field" v-model="guest.phone" placeholder="912 345 6789" />
+                <input type="tel" class="form-input phone-field form-input--readonly" :value="guest.phone" readonly />
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Postal Code <span class="req">*</span></label>
               <div class="input-wrap">
                 <i class="fas fa-map-pin input-icon"></i>
-                <input type="text" class="form-input" v-model="guest.postal" placeholder="5200" />
+                <input type="text" class="form-input form-select form-input--readonly" :value="guest.postal" readonly />
               </div>
             </div>
           </div>
@@ -100,14 +100,19 @@
               <label class="form-label">Email <span class="req">*</span></label>
               <div class="input-wrap">
                 <i class="fas fa-envelope input-icon"></i>
-                <input type="email" class="form-input" v-model="guest.email" placeholder="juan@example.com" />
+                <input type="email" class="form-input form-input--readonly" :value="guest.email" readonly />
               </div>
+              <p class="field-help">
+                <i class="fas fa-lock" style="font-size:0.65rem"></i>
+                Linked to your account.
+                <router-link to="/profile" class="field-help-link">Edit in Profile</router-link>
+              </p>
             </div>
             <div class="form-group">
               <label class="form-label">Street Address <span class="req">*</span></label>
               <div class="input-wrap">
                 <i class="fas fa-map-marker-alt input-icon"></i>
-                <input type="text" class="form-input" v-model="guest.address" placeholder="123 Resort St." />
+                <input type="text" class="form-input form-input--readonly" :value="guest.address" readonly />
               </div>
             </div>
           </div>
@@ -117,14 +122,14 @@
               <label class="form-label">City <span class="req">*</span></label>
               <div class="input-wrap">
                 <i class="fas fa-city input-icon"></i>
-                <input type="text" class="form-input" v-model="guest.city" placeholder="Calapan" />
+                <input type="text" class="form-input form-input--readonly" :value="guest.city" readonly />
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Country <span class="req">*</span></label>
               <div class="input-wrap">
                 <i class="fas fa-globe-asia input-icon"></i>
-                <select class="form-input form-select" v-model="guest.country">
+                <select class="form-input form-select form-input--readonly" v-model="guest.country" disabled>
                   <option>Philippines</option>
                 </select>
               </div>
@@ -317,9 +322,9 @@
           <div class="modal-success-icon">
             <i class="fas fa-check"></i>
           </div>
-          <h3 class="modal-title">Booking Confirmed!</h3>
+          <h3 class="modal-title">Booking Request Submitted!</h3>
           <p class="modal-body">
-            Your booking is secured. A confirmation email has been sent to
+            Your payment has been received. Your booking is now pending admin approval. We will send an update to
             <strong>{{ guest.email }}</strong>.
           </p>
           <div class="modal-actions">
@@ -334,25 +339,17 @@
       </div>
     </transition>
 
-    <!-- Email Verification Modal -->
-    <EmailVerificationModal
-      :show="showVerificationModal"
-      :initialEmail="guest.email"
-      @verified="onEmailVerified"
-      @proceed-payment="proceedWithPayment"
-      @close="showVerificationModal = false"
-    />
+    <!-- Email Verification Modal removed: email is now readonly, locked to account -->
 
   </div>
 </template>
 
 <script>
-import EmailVerificationModal from '../EmailVerificationModal.vue'
 import { useAuthStore } from '../../stores/auth'
 
 export default {
   name: 'CustomerBookingConfirmation',
-  components: { EmailVerificationModal },
+  components: {},
   setup() {
     const auth = useAuthStore()
     return { auth }
@@ -386,23 +383,20 @@ export default {
       nights: bookingData.nights,
       subtotal,
       paymentMethods: [
-        { id: 'paymaya', name: 'PayMaya',       description: 'E-wallet',       iconClass: 'fas fa-mobile-alt', iconColor: 'text-green',  bgClass: 'bg-green'  },
-        { id: 'gcash',   name: 'GCash',         description: 'E-wallet',       iconClass: 'fas fa-wallet',     iconColor: 'text-green',  bgClass: 'bg-green'  },
-        { id: 'bank',    name: 'Bank Transfer', description: 'BDO, BPI, etc.', iconClass: 'fas fa-university', iconColor: 'text-primary', bgClass: 'bg-primary' }
+        { id: 'paymaya', name: 'PayMaya',       description: 'E-wallet',          iconClass: 'fas fa-mobile-alt',  iconColor: 'text-green',   bgClass: 'bg-green'  },
+        { id: 'gcash',   name: 'GCash',         description: 'E-wallet',          iconClass: 'fas fa-wallet',      iconColor: 'text-green',   bgClass: 'bg-green'  },
+        { id: 'bank',    name: 'Bank Transfer', description: 'BDO, BPI, etc.',    iconClass: 'fas fa-university',  iconColor: 'text-primary', bgClass: 'bg-primary' }
       ],
       selectedPayment: bookingData.selectedPayment || 'gcash',
       termsAgreed: false,
       loading: false,
       showModal: false,
-      showVerificationModal: false,
-      emailVerified: false,
-      verifiedEmail: '',
-      existingCustomer: null
+      existingCustomer: null,
     }
   },
   computed: {
     hasSwimmingItems() { return this.items.some(i => i.swimmingDetails) },
-    isSwimmingOnly()   { return this.items.length > 0 && this.items.every(i => i.swimmingDetails) }
+    isSwimmingOnly()   { return this.items.length > 0 && this.items.every(i => i.swimmingDetails) },
   },
   methods: {
     increment(type) { this.guest[type]++ },
@@ -447,29 +441,33 @@ export default {
     viewBookingDetails() { this.showModal = false; this.$emit('view-reservations') },
 
     async initiatePayment() {
-      const required = ['firstName','lastName','phone','email','address','city','postal']
+      const required = ['firstName', 'lastName', 'phone', 'email', 'address', 'city', 'postal']
       for (const key of required) {
-        if (!this.guest[key].trim()) { alert('Please fill all required fields!'); return }
+        if (!String(this.guest[key] || '').trim()) {
+          alert('Please fill all required fields!')
+          return
+        }
       }
-      if (!this.termsAgreed) { alert('Please agree to the Terms & Conditions'); return }
+
+      if (!this.termsAgreed) {
+        alert('Please agree to the Terms & Conditions')
+        return
+      }
+
       if (!this.isSwimmingOnly && (!this.checkIn || !this.checkOut)) {
-        alert('Please select check-in and check-out dates for your booking'); return
+        alert('Please select check-in and check-out dates for your booking')
+        return
       }
-      try {
-        const res  = await fetch(`http://localhost:8000/api/customers/check-email/${encodeURIComponent(this.guest.email)}`)
-        const data = await res.json()
-        // Always require OTP verification — even for known emails
-        this.existingCustomer = (data.success && data.exists) ? data.customer : null
-        this.showVerificationModal = true
-      } catch { this.showVerificationModal = true }
+
+      await this.payNow()
     },
 
-    onEmailVerified(email) { this.emailVerified = true; this.verifiedEmail = email; this.guest.email = email },
-
-    async proceedWithPayment(email) { this.showVerificationModal = false; await this.payNow() },
+    onEmailVerified() {},   // kept as no-op for any stray references
+    async proceedWithPayment() {},
 
     async payNow() {
       this.loading = true
+      // Open a blank tab early for link-based methods (avoids popup blocker)
       const paymentTab = window.open('', '_blank')
       this.$router.push({ name: 'PaymentReturn' })
       const bookingData = JSON.parse(localStorage.getItem('pendingBooking') || '{}')
@@ -486,6 +484,9 @@ export default {
               item_id: item.item.item_id || item.item.id, name: item.item.name,
               category: item.item.category || 'Room', qty: item.qty, guests: item.guests,
               price: item.item.price, perNight: item.item.perNight,
+              ...(Array.isArray(item.selectedInventoryItemIds) && item.selectedInventoryItemIds.length
+                ? { selectedInventoryItemIds: item.selectedInventoryItemIds }
+                : {}),
               ...(item.swimmingDetails && { swimmingDetails: item.swimmingDetails })
             })),
             paymentMethod: this.selectedPayment, total: this.subtotal
@@ -494,6 +495,8 @@ export default {
         const bookingResult = await bookingRes.json()
         if (!bookingRes.ok || !bookingResult.success) throw new Error(bookingResult.error || 'Failed to create booking')
         const { bookingId, bookingReference, paymentReference } = bookingResult.data
+
+        // ── Link-based branch (GCash / PayMaya / Bank) ───────────────
         const payRes = await fetch('http://localhost:8000/api/paymongo/create-payment-link', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -535,14 +538,21 @@ export default {
           const p = data.customer
           this.guest.firstName = p.firstName || ''
           this.guest.lastName  = p.lastName  || ''
-          this.guest.email     = p.email     || this.auth.user.email
-          this.guest.phone     = p.phone     || ''
-          this.guest.address   = p.address   || ''
-          this.guest.city      = p.city      || ''
-          this.guest.country   = p.country   || 'Philippines'
+          // Email is always locked to auth store — never overwritable by user
+          this.guest.email     = this.auth.user.email
+          this.guest.phone     = p.phone || ''
+          this.guest.address   = p.address || ''
+          this.guest.city      = p.city || ''
+          this.guest.country   = p.country || 'Philippines'
           this.guest.postal    = p.postalCode || ''
+        } else {
+          // Profile fetch succeeded but no data — still lock email to auth
+          this.guest.email = this.auth.user.email
         }
-      } catch (e) { console.error('Error loading customer profile:', e) }
+      } catch (e) {
+        console.error('Error loading customer profile:', e)
+        this.guest.email = this.auth.user?.email || ''
+      }
     }
   },
   mounted() {
@@ -694,7 +704,7 @@ export default {
 
 .ta-icon { top: 0.8rem; transform: none; }
 
-.form-input {
+.form-input  {
   width: 100%;
   padding: 0.6rem 0.8rem 0.6rem 2.2rem;
   border: 1.5px solid #dbeafe;
@@ -705,6 +715,7 @@ export default {
   background: #f0f7ff;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   outline: none;
+  cursor: not-allowed;
 }
 
 .form-input:focus {
@@ -715,6 +726,29 @@ export default {
 
 .form-select { appearance: none; cursor: pointer; }
 .form-textarea { resize: vertical; min-height: 80px; }
+
+/* Readonly email field */
+.form-input--readonly {
+  cursor: not-allowed;
+  color: #374151;
+  border-color: #bfdbfe;
+  user-select: none;
+}
+
+.field-help {
+  font-size: 0.72rem;
+  color: #6b7280;
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.field-help-link {
+  color: #0369a1;
+  text-decoration: underline;
+  cursor: pointer;
+}
 
 /* Phone prefix */
 .phone-input-wrap { display: flex; }

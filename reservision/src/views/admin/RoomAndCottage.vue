@@ -80,6 +80,7 @@
               v-for="room in filteredRooms"
               :key="room.item_id"
               :room="room"
+              @promo="openPromoModalForRoom(room)"
               @edit="openRoomModal(room)"
               @delete="deleteRoom(room.item_id)"
             />
@@ -191,6 +192,7 @@
     <PromoFormModal
       v-model:show="promoModal.show"
       :initial-promo="promoModal.data"
+      :available-items="roomsStore.rooms"
       @save="savePromo"
     />
     <SeasonalPricingModal
@@ -259,8 +261,9 @@ const filteredPromos = computed(() => {
   if (!promoSearch.value) return roomsStore.promos || []
   const q = promoSearch.value.toLowerCase()
   return roomsStore.promos.filter(p =>
-    p.code.toLowerCase().includes(q) ||
-    p.description.toLowerCase().includes(q)
+    String(p.code || '').toLowerCase().includes(q) ||
+    String(p.name || '').toLowerCase().includes(q) ||
+    String(p.description || '').toLowerCase().includes(q)
   )
 })
 
@@ -273,6 +276,33 @@ const stats = computed(() => ({
 
 const openRoomModal  = (room = null)  => { roomModal.value  = { show: true, data: room  ? { ...room  } : null } }
 const openPromoModal = (promo = null) => { promoModal.value = { show: true, data: promo ? { ...promo } : null } }
+const openPromoModalForRoom = (room) => {
+  const categoryMap = {
+    room: 'rooms',
+    cottage: 'cottages',
+    event: 'events'
+  }
+  const categoryType = String(room?.category_type || '').toLowerCase()
+  const appliesToCategory = categoryMap[categoryType] || 'all'
+  const roomNumber = String(room?.room_number || '').trim()
+  const roomLabel = roomNumber ? `${room.name} (${roomNumber})` : room?.name || 'Selected Item'
+
+  promoModal.value = {
+    show: true,
+    data: {
+      name: `${room?.name || 'Item'} Promo`,
+      code: '',
+      description: `Promo for ${roomLabel}.`,
+      discount_type: 'percent',
+      discount_value: 0,
+      applies_to_category: appliesToCategory,
+      item_ids: room?.item_id ? [String(room.item_id)] : [],
+      min_subtotal: 0,
+      usage_limit: null,
+      is_active: true
+    }
+  }
+}
 
 const saveRoom = async (roomData) => {
   try {
@@ -294,7 +324,10 @@ const savePromo = async (promoData) => {
   try {
     await roomsStore.savePromo(promoData)
     promoModal.value = { show: false, data: null }
-  } catch (error) { console.error('Error saving promo:', error) }
+  } catch (error) {
+    console.error('Error saving promo:', error)
+    alert('Error saving promo: ' + (error.response?.data?.error || error.message))
+  }
 }
 
 const deletePromo = async (id) => {

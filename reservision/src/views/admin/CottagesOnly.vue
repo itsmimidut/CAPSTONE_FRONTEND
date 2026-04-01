@@ -1,82 +1,104 @@
 <template>
   <div class="admin-dashboard">
-    <AdminSidebar 
+    <AdminSidebar
       :is-open="sidebarOpen"
       :is-collapsed="sidebarCollapsed"
       @close="sidebarOpen = false"
     />
 
-    <!-- Header -->
-    <AdminHeader 
+    <AdminHeader
       title="Cottages"
       subtitle="Manage your resort cottages"
       @toggle-sidebar="sidebarOpen = !sidebarOpen"
     />
 
-    <!-- Main Content -->
     <main class="main-content">
       <div class="content-container">
-        <div class="p-4 md:p-6">
-          <!-- Stats -->
-          <div class="stats-section grid gap-3 mb-4 md:grid-cols-4 grid-cols-2">
-            <StatCard icon="fa-home" color="blue" :value="stats.total" label="Total Cottages" />
-            <StatCard icon="fa-check-circle" color="green" :value="stats.available" label="Available" />
-            <StatCard icon="fa-user-friends" color="orange" :value="stats.occupied" label="Occupied" />
-            <StatCard icon="fa-tools" color="yellow" :value="stats.maintenance" label="Maintenance" />
-          </div>
 
-          <!-- Controls -->
-          <div class="controls-container">
-            <div class="search-filter">
-              <div class="search-wrapper">
-                <i class="fas fa-search search-icon"></i>
-                <input v-model="searchQuery" class="search-input" placeholder="Search cottages..." />
-              </div>
-              <select v-model="statusFilter" class="filter-select">
-                <option value="all">All Status</option>
-                <option value="Available">Available</option>
-                <option value="Occupied">Occupied</option>
-                <option value="Under Maintenance">Maintenance</option>
-              </select>
-              <button class="btn-add" @click="openCottageModal()">
-                <i class="fas fa-plus"></i> <span class="hidden sm:inline">Add New </span>Cottage
+        <!-- ── Stats ── -->
+        <div class="stats-grid">
+          <StatCard icon="fa-home"         color="blue"   :value="stats.total"       label="Total Cottages" />
+          <StatCard icon="fa-check-circle" color="green"  :value="stats.available"   label="Available" />
+          <StatCard icon="fa-user-friends" color="orange" :value="stats.occupied"    label="Occupied" />
+          <StatCard icon="fa-tools"        color="yellow" :value="stats.maintenance" label="Maintenance" />
+        </div>
+
+        <!-- ── Controls ── -->
+        <div class="controls-card">
+          <div class="controls-bar">
+            <div class="search-wrapper">
+              <i class="fas fa-search search-icon"></i>
+              <input
+                v-model="searchQuery"
+                class="search-input"
+                placeholder="Search cottages…"
+              />
+              <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
+                <i class="fas fa-times"></i>
               </button>
             </div>
-          </div>
 
-          <!-- Summary -->
-          <div class="cottages-summary">
-            <i class="fas fa-home" style="color: #F4C400; margin-right: 0.5rem;"></i>
-            Showing <span style="color: #F4C400; font-weight: 700;">{{ filteredCottages.length }}</span> cottage(s)
-          </div>
+            <select v-model="statusFilter" class="filter-select">
+              <option value="all">All Status</option>
+              <option value="Available">Available</option>
+              <option value="Occupied">Occupied</option>
+              <option value="Under Maintenance">Maintenance</option>
+            </select>
 
-          <!-- Cottages Grid -->
-          <div class="cottage-grid">
-            <RoomCard
-              v-for="cottage in filteredCottages"
-              :key="cottage.item_id"
-              :room="cottage"
-              @edit="openCottageModal(cottage)"
-              @delete="deleteCottage(cottage.item_id)"
-            />
-            <div v-if="filteredCottages.length === 0" class="empty-state col-span-full">
-              <i class="fas fa-home"></i>
-              <p>No cottages found</p>
-              <button @click="openCottageModal()" class="btn-add mt-3">
-                <i class="fas fa-plus"></i> Add Your First Cottage
-              </button>
-            </div>
+            <button class="btn-add" @click="openCottageModal()">
+              <i class="fas fa-plus"></i>
+              <span>Add New Cottage</span>
+            </button>
+            <button class="btn-add" @click="openPromoModal()">
+              <i class="fas fa-tags"></i> <span class="hidden sm:inline">Manage Promos</span><span class="sm:hidden">Promos</span>
+            </button>
           </div>
         </div>
+
+        <!-- ── Summary pill ── -->
+        <div class="rooms-summary">
+          <i class="fas fa-home summary-icon"></i>
+          Showing <strong>{{ filteredCottages.length }}</strong> cottage(s)
+        </div>
+
+        <!-- ── Cottages Grid ── -->
+        <div class="room-grid">
+          <RoomCard
+            v-for="cottage in filteredCottages"
+            :key="cottage.item_id"
+            :room="cottage"
+            @promo="openPromoModalForCottage(cottage)"
+            @edit="openCottageModal(cottage)"
+            @delete="deleteCottage(cottage.item_id)"
+          />
+
+          <div v-if="filteredCottages.length === 0" class="empty-state">
+            <div class="empty-icon-wrap">
+              <i class="fas fa-home"></i>
+            </div>
+            <p class="empty-title">No cottages found</p>
+            <p class="empty-sub">Try adjusting your filters or add a new cottage.</p>
+            <button class="btn-add" @click="openCottageModal()">
+              <i class="fas fa-plus"></i> Add Your First Cottage
+            </button>
+          </div>
+        </div>
+
       </div>
     </main>
 
-    <!-- Cottage Modal -->
     <RoomModal
       v-model:show="showCottageModal"
       :initial-room="editingCottage"
       @save="handleSaveCottage"
       @close="closeCottageModal"
+    />
+
+    <PromoFormModal
+      v-model:show="promoModal.show"
+      :initial-promo="promoModal.data"
+      :available-items="roomsStore.rooms"
+      @save="savePromo"
     />
   </div>
 </template>
@@ -89,6 +111,7 @@ import AdminSidebar from '../../components/Admin/AdminSidebar.vue'
 import StatCard from '../../components/RCE/StatCard.vue'
 import RoomCard from '../../components/RCE/RoomCard.vue'
 import RoomModal from '../../components/RCE/Modals/RoomModal.vue'
+import PromoFormModal from '../../components/RCE/Modals/PromoModal.vue'
 
 const roomsStore = useRoomsStore()
 const sidebarOpen = ref(false)
@@ -97,6 +120,7 @@ const searchQuery = ref('')
 const statusFilter = ref('all')
 const showCottageModal = ref(false)
 const editingCottage = ref(null)
+const promoModal = ref({ show: false, data: null })
 
 const cottagesOnly = computed(() =>
   roomsStore.rooms.filter(r =>
@@ -134,6 +158,30 @@ const openCottageModal = (cottage = null) => {
   showCottageModal.value = true
 }
 
+const openPromoModal = () => {
+  promoModal.value = { show: true, data: null }
+}
+
+const openPromoModalForCottage = (cottage) => {
+  const cottageNumber = String(cottage?.room_number || '').trim()
+  const cottageLabel = cottageNumber ? `${cottage.name} (${cottageNumber})` : cottage?.name || 'Selected Cottage'
+  promoModal.value = {
+    show: true,
+    data: {
+      name: `${cottage?.name || 'Cottage'} Promo`,
+      code: '',
+      description: `Promo for ${cottageLabel}.`,
+      discount_type: 'percent',
+      discount_value: 0,
+      applies_to_category: 'cottages',
+      item_ids: cottage?.item_id ? [String(cottage.item_id)] : [],
+      min_subtotal: 0,
+      usage_limit: null,
+      is_active: true
+    }
+  }
+}
+
 const deleteCottage = async (id) => {
   if (!confirm('Delete cottage?')) return
   try {
@@ -163,385 +211,376 @@ const handleSaveCottage = async (cottageData) => {
   }
 }
 
+const savePromo = async (promoData) => {
+  try {
+    await roomsStore.savePromo(promoData)
+    promoModal.value = { show: false, data: null }
+  } catch (error) {
+    console.error('Error saving promo:', error)
+    alert('Error saving promo: ' + (error.response?.data?.error || error.message))
+  }
+}
+
 onMounted(() => {
   roomsStore.fetchRooms()
 })
 </script>
 
 <style scoped>
+/* ── Eduardo's Resort Color Palette ── */
+.admin-dashboard {
+  --color-primary:       #0369a1;
+  --color-primary-light: #1F8DBF;
+  --color-primary-dark:  #1E88B6;
+  --color-gold:          #F4C400;
+  --color-gold-dark:     #F2C200;
+  --color-navy:          #0C3B5E;
+  --color-white:         #FFFFFF;
+  --color-gray-bg:       #EEF5FB;
+  --color-gray-border:   #e5e7eb;
+  --color-text-dark:     #1f2937;
+  --color-text-light:    #6b7280;
+}
+
+/* ── Layout ── */
 .admin-dashboard {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
+  background: var(--color-gray-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 .main-content {
   margin-left: 0;
-  padding-top: 2rem;
+  padding-top: 64px;
   transition: margin-left 0.3s ease;
 }
-
 @media (min-width: 768px) {
-  .main-content {
-    margin-left: 220px;
-    
-  }
+  .main-content { margin-left: 262px; }
 }
 
 .content-container {
-  padding: 0.75rem;
+  padding: 1.5rem 1.75rem;
   max-width: 1400px;
   margin: 0 auto;
 }
-
-@media (min-width: 640px) {
-  .content-container {
-    padding: 1.25rem;
-  }
+@media (max-width: 768px) {
+  .content-container { padding: 0.85rem; }
 }
 
-@media (min-width: 1024px) {
-  .content-container {
-    padding: 2rem;
-  }
-}
-
-.stats-section {
+/* ── Stats Grid ── */
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
   margin-bottom: 1.5rem;
 }
+@media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px)  { .stats-grid { grid-template-columns: 1fr 1fr; gap: 0.75rem; } }
 
-@media (min-width: 640px) {
-  .stats-section {
-    gap: 1rem;
-  }
-}
-
-@media (min-width: 768px) {
-  .stats-section {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.25rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .stats-section {
-    gap: 1.5rem;
-  }
-}
-
-/* Controls Container */
-.controls-container {
-  background: white;
-  padding: 1.25rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
-  margin-bottom: 1.5rem;
-  border: 1px solid rgba(31, 141, 191, 0.1);
+/* ── Controls Card ── */
+.controls-card {
+  background: var(--color-white);
+  border-radius: 16px;
+  padding: 1.1rem 1.4rem;
+  border: 0.5px solid var(--color-gray-border);
+  box-shadow: 0 2px 10px rgba(3, 105, 161, 0.07);
+  margin-bottom: 1.25rem;
   position: relative;
   overflow: hidden;
 }
 
-.controls-container::before {
+/* Gold + blue top accent bar */
+.controls-card::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: linear-gradient(90deg, #1F8DBF 50%, #F4C400 50%);
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary-light) 50%, var(--color-gold) 50%);
+  border-radius: 16px 16px 0 0;
 }
 
-.search-filter {
+.controls-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
 }
 
+/* Search */
 .search-wrapper {
   position: relative;
   flex: 2;
-  min-width: 250px;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
 }
-
 .search-icon {
   position: absolute;
   left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #F4C400;
-  font-size: 0.875rem;
+  color: var(--color-text-light);
+  font-size: 0.82rem;
+  pointer-events: none;
 }
-
 .search-input {
   width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 2px solid rgba(31, 141, 191, 0.2);
-  border-radius: 8px;
+  height: 38px;
+  padding: 0 36px;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 10px;
   font-size: 0.875rem;
-  transition: all 0.3s ease;
-  background: white;
-  color: #1F8DBF;
-  font-weight: 500;
-}
-
-.search-input:focus {
+  color: var(--color-text-dark);
+  background: var(--color-white);
   outline: none;
-  border-color: #F4C400;
-  box-shadow: 0 0 0 3px rgba(244, 196, 0, 0.15);
+  transition: all 0.15s;
 }
-
-.search-input::placeholder {
-  color: rgba(31, 141, 191, 0.4);
-  font-weight: normal;
+.search-input:focus {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(31, 141, 191, 0.1);
 }
-
-@media (min-width: 640px) {
-  .search-input {
-    padding: 0.875rem 1rem 0.875rem 2.5rem;
-    font-size: 0.9rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .search-input {
-    padding: 1rem 1rem 1rem 2.5rem;
-    font-size: 0.95rem;
-  }
-}
-
-.filter-select {
-  padding: 0.75rem 1rem;
-  border: 2px solid rgba(244, 196, 0, 0.3);
-  border-radius: 8px;
-  background: white;
+.search-input::placeholder { color: var(--color-text-light); }
+.search-clear {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--color-text-light);
+  font-size: 0.7rem;
   cursor: pointer;
-  font-size: 0.875rem;
-  color: #1F8DBF;
-  font-weight: 500;
-  min-width: 150px;
-  transition: all 0.3s ease;
+  padding: 4px;
+  border-radius: 50%;
+  transition: color 0.15s;
 }
+.search-clear:hover { color: #ef4444; }
 
+/* Selects */
+.filter-select {
+  height: 38px;
+  padding: 0 0.9rem;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 10px;
+  background: var(--color-white);
+  color: var(--color-text-dark);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  min-width: 145px;
+  transition: border-color 0.15s;
+}
 .filter-select:focus {
   outline: none;
-  border-color: #1F8DBF;
-  box-shadow: 0 0 0 3px rgba(31, 141, 191, 0.15);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(31, 141, 191, 0.08);
 }
 
-@media (min-width: 640px) {
-  .filter-select {
-    padding: 0.875rem 1rem;
-    font-size: 0.9rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .filter-select {
-    padding: 1rem 1rem;
-    font-size: 0.95rem;
-  }
-}
-
+/* Add Button */
 .btn-add {
-  background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%);
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 1.25rem;
+  height: 38px;
+  background: var(--color-navy);
+  color: var(--color-white);
   border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(12, 59, 94, 0.22);
+  transition: all 0.18s ease;
+}
+.btn-add:hover {
+  background: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(3, 105, 161, 0.28);
+}
+.btn-add i {
+  color: var(--color-gold);
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+.btn-add:hover i { transform: rotate(90deg); }
+
+/* ── Summary Pill ── */
+.rooms-summary {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.2);
-}
-
-.btn-add:hover {
-  background: linear-gradient(135deg, #1E88B6 0%, #1F8DBF 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(31, 141, 191, 0.3);
-}
-
-.btn-add i {
-  font-size: 0.875rem;
-  color: #F4C400;
-  transition: all 0.3s ease;
-}
-
-.btn-add:hover i {
-  transform: rotate(90deg);
-}
-
-@media (min-width: 640px) {
-  .btn-add {
-    padding: 0.875rem 1.5rem;
-    font-size: 0.9rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .btn-add {
-    padding: 1rem 2rem;
-    font-size: 0.95rem;
-  }
-}
-
-/* Cottages Summary */
-.cottages-summary {
   margin-bottom: 1.25rem;
-  padding: 0.5rem 1rem;
-  background: rgba(244, 196, 0, 0.05);
+  padding: 0.45rem 1.1rem;
+  background: var(--color-white);
   border-radius: 30px;
-  display: inline-block;
-  border: 1px solid rgba(31, 141, 191, 0.2);
-  color: #1F8DBF;
+  border: 0.5px solid var(--color-gray-border);
+  color: var(--color-text-dark);
   font-size: 0.875rem;
   font-weight: 500;
+  box-shadow: 0 1px 4px rgba(3, 105, 161, 0.06);
 }
+.summary-icon { color: var(--color-gold); font-size: 0.9rem; }
+.rooms-summary strong { color: var(--color-primary-light); font-weight: 700; }
 
-@media (min-width: 1024px) {
-  .cottages-summary {
-    font-size: 0.95rem;
-    padding: 0.5rem 1.25rem;
-  }
-}
-
-/* Cottages Grid */
-.cottage-grid {
+/* ── Cottages Grid ── */
+.room-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.25rem;
 }
+@media (min-width: 640px)  { .room-grid { grid-template-columns: repeat(2, 1fr); gap: 1.4rem; } }
+@media (min-width: 1024px) { .room-grid { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; } }
+@media (min-width: 1280px) { .room-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.75rem; } }
 
-@media (min-width: 640px) {
-  .cottage-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .cottage-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.75rem;
-  }
-}
-
-@media (min-width: 1280px) {
-  .cottage-grid {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 2rem;
-  }
-}
-
-/* Empty State */
+/* ── Empty State ── */
 .empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
   text-align: center;
-  padding: 3rem 1rem;
-  background: white;
-  border-radius: 12px;
-  border: 2px dashed #F4C400;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  background: var(--color-white);
+  border-radius: 16px;
+  border: 2px dashed rgba(244, 196, 0, 0.4);
+  box-shadow: 0 2px 10px rgba(3, 105, 161, 0.06);
 }
-
-.empty-state i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  color: #1F8DBF;
-  opacity: 0.3;
+.empty-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(3, 105, 161, 0.08);
+  color: var(--color-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
 }
-
-.empty-state p {
+.empty-title {
   font-size: 1rem;
-  color: #1F8DBF;
-  margin-bottom: 1rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin: 0;
+}
+.empty-sub {
+  font-size: 0.82rem;
+  color: var(--color-text-light);
+  margin: 0;
 }
 
-.empty-state .btn-add {
-  display: inline-flex;
-  margin-top: 0.5rem;
-}
-
-/* RoomCard Customization - will be applied to the component */
+/* ── RoomCard deep overrides ── */
 :deep(.room-card) {
-  border-left: 4px solid #1F8DBF;
-  transition: all 0.3s ease;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(31, 141, 191, 0.08);
+  border: 0.5px solid var(--color-gray-border);
+  box-shadow: 0 2px 10px rgba(3, 105, 161, 0.07);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  background: var(--color-white);
 }
-
 :deep(.room-card:hover) {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(31, 141, 191, 0.15);
-  border-left-color: #F4C400;
+  box-shadow: 0 10px 28px rgba(3, 105, 161, 0.14);
+  border-color: rgba(244, 196, 0, 0.4);
 }
 
 :deep(.room-card .room-header) {
-  background: linear-gradient(to right, rgba(31, 141, 191, 0.05), rgba(244, 196, 0, 0.05));
-  border-bottom: 2px solid #F4C400;
+  background: var(--color-navy);
+  border-bottom: 3px solid var(--color-gold);
+  padding: 0.85rem 1rem;
 }
-
 :deep(.room-card .room-title) {
-  color: #1F8DBF;
+  font-weight: 700;
+  font-size: 0.95rem;
 }
-
 :deep(.room-card .room-price) {
-  color: #F4C400;
+  color: var(--color-gold);
+  font-weight: 700;
+  font-size: 0.9rem;
 }
 
+:deep(.room-card .room-status) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
 :deep(.room-card .room-status.Available) {
-  background: rgba(31, 141, 191, 0.1);
-  color: #1F8DBF;
-  border: 1px solid #1F8DBF;
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.25);
 }
-
 :deep(.room-card .room-status.Occupied) {
-  background: rgba(244, 196, 0, 0.1);
-  color: #F4C400;
-  border: 1px solid #F4C400;
+  background: rgba(31, 141, 191, 0.1);
+  color: var(--color-primary-light);
+  border: 1px solid rgba(31, 141, 191, 0.25);
+}
+:deep(.room-card .room-status.Under\ Maintenance) {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.22);
 }
 
-:deep(.room-card .room-status.Under\\ Maintenance) {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1px solid #ef4444;
+:deep(.room-card .room-body) {
+  padding: 1rem;
+}
+:deep(.room-card .room-type) {
+  color: var(--color-text-light);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+:deep(.room-card .room-description) {
+  color: var(--color-text-dark);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  margin-top: 0.35rem;
 }
 
 :deep(.room-card .room-footer) {
-  border-top: 2px solid rgba(244, 196, 0, 0.2);
-  background: rgba(31, 141, 191, 0.02);
+  border-top: 1px solid var(--color-gray-border);
+  background: var(--color-gray-bg);
+  padding: 0.65rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
 }
 
 :deep(.room-card .btn-action) {
-  transition: all 0.2s ease;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--color-gray-border);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  transition: all 0.15s ease;
+  background: var(--color-white);
 }
+:deep(.room-card .btn-action:hover) { transform: translateY(-1px); }
 
 :deep(.room-card .btn-action.edit-btn) {
-  background: rgba(31, 141, 191, 0.1);
-  color: #1F8DBF;
+  color: var(--color-primary-light);
 }
-
 :deep(.room-card .btn-action.edit-btn:hover) {
-  background: #1F8DBF;
-  color: white;
-  transform: scale(1.1);
+  background: var(--color-primary-light);
+  color: var(--color-white);
+  border-color: var(--color-primary-light);
 }
 
 :deep(.room-card .btn-action.delete-btn) {
-  background: rgba(244, 196, 0, 0.1);
-  color: #F4C400;
+  color: #ef4444;
 }
-
 :deep(.room-card .btn-action.delete-btn:hover) {
-  background: #F4C400;
-  color: #1F8DBF;
-  transform: scale(1.1);
+  background: #ef4444;
+  color: var(--color-white);
+  border-color: #ef4444;
 }
 </style>

@@ -25,32 +25,55 @@
 
         <!-- ───── Stats Row ───── -->
         <div class="stats-grid">
-          <div class="stat-card total">
-            <div class="stat-icon"><i class="fas fa-users"></i></div>
+          <div class="stat-card stat-card--blue" style="--index: 0">
+            <div class="stat-icon-wrap stat-icon--blue">
+              <i class="fas fa-users"></i>
+            </div>
             <div class="stat-content">
-              <span class="stat-label">Total Students</span>
               <span class="stat-value">{{ totalStudents }}</span>
+              <span class="stat-label">Total Students</span>
+            </div>
+            <div class="stat-watermark">
+              <i class="fas fa-users"></i>
             </div>
           </div>
-          <div class="stat-card paid">
-            <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+
+          <div class="stat-card stat-card--green" style="--index: 1">
+            <div class="stat-icon-wrap stat-icon--green">
+              <i class="fas fa-check-circle"></i>
+            </div>
             <div class="stat-content">
-              <span class="stat-label">Paid</span>
               <span class="stat-value">{{ paidStudents }}</span>
+              <span class="stat-label">Paid</span>
+            </div>
+            <div class="stat-watermark">
+              <i class="fas fa-check-circle"></i>
             </div>
           </div>
-          <div class="stat-card pending">
-            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+
+          <div class="stat-card stat-card--orange" style="--index: 2">
+            <div class="stat-icon-wrap stat-icon--orange">
+              <i class="fas fa-clock"></i>
+            </div>
             <div class="stat-content">
-              <span class="stat-label">Pending</span>
               <span class="stat-value">{{ pendingStudents }}</span>
+              <span class="stat-label">Pending</span>
+            </div>
+            <div class="stat-watermark">
+              <i class="fas fa-clock"></i>
             </div>
           </div>
-          <div class="stat-card inactive">
-            <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+
+          <div class="stat-card stat-card--red" style="--index: 3">
+            <div class="stat-icon-wrap stat-icon--red">
+              <i class="fas fa-times-circle"></i>
+            </div>
             <div class="stat-content">
-              <span class="stat-label">Inactive</span>
               <span class="stat-value">{{ inactiveStudents }}</span>
+              <span class="stat-label">Inactive</span>
+            </div>
+            <div class="stat-watermark">
+              <i class="fas fa-times-circle"></i>
             </div>
           </div>
         </div>
@@ -564,142 +587,215 @@
         </div>
 
         <!-- ───── Attendance Preview Modal ───── -->
-        <div v-if="showAttendancePreview" class="modal-overlay" @click="showAttendancePreview = false">
-          <div class="modal-box modal-box--attendance" @click.stop>
-            <div class="modal-head">
-              <h3>Attendance List Preview</h3>
-              <button class="close-btn" @click="showAttendancePreview = false"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body attendance-preview-body">
-              <div class="attendance-preview-meta">
-                <span><strong>{{ attendancePreviewRows.length }}</strong> enrolled students with booking reference</span>
-                <button class="btn-pri" @click="exportAttendanceList">
-                  <i class="fas fa-file-excel" style="margin-right:6px"></i> Download Excel
+        <div v-if="showAttendancePreview" class="sales-preview-overlay" @click.self="showAttendancePreview = false">
+          <div class="sales-preview-modal">
+            <div class="sales-preview-toolbar">
+              <div>
+                <h3>Swimming Attendance List</h3>
+                <p>Review before downloading Excel</p>
+              </div>
+              <div class="sales-preview-actions">
+                <button class="btn-download" @click="exportAttendanceList">
+                  <i class="fas fa-download"></i>
+                  Download Excel
+                </button>
+                <button class="btn-preview" @click="printAttendanceListPreview">
+                  <i class="fas fa-print"></i>
+                  Print
+                </button>
+                <button class="btn-preview" @click="showAttendancePreview = false">
+                  <i class="fas fa-xmark"></i>
+                  Close
                 </button>
               </div>
-
-              <div v-if="attendancePreviewRows.length" class="attendance-preview-wrap">
-                <table class="attendance-preview-table">
-                  <thead>
-                    <tr>
-                      <th>No.</th>
-                      <th>Booking Ref</th>
-                      <th>Student</th>
-                      <th>Lesson</th>
-                      <th>Coach</th>
-                      <th>Session Dates</th>
-                      <th>Time Slot</th>
-                      <th>Attendance</th>
-                      <th>Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(row, idx) in attendancePreviewRows" :key="`${row.bookingRef}-${idx}`">
-                      <td>{{ idx + 1 }}</td>
-                      <td class="mono">{{ row.bookingRef }}</td>
-                      <td>{{ row.studentName }}</td>
-                      <td>{{ row.lessonType }}</td>
-                      <td>{{ row.coach }}</td>
-                      <td>{{ row.scheduleDates }}</td>
-                      <td>{{ row.timeSlot }}</td>
-                      <td></td>
-                      <td></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div v-else class="empty-state small">
-                <i class="fas fa-clipboard"></i>
-                <span>No attendance rows to preview for current filters</span>
-              </div>
+            </div>
+            <div class="sales-preview-scroll">
+              <article class="sales-report-print" id="attendance-report-print">
+                <header class="srp-header">
+                  <div class="srp-logo">ER</div>
+                  <div>
+                    <h2>Eduardo's Resort</h2>
+                    <p>Swimming Attendance List</p>
+                  </div>
+                  <div class="srp-meta">
+                    <span>Generated</span>
+                    <strong>{{ reportAttendGenAt }}</strong>
+                  </div>
+                </header>
+                <section class="srp-section">
+                  <div class="srp-title-row">
+                    <div>
+                      <h3>Attendance List</h3>
+                      <p>{{ attendancePreviewRows.length }} enrolled students with booking reference</p>
+                    </div>
+                  </div>
+                </section>
+                <section class="srp-section">
+                  <h4>Enrolled Students</h4>
+                  <table class="srp-table">
+                    <thead>
+                      <tr>
+                        <th>No.</th>
+                        <th>Booking Ref</th>
+                        <th>Student</th>
+                        <th>Lesson</th>
+                        <th>Coach</th>
+                        <th>Session Dates</th>
+                        <th>Time Slot</th>
+                        <th>Attendance</th>
+                        <th>Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row, idx) in attendancePreviewRows" :key="`${row.bookingRef}-${idx}`">
+                        <td>{{ idx + 1 }}</td>
+                        <td class="mono">{{ row.bookingRef }}</td>
+                        <td>{{ row.studentName }}</td>
+                        <td>{{ row.lessonType }}</td>
+                        <td>{{ row.coach }}</td>
+                        <td>{{ row.scheduleDates }}</td>
+                        <td>{{ row.timeSlot }}</td>
+                        <td></td>
+                        <td></td>
+                      </tr>
+                      <tr v-if="!attendancePreviewRows.length">
+                        <td colspan="9">No attendance rows to preview for current filters.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </section>
+              </article>
             </div>
           </div>
         </div>
 
         <!-- ───── Swimming Report Preview Modal ───── -->
-        <div v-if="showSwimmingReportPreview" class="modal-overlay" @click="showSwimmingReportPreview = false">
-          <div class="modal-box modal-box--attendance" @click.stop>
-            <div class="modal-head">
-              <h3>Swimming Report Preview</h3>
-              <button class="close-btn" @click="showSwimmingReportPreview = false"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body attendance-preview-body">
-              <div class="attendance-preview-meta">
-                <span>
-                  <strong>{{ swimmingReportPreview.totalStudents }}</strong> students | 
-                  Paid: <strong>{{ swimmingReportPreview.paid }}</strong> | 
-                  Pending: <strong>{{ swimmingReportPreview.pending }}</strong>
-                </span>
-                <button class="btn-pri" @click="exportSwimmingReport">
-                  <i class="fas fa-file-excel" style="margin-right:6px"></i> Download Excel
+        <div v-if="showSwimmingReportPreview" class="sales-preview-overlay" @click.self="showSwimmingReportPreview = false">
+          <div class="sales-preview-modal">
+            <div class="sales-preview-toolbar">
+              <div>
+                <h3>Swimming Report</h3>
+                <p>Review before downloading Excel</p>
+              </div>
+              <div class="sales-preview-actions">
+                <button class="btn-download" @click="exportSwimmingReport">
+                  <i class="fas fa-download"></i>
+                  Download Excel
+                </button>
+                <button class="btn-preview" @click="printSwimmingReportPreview">
+                  <i class="fas fa-print"></i>
+                  Print
+                </button>
+                <button class="btn-preview" @click="showSwimmingReportPreview = false">
+                  <i class="fas fa-xmark"></i>
+                  Close
                 </button>
               </div>
+            </div>
+            <div class="sales-preview-scroll">
+              <article class="sales-report-print" id="swimming-report-print">
+                <header class="srp-header">
+                  <div class="srp-logo">ER</div>
+                  <div>
+                    <h2>Eduardo's Resort</h2>
+                    <p>Swimming Program Report</p>
+                  </div>
+                  <div class="srp-meta">
+                    <span>Generated</span>
+                    <strong>{{ reportSwimGenAt }}</strong>
+                  </div>
+                </header>
 
-              <div v-if="swimmingReportPreview.totalStudents" class="report-preview-grid">
-                <div class="preview-card">
-                  <h4>Status Breakdown</h4>
-                  <table class="attendance-preview-table">
+                <section class="srp-section">
+                  <div class="srp-title-row">
+                    <div>
+                      <h3>Swimming Report</h3>
+                      <p>{{ swimmingReportPreview.totalStudents }} students total</p>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="srp-cards">
+                  <div class="srp-card">
+                    <span>Total Students</span>
+                    <strong>{{ swimmingReportPreview.totalStudents }}</strong>
+                  </div>
+                  <div class="srp-card">
+                    <span>Paid</span>
+                    <strong>{{ swimmingReportPreview.paid }}</strong>
+                  </div>
+                  <div class="srp-card">
+                    <span>Pending</span>
+                    <strong>{{ swimmingReportPreview.pending }}</strong>
+                  </div>
+                </section>
+
+                <section class="srp-grid" v-if="swimmingReportPreview.totalStudents">
+                  <div class="srp-section">
+                    <h4>Status Breakdown</h4>
+                    <table class="srp-table">
+                      <thead>
+                        <tr><th>Status</th><th>Count</th><th>%</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in swimmingReportPreview.statusRows" :key="`status-${row.label}`">
+                          <td>{{ row.label }}</td>
+                          <td>{{ row.count }}</td>
+                          <td>{{ row.pct }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="srp-section">
+                    <h4>Lesson Breakdown</h4>
+                    <table class="srp-table">
+                      <thead>
+                        <tr><th>Lesson</th><th>Count</th><th>%</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in swimmingReportPreview.lessonRows" :key="`lesson-${row.label}`">
+                          <td>{{ row.label }}</td>
+                          <td>{{ row.count }}</td>
+                          <td>{{ row.pct }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="srp-section" v-if="swimmingReportPreview.totalStudents">
+                  <h4>Students List</h4>
+                  <table class="srp-table">
                     <thead>
-                      <tr><th>Status</th><th>Count</th><th>%</th></tr>
+                      <tr>
+                        <th>No.</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Lesson</th>
+                        <th>Coach</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                      </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="row in swimmingReportPreview.statusRows" :key="`status-${row.label}`">
-                        <td>{{ row.label }}</td>
-                        <td>{{ row.count }}</td>
-                        <td>{{ row.pct }}</td>
+                      <tr v-for="(student, idx) in swimmingReportPreview.rows" :key="`report-row-${student.id}-${idx}`">
+                        <td>{{ idx + 1 }}</td>
+                        <td>{{ student.name || 'N/A' }}</td>
+                        <td>{{ student.email || '-' }}</td>
+                        <td>{{ student.lessonType || '-' }}</td>
+                        <td>{{ student.coach || '-' }}</td>
+                        <td>{{ roleLabelFromStatus(student.enrollmentStatus) }}</td>
+                        <td>{{ student.paymentStatus || 'Pending' }}</td>
                       </tr>
                     </tbody>
                   </table>
+                </section>
+
+                <div v-if="!swimmingReportPreview.totalStudents" class="empty-state small">
+                  <i class="fas fa-file-lines"></i>
+                  <span>No rows to preview for current filters</span>
                 </div>
-
-                <div class="preview-card">
-                  <h4>Lesson Breakdown</h4>
-                  <table class="attendance-preview-table">
-                    <thead>
-                      <tr><th>Lesson</th><th>Count</th><th>%</th></tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="row in swimmingReportPreview.lessonRows" :key="`lesson-${row.label}`">
-                        <td>{{ row.label }}</td>
-                        <td>{{ row.count }}</td>
-                        <td>{{ row.pct }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div v-if="swimmingReportPreview.totalStudents" class="attendance-preview-wrap">
-                <table class="attendance-preview-table">
-                  <thead>
-                    <tr>
-                      <th>No.</th>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Lesson</th>
-                      <th>Coach</th>
-                      <th>Status</th>
-                      <th>Payment</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(student, idx) in swimmingReportPreview.rows" :key="`report-row-${student.id}-${idx}`">
-                      <td>{{ idx + 1 }}</td>
-                      <td>{{ student.name || 'N/A' }}</td>
-                      <td>{{ student.email || '-' }}</td>
-                      <td>{{ student.lessonType || '-' }}</td>
-                      <td>{{ student.coach || '-' }}</td>
-                      <td>{{ roleLabelFromStatus(student.enrollmentStatus) }}</td>
-                      <td>{{ student.paymentStatus || 'Pending' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div v-else class="empty-state small">
-                <i class="fas fa-file-lines"></i>
-                <span>No rows to preview for current filters</span>
-              </div>
+              </article>
             </div>
           </div>
         </div>
@@ -735,6 +831,8 @@ const studentStatusFilter = ref('all')
 const studentLessonFilter = ref('all')
 const showAttendancePreview = ref(false)
 const showSwimmingReportPreview = ref(false)
+const reportAttendGenAt = ref('')
+const reportSwimGenAt = ref('')
 
 const newCoach = ref({ lessonType: '', coach: '', email: '', phone: '' })
 
@@ -1226,6 +1324,7 @@ const openAttendancePreview = () => {
     alert('No enrolled students with booking reference found for current filters.')
     return
   }
+  reportAttendGenAt.value = new Date().toLocaleString('en-PH', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   showAttendancePreview.value = true
 }
 
@@ -1234,6 +1333,7 @@ const openSwimmingReportPreview = () => {
     alert('No students found for current filters.')
     return
   }
+  reportSwimGenAt.value = new Date().toLocaleString('en-PH', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   showSwimmingReportPreview.value = true
 }
 
@@ -1674,6 +1774,76 @@ const exportSwimmingReport = async () => {
 
 watch(() => pendingStudents.value, (n) => notifications.setSwimmingPending(n))
 
+function printAttendanceListPreview() {
+  const el = document.getElementById('attendance-report-print')
+  if (!el) return
+  const w = window.open('', '_blank', 'width=900,height=700')
+  const styles = `
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 8mm; }
+    .sales-report-print { width: 100%; background: #fff; }
+    .srp-header { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; background: #0c3b5e; color: #fff; border-radius: 6px 6px 0 0; margin-bottom: 10px; }
+    .srp-logo { width: 44px; height: 44px; border-radius: 8px; background: #0c3b5e; color: #f4c400; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; border: 2px solid #f4c400; }
+    .srp-header h2 { margin: 0; font-size: 15px; color: #fff; }
+    .srp-header p { margin: 2px 0 0; font-size: 10px; color: #93c5fd; }
+    .srp-meta { text-align: right; font-size: 9px; color: #93c5fd; }
+    .srp-meta strong { display: block; color: #fde68a; }
+    .srp-section { margin: 10px 0; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .srp-section h4 { margin: 0 0 8px; font-size: 11px; color: #0c3b5e; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    .srp-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
+    .srp-title-row h3 { margin: 0; font-size: 12px; color: #0c3b5e; }
+    .srp-title-row p { margin: 2px 0 0; font-size: 9px; color: #64748b; }
+    .mono { font-family: monospace; font-size: 0.85rem; color: #0369a1; }
+    .srp-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    .srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; font-size: 8px; text-transform: uppercase; padding: 5px 6px; border: 1px solid #e2e8f0; text-align: left; }
+    .srp-table td { padding: 4px 6px; border: 1px solid #e2e8f0; color: #1e293b; font-size: 9px; }
+    .srp-table tr:nth-child(even) td { background: #f8fafc; }
+    @page { size: A4 landscape; margin: 8mm; }
+  `
+  w.document.write(`<!DOCTYPE html><html><head><title>Attendance List</title><style>${styles}</style></head><body>${el.outerHTML}</body></html>`)
+  w.document.close()
+  w.focus()
+  w.print()
+  w.close()
+}
+
+function printSwimmingReportPreview() {
+  const el = document.getElementById('swimming-report-print')
+  if (!el) return
+  const w = window.open('', '_blank', 'width=900,height=700')
+  const styles = `
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 8mm; }
+    .sales-report-print { width: 100%; background: #fff; }
+    .srp-header { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; background: #0c3b5e; color: #fff; border-radius: 6px 6px 0 0; margin-bottom: 10px; }
+    .srp-logo { width: 44px; height: 44px; border-radius: 8px; background: #0c3b5e; color: #f4c400; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; border: 2px solid #f4c400; }
+    .srp-header h2 { margin: 0; font-size: 15px; color: #fff; }
+    .srp-header p { margin: 2px 0 0; font-size: 10px; color: #93c5fd; }
+    .srp-meta { text-align: right; font-size: 9px; color: #93c5fd; }
+    .srp-meta strong { display: block; color: #fde68a; }
+    .srp-section { margin: 10px 0; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .srp-section h4 { margin: 0 0 8px; font-size: 11px; color: #0c3b5e; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+    .srp-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
+    .srp-title-row h3 { margin: 0; font-size: 12px; color: #0c3b5e; }
+    .srp-title-row p { margin: 2px 0 0; font-size: 9px; color: #64748b; }
+    .srp-cards { display: flex; gap: 8px; padding: 8px 0; margin: 8px 0; flex-wrap: wrap; }
+    .srp-card { flex: 1; min-width: 140px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+    .srp-card span { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 2px; }
+    .srp-card strong { font-size: 16px; font-weight: 800; color: #1e293b; }
+    .srp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+    .srp-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+    .srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; font-size: 8px; text-transform: uppercase; padding: 5px 6px; border: 1px solid #e2e8f0; text-align: left; }
+    .srp-table td { padding: 4px 6px; border: 1px solid #e2e8f0; color: #1e293b; font-size: 9px; }
+    .srp-table tr:nth-child(even) td { background: #f8fafc; }
+    @page { size: A4 portrait; margin: 8mm; }
+  `
+  w.document.write(`<!DOCTYPE html><html><head><title>Swimming Report</title><style>${styles}</style></head><body>${el.outerHTML}</body></html>`)
+  w.document.close()
+  w.focus()
+  w.print()
+  w.close()
+}
+
 onMounted(async () => {
   await fetchStudents()
   await fetchCalendarLessons()
@@ -1749,63 +1919,174 @@ onUnmounted(() => {
   gap: 1.75rem;
 }
 
-/* ── Stats ────────────────────────────────────────────── */
+/* ───────────────── Stats Grid ───────────────── */
 .stats-grid {
+  --color-primary-light: #1f8dbf;
+  --color-navy: #0c3b5e;
+  --color-white: #ffffff;
+  --color-gray-border: #e5e7eb;
+  --color-text-dark: #1f2937;
+  --color-text-light: #6b7280;
+
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  
+}
+
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .stat-card {
-  background: var(--color-white);
-  border-radius: 14px;
-  padding: 1.25rem 1.5rem;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1rem;
+  padding: 1.2rem 1.35rem;
+  background: var(--color-white);
+  border-radius: 16px;
   border: 1px solid var(--color-gray-border);
-  box-shadow: 0 1px 4px rgba(3,105,161,0.06);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(3,105,161,0.1);
+  box-shadow: 0 2px 10px rgba(3, 105, 161, 0.07);
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  animation: cardIn 0.4s ease both;
+  animation-delay: calc(var(--index) * 70ms);
 }
 
-/* Accent stripe on left */
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(3, 105, 161, 0.14);
+}
+
 .stat-card::before {
   content: '';
   position: absolute;
-  left: 0; top: 12px; bottom: 12px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
 }
-.stat-card { position: relative; }
-.stat-card.total::before  { background: var(--color-primary-light); }
-.stat-card.paid::before   { background: #22c55e; }
-.stat-card.pending::before{ background: var(--color-gold); }
-.stat-card.inactive::before{ background: var(--color-text-light); }
 
-.stat-icon {
-  width: 52px; height: 52px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.4rem; flex-shrink: 0;
-}
-.stat-card.total .stat-icon   { background: rgba(3,105,161,.1);    color: var(--color-primary); }
-.stat-card.paid .stat-icon    { background: rgba(34,197,94,.1);     color: #16a34a; }
-.stat-card.pending .stat-icon { background: rgba(244,196,0,.12);    color: #92700a; }
-.stat-card.inactive .stat-icon{ background: rgba(107,114,128,.1);   color: var(--color-text-light); }
+.stat-card--blue::before   { background: var(--color-primary-light); }
+.stat-card--green::before  { background: #16a34a; }
+.stat-card--orange::before { background: #ea580c; }
+.stat-card--red::before    { background: #dc2626; }
 
-.stat-content { display: flex; flex-direction: column; }
-.stat-label {
-  font-size: 0.78rem; font-weight: 600; color: var(--color-text-light);
-  text-transform: uppercase; letter-spacing: 0.4px;
+/* Icon */
+.stat-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  transition: transform 0.22s ease;
 }
+
+.stat-card:hover .stat-icon-wrap {
+  transform: scale(1.1) rotate(-4deg);
+}
+
+.stat-icon--blue {
+  background: rgba(31, 141, 191, 0.12);
+  color: var(--color-primary-light);
+}
+
+.stat-icon--green {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.stat-icon--orange {
+  background: rgba(234, 88, 12, 0.1);
+  color: #ea580c;
+}
+
+.stat-icon--red {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+/* Content */
+.stat-content {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .stat-value {
-  font-size: 1.9rem; font-weight: 700; color: var(--color-text-dark); line-height: 1.2;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-text-dark);
 }
 
+.stat-card--blue .stat-value   { color: var(--color-primary-light); }
+.stat-card--green .stat-value  { color: #16a34a; }
+.stat-card--orange .stat-value { color: #ea580c; }
+.stat-card--red .stat-value    { color: #dc2626; }
+
+.stat-label {
+  font-size: 0.72rem;
+  color: var(--color-text-light);
+  margin-top: 0.35rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+/* Watermark */
+.stat-watermark {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  font-size: 4rem;
+  opacity: 0.04;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.stat-card:hover .stat-watermark {
+  opacity: 0.08;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .stat-card {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .stat-icon-wrap {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+  }
+
+  .stat-value {
+    font-size: 1.45rem;
+  }
+}
 /* ── Layout Rows ──────────────────────────────────────── */
 .top-row {
   display: grid;
@@ -2514,4 +2795,97 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── srp-* shared print report classes ── */
+.sales-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .45rem;
+  background: rgba(12,59,94,.55);
+  backdrop-filter: blur(4px);
+}
+.sales-preview-modal {
+  background: #fff;
+  border: 2px solid #f4c400;
+  border-radius: 10px;
+  box-shadow: 0 20px 48px rgba(15,23,42,.35);
+  width: min(1240px, 98vw);
+  max-height: 96vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sales-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .65rem 1rem;
+  border-bottom: 2px solid #0c3b5e;
+  background: #0c3b5e;
+  color: #fff;
+  flex-shrink: 0;
+}
+.sales-preview-toolbar h3 { margin: 0; font-size: .92rem; color: #f4c400; }
+.sales-preview-toolbar p  { margin: 2px 0 0; font-size: .72rem; color: #93c5fd; }
+.sales-preview-actions { display: flex; gap: .45rem; }
+.sales-preview-scroll { flex: 1; overflow-y: auto; padding: 1rem; }
+.sales-report-print { width: 100%; background: #fff; }
+.srp-header {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #0c3b5e;
+  color: #fff;
+  border-radius: 6px 6px 0 0;
+  margin-bottom: 10px;
+}
+.srp-logo {
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  background: #0c3b5e;
+  color: #f4c400;
+  font-weight: 800; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #f4c400;
+}
+.srp-header h2 { margin: 0; font-size: 15px; color: #fff; }
+.srp-header p  { margin: 2px 0 0; font-size: 10px; color: #93c5fd; }
+.srp-meta { text-align: right; font-size: 9px; color: #93c5fd; }
+.srp-meta strong { display: block; color: #fde68a; }
+.srp-section { margin: 10px 0; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
+.srp-section h4 { margin: 0 0 8px; font-size: 11px; color: #0c3b5e; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+.srp-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.srp-title-row h3 { margin: 0; font-size: 12px; color: #0c3b5e; }
+.srp-title-row p  { margin: 2px 0 0; font-size: 9px; color: #64748b; }
+.srp-cards { display: flex; gap: 8px; padding: 8px 0; margin: 8px 0; flex-wrap: wrap; }
+.srp-card { flex: 1; min-width: 140px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+.srp-card span { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 2px; }
+.srp-card strong { font-size: 16px; font-weight: 800; color: #1e293b; }
+.srp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.srp-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+.srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; font-size: 8px; text-transform: uppercase; padding: 5px 6px; border: 1px solid #e2e8f0; text-align: left; }
+.srp-table td { padding: 4px 6px; border: 1px solid #e2e8f0; color: #1e293b; }
+.srp-table tr:nth-child(even) td { background: #f8fafc; }
+.btn-download {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: #f4c400; color: #0c3b5e;
+  border: none; border-radius: 7px;
+  padding: .45rem .95rem; font-size: .8rem; font-weight: 700;
+  cursor: pointer; transition: background .18s;
+}
+.btn-download:not(:disabled):hover { background: #ffd700; }
+.btn-preview {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: rgba(255,255,255,.12); color: #fff;
+  border: 1px solid rgba(255,255,255,.28); border-radius: 7px;
+  padding: .45rem .95rem; font-size: .8rem; font-weight: 600;
+  cursor: pointer; transition: background .18s;
+}
+.btn-preview:not(:disabled):hover { background: rgba(255,255,255,.22); }
 </style>

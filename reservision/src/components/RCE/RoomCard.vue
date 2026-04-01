@@ -138,7 +138,7 @@ const props = defineProps({
   room: { type: Object, required: true }
 })
 
-defineEmits(['edit', 'delete'])
+defineEmits(['edit', 'delete', 'promo'])
 
 const BACKEND_URL = 'http://localhost:8000'
 
@@ -336,6 +336,21 @@ const nextImg = () => {
   color: rgba(255,255,255,0.85);
 }
 
+.btn-promo {
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(244, 196, 0, 0.35);
+  background: rgba(244, 196, 0, 0.14);
+  color: #835f00;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-promo:hover {
+  background: rgba(244, 196, 0, 0.24);
+}
+
 /* ────────────────────────────────────────────
    CARD BODY
 ──────────────────────────────────────────── */
@@ -357,6 +372,7 @@ const nextImg = () => {
   color: rgb(58, 58, 58); line-height: 1.25;
   margin: 0;
   display: -webkit-box;
+    line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -431,6 +447,7 @@ const nextImg = () => {
   line-height: 1.55;
   margin: 0;
   display: -webkit-box;
+    line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;

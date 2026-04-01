@@ -158,8 +158,11 @@
                         <span><i class="fas fa-user"></i> {{ item.firstName }} {{ item.lastName }}</span>
                         <span><i class="fas fa-calendar-alt"></i> {{ item.checkIn }} – {{ item.checkOut }}</span>
                         <span v-if="item.nights"><i class="fas fa-moon"></i> {{ item.nights }} night{{ item.nights > 1 ? 's' : '' }}</span>
+                        <span v-if="item.totalDiscount > 0"><i class="fas fa-tag"></i> Discount: -₱{{ Number(item.totalDiscount || 0).toLocaleString() }}</span>
+                        <span v-if="item.promoCode"><i class="fas fa-ticket-alt"></i> Promo: {{ item.promoCode }}</span>
                       </div>
                       <div v-else-if="item.customization" class="cart-row-meta">
+                        <span class="cart-row-qty-inline">× {{ item.qty }}</span>
                         <span><i class="fas fa-ruler-combined"></i> Size: {{ item.customization.sizeLabel }}</span>
                         <span v-if="item.customization.addOns?.length"><i class="fas fa-plus-circle"></i> Add-ons: {{ item.customization.addOns.map(a => a.name).join(', ') }}</span>
                         <span v-if="item.customization.specialRequest"><i class="fas fa-sticky-note"></i> {{ item.customization.specialRequest }}</span>
@@ -318,73 +321,6 @@
             </button>
           </div>
 
-          <div v-if="showTransactionsExportPreview" class="modal-overlay" @click.self="showTransactionsExportPreview = false">
-            <div class="modal-box modal-box--preview" @click.stop>
-              <div class="modal-head">
-                <div class="modal-head-left">
-                  <div class="modal-head-icon"><i class="fas fa-file-lines"></i></div>
-                  <div>
-                    <div class="modal-title">POS Report Preview</div>
-                    <div class="modal-sub">Review data first before downloading</div>
-                  </div>
-                </div>
-                <button @click="showTransactionsExportPreview = false" class="modal-close-btn"><i class="fas fa-times"></i></button>
-              </div>
-
-              <div class="modal-body">
-                <div class="preview-stats-grid">
-                  <div class="preview-stat-card">
-                    <span class="preview-stat-label">Transactions</span>
-                    <strong class="preview-stat-value">{{ exportPreviewTransactions.length }}</strong>
-                  </div>
-                  <div class="preview-stat-card">
-                    <span class="preview-stat-label">Total Sales</span>
-                    <strong class="preview-stat-value">₱{{ exportPreviewTotalSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
-                  </div>
-                  <div class="preview-stat-card">
-                    <span class="preview-stat-label">Cash</span>
-                    <strong class="preview-stat-value">{{ exportPreviewCashCount }}</strong>
-                  </div>
-                  <div class="preview-stat-card">
-                    <span class="preview-stat-label">GCash</span>
-                    <strong class="preview-stat-value">{{ exportPreviewGcashCount }}</strong>
-                  </div>
-                </div>
-
-                <div class="preview-table-wrap">
-                  <table class="preview-table">
-                    <thead>
-                      <tr>
-                        <th>Receipt</th>
-                        <th>Items</th>
-                        <th>Type</th>
-                        <th>Payment</th>
-                        <th>Total</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="trans in exportPreviewTransactions" :key="`preview-${trans.receiptNo}`">
-                        <td>POS-{{ trans.receiptNo }}</td>
-                        <td>{{ getItemsPreview(trans.items) }}</td>
-                        <td>{{ trans.type || '-' }}</td>
-                        <td>{{ trans.payment || '-' }}</td>
-                        <td>₱{{ Number(trans.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
-                        <td>{{ formatPreviewDate(trans.date) }}</td>
-                        <td>{{ formatPreviewTime(trans.date, trans.time) }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div class="modal-foot">
-                <button @click="showTransactionsExportPreview = false" class="btn-cancel"><i class="fas fa-times"></i> Cancel</button>
-                <button @click="exportAllTransactions" class="btn-action btn-action--green"><i class="fas fa-file-excel"></i> Download Excel</button>
-              </div>
-            </div>
-          </div>
         </div>
 
         <transition name="pay-panel-fade">
@@ -510,6 +446,104 @@
 
     </main>
 
+    <!-- ══ POS REPORT PREVIEW ══ -->
+    <div v-if="showTransactionsExportPreview" class="sales-preview-overlay" @click.self="showTransactionsExportPreview = false">
+      <div class="sales-preview-modal">
+        <div class="sales-preview-toolbar">
+          <div>
+            <h3>POS Transaction Report</h3>
+            <p>Review before downloading Excel</p>
+          </div>
+          <div class="sales-preview-actions">
+            <button class="btn-download" @click="exportAllTransactions">
+              <i class="fas fa-download"></i>
+              Download Excel
+            </button>
+            <button class="btn-preview" @click="printPOSReportPreview">
+              <i class="fas fa-print"></i>
+              Print
+            </button>
+            <button class="btn-preview" @click="showTransactionsExportPreview = false">
+              <i class="fas fa-xmark"></i>
+              Close
+            </button>
+          </div>
+        </div>
+
+        <div class="sales-preview-scroll">
+          <article class="sales-report-print" id="pos-report-print">
+            <header class="srp-header">
+              <div class="srp-logo">ER</div>
+              <div>
+                <h2>Eduardo's Resort</h2>
+                <p>POS Transaction Report</p>
+              </div>
+              <div class="srp-meta">
+                <span>Generated</span>
+                <strong>{{ posReportGenAt }}</strong>
+              </div>
+            </header>
+
+            <section class="srp-section">
+              <div class="srp-title-row">
+                <div>
+                  <h3>POS Report</h3>
+                  <p>{{ exportPreviewTransactions.length }} transactions</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="srp-cards">
+              <div class="srp-card">
+                <span>Transactions</span>
+                <strong>{{ exportPreviewTransactions.length }}</strong>
+              </div>
+              <div class="srp-card">
+                <span>Total Sales</span>
+                <strong>₱{{ exportPreviewTotalSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
+              </div>
+              <div class="srp-card">
+                <span>Cash</span>
+                <strong>{{ exportPreviewCashCount }}</strong>
+              </div>
+              <div class="srp-card">
+                <span>GCash</span>
+                <strong>{{ exportPreviewGcashCount }}</strong>
+              </div>
+            </section>
+
+            <section class="srp-section">
+              <h4>Transactions List</h4>
+              <table class="srp-table">
+                <thead>
+                  <tr>
+                    <th>Receipt</th>
+                    <th>Items</th>
+                    <th>Type</th>
+                    <th>Payment</th>
+                    <th>Total</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="trans in exportPreviewTransactions" :key="`preview-${trans.receiptNo}`">
+                    <td>POS-{{ trans.receiptNo }}</td>
+                    <td>{{ getItemsPreview(trans.items) }}</td>
+                    <td>{{ trans.type || '-' }}</td>
+                    <td>{{ trans.payment || '-' }}</td>
+                    <td>₱{{ Number(trans.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
+                    <td>{{ formatPreviewDate(trans.date) }}</td>
+                    <td>{{ formatPreviewTime(trans.date, trans.time) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+          </article>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ RECEIPT CUSTOMIZER MODAL ══ -->
     <div v-if="showReceiptCustomizer" class="modal-overlay" @click.self="showReceiptCustomizer = false">
       <div class="modal-box" @click.stop>
@@ -565,6 +599,7 @@
       :item-name="pendingBookingItem?.name || ''"
       :item-price="pendingBookingItem?.price || 0"
       :item-category="pendingBookingItem?.category || ''"
+      :promos="promos"
       @close="showBookingModal = false"
       @confirm="handleBookingConfirm"
     />
@@ -766,6 +801,7 @@ export default {
       showPaymentPanel: false,
       auth: useAuthStore(), notifications: useNotificationStore(),
       cart: [], total: 0, receiptNo: 1,
+      promos: [],
       currentCategory: 'restaurant', paymentMethod: 'Cash',
       cashReceived: '',
       searchQuery: '', restaurantTypeFilter: 'all', showMoreFilters: false,
@@ -789,6 +825,7 @@ export default {
       currentTransactionPage: 1,
       transactionItemsPerPage: 10,
       showTransactionsExportPreview: false,
+      posReportGenAt: '',
       showTransactionDetails: false, selectedTransaction: null,
       showCustomizationModal: false,
       pendingCustomItem: null,
@@ -905,7 +942,11 @@ export default {
       return sizeExtra + addOnsExtra
     },
     customizedItemUnitPrice() {
-      return this.customizationExtraAmount
+      const sizePrice  = Number(this.selectedCustomizationSize?.priceDelta || 0)
+      const addOnsExtra = this.selectedCustomizationAddOns.reduce((sum, a) => sum + Number(a.price || 0), 0)
+      const basePrice  = Number(this.pendingCustomItem?.price || 0)
+      // Size price is absolute (replaces base). Fall back to base only when no real size selected.
+      return (sizePrice || basePrice) + addOnsExtra
     }
   },
   watch: {
@@ -931,7 +972,7 @@ export default {
     if (this._visibilityHandler) document.removeEventListener('visibilitychange', this._visibilityHandler)
   },
   async mounted() {
-    await this.fetchItems(); await this.fetchTransactions(); this.updateReceiptNumber()
+    await this.fetchItems(); await this.fetchPromos(); await this.fetchTransactions(); this.updateReceiptNumber()
     this._pollInterval = setInterval(()=>this.fetchTransactions(), 30000)
     this._visibilityHandler = ()=>{ if(document.visibilityState==='visible') this.fetchTransactions() }
     document.addEventListener('visibilitychange', this._visibilityHandler)
@@ -1073,6 +1114,14 @@ export default {
             }))
         })
       } catch { this.showToast('Failed to load items from server','error') }
+    },
+    async fetchPromos() {
+      try {
+        const res = await axios.get('http://localhost:8000/api/promos')
+        this.promos = Array.isArray(res.data) ? res.data : []
+      } catch {
+        this.promos = []
+      }
     },
     async fetchTransactions() {
       try {
@@ -1248,7 +1297,11 @@ export default {
       const addOnsExtra = Array.isArray(customization?.addOns)
         ? customization.addOns.reduce((sum, addon) => sum + Number(addon.price || 0), 0)
         : 0
-      const unitPrice = basePrice + sizeExtra + addOnsExtra
+      // Size price is absolute (the full price for that size tier).
+      // Fall back to basePrice only when no real size is selected (priceDelta = 0).
+      const unitPrice = customization
+        ? (sizeExtra || basePrice) + addOnsExtra
+        : basePrice
 
       const signature = customization
         ? JSON.stringify({
@@ -1283,6 +1336,32 @@ export default {
       const now = new Date()
       const paidAmount = this.paymentMethod === 'Cash' ? this.cashReceivedNumber : this.total
       const changeAmount = this.paymentMethod === 'Cash' ? this.changeAmount : 0
+
+      // Generate GCash payment links for booking items that were added before payment
+      // method was selected (handleBookingConfirm runs before the payment panel)
+      if (this.paymentMethod === 'GCash') {
+        for (const cartItem of this.cart) {
+          if (cartItem.isBooking && !cartItem.paymentUrl) {
+            try {
+              const payRes = await axios.post('http://localhost:8000/api/paymongo/create-payment-link', {
+                amount: cartItem.price,
+                description: `Eduardo's Resort - ${cartItem.bookingReference}`,
+                bookingId: cartItem.bookingId,
+                email: cartItem.email || `walkin-${cartItem.bookingReference}@resort.local`,
+                paymentMethod: 'gcash'
+              })
+              if (payRes.data.success) {
+                cartItem.paymentUrl = payRes.data.checkout_url
+                cartItem.paymentQR = await QRCode.toDataURL(cartItem.paymentUrl, {
+                  errorCorrectionLevel: 'H', type: 'image/png', width: 200, margin: 1,
+                  color: { dark: '#0C3B5E', light: '#FFFFFF' }
+                })
+              }
+            } catch {}
+          }
+        }
+      }
+
       const trans = {
         receiptNo: String(Math.floor(this.receiptNo)).padStart(3,'0'),
         items: this.cart.map(i=>({
@@ -1472,7 +1551,43 @@ export default {
         this.showToast('No transactions to export', 'error')
         return
       }
+      this.posReportGenAt = new Date().toLocaleString('en-PH', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
       this.showTransactionsExportPreview = true
+    },
+    printPOSReportPreview() {
+      const el = document.getElementById('pos-report-print')
+      if (!el) return
+      const w = window.open('', '_blank', 'width=900,height=700')
+      const styles = `
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 8mm; }
+        .sales-report-print { width: 100%; background: #fff; }
+        .srp-header { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; padding: 10px 14px; background: #0c3b5e; color: #fff; border-radius: 6px 6px 0 0; margin-bottom: 10px; }
+        .srp-logo { width: 44px; height: 44px; border-radius: 8px; background: #0c3b5e; color: #f4c400; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; border: 2px solid #f4c400; }
+        .srp-header h2 { margin: 0; font-size: 15px; color: #fff; }
+        .srp-header p { margin: 2px 0 0; font-size: 10px; color: #93c5fd; }
+        .srp-meta { text-align: right; font-size: 9px; color: #93c5fd; }
+        .srp-meta strong { display: block; color: #fde68a; }
+        .srp-section { margin: 10px 0; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
+        .srp-section h4 { margin: 0 0 8px; font-size: 11px; color: #0c3b5e; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+        .srp-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
+        .srp-title-row h3 { margin: 0; font-size: 12px; color: #0c3b5e; }
+        .srp-title-row p { margin: 2px 0 0; font-size: 9px; color: #64748b; }
+        .srp-cards { display: flex; gap: 8px; padding: 8px 0; margin: 8px 0; flex-wrap: wrap; }
+        .srp-card { flex: 1; min-width: 140px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+        .srp-card span { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 2px; }
+        .srp-card strong { font-size: 16px; font-weight: 800; color: #1e293b; }
+        .srp-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+        .srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; font-size: 8px; text-transform: uppercase; padding: 5px 6px; border: 1px solid #e2e8f0; text-align: left; }
+        .srp-table td { padding: 4px 6px; border: 1px solid #e2e8f0; color: #1e293b; font-size: 9px; }
+        .srp-table tr:nth-child(even) td { background: #f8fafc; }
+        @page { size: A4 portrait; margin: 8mm; }
+      `
+      w.document.write(`<!DOCTYPE html><html><head><title>POS Transaction Report</title><style>${styles}</style></head><body>${el.outerHTML}</body></html>`)
+      w.document.close()
+      w.focus()
+      w.print()
+      w.close()
     },
     async exportAllTransactions() {
       if (!this.exportPreviewTransactions.length) { this.showToast('No transactions to export','error'); return }
@@ -2286,6 +2401,7 @@ export default {
 .cart-row-meta  { display: flex; flex-direction: column; gap: 1px; margin-top: 2px; }
 .cart-row-meta span { font-size: .68rem; color: var(--color-text-light); display: flex; align-items: center; gap: 4px; }
 .cart-row-meta i    { color: #c1c8d0; width: 10px; }
+.cart-row-qty-inline { font-size: .72rem !important; font-weight: 700; color: var(--color-navy) !important; }
 
 .cart-row-right { display: flex; align-items: center; gap: .4rem; flex-shrink: 0; }
 .cart-row-price { font-size: .82rem; font-weight: 700; color: var(--color-text-dark); white-space: nowrap; }
@@ -3111,4 +3227,96 @@ export default {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── srp-* shared print report classes ── */
+.sales-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .45rem;
+  background: rgba(12,59,94,.55);
+  backdrop-filter: blur(4px);
+}
+.sales-preview-modal {
+  background: #fff;
+  border: 2px solid #f4c400;
+  border-radius: 10px;
+  box-shadow: 0 20px 48px rgba(15,23,42,.35);
+  width: min(1240px, 98vw);
+  max-height: 96vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sales-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .65rem 1rem;
+  border-bottom: 2px solid #0c3b5e;
+  background: #0c3b5e;
+  color: #fff;
+  flex-shrink: 0;
+}
+.sales-preview-toolbar h3 { margin: 0; font-size: .92rem; color: #f4c400; }
+.sales-preview-toolbar p  { margin: 2px 0 0; font-size: .72rem; color: #93c5fd; }
+.sales-preview-actions { display: flex; gap: .45rem; }
+.sales-preview-scroll { flex: 1; overflow-y: auto; padding: 1rem; }
+.sales-report-print { width: 100%; background: #fff; }
+.srp-header {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #0c3b5e;
+  color: #fff;
+  border-radius: 6px 6px 0 0;
+  margin-bottom: 10px;
+}
+.srp-logo {
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  background: #0c3b5e;
+  color: #f4c400;
+  font-weight: 800; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #f4c400;
+}
+.srp-header h2 { margin: 0; font-size: 15px; color: #fff; }
+.srp-header p  { margin: 2px 0 0; font-size: 10px; color: #93c5fd; }
+.srp-meta { text-align: right; font-size: 9px; color: #93c5fd; }
+.srp-meta strong { display: block; color: #fde68a; }
+.srp-section { margin: 10px 0; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; }
+.srp-section h4 { margin: 0 0 8px; font-size: 11px; color: #0c3b5e; font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+.srp-title-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.srp-title-row h3 { margin: 0; font-size: 12px; color: #0c3b5e; }
+.srp-title-row p  { margin: 2px 0 0; font-size: 9px; color: #64748b; }
+.srp-cards { display: flex; gap: 8px; padding: 8px 0; margin: 8px 0; flex-wrap: wrap; }
+.srp-card { flex: 1; min-width: 140px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+.srp-card span { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 2px; }
+.srp-card strong { font-size: 16px; font-weight: 800; color: #1e293b; }
+.srp-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+.srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; font-size: 8px; text-transform: uppercase; padding: 5px 6px; border: 1px solid #e2e8f0; text-align: left; }
+.srp-table td { padding: 4px 6px; border: 1px solid #e2e8f0; color: #1e293b; }
+.srp-table tr:nth-child(even) td { background: #f8fafc; }
+.btn-download {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: #f4c400; color: #0c3b5e;
+  border: none; border-radius: 7px;
+  padding: .45rem .95rem; font-size: .8rem; font-weight: 700;
+  cursor: pointer; transition: background .18s;
+}
+.btn-download:not(:disabled):hover { background: #ffd700; }
+.btn-preview {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: rgba(255,255,255,.12); color: #fff;
+  border: 1px solid rgba(255,255,255,.28); border-radius: 7px;
+  padding: .45rem .95rem; font-size: .8rem; font-weight: 600;
+  cursor: pointer; transition: background .18s;
+}
+.btn-preview:not(:disabled):hover { background: rgba(255,255,255,.22); }
 </style>

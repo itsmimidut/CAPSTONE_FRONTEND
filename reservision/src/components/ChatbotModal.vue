@@ -35,16 +35,6 @@
         </button>
       </div>
 
-      <!-- Quick Actions -->
-      <div class="quick-actions">
-        <button @click="sendQuickMessage('What rooms are available?')" class="quick-btn">
-          🏨 Rooms
-        </button>
-        <button @click="sendQuickMessage('Menu items?')" class="quick-btn">
-          🍽️ Menu
-        </button>
-      </div>
-
       <!-- Messages -->
       <div ref="messagesContainer" class="messages-container">
         <div 
@@ -100,9 +90,6 @@
           >
             <i class="fas fa-paper-plane"></i>
           </button>
-        </div>
-        <div class="powered-by">
-          Powered by <span class="font-semibold">Llama AI 🦙</span>
         </div>
       </div>
     </div>

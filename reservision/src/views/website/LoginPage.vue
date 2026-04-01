@@ -152,7 +152,7 @@ const visualBgStyle = computed(() => ({
     radial-gradient(circle at ${mousePosition.x * 100}% ${mousePosition.y * 100}%, rgba(31, 141, 191, 0.3) 0%, transparent 50%),
     radial-gradient(circle at ${100 - mousePosition.x * 100}% ${100 - mousePosition.y * 100}%, rgba(244, 196, 0, 0.25) 0%, transparent 50%),
     linear-gradient(135deg, rgba(12, 59, 94, 0.6) 0%, rgba(31, 141, 191, 0.4) 50%, rgba(244, 196, 0, 0.4) 100%),
-    url('https://www.eduardosresort.com/images/IMG_4224.JPG')
+    url('/images/herobg.jpg')
   `,
   backgroundSize: 'cover',
   backgroundPosition: 'center',

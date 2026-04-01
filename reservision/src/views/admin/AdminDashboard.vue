@@ -75,13 +75,9 @@
               </button>
             </div>
             
-            <button @click="downloadAnalyticsData" class="btn-download" :disabled="isDownloadingReport">
-              <i class="fas fa-download"></i>
-              {{ isDownloadingReport ? 'Downloading...' : 'Download Report' }}
-            </button>
-            <button @click="openSalesReportPreview" class="btn-preview" :disabled="isGeneratingSalesPreview">
+            <button @click="openSalesReportPreview" class="btn-download" :disabled="isGeneratingSalesPreview">
               <i class="fas fa-file-lines"></i>
-              {{ isGeneratingSalesPreview ? 'Generating...' : 'Preview Report' }}
+              {{ isGeneratingSalesPreview ? 'Generating...' : 'Download Report' }}
             </button>
           </div>
         </div>
@@ -286,9 +282,13 @@
               <p>Single-view report preview from Dashboard filters</p>
             </div>
             <div class="sales-preview-actions">
-              <button class="btn-download" @click="printInlineSalesReport">
+              <button class="btn-download" @click="downloadAnalyticsData" :disabled="isDownloadingReport">
+                <i class="fas fa-download"></i>
+                {{ isDownloadingReport ? 'Downloading...' : 'Download Excel' }}
+              </button>
+              <button class="btn-preview" @click="printInlineSalesReport">
                 <i class="fas fa-print"></i>
-                Print Report
+                Print
               </button>
               <button class="btn-preview" @click="showSalesPreviewModal = false">
                 <i class="fas fa-xmark"></i>
@@ -325,10 +325,22 @@
               </section>
 
               <section class="srp-cards">
-                <div class="srp-card"><span>Total Bookings</span><strong>{{ generatedSalesReport.totalBookings }}</strong></div>
-                <div class="srp-card"><span>Total Revenue</span><strong>{{ generatedSalesReport.totalRevenue }}</strong></div>
-                <div class="srp-card"><span>Peak Day</span><strong>{{ generatedSalesReport.peakDay }}</strong></div>
-                <div class="srp-card"><span>Top Service</span><strong>{{ generatedSalesReport.topService }}</strong></div>
+                <div class="srp-card">
+                  <span>Total</span>
+                  <strong>{{ generatedSalesReport.totalBookings }}</strong>
+                </div>
+                <div class="srp-card">
+                  <span>Revenue</span>
+                  <strong>{{ generatedSalesReport.totalRevenue }}</strong>
+                </div>
+                <div class="srp-card">
+                  <span>Peak Day</span>
+                  <strong>{{ generatedSalesReport.peakDay }}</strong>
+                </div>
+                <div class="srp-card">
+                  <span>Top Service</span>
+                  <strong>{{ generatedSalesReport.topService }}</strong>
+                </div>
               </section>
 
               <section class="srp-section">
@@ -1665,7 +1677,45 @@ const resetInlineSalesFilters = () => {
 }
 
 const printInlineSalesReport = () => {
-  window.print()
+  const reportEl = document.getElementById('sales-report-print-dashboard')
+  if (!reportEl) { window.print(); return }
+
+  const styles = `
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #fff; color: #0f172a; margin: 0; padding: 8mm; }
+    .sales-report-print { width: 100%; background: #fff; color: #0f172a; }
+    .srp-header { display: grid; grid-template-columns: 52px 1fr auto; gap: 0.55rem; align-items: center; border-bottom: 2px solid #0c3b5e; padding-bottom: 0.4rem; margin-bottom: 0.5rem; }
+    .srp-logo { width: 44px; height: 44px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: #0c3b5e; color: #f4c400; font-weight: 800; font-size: 0.9rem; }
+    .srp-header h2 { margin: 0; font-size: 0.92rem; color: #0c3b5e; }
+    .srp-header p { margin: 0.2rem 0 0; font-size: 0.7rem; color: #64748b; }
+    .srp-meta { text-align: right; display: flex; flex-direction: column; gap: 0.08rem; }
+    .srp-meta span { font-size: 0.62rem; color: #64748b; }
+    .srp-meta strong { font-size: 0.72rem; }
+    .srp-section { margin-top: 0.45rem; }
+    .srp-title-row { display: flex; justify-content: space-between; gap: 0.45rem; }
+    .srp-title-row h3 { margin: 0; font-size: 0.88rem; color: #0c3b5e; }
+    .srp-title-row p { margin: 0.2rem 0 0; font-size: 0.68rem; color: #64748b; }
+    .srp-applied { border: 1px solid #dce8f3; border-radius: 8px; padding: 0.34rem 0.46rem; min-width: 190px; }
+    .srp-applied div { display: flex; justify-content: space-between; gap: 0.4rem; font-size: 0.64rem; }
+    .srp-applied span { color: #64748b; }
+    .srp-cards { margin-top: 0.4rem; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; }
+    .srp-card { border: 1px solid #dce8f3; border-radius: 8px; padding: 0.34rem 0.4rem; background: #fff; }
+    .srp-card span { display: block; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 0.1rem; }
+    .srp-card strong { font-size: 0.8rem; font-weight: 800; color: #1e293b; }
+    .srp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+    .srp-section h4 { margin: 0 0 0.2rem; color: #0c3b5e; font-size: 0.74rem; }
+    .srp-table { width: 100%; border-collapse: collapse; border: 1px solid #dce8f3; }
+    .srp-table th, .srp-table td { border: 1px solid #dce8f3; padding: 0.24rem 0.3rem; font-size: 0.64rem; text-align: left; }
+    .srp-table th { background: #f0f6fb; color: #0c3b5e; font-weight: 700; }
+    @page { size: A4 portrait; margin: 8mm; }
+  `
+
+  const win = window.open('', '', 'left=0,top=0,width=900,height=700,toolbar=0,scrollbars=1,status=0')
+  if (!win) { window.print(); return }
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sales Report</title><style>${styles}</style></head><body>${reportEl.outerHTML}</body></html>`)
+  win.document.close()
+  win.focus()
+  setTimeout(() => { win.print(); win.close() }, 400)
 }
 
 const fetchAllData = async () => {
@@ -1736,9 +1786,12 @@ const downloadAnalyticsData = async () => {
       throw new Error('Invalid date range. From date must be earlier than To date.')
     }
 
-    const rows = await fetchReportBookings()
-    const report = buildInlineSalesReport(rows)
-    generatedSalesReport.value = report
+    let report = generatedSalesReport.value
+    if (!report) {
+      const rows = await fetchReportBookings()
+      report = buildInlineSalesReport(rows)
+      generatedSalesReport.value = report
+    }
 
     // ---- ExcelJS: single styled sheet mirroring the preview modal ----
     const ExcelJS = (await import('exceljs')).default
@@ -2301,10 +2354,13 @@ onMounted(() => {
 }
 
 .sales-preview-scroll {
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0;
   padding: 0.55rem;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
@@ -2416,20 +2472,22 @@ onMounted(() => {
   border: 1px solid #dce8f3;
   border-radius: 8px;
   padding: 0.34rem 0.4rem;
+  background: #fff;
 }
 
 .srp-card span {
   display: block;
-  font-size: 0.62rem;
-  color: #64748b;
+  font-size: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  color: #64748b;
+  margin-bottom: 0.1rem;
 }
 
 .srp-card strong {
-  display: block;
-  margin-top: 0.14rem;
   font-size: 0.8rem;
+  font-weight: 800;
+  color: #1e293b;
 }
 
 .srp-grid {
@@ -2464,9 +2522,15 @@ onMounted(() => {
   font-weight: 700;
 }
 
-@media (min-width: 1024px) {
+@media screen and (min-width: 1024px) {
   .sales-report-print {
     zoom: 0.8;
+  }
+}
+
+@media screen and (max-height: 820px) {
+  .sales-report-print {
+    zoom: 0.7;
   }
 }
 
@@ -3049,40 +3113,5 @@ onMounted(() => {
 </style>
 
 <style>
-@media print {
-  body * {
-    visibility: hidden !important;
-  }
-
-  .sales-report-print,
-  .sales-report-print * {
-    visibility: visible !important;
-  }
-
-  .sales-report-print {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 210mm;
-    min-height: 297mm;
-    margin: 0;
-    padding: 9mm;
-    box-shadow: none !important;
-    background: #fff !important;
-    color: #000 !important;
-  }
-
-  .sales-report-print .srp-table,
-  .sales-report-print .srp-table th,
-  .sales-report-print .srp-table td,
-  .sales-report-print .srp-card,
-  .sales-report-print .srp-applied {
-    border-color: #000 !important;
-  }
-
-  @page {
-    size: A4 portrait;
-    margin: 8mm;
-  }
-}
+/* Print is handled via new window in printInlineSalesReport() */
 </style>
