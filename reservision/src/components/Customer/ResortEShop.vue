@@ -389,7 +389,7 @@
                 @click="customizationForm.sizeId = size.id"
               >
                 <span>{{ size.label }}</span>
-                <small>{{ size.priceDelta > 0 ? `+₱${size.priceDelta}` : 'Included' }}</small>
+                <small>{{ size.priceDelta > 0 ? `₱${size.priceDelta} base` : 'Use item base price' }}</small>
               </button>
             </div>
           </div>
@@ -428,11 +428,15 @@
 
           <div class="modal-section">
             <div class="detail-row">
-              <span class="detail-key">Base Price</span>
+              <span class="detail-key">Original Price</span>
               <span class="detail-val">₱{{ Number(pendingCustomItem.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-key">Customizations</span>
+              <span class="detail-key">Selected Size Price</span>
+              <span class="detail-val">₱{{ selectedSizeBasisPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">Add-ons</span>
               <span class="detail-val">₱{{ customizationExtraAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
             </div>
             <div class="detail-row detail-row--total">
@@ -541,12 +545,21 @@ const selectedCustomizationAddOns = computed(() => {
   const selected = new Set(customizationForm.value.selectedAddOnIds || [])
   return customizationAddOnOptions.value.filter(addon => selected.has(addon.id))
 })
-const customizationExtraAmount = computed(() => {
-  const sizeExtra = Number(selectedCustomizationSize.value?.priceDelta || 0)
-  const addOnsExtra = selectedCustomizationAddOns.value.reduce((sum, addon) => sum + Number(addon.price || 0), 0)
-  return sizeExtra + addOnsExtra
+const selectedSizeBasisPrice = computed(() => {
+  const sizePrice = Number(selectedCustomizationSize.value?.priceDelta || 0)
+  const basePrice = Number(pendingCustomItem.value?.price || 0)
+  return sizePrice || basePrice
 })
-const customizedItemUnitPrice = computed(() => Number(pendingCustomItem.value?.price || 0) + customizationExtraAmount.value)
+const customizationExtraAmount = computed(() => {
+  const addOnsExtra = selectedCustomizationAddOns.value.reduce((sum, addon) => sum + Number(addon.price || 0), 0)
+  return addOnsExtra
+})
+const customizedItemUnitPrice = computed(() => {
+  const basePrice = selectedSizeBasisPrice.value
+  const addOnsExtra = customizationExtraAmount.value
+  // Match POS: selected size value acts as the item price basis; fallback to base when size is zero/missing.
+  return basePrice + addOnsExtra
+})
 
 const goToStage     = (s) => { currentStage.value = s; window.scrollTo({ top: 0, behavior: 'smooth' }) }
 const previousStage = ()  => currentStage.value > 1 && goToStage(currentStage.value - 1)
@@ -617,11 +630,11 @@ const confirmCustomization = () => {
 
 const addToCart = (product, customization = null) => {
   const basePrice = Number(product.price || 0)
-  const sizeExtra = Number(customization?.sizePriceDelta || 0)
+  const sizePrice = Number(customization?.sizePriceDelta || 0)
   const addOnsExtra = Array.isArray(customization?.addOns)
     ? customization.addOns.reduce((sum, addon) => sum + Number(addon.price || 0), 0)
     : 0
-  const unitPrice = basePrice + sizeExtra + addOnsExtra
+  const unitPrice = (sizePrice || basePrice) + addOnsExtra
 
   const signature = customization
     ? JSON.stringify({
@@ -742,8 +755,8 @@ onMounted(fetchProducts)
   border-bottom: 3px solid #F4C400;
   box-shadow: 0 2px 16px rgba(12,59,94,0.35);
   position: sticky;
-  top: 0;
-  z-index: 100;
+  top: 68px;
+  z-index: 28;
 }
 
 .header-brand { display: flex; align-items: center; gap: 0.65rem; }
@@ -841,9 +854,8 @@ onMounted(fetchProducts)
 
 /* ── Main Wrapper ───────────────────────────────────────────── */
 .main-wrapper {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 1.5rem;
+  width: 100%;
+  padding: 0.5rem;
 }
 
 .stage-content { width: 100%; }
@@ -856,7 +868,7 @@ onMounted(fetchProducts)
 .menu-container {
   background: #eff6ff;
   border-radius: 14px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 2px 12px rgba(3,105,161,0.08);
   border: 1px solid #dbeafe;
 }
@@ -871,6 +883,9 @@ onMounted(fetchProducts)
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 12;
 }
 
 .menu-title-section { display: flex; align-items: center; gap: 0.75rem; }
@@ -1512,9 +1527,400 @@ onMounted(fetchProducts)
   .modal-box { width: 100%; max-height: 94vh; }
 }
 
+@media (max-width: 767px) {
+  .eshop-header { top: 62px; }
+}
+
+@media (max-width: 640px) {
+  .eshop-container {
+    padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .eshop-header {
+    background: #071E2F;
+    border-bottom: 1px solid rgba(244,196,0,0.24);
+    box-shadow: 0 3px 16px rgba(7,30,47,0.3);
+    gap: 0.55rem;
+    padding: 0.62rem 0.82rem;
+    z-index: 28;
+  }
+
+  .header-brand {
+    min-width: 0;
+    gap: 0.48rem;
+  }
+
+  .brand-icon {
+    font-size: 1.32rem;
+  }
+
+  .header-title {
+    font-size: 0.92rem;
+  }
+
+  .header-sub {
+    display: block;
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.58);
+  }
+
+  .stage-tabs-container {
+    width: 100%;
+    order: 3;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding: 3px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stage-tabs-container::-webkit-scrollbar { display: none; }
+
+  .stage-tab-btn {
+    flex-shrink: 0;
+    gap: 0.32rem;
+    padding: 0.34rem 0.66rem;
+    font-size: 0.68rem;
+  }
+
+  .stage-label {
+    display: inline;
+    font-size: 0.64rem;
+  }
+
+  .stage-num {
+    width: 17px;
+    height: 17px;
+    font-size: 0.58rem;
+  }
+
+  .cart-header-btn {
+    min-height: 34px;
+    border-radius: 12px;
+    padding: 0.34rem 0.68rem;
+    font-size: 0.72rem;
+    background: rgba(255,255,255,0.09);
+    border: 1px solid rgba(255,255,255,0.16);
+  }
+
+  .cart-header-btn.has-items {
+    background: #F4C400;
+    color: #0C3B5E;
+    border-color: #F4C400;
+  }
+
+  .cart-icon-wrap {
+    font-size: 0.84rem;
+  }
+
+  .cart-badge-header {
+    width: 15px;
+    height: 15px;
+    font-size: 0.52rem;
+    right: -9px;
+    top: -6px;
+  }
+
+  .main-wrapper {
+    padding: 0.82rem;
+  }
+
+  .menu-container {
+    border-radius: 12px;
+  }
+
+  .menu-header {
+    background: #071E2F;
+    border-bottom: none;
+    padding: 0.72rem 0.82rem;
+    gap: 0.62rem;
+    box-shadow: 0 3px 12px rgba(7,30,47,0.26);
+  }
+
+  .menu-title {
+    color: #fff;
+    font-size: 0.92rem;
+  }
+
+  .menu-sub {
+    color: rgba(255,255,255,0.56);
+    font-size: 0.62rem;
+  }
+
+  .menu-emoji {
+    font-size: 1.2rem;
+  }
+
+  .search-box {
+    flex: 1 1 100%;
+  }
+
+  .search-icon {
+    color: rgba(255,255,255,0.5);
+    left: 0.75rem;
+    font-size: 0.72rem;
+  }
+
+  .search-input {
+    min-height: 40px;
+    font-size: 0.82rem;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: #fff;
+    padding: 0.5rem 2rem 0.5rem 2.1rem;
+  }
+
+  .search-input::placeholder { color: rgba(255,255,255,0.42); }
+
+  .search-input:focus {
+    border-color: #F4C400;
+    background: rgba(255,255,255,0.15);
+    box-shadow: none;
+  }
+
+  .search-clear {
+    color: rgba(255,255,255,0.5);
+    right: 0.62rem;
+  }
+
+  .search-clear:hover {
+    color: #F4C400;
+  }
+
+  .products-section {
+    padding: 0.82rem;
+  }
+
+  .categories-list {
+    gap: 0.75rem;
+  }
+
+  .category-block {
+    border-radius: 12px;
+    padding: 0.78rem 0.82rem;
+  }
+
+  .category-heading {
+    margin-bottom: 0.62rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .category-title {
+    font-size: 0.8rem;
+  }
+
+  .category-count {
+    font-size: 0.62rem;
+  }
+
+  .products-grid {
+    gap: 0.45rem;
+  }
+
+  .product-card {
+    border-radius: 10px;
+    border-left: 4px solid #0369a1;
+    padding: 0.62rem 0.66rem;
+  }
+
+  .product-card.is-added {
+    border-left-color: #F4C400;
+  }
+
+  .product-name {
+    font-size: 0.78rem;
+  }
+
+  .product-cat {
+    font-size: 0.62rem;
+  }
+
+  .product-price {
+    font-size: 0.82rem;
+  }
+
+  .add-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 0.64rem;
+  }
+
+  .panel-container {
+    border-radius: 12px;
+  }
+
+  .panel-header {
+    padding: 0.78rem 0.82rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .panel-title {
+    font-size: 0.92rem;
+  }
+
+  .panel-sub {
+    font-size: 0.65rem;
+  }
+
+  .cart-body,
+  .checkout-body {
+    padding: 0.82rem;
+    gap: 0.8rem;
+  }
+
+  .cart-item {
+    padding: 0.62rem 0.72rem;
+    border-radius: 10px;
+    gap: 0.58rem;
+  }
+
+  .ci-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+  }
+
+  .ci-name {
+    font-size: 0.76rem;
+  }
+
+  .ci-unit {
+    font-size: 0.64rem;
+  }
+
+  .ci-total {
+    font-size: 0.76rem;
+    min-width: 52px;
+  }
+
+  .ci-controls {
+    padding: 0.18rem 0.35rem;
+  }
+
+  .qty-btn {
+    font-size: 0.52rem;
+  }
+
+  .qty-val {
+    font-size: 0.72rem;
+  }
+
+  .order-summary-card,
+  .checkout-card {
+    border-radius: 10px;
+    padding: 0.8rem;
+  }
+
+  .summary-title,
+  .card-title {
+    font-size: 0.8rem;
+  }
+
+  .summary-line,
+  .total-row,
+  .oi-name,
+  .oi-price,
+  .oi-qty,
+  .field-label,
+  .field-input,
+  .field-textarea,
+  .info-row,
+  .warning-card {
+    font-size: 0.74rem;
+  }
+
+  .final-val,
+  .summary-total {
+    font-size: 0.94rem;
+  }
+
+  .loc-type-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem;
+  }
+
+  .loc-card {
+    padding: 0.64rem 0.55rem;
+    border-radius: 8px;
+  }
+
+  .loc-emoji { font-size: 1.24rem; }
+  .loc-name { font-size: 0.68rem; }
+
+  .nav-btns {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ghost-btn,
+  .primary-btn,
+  .submit-btn,
+  .confirm-loc-btn {
+    min-height: 40px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    justify-content: center;
+  }
+
+  .global-toast {
+    top: 70px;
+    width: calc(100% - 1.2rem);
+    border-radius: 12px;
+  }
+
+  .toast-inner {
+    padding: 0.58rem 0.7rem;
+    gap: 0.48rem;
+  }
+
+  .toast-emoji { font-size: 1.12rem; }
+
+  .toast-inner strong { font-size: 0.76rem; }
+  .toast-inner span { font-size: 0.64rem; }
+
+  .modal-overlay {
+    padding: 0.7rem;
+  }
+
+  .modal-box {
+    border-radius: 12px;
+  }
+
+  .modal-head {
+    padding: 0.72rem 0.78rem;
+  }
+
+  .modal-body {
+    padding: 0.75rem;
+    gap: 0.7rem;
+  }
+
+  .modal-section {
+    border-radius: 9px;
+    padding: 0.72rem;
+  }
+
+  .modal-foot {
+    padding: 0.68rem 0.78rem;
+    gap: 0.45rem;
+  }
+}
+
 @media (max-width: 480px) {
-  .header-title   { font-size: 1rem; }
+  .header-title   { font-size: 0.86rem; }
   .header-sub     { display: none; }
   .cart-btn-label { display: none; }
+  .stage-label    { display: none; }
+  .stage-tab-btn  { padding: 0.34rem 0.52rem; }
+  .stage-num      { width: 15px; height: 15px; font-size: 0.52rem; }
+  .main-wrapper   { padding: 0.3rem; }
+  .products-section { padding: 0.3rem; }
+  .category-block { padding: 0.68rem; }
+  .product-card { padding: 0.56rem 0.58rem; }
+  .loc-type-grid { grid-template-columns: 1fr; }
 }
 </style>

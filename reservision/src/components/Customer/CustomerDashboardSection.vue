@@ -158,33 +158,34 @@
         <p>No recent activity yet</p>
       </div>
 
-      <div v-else class="table-wrap">
-        <table class="activity-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Activity</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(row, i) in recentActivity"
-              :key="row.date + row.activity + i"
-              class="table-row"
-              :style="`animation-delay: ${i * 0.05}s`"
-            >
-              <td class="date-cell">
-                <i class="fas fa-calendar-day date-icon"></i>
+      <div v-else class="activity-feed">
+        <div
+          v-for="(row, i) in recentActivity"
+          :key="row.date + row.activity + i"
+          class="activity-card"
+          :class="row.statusClass"
+          :style="`animation-delay: ${i * 0.06}s`"
+        >
+          <div class="activity-card-accent"></div>
+          <div class="activity-card-body">
+            <div class="activity-card-top">
+              <span class="activity-date">
+                <i class="fas fa-calendar-day"></i>
                 {{ row.date }}
-              </td>
-              <td class="activity-cell">{{ row.activity }}</td>
-              <td>
-                <span class="status-chip" :class="row.statusClass">{{ row.status }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </span>
+              <span class="status-chip" :class="row.statusClass">
+                <i class="fas" :class="{
+                  'fa-check-circle': row.statusClass?.includes('green'),
+                  'fa-clock': row.statusClass?.includes('yellow'),
+                  'fa-times-circle': row.statusClass?.includes('red'),
+                  'fa-info-circle': row.statusClass?.includes('blue') || row.statusClass?.includes('gray') || !row.statusClass
+                }"></i>
+                {{ row.status }}
+              </span>
+            </div>
+            <p class="activity-desc">{{ row.activity }}</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -414,15 +415,15 @@ const recommendationReason = computed(() => {
 
 <style scoped>
 :root {
-  --color-primary:       #0369a1;
-  --color-primary-light: #1F8DBF;
-  --color-primary-dark:  #1E88B6;
-  --color-gold:          #F4C400;
-  --color-gold-dark:     #F2C200;
-  --color-navy:          #0C3B5E;
+  --color-primary:       #3a6fd8;
+  --color-primary-light: #5c87de;
+  --color-primary-dark:  #2e57a8;
+  --color-gold:          #f5a623;
+  --color-gold-dark:     #e99712;
+  --color-navy:          #1e2d4a;
   --color-white:         #FFFFFF;
-  --color-gray-bg:       #f9fafb;
-  --color-gray-border:   #e5e7eb;
+  --color-gray-bg:       #f4f6fa;
+  --color-gray-border:   #e2e8f0;
   --color-text-dark:     #1f2937;
   --color-text-light:    #6b7280;
 }
@@ -433,7 +434,7 @@ const recommendationReason = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: Inter, 'Segoe UI', system-ui, sans-serif;
   color: #1f2937;
 }
 
@@ -464,10 +465,13 @@ const recommendationReason = computed(() => {
   box-shadow: 0 8px 20px rgba(12,59,94,0.18);
 }
 
-.stat-card--0 { background: linear-gradient(135deg, #0C3B5E 0%, #0369a1 100%); color: #fff; }
-.stat-card--1 { background: linear-gradient(135deg, #0369a1 0%, #1F8DBF 100%); color: #fff; }
-.stat-card--2 { background: linear-gradient(135deg, #1F8DBF 0%, #1E88B6 100%); color: #fff; }
-.stat-card--3 { background: linear-gradient(135deg, #F4C400 0%, #F2C200 100%); color: #0C3B5E; }
+.stat-card--0,
+.stat-card--1,
+.stat-card--2,
+.stat-card--3 {
+  background: #2a3f5f;
+  color: #fff;
+}
 
 .stat-icon-wrap {
   width: 42px; height: 42px; border-radius: 10px;
@@ -476,7 +480,6 @@ const recommendationReason = computed(() => {
   font-size: 1.1rem; flex-shrink: 0;
 }
 
-.stat-card--3 .stat-icon-wrap { background: rgba(12,59,94,0.12); }
 .stat-body { flex: 1; min-width: 0; }
 
 .stat-label {
@@ -493,14 +496,12 @@ const recommendationReason = computed(() => {
 .stat-shimmer {
   position: absolute; top: -20px; right: -20px;
   width: 80px; height: 80px; border-radius: 50%;
-  background: rgba(255,255,255,0.08); pointer-events: none;
+  background: rgba(255,255,255,0.06); pointer-events: none;
 }
-
-.stat-card--3 .stat-shimmer { background: rgba(12,59,94,0.07); }
 
 .panel {
   background: #fff;
-  border: 1px solid #dbeafe;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 1px 6px rgba(3,105,161,0.06);
@@ -511,7 +512,7 @@ const recommendationReason = computed(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0.9rem 1.25rem;
-  border-bottom: 2px solid #F4C400;
+  border-bottom: 1px solid #e2e8f0;
   background: #fff;
 }
 
@@ -530,8 +531,8 @@ const recommendationReason = computed(() => {
 }
 
 .panel-title-icon.gold-icon {
-  background: #F4C400;
-  color: #0C3B5E;
+  background: #f5a623;
+  color: #1e2d4a;
 }
 
 .panel-title {
@@ -547,8 +548,9 @@ const recommendationReason = computed(() => {
 }
 
 .activity-count {
-  font-size: 0.72rem; font-weight: 700; color: #0369a1;
-  background: #eff6ff; padding: 0.2rem 0.65rem; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 700; color: #64748b;
+  background: #f1f5f9; padding: 0.2rem 0.65rem; border-radius: 20px;
+  border: 1px solid #e2e8f0;
 }
 
 .panel-body {
@@ -645,60 +647,183 @@ const recommendationReason = computed(() => {
   font-size: 1.2rem; color: #d1d5db;
 }
 
-.table-wrap { overflow-x: auto; }
-.activity-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
-.activity-table thead tr { background: #eff6ff; }
-
-.activity-table thead th {
-  padding: 0.65rem 1.1rem;
-  font-size: 0.68rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.07em;
-  color: #0C3B5E; text-align: left; white-space: nowrap;
-  border-bottom: 1.5px solid #dbeafe;
+/* ── Activity Feed ── */
+.activity-feed {
+  display: flex; flex-direction: column;
+  gap: 0; padding: 0.5rem 1rem 1rem;
 }
 
-.table-row {
-  border-bottom: 1px solid #f3f4f6;
-  transition: background 0.15s;
-  animation: rowFadeIn 0.3s ease both;
+.activity-card {
+  display: flex; position: relative;
+  border-radius: 10px; background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 0.65rem;
+  overflow: hidden;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+  animation: cardSlideIn 0.35s ease both;
 }
 
-.table-row:last-child { border-bottom: none; }
-.table-row:hover { background: #f0f7ff; }
+.activity-card:last-child { margin-bottom: 0; }
 
-@keyframes rowFadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+.activity-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(12,59,94,0.08);
+  border-color: #cbd5e1;
 }
 
-.activity-table td { padding: 0.65rem 1.1rem; color: #1f2937; }
-
-.date-cell {
-  color: #6b7280 !important; white-space: nowrap;
-  display: flex; align-items: center; gap: 0.45rem;
+@keyframes cardSlideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
-.date-icon      { color: #0369a1; font-size: 0.72rem; }
-.activity-cell  { font-weight: 500; color: #1f2937 !important; }
+.activity-card-accent {
+  width: 4px; flex-shrink: 0;
+  background: #94a3b8;
+  border-radius: 4px 0 0 4px;
+}
+
+.activity-card.text-green-600 .activity-card-accent,
+.activity-card.text-green-700 .activity-card-accent { background: #22c55e; }
+.activity-card.text-yellow-600 .activity-card-accent,
+.activity-card.text-yellow-700 .activity-card-accent { background: #eab308; }
+.activity-card.text-red-600 .activity-card-accent,
+.activity-card.text-red-700 .activity-card-accent { background: #ef4444; }
+.activity-card.text-blue-600 .activity-card-accent,
+.activity-card.text-blue-700 .activity-card-accent { background: #0369a1; }
+
+.activity-card-body {
+  flex: 1; padding: 0.75rem 0.9rem;
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+
+.activity-card-top {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.activity-date {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-size: 0.73rem; font-weight: 600; color: #64748b;
+}
+
+.activity-date i { color: #0369a1; font-size: 0.68rem; }
+
+.activity-desc {
+  font-size: 0.82rem; font-weight: 500; color: #1e293b;
+  line-height: 1.45; margin: 0;
+  word-break: break-word;
+}
 
 .status-chip {
-  display: inline-flex; align-items: center;
-  padding: 0.2rem 0.65rem; border-radius: 20px;
-  font-size: 0.7rem; font-weight: 700; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.22rem 0.7rem; border-radius: 20px;
+  font-size: 0.68rem; font-weight: 700; white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
-.status-chip.text-green-600, .status-chip.text-green-700 { background: #d1fae5; color: #065f46; }
-.status-chip.text-yellow-600, .status-chip.text-yellow-700 { background: #fef9c3; color: #854d0e; }
-.status-chip.text-red-600, .status-chip.text-red-700 { background: #fee2e2; color: #991b1b; }
-.status-chip.text-blue-600, .status-chip.text-blue-700 { background: #eff6ff; color: #0369a1; }
-.status-chip.text-gray-500, .status-chip.text-gray-600 { background: #f3f4f6; color: #6b7280; }
-.status-chip:not([class*="text-"]) { background: #f9fafb; color: #0369a1; border: 1px solid #dbeafe; }
+.status-chip i { font-size: 0.62rem; }
+
+.status-chip.text-green-600, .status-chip.text-green-700 {
+  background: #dcfce7; color: #166534;
+}
+.status-chip.text-yellow-600, .status-chip.text-yellow-700 {
+  background: #fef9c3; color: #854d0e;
+}
+.status-chip.text-red-600, .status-chip.text-red-700 {
+  background: #fee2e2; color: #991b1b;
+}
+.status-chip.text-blue-600, .status-chip.text-blue-700 {
+  background: #eff6ff; color: #0369a1;
+}
+.status-chip.text-gray-500, .status-chip.text-gray-600 {
+  background: #f3f4f6; color: #6b7280;
+}
+.status-chip:not([class*="text-"]) {
+  background: #f0f7ff; color: #0369a1; border: 1px solid #dbeafe;
+}
 
 @media (max-width: 640px) {
-  .stats-grid          { grid-template-columns: 1fr 1fr; }
-  .stat-value          { font-size: 1.2rem; }
-  .feature-cards-grid  { grid-template-columns: 1fr; }
-  .activity-table      { font-size: 0.78rem; }
+  .dashboard-section { gap: 0.95rem; }
+
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+
+  .stat-card {
+    padding: 0.85rem 0.85rem;
+    gap: 0.65rem;
+    border-radius: 10px;
+  }
+
+  .stat-icon-wrap {
+    width: 36px;
+    height: 36px;
+    font-size: 0.92rem;
+  }
+
+  .stat-label { font-size: 0.62rem; }
+  .stat-value { font-size: 1.1rem; }
+
+  .panel { border-radius: 12px; }
+
+  .panel-header {
+    padding: 0.75rem 0.85rem;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .panel-title { font-size: 0.9rem; }
+  .panel-subtitle { font-size: 0.7rem; }
+  .panel-body { padding: 0.8rem 0.85rem; }
+
+  .rec-sections { gap: 1.05rem; }
+  .rec-section { gap: 0.7rem; }
+  .rec-section-header { display: none; }
+
+  .room-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .rec-section-title {
+    font-size: 0.8rem;
+    gap: 0.3rem;
+  }
+
+  .rec-section-count {
+    font-size: 0.63rem;
+    padding: 0.08rem 0.45rem;
+  }
+
+  .feature-cards-grid { grid-template-columns: 1fr; }
+
+  .activity-feed { padding: 0.4rem 0.7rem 0.7rem; }
+
+  .activity-card { margin-bottom: 0.55rem; }
+
+  .activity-card-body { padding: 0.65rem 0.75rem; gap: 0.3rem; }
+
+  .activity-card-top { gap: 0.4rem; }
+
+  .activity-date { font-size: 0.7rem; }
+
+  .activity-desc { font-size: 0.78rem; line-height: 1.4; }
+
+  .status-chip {
+    font-size: 0.64rem;
+    padding: 0.18rem 0.58rem;
+  }
+
+  .status-chip.text-yellow-600,
+  .status-chip.text-yellow-700 {
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  .status-chip.text-green-600,
+  .status-chip.text-green-700 {
+    background: #dcfce7;
+    color: #166534;
+  }
 }
 
 @media (max-width: 380px) {

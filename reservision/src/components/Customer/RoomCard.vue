@@ -447,7 +447,72 @@ async function handleBookNow() {
 .lightbox__book-btn:active { transform: translateY(0); box-shadow: none; }
 
 @media (max-width: 640px) {
+  .room-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  }
+
+  .room-card__img-wrap {
+    min-height: 160px;
+    max-height: 180px;
+    background: linear-gradient(135deg, #a9c2e2 0%, #7ea1cd 100%);
+  }
+
+  .room-card__img {
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .room-card:hover {
+    transform: none;
+  }
+
+  .room-card__overlay,
+  .room-card__expand-btn {
+    display: none;
+  }
+
+  .room-card__badge {
+    font-size: 0.62rem;
+    padding: 0.26rem 0.62rem;
+    background: #f5a623;
+    color: #1e2d4a;
+  }
+
+  .room-card__price-float {
+    font-size: 0.9rem;
+    font-weight: 800;
+    padding: 0.3rem 0.8rem;
+    background: rgba(30, 45, 74, 0.9);
+  }
+
+  .room-card__body {
+    padding: 0.75rem 0.78rem;
+    gap: 0.55rem;
+  }
+
+  .room-card__title {
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    color: #1e2d4a;
+  }
+
+  .room-card__book-btn {
+    padding: 0.68rem;
+    font-size: 1.02rem;
+    font-weight: 800;
+    border-radius: 10px;
+    background: #3a6fd8;
+  }
+
   .lightbox__footer { flex-direction: column; align-items: stretch; }
   .lightbox__book-btn { justify-content: center; }
+}
+
+@media (max-width: 420px) {
+  .room-card__img-wrap {
+    min-height: 135px;
+    max-height: 185px;
+  }
 }
 </style>

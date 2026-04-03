@@ -606,7 +606,7 @@
 
     <!-- ══ FOOD CUSTOMIZATION MODAL ══ -->
     <div v-if="showCustomizationModal && pendingCustomItem" class="modal-overlay" @click.self="closeCustomizationModal">
-      <div class="modal-box" @click.stop>
+      <div class="modal-box modal-box--customization" @click.stop>
         <div class="modal-head">
           <div class="modal-head-left">
             <div class="modal-head-icon modal-head-icon--gold"><i class="fas fa-sliders-h"></i></div>
@@ -630,7 +630,7 @@
                 @click="customizationForm.sizeId = size.id"
               >
                 <span>{{ size.label }}</span>
-                <small>{{ size.priceDelta > 0 ? `+₱${size.priceDelta}` : 'Included' }}</small>
+                <small>{{ size.priceDelta > 0 ? `₱${size.priceDelta} base` : 'Use item base price' }}</small>
               </button>
             </div>
           </div>
@@ -669,11 +669,15 @@
 
           <div class="modal-section">
             <div class="detail-row">
-              <span class="detail-key">Base Price</span>
+              <span class="detail-key">Original Price</span>
               <span class="detail-val">₱{{ Number(pendingCustomItem.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-key">Customizations</span>
+              <span class="detail-key">Selected Size Price</span>
+              <span class="detail-val">₱{{ selectedSizeBasisPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-key">Add-ons</span>
               <span class="detail-val">₱{{ customizationExtraAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
             </div>
             <div class="detail-row detail-row--total">
@@ -936,17 +940,20 @@ export default {
       const selected = new Set(this.customizationForm.selectedAddOnIds || [])
       return this.customizationAddOnOptions.filter(addon => selected.has(addon.id))
     },
+    selectedSizeBasisPrice() {
+      const sizePrice = Number(this.selectedCustomizationSize?.priceDelta || 0)
+      const basePrice = Number(this.pendingCustomItem?.price || 0)
+      return sizePrice || basePrice
+    },
     customizationExtraAmount() {
-      const sizeExtra = Number(this.selectedCustomizationSize?.priceDelta || 0)
       const addOnsExtra = this.selectedCustomizationAddOns.reduce((sum, addon) => sum + Number(addon.price || 0), 0)
-      return sizeExtra + addOnsExtra
+      return addOnsExtra
     },
     customizedItemUnitPrice() {
-      const sizePrice  = Number(this.selectedCustomizationSize?.priceDelta || 0)
-      const addOnsExtra = this.selectedCustomizationAddOns.reduce((sum, a) => sum + Number(a.price || 0), 0)
-      const basePrice  = Number(this.pendingCustomItem?.price || 0)
+      const basePrice = this.selectedSizeBasisPrice
+      const addOnsExtra = this.customizationExtraAmount
       // Size price is absolute (replaces base). Fall back to base only when no real size selected.
-      return (sizePrice || basePrice) + addOnsExtra
+      return basePrice + addOnsExtra
     }
   },
   watch: {
@@ -2738,6 +2745,55 @@ export default {
   animation: popIn .22s ease;
 }
 
+.modal-box--customization {
+  max-width: 680px;
+  max-height: 94vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-box--customization .modal-head {
+  padding: .9rem 1.05rem;
+}
+
+.modal-box--customization .modal-body {
+  padding: .85rem 1.05rem;
+  gap: .65rem;
+  overflow: hidden;
+}
+
+.modal-box--customization .modal-section {
+  padding: .72rem;
+  border-radius: 12px;
+}
+
+.modal-box--customization .modal-section-title {
+  margin: 0 0 .55rem;
+  font-size: .72rem;
+}
+
+.modal-box--customization .detail-row {
+  padding: .28rem 0;
+}
+
+.modal-box--customization .detail-total {
+  font-size: 1.05rem;
+}
+
+.modal-box--customization .modal-foot {
+  padding: .72rem 1.05rem;
+}
+
+.modal-box--customization .form-input {
+  padding: .48rem .7rem;
+}
+
+.modal-box--customization textarea.form-input {
+  min-height: 66px;
+  max-height: 66px;
+}
+
 .modal-box--preview {
   max-width: 1260px;
   width: 98vw;
@@ -3044,6 +3100,18 @@ export default {
   .category-switch { width: 100%; justify-content: flex-start; }
   .customize-chip-grid,
   .customize-addon-list { grid-template-columns: 1fr; }
+  .modal-box--customization {
+    max-height: 90vh;
+    overflow-y: auto;
+    display: block;
+  }
+  .modal-box--customization .modal-body {
+    overflow: visible;
+  }
+  .modal-box--customization textarea.form-input {
+    min-height: 84px;
+    max-height: 84px;
+  }
   .trans-table-wrap { padding: 0 .7rem .2rem; }
   .pagination-wrap { justify-content: center; padding: .45rem .7rem .7rem; }
   .modal-box--preview { max-width: 100%; border-radius: 16px; }

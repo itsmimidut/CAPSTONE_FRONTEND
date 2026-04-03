@@ -5,10 +5,34 @@
     <!-- FILTER PANEL                               -->
     <!-- ══════════════════════════════════════════ -->
     <div class="filter-panel" v-if="!isLoading || orders.length > 0">
-      <div class="filter-grid">
+      <div class="mob-search-row">
+        <div class="input-wrapper mob-search-wrap">
+          <i class="fas fa-search input-icon"></i>
+          <input
+            v-model="filters.search"
+            type="text"
+            placeholder="Search receipt number..."
+            class="filter-input"
+          />
+          <button v-if="filters.search" class="clear-input" @click="filters.search = ''">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <button
+          class="mob-filter-toggle"
+          @click="showMobFilters = !showMobFilters"
+          :class="{ active: showMobFilters || hasActiveFilters }"
+          aria-label="Toggle filters"
+        >
+          <i class="fas fa-sliders-h"></i>
+          <span v-if="hasActiveFilters" class="filter-badge-dot"></span>
+        </button>
+      </div>
+
+      <div class="filter-grid" :class="{ 'mob-hidden': !showMobFilters }">
 
         <!-- Search -->
-        <div class="filter-group">
+        <div class="filter-group desktop-search-group">
           <label class="filter-label">Receipt / Order ID</label>
           <div class="input-wrapper">
             <i class="fas fa-search input-icon"></i>
@@ -66,10 +90,19 @@
           </div>
         </div>
 
+        <div class="mob-filter-actions">
+          <button class="mob-apply-btn" @click="showMobFilters = false">
+            <i class="fas fa-check"></i> Apply Filters
+          </button>
+          <button v-if="hasActiveFilters" class="mob-clear-btn" @click="clearFilters">
+            <i class="fas fa-times"></i> Clear
+          </button>
+        </div>
+
       </div>
 
       <!-- Active Filters Footer -->
-      <div class="filter-footer" v-if="hasActiveFilters">
+      <div class="filter-footer" v-if="hasActiveFilters && !showMobFilters">
         <div class="active-filter-tags">
           <span class="filter-count">
             <i class="fas fa-filter"></i>
@@ -268,6 +301,7 @@ const error         = ref('')
 const expandedOrder = ref(null)
 const isPolling     = ref(false)
 const newOrderIds   = ref([])
+const showMobFilters = ref(false)
 let pollingInterval = null
 
 const filters = ref({
@@ -383,6 +417,7 @@ const formatTime = (t) => t ? t.substring(0, 5) : ''
 
 const clearFilters = () => {
   filters.value = { search: '', dateFrom: '', dateTo: '', amountMin: null, amountMax: null, sortBy: 'date_desc' }
+  showMobFilters.value = false
 }
 
 const reorder = (order) => { emit('reorder', parseItems(order.items)); emit('close') }
@@ -445,7 +480,12 @@ defineExpose({ fetchOrders })
   position: sticky;
   top: 0;
   z-index: 20;
+  
 }
+
+.mob-search-row { display: none; }
+
+.mob-filter-actions { display: none; }
 
 .filter-grid {
   display: grid;
@@ -541,9 +581,8 @@ defineExpose({ fetchOrders })
 
 /* ── Content Area ───────────────────────────────────────────── */
 .content-area {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 1.5rem;
+  max-width: auto;
+  padding: 0.5rem;
 }
 
 /* ── State containers ───────────────────────────────────────── */
@@ -875,12 +914,222 @@ defineExpose({ fetchOrders })
 }
 
 @media (max-width: 640px) {
-  .filter-panel { padding: 0.9rem 1rem; }
-  .content-area { padding: 1rem; }
-  .filter-grid  { grid-template-columns: 1fr; gap: 0.65rem; }
-  .card-actions { flex-direction: column; }
-  .card-right   { gap: 0.45rem; }
-  .order-amount { font-size: 0.92rem; }
-  .type-badge   { display: none; }
+  .filter-panel {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .mob-search-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .mob-search-wrap {
+    flex: 1;
+  }
+
+  .mob-search-wrap .filter-input {
+    min-height: 42px;
+    border-radius: 12px;
+  }
+
+  .mob-filter-toggle {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 1.5px solid #dbeafe;
+    background: #f0f7ff;
+    color: #0369a1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .mob-filter-toggle.active {
+    border-color: #0369a1;
+    background: #eff6ff;
+    color: #0C3B5E;
+  }
+
+  .filter-badge-dot {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #F4C400;
+    border: 1px solid #fff;
+  }
+
+  .filter-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.62rem;
+    margin-top: 0.62rem;
+  }
+
+  .filter-grid.mob-hidden {
+    display: none;
+  }
+
+  .desktop-search-group {
+    display: none;
+  }
+
+  .filter-group {
+    gap: 0.3rem;
+  }
+
+  .filter-input,
+  .filter-select {
+    min-height: 40px;
+    font-size: 0.86rem;
+  }
+
+  .mob-filter-actions {
+    display: flex;
+    gap: 0.55rem;
+    margin-top: 0.1rem;
+  }
+
+  .mob-apply-btn,
+  .mob-clear-btn {
+    min-height: 40px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+  }
+
+  .mob-apply-btn {
+    flex: 1;
+    background: #0369a1;
+    color: #fff;
+  }
+
+  .mob-clear-btn {
+    padding: 0 0.95rem;
+    background: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fee2e2;
+  }
+
+  .filter-footer {
+    margin-top: 0.62rem;
+    padding-top: 0.58rem;
+  }
+
+  .active-filter-tags {
+    justify-content: space-between;
+  }
+
+  .content-area {
+    padding: 0.9rem;
+  }
+
+  .list-summary {
+    border-radius: 10px;
+    padding: 0.62rem 0.82rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .summary-total {
+    font-size: 0.76rem;
+  }
+
+  .order-card {
+    border-radius: 13px;
+  }
+
+  .card-header {
+    padding: 0.85rem 0.95rem;
+    align-items: flex-start;
+  }
+
+  .card-left {
+    gap: 0.62rem;
+  }
+
+  .receipt-icon-wrap {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+
+  .receipt-number {
+    font-size: 0.82rem;
+  }
+
+  .order-datetime {
+    font-size: 0.7rem;
+  }
+
+  .card-right {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.3rem;
+    margin-left: 0.55rem;
+  }
+
+  .order-amount {
+    font-size: 0.88rem;
+  }
+
+  .type-badge {
+    display: none;
+  }
+
+  .expand-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 0.68rem;
+  }
+
+  .card-body {
+    padding: 0.95rem;
+  }
+
+  .item-row {
+    gap: 0.55rem;
+    padding: 0.54rem 0.7rem;
+  }
+
+  .item-avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 0.66rem;
+  }
+
+  .item-name {
+    font-size: 0.8rem;
+  }
+
+  .item-price {
+    min-width: 64px;
+    font-size: 0.78rem;
+  }
+
+  .card-actions {
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-top: 0.9rem;
+  }
+
+  .card-btn {
+    min-height: 42px;
+    border-radius: 10px;
+  }
 }
 </style>

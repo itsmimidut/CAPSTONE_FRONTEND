@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EduResort Mobile UI Mockup</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --header-bg: #1e2d4a;
+            --stat-bg: #2a3f5f;
+            --btn-blue: #3a6fd8;
+            --deluxe-red: #e53935;
+            --family-orange: #f57c00;
+            --gold: #f5a623;
+            --page-bg: #f4f6fa;
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+            --pending-bg: #fef3c7;
+            --pending-text: #b45309;
+            --checked-bg: #dcfce7;
+            --checked-text: #166534;
+            --stage-bg: #cfd5dd;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --shadow-card: 0 6px 16px rgba(15, 23, 42, 0.08);
+            --shadow-phone: 0 20px 50px rgba(15, 23, 42, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--stage-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 28px;
+            color: var(--text-dark);
+        }
+
+        .stage {
+            width: min(1240px, 100%);
+            display: grid;
+            grid-template-columns: repeat(2, minmax(320px, 390px));
+            gap: 28px;
+            justify-content: center;
+        }
+
+        .phone {
+            background: #0b1220;
+            border-radius: 40px;
+            padding: 10px;
+            box-shadow: var(--shadow-phone);
+            position: relative;
+        }
+
+        .phone::before {
+            content: "";
+            width: 120px;
+            height: 24px;
+            border-radius: 0 0 14px 14px;
+            background: #0b1220;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 10px;
+            z-index: 10;
+        }
+
+        .screen {
+            border-radius: 32px;
+            background: var(--page-bg);
+            min-height: 780px;
+            max-height: 780px;
+            overflow: auto;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            scrollbar-width: thin;
+        }
+
+        .topbar {
+            background: var(--header-bg);
+            color: #fff;
+            padding: 18px 14px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .topbar-left,
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title-wrap h1 {
+            font-size: 16px;
+            line-height: 1.2;
+            font-weight: 800;
+            letter-spacing: 0.1px;
+        }
+
+        .title-wrap p {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .icon-btn,
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .avatar {
+            background: var(--gold);
+            border-color: transparent;
+            color: #1e2d4a;
+            font-size: 13px;
+        }
+
+        .content {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .search-card {
+            background: var(--header-bg);
+            color: #fff;
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .search-grid {
+            display: grid;
+            gap: 8px;
+        }
+
+        .row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .field {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 9px 10px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .apply-btn {
+            margin-top: 10px;
+            width: 100%;
+            border: 0;
+            background: var(--btn-blue);
+            color: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .tabs {
+            display: flex;
+            overflow: auto;
+            background: #fff;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .tab {
+            padding: 10px 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            color: var(--btn-blue);
+            border-bottom-color: var(--btn-blue);
+        }
+
+        .room-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+
+        .room-image {
+            height: 132px;
+            background: linear-gradient(130deg, #7aa2e3 0%, #325890 60%, #1e2d4a 100%);
+            position: relative;
+            display: flex;
+            align-items: end;
+            padding: 10px;
+        }
+
+        .room-name-badge {
+            background: rgba(30, 45, 74, 0.88);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 9px;
+            border-radius: 999px;
+            max-width: 70%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .price-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 9px;
+            border-radius: 999px;
+        }
+
+        .price-deluxe,
+        .price-studio {
+            background: var(--deluxe-red);
+        }
+
+        .price-family {
+            background: var(--family-orange);
+        }
+
+        .price-ktv {
+            background: var(--btn-blue);
+        }
+
+        .room-body {
+            padding: 10px;
+        }
+
+        .room-title-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: start;
+            margin-bottom: 7px;
+        }
+
+        .room-title {
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .room-night-price {
+            font-size: 11px;
+            color: var(--btn-blue);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .room-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.45;
+            margin-bottom: 7px;
+        }
+
+        .view-more {
+            color: var(--btn-blue);
+            font-size: 11px;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .controls {
+            margin-top: 8px;
+            display: grid;
+            grid-template-columns: 86px 1fr 120px;
+            gap: 7px;
+            align-items: center;
+        }
+
+        .stepper,
+        .guest-select {
+            border: 1px solid var(--card-border);
+            border-radius: 9px;
+            background: #f8fafc;
+            min-height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #334155;
+            padding: 0 8px;
+            white-space: nowrap;
+        }
+
+        .book-btn {
+            border: 0;
+            border-radius: 9px;
+            background: var(--btn-blue);
+            color: #fff;
+            min-height: 34px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .summary {
+            position: sticky;
+            bottom: 0;
+            background: var(--header-bg);
+            color: #fff;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 12px;
+            z-index: 6;
+            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        .summary-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .summary-title {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .pill {
+            background: var(--gold);
+            color: #1e2d4a;
+            font-size: 11px;
+            font-weight: 800;
+            border-radius: 999px;
+            padding: 3px 8px;
+        }
+
+        .summary-details,
+        .line-items,
+        .totals {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.88);
+            line-height: 1.4;
+        }
+
+        .line-items {
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .totals {
+            margin-top: 6px;
+            display: grid;
+            gap: 2px;
+        }
+
+        .totals b {
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .checkout-btn {
+            margin-top: 8px;
+            width: 100%;
+            border: 0;
+            background: var(--gold);
+            color: #1e2d4a;
+            border-radius: 10px;
+            min-height: 38px;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .secure {
+            text-align: center;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.72);
+            margin-top: 6px;
+        }
+
+        .stats-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .stat-card {
+            background: var(--stat-bg);
+            color: #fff;
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-card);
+        }
+
+        .stat-card h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+        }
+
+        .stat-card p {
+            margin-top: 3px;
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .section {
+            background: #fff;
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            box-shadow: var(--shadow-card);
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 11px 12px;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 800;
+            color: #1e2d4a;
+        }
+
+        .rec-icon {
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            background: var(--gold);
+            color: #1e2d4a;
+            font-size: 12px;
+        }
+
+        .rec-count {
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 999px;
+            padding: 4px 9px;
+        }
+
+        .rec-list {
+            display: grid;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .recommend-card {
+            background: #fff;
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .recommend-image {
+            height: 146px;
+            background: linear-gradient(135deg, #5d95df 0%, #1f4e82 70%);
+            position: relative;
+            padding: 9px;
+            display: flex;
+            align-items: end;
+        }
+
+        .badge-rec {
+            position: absolute;
+            top: 9px;
+            left: 9px;
+            background: var(--gold);
+            color: #1e2d4a;
+            border-radius: 999px;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .overlay-meta {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 8px;
+            font-size: 11px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .overlay-price {
+            background: rgba(30, 45, 74, 0.85);
+            border-radius: 999px;
+            padding: 5px 9px;
+            white-space: nowrap;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .recommend-body {
+            padding: 10px;
+        }
+
+        .recommend-body h4 {
+            font-size: 21px;
+            font-weight: 800;
+            color: #1e2d4a;
+            line-height: 1.05;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .recommend-btn {
+            width: 100%;
+            border: 0;
+            background: var(--btn-blue);
+            color: #fff;
+            border-radius: 10px;
+            min-height: 38px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .table-wrap {
+            padding: 0 0 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--card-border);
+            vertical-align: top;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 11px;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        .status {
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        .pending {
+            background: var(--pending-bg);
+            color: var(--pending-text);
+        }
+
+        .checked {
+            background: var(--checked-bg);
+            color: var(--checked-text);
+        }
+
+        @media (max-width: 980px) {
+            .stage {
+                grid-template-columns: 1fr;
+            }
+
+            .screen {
+                max-height: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="stage">
+        <section class="phone">
+            <div class="screen">
+                <header class="topbar">
+                    <div class="topbar-left">
+                        <div class="icon-btn">☰</div>
+                        <div class="title-wrap">
+                            <h1>Book a Room</h1>
+                            <p>EduResort booking portal</p>
+                        </div>
+                    </div>
+                    <div class="topbar-right">
+                        <div class="icon-btn">🔔</div>
+                        <div class="avatar">G</div>
+                    </div>
+                </header>
+
+                <div class="content">
+                    <section class="search-card">
+                        <div class="search-grid">
+                            <div class="row-2">
+                                <div class="field"><span>Check-in</span><span>Apr 30</span></div>
+                                <div class="field"><span>Check-out</span><span>May 1</span></div>
+                            </div>
+                            <div class="row-2">
+                                <div class="field"><span>Guests</span><span>2</span></div>
+                                <div class="field"><span>Promo Code</span><span>SUMMER20</span></div>
+                            </div>
+                        </div>
+                        <button class="apply-btn">Apply</button>
+                    </section>
+
+                    <nav class="tabs">
+                        <div class="tab active">Rooms</div>
+                        <div class="tab">Cottages</div>
+                        <div class="tab">Food</div>
+                        <div class="tab">Events</div>
+                        <div class="tab">Swimming</div>
+                    </nav>
+
+                    <article class="room-card">
+                        <div class="room-image">
+                            <div class="room-name-badge">Deluxe Room</div>
+                            <div class="price-badge price-deluxe">₱2,500</div>
+                        </div>
+                        <div class="room-body">
+                            <div class="room-title-row">
+                                <h3 class="room-title">DELUXE ROOM</h3>
+                                <span class="room-night-price">₱2,500 / night</span>
+                            </div>
+                            <p class="room-desc">Air-conditioned room with pool view, Wi-Fi, TV, and private comfort
+                                room. Best for relaxing overnight stays.</p>
+                            <a class="view-more" href="#">View More</a>
+                            <div class="controls">
+                                <div class="stepper">− 1 +</div>
+                                <div class="guest-select">2 Guests ▾</div>
+                                <button class="book-btn">Book Now →</button>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="room-card">
+                        <div class="room-image"
+                            style="background: linear-gradient(130deg, #c39e67 0%, #9f6e2f 70%, #5d3e1f 100%);">
+                            <div class="room-name-badge">Family Room</div>
+                            <div class="price-badge price-family">₱4,000</div>
+                        </div>
+                        <div class="room-body">
+                            <div class="room-title-row">
+                                <h3 class="room-title">FAMILY ROOM</h3>
+                                <span class="room-night-price">₱4,000 / night</span>
+                            </div>
+                            <p class="room-desc">Spacious family setup with extra beds and lounge area, ideal for groups
+                                and long weekend stays.</p>
+                            <a class="view-more" href="#">View More</a>
+                            <div class="controls">
+                                <div class="stepper">− 1 +</div>
+                                <div class="guest-select">5 Guests ▾</div>
+                                <button class="book-btn">Book Now →</button>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="room-card">
+                        <div class="room-image"
+                            style="background: linear-gradient(130deg, #7d8db3 0%, #465d93 70%, #273960 100%);">
+                            <div class="room-name-badge">KTV Room</div>
+                            <div class="price-badge price-ktv">₱1,500</div>
+                        </div>
+                        <div class="room-body">
+                            <div class="room-title-row">
+                                <h3 class="room-title">KTV ROOM</h3>
+                                <span class="room-night-price">₱1,500 / night</span>
+                            </div>
+                            <p class="room-desc">Entertainment room with karaoke setup and lounge seating, perfect for
+                                fun group nights.</p>
+                            <a class="view-more" href="#">View More</a>
+                            <div class="controls">
+                                <div class="stepper">− 1 +</div>
+                                <div class="guest-select">6 Guests ▾</div>
+                                <button class="book-btn">Book Now →</button>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="room-card">
+                        <div class="room-image"
+                            style="background: linear-gradient(130deg, #86addf 0%, #5477aa 70%, #2e4a75 100%);">
+                            <div class="room-name-badge">Studio Room</div>
+                            <div class="price-badge price-studio">₱1,000</div>
+                        </div>
+                        <div class="room-body">
+                            <div class="room-title-row">
+                                <h3 class="room-title">STUDIO ROOM</h3>
+                                <span class="room-night-price">₱1,000 / night</span>
+                            </div>
+                            <p class="room-desc">Compact and cozy room with practical amenities for solo guests or quick
+                                staycations.</p>
+                            <a class="view-more" href="#">View More</a>
+                            <div class="controls">
+                                <div class="stepper">− 1 +</div>
+                                <div class="guest-select">2 Guests ▾</div>
+                                <button class="book-btn">Book Now →</button>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <footer class="summary">
+                    <div class="summary-head">
+                        <div class="summary-title">
+                            <span>🛒</span>
+                            <span>Your Booking</span>
+                        </div>
+                        <span class="pill">4 items</span>
+                    </div>
+                    <div class="summary-details">Apr 30, 2026 to May 1, 2026 • 2 Guests</div>
+                    <div class="line-items">
+                        Deluxe Room x1 • Family Room x1<br />
+                        KTV Room x1 • Studio Room x1
+                    </div>
+                    <div class="totals">
+                        <span>Subtotal: ₱9,000</span>
+                        <b>Total: ₱9,000</b>
+                    </div>
+                    <button class="checkout-btn">Proceed to Checkout →</button>
+                    <p class="secure">Secure &amp; Encrypted Payment</p>
+                </footer>
+            </div>
+        </section>
+
+        <section class="phone">
+            <div class="screen">
+                <header class="topbar">
+                    <div class="topbar-left">
+                        <div class="icon-btn">☰</div>
+                        <div class="title-wrap">
+                            <h1>Customer Dashb...</h1>
+                            <p>Welcome back, Guest</p>
+                        </div>
+                    </div>
+                    <div class="topbar-right">
+                        <div class="icon-btn">🔔</div>
+                        <div class="avatar">G</div>
+                    </div>
+                </header>
+
+                <div class="content">
+                    <section class="stats-grid">
+                        <article class="stat-card">
+                            <div>
+                                <h3>Upcoming Stay</h3>
+                                <p>1 Nights</p>
+                            </div>
+                            <span>🌙</span>
+                        </article>
+                        <article class="stat-card">
+                            <div>
+                                <h3>Total Bookings</h3>
+                                <p>9</p>
+                            </div>
+                            <span>📅</span>
+                        </article>
+                    </section>
+
+                    <section class="section">
+                        <div class="section-header">
+                            <div class="section-title">
+                                <span class="rec-icon">★</span>
+                                <span>Recommended for You</span>
+                            </div>
+                        </div>
+
+                        <div class="rec-list">
+                            <article class="recommend-card">
+                                <div class="recommend-image">
+                                    <span class="badge-rec">⭐ Recommended</span>
+                                    <div class="overlay-meta">
+                                        <span>Poolside • 2 Pax</span>
+                                        <span class="overlay-price">PHP 2,500 / night</span>
+                                    </div>
+                                </div>
+                                <div class="recommend-body">
+                                    <h4>Deluxe Room</h4>
+                                    <button class="recommend-btn">Book Now</button>
+                                </div>
+                            </article>
+
+                            <article class="recommend-card">
+                                <div class="recommend-image"
+                                    style="background: linear-gradient(135deg, #6383b5 0%, #2f5078 72%);">
+                                    <span class="badge-rec">⭐ Recommended</span>
+                                    <div class="overlay-meta">
+                                        <span>Second Floor • 15 Pax</span>
+                                        <span class="overlay-price">PHP 500 / night</span>
+                                    </div>
+                                </div>
+                                <div class="recommend-body">
+                                    <h4>Cottage</h4>
+                                    <button class="recommend-btn">Book Now</button>
+                                </div>
+                            </article>
+
+                            <article class="recommend-card">
+                                <div class="recommend-image"
+                                    style="background: linear-gradient(135deg, #83a4cf 0%, #45648f 72%);">
+                                    <span class="badge-rec">⭐ Recommended</span>
+                                    <div class="overlay-meta">
+                                        <span>Front of Court • 80 Pax</span>
+                                        <span class="overlay-price">PHP 4,000 / night</span>
+                                    </div>
+                                </div>
+                                <div class="recommend-body">
+                                    <h4>Court View Cottage</h4>
+                                    <button class="recommend-btn">Book Now</button>
+                                </div>
+                            </article>
+                        </div>
+                    </section>
+
+                    <section class="section">
+                        <div class="section-header">
+                            <div class="section-title">
+                                <span class="rec-icon" style="background: #e2e8f0; color: #1e2d4a;">🕘</span>
+                                <span>Recent Activity</span>
+                            </div>
+                            <span class="rec-count">5 records</span>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>DATE</th>
+                                        <th>ACTIVITY</th>
+                                        <th>STATUS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Mar 29, 2026</td>
+                                        <td>Booking created - Ref EDU99187031</td>
+                                        <td><span class="status pending">Pending</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Mar 29, 2026</td>
+                                        <td>Booking created - Ref EDU98900722</td>
+                                        <td><span class="status pending">Pending</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Mar 29, 2026</td>
+                                        <td>Booking created - Ref EDU98764240</td>
+                                        <td><span class="status pending">Pending</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Mar 29, 2026</td>
+                                        <td>Booking created - Ref EDU96699484</td>
+                                        <td><span class="status pending">Pending</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Mar 29, 2026</td>
+                                        <td>Booking checked in - Ref EDU67103660</td>
+                                        <td><span class="status checked">Checked In</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>
