@@ -223,16 +223,52 @@
           </div>
 
           <div v-else class="links-grid">
-            <div v-for="menu in menuIngredientLinks" :key="menu.menu_id" class="menu-card">
+            <div v-for="menu in menuIngredientLinks" :key="menu.menu_id" class="menu-card" :class="{ 'edit-mode': editingMenuId === menu.menu_id }">
               <div class="menu-card-head">
-                <span class="menu-name">{{ menu.menu_name }}</span>
-                <span class="menu-cat">{{ menu.category }}</span>
+                <div class="menu-info">
+                  <span class="menu-name">{{ menu.menu_name }}</span>
+                  <span class="menu-cat">{{ menu.category }}</span>
+                </div>
+                <button 
+                  v-if="editingMenuId !== menu.menu_id" 
+                  type="button" 
+                  class="btn-edit-card" 
+                  @click="handleEditCard(menu)"
+                  title="Edit all quantities"
+                >
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
               </div>
               <div class="ing-list">
-                <div v-for="ing in menu.ingredients" :key="ing.inventory_id" class="ing-row">
-                  <span class="ing-name"><i class="fas fa-cube"></i> {{ ing.item_name }}</span>
-                  <span class="ing-qty">{{ ing.quantity_needed }} {{ ing.unit }} / serving</span>
-                  <span :class="`ing-avail status-${ing.status}`">{{ ing.inventory_quantity }} {{ ing.unit }}</span>
+                <div v-if="editingMenuId === menu.menu_id">
+                  <div v-for="(ing, idx) in editingIngredients" :key="ing.id" class="ing-edit-row">
+                    <span class="ing-label">{{ ing.item_name }}</span>
+                    <div class="ing-input-wrap">
+                      <input
+                        v-model.number="editingIngredients[idx].quantity_needed"
+                        type="number"
+                        min="0.01" step="0.01"
+                        class="qty-input"
+                      />
+                      <span class="unit">{{ ing.unit }}</span>
+                    </div>
+                    <span class="ing-stock" :class="`status-${ing.status}`">{{ ing.inventory_quantity }} {{ ing.unit }}</span>
+                  </div>
+                  <div class="card-actions">
+                    <button type="button" class="btn-save-card" @click="handleSaveCardEdit">
+                      <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" class="btn-cancel-card" @click="handleCancelCardEdit">
+                      <i class="fas fa-times"></i> Cancel
+                    </button>
+                  </div>
+                </div>
+                <div v-else>
+                  <div v-for="ing in menu.ingredients" :key="ing.id" class="ing-row">
+                    <span class="ing-name"><i class="fas fa-cube"></i> {{ ing.item_name }}</span>
+                    <span class="ing-qty">{{ ing.quantity_needed }} {{ ing.unit }} / serving</span>
+                    <span :class="`ing-avail status-${ing.status}`">{{ ing.inventory_quantity }} {{ ing.unit }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -273,10 +309,11 @@
             <div v-for="ing in selectedMenuCurrentIngredients" :key="ing.id" class="ing-preview-row">
               <span>{{ ing.item_name }}</span>
               <span class="qty-chip">{{ ing.quantity_needed }} {{ ing.unit }}</span>
-              <button type="button" class="btn-rm" @click="handleRemoveIngredient(ing.id)">
+              <button type="button" class="btn-rm" @click="handleRemoveIngredient(ing.id)" title="Remove">
                 <i class="fas fa-trash-alt"></i>
               </button>
             </div>
+            <p class="ing-help-text"><i class="fas fa-info-circle"></i> Edit quantities in "View Menu Links"</p>
           </div>
 
           <div class="form-group">
@@ -457,6 +494,8 @@ const newIngredient            = ref({ inventory_id: '', quantity_needed: 0 })
 const addedIngredientsBuffer   = ref([])
 const editingItem              = ref(null)
 const newItem = ref({ item: '', quantity: 0, unit: '', threshold: 0, image_url: '' })
+const editingMenuId            = ref(null)
+const editingIngredients       = ref([])
 
 const currentPage  = ref(1)
 const itemsPerPage = 10
@@ -594,11 +633,67 @@ const handleRemoveIngredient = async (id) => {
   } catch (e) { console.error(e) }
 }
 
+const handleEditCard = (menu) => {
+  editingMenuId.value = menu.menu_id
+  editingIngredients.value = menu.ingredients.map(ing => ({ ...ing }))
+  console.log('Edit mode - ingredients:', editingIngredients.value)
+}
+
+const handleSaveCardEdit = async () => {
+  if (!editingMenuId.value || editingIngredients.value.length === 0) {
+    alert('No changes to save')
+    return
+  }
+  try {
+    const allValid = editingIngredients.value.every(ing => ing.quantity_needed > 0)
+    if (!allValid) {
+      alert('All quantities must be greater than 0')
+      return
+    }
+    
+    let saveErrors = []
+    console.log('Saving ingredients:', editingIngredients.value)
+    for (const ing of editingIngredients.value) {
+      console.log(`Updating ingredient ID ${ing.id}:`, ing.item_name, ing.quantity_needed)
+      const res = await fetch(`http://localhost:8000/api/restaurant/menu-ingredients/${ing.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantity_needed: ing.quantity_needed })
+      })
+      const data = await res.json()
+      console.log(`Response for ${ing.item_name}:`, data)
+      if (!data.success) {
+        saveErrors.push(`${ing.item_name}: ${data.message || 'Failed'}`)
+        console.error(`Failed to update ${ing.item_name}:`, data)
+      }
+    }
+    
+    if (saveErrors.length > 0) {
+      alert(`Error updating:\n${saveErrors.join('\n')}`)
+      return
+    }
+    
+    await fetchMenuIngredientLinks()
+    handleCancelCardEdit()
+    alert('All quantities updated successfully!')
+  } catch (e) {
+    console.error('Save error:', e)
+    alert('Error updating quantities: ' + e.message)
+  }
+}
+
+const handleCancelCardEdit = () => {
+  editingMenuId.value = null
+  editingIngredients.value = []
+}
+
 const closeAddIngredientsModal = () => {
   showAddIngredientsModal.value = false
   selectedMenuId.value = ''
   newIngredient.value  = { inventory_id: '', quantity_needed: 0 }
   addedIngredientsBuffer.value = []
+  editingMenuId.value = null
+  editingIngredients.value = []
 }
 
 watch([searchQuery, filterStatus], () => { currentPage.value = 1 })
@@ -1256,7 +1351,7 @@ function printInventoryReportPreview() {
 /* ── Links Grid ── */
 .links-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 0.85rem;
 }
 
@@ -1279,14 +1374,18 @@ function printInventoryReportPreview() {
 
 .ing-list { padding: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; }
 .ing-row {
-  display: flex; align-items: center; gap: 0.5rem;
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto auto;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.45rem 0.6rem;
   background: var(--color-gray-bg); border-radius: 7px; font-size: 0.82rem;
+  min-width: 0;
 }
-.ing-name { flex: 1; font-weight: 600; color: var(--color-text-dark); display: flex; align-items: center; gap: 0.35rem; }
+.ing-name { font-weight: 600; color: var(--color-text-dark); display: flex; align-items: center; gap: 0.35rem; min-width: 0; overflow-wrap: anywhere; }
 .ing-name i { color: var(--color-text-light); font-size: 0.7rem; }
-.ing-qty  { color: var(--color-text-light); white-space: nowrap; }
-.ing-avail { padding: 0.12rem 0.5rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; }
+.ing-qty { color: var(--color-text-light); white-space: nowrap; justify-self: start;  }
+.ing-avail { padding: 0.12rem 0.5rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; justify-self: end; }
 .status-good     { background: #d1fae5; color: #065f46; }
 .status-low      { background: #fef3c7; color: #92400e; }
 .status-critical { background: #fee2e2; color: #991b1b; }
@@ -1309,6 +1408,11 @@ function printInventoryReportPreview() {
 .ing-preview-row:last-child { margin-bottom: 0; }
 .ing-preview-row span:first-child { flex: 1; font-weight: 600; color: var(--color-text-dark); }
 
+.ing-help-text {
+  font-size: 0.7rem; color: #6b7280; margin-top: 0.5rem;
+  display: flex; align-items: center; gap: 0.35rem;
+}
+
 .qty-chip {
   background: rgba(3,105,161,0.1); color: var(--color-primary);
   padding: 0.15rem 0.55rem; border-radius: 6px;
@@ -1323,12 +1427,104 @@ function printInventoryReportPreview() {
 }
 .btn-rm:hover { background: #fecaca; }
 
-.ing-input-row { display: flex; gap: 0.5rem; align-items: center; }
+.qty-display {
+  display: flex; align-items: center; gap: 0.4rem;
+}
 .qty-short { width: 90px; flex-shrink: 0; }
 
-/* ── Responsive ── */
+/* ── Card-Level Edit Mode ── */
+.menu-card {
+  transition: all 0.2s ease;
+}
+
+.menu-card.edit-mode {
+  background: rgba(251, 191, 36, 0.08) !important;
+  border-color: #fbbf24 !important;
+}
+
+.menu-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem;
+}
+
+.menu-info {
+  display: flex; align-items: center; gap: 0.75rem;
+}
+
+.btn-edit-card {
+  background: rgba(251, 191, 36, 0.12); color: #d97706; border: none;
+  width: 32px; height: 32px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 0.85rem; transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-edit-card:hover { background: #fef3c7; color: #92400e; }
+
+.ing-edit-row {
+  display: grid; grid-template-columns: 1.2fr 1.5fr 0.85fr; gap: 0.6rem;
+  align-items: center; padding: 0.55rem 0.65rem;
+  background: rgba(255, 255, 255, 0.6); border-radius: 6px;
+  margin-bottom: 0.4rem; font-size: 0.85rem;
+}
+
+.ing-label { font-weight: 600; color: var(--color-text-dark); }
+
+.ing-input-wrap {
+  display: flex; align-items: center; gap: 0.35rem;
+}
+
+.qty-input {
+  width: 100%; padding: 0.5rem 0.65rem; font-size: 0.85rem;
+  border: 1.5px solid #fbbf24; border-radius: 5px;
+  background: #fffbeb; font-weight: 600; color: var(--color-navy);
+}
+
+.qty-input:focus {
+  outline: none; border-color: #d97706; box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.1);
+}
+
+.unit {
+  font-size: 0.7rem; font-weight: 700; color: var(--color-text-light);
+  min-width: 30px;
+}
+
+.ing-stock {
+  font-size: 0.75rem; font-weight: 700; text-align: right;
+  padding: 0.2rem 0.5rem; border-radius: 4px;
+}
+
+.ing-stock.status-good { background: rgba(34, 197, 94, 0.15); color: #15803d; }
+.ing-stock.status-low { background: rgba(251, 146, 60, 0.15); color: #92400e; }
+.ing-stock.status-critical { background: rgba(239, 68, 68, 0.15); color: #991b1b; }
+
+.card-actions {
+  display: flex; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem;
+  border-top: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.btn-save-card, .btn-cancel-card {
+  flex: 1; padding: 0.5rem 0.75rem; border: none; border-radius: 6px;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+}
+
+.btn-save-card {
+  background: #22c55e; color: #fff;
+}
+
+.btn-save-card:hover { background: #16a34a; }
+
+.btn-cancel-card {
+  background: #e5e7eb; color: #4b5563;
+}
+
+.btn-cancel-card:hover { background: #d1d5db; }
 @media (max-width: 900px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .ing-row { grid-template-columns: 1fr auto; }
+  .ing-edit-row { grid-template-columns: 1.2fr 1.5fr; }
+  .ing-stock { display: none; }
 }
 @media (max-width: 768px) {
   .inventory-section { padding: 1rem; }
@@ -1340,5 +1536,7 @@ function printInventoryReportPreview() {
   .ing-input-row { flex-wrap: wrap; }
   .qty-short { width: 100%; }
   .stats-row { grid-template-columns: 1fr 1fr; }
+  .ing-edit-row { grid-template-columns: 1fr; gap: 0.4rem; }
+  .ing-input-wrap { width: 100%; }
 }
 </style>
