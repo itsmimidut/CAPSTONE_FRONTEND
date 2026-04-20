@@ -158,7 +158,8 @@ export default {
       
       try {
         // Check if email exists in database
-        const response = await fetch(`http://localhost:8000/api/customers/check-email/${encodeURIComponent(this.initialEmail)}`);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        const response = await fetch(`${apiUrl}/customers/check-email/${encodeURIComponent(this.initialEmail)}`);
         const data = await response.json();
         
         if (data.success && !data.exists) {
@@ -225,10 +226,11 @@ export default {
       }
       
       this.loading = true;
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
       
       try {
         // Check if email exists in database
-        const checkResponse = await fetch(`http://localhost:8000/api/customers/check-email/${encodeURIComponent(this.email)}`);
+        const checkResponse = await fetch(`${apiUrl}/customers/check-email/${encodeURIComponent(this.email)}`);
         const checkData = await checkResponse.json();
         
         if (checkData.success && checkData.exists) {
@@ -247,7 +249,7 @@ export default {
         }
         
         // Proceed to send OTP
-        const response = await fetch('http://localhost:8000/api/otp/send', {
+        const response = await fetch(`${apiUrl}/otp/send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -282,7 +284,8 @@ export default {
       this.loading = true;
       
       try {
-        const response = await fetch('http://localhost:8000/api/otp/verify', {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        const response = await fetch(`${apiUrl}/otp/verify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -1,13 +1,13 @@
 <template>
   <section class="profile-page">
-
+    <!-- Toast Message -->
     <p v-if="message.text" :class="['toast-msg', message.type === 'error' ? 'toast-error' : 'toast-success']">
       <i :class="message.type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-check-circle'"></i>
       {{ message.text }}
     </p>
 
-    <!-- ═══ Avatar Card ═══ -->
-    <div class="avatar-card">
+    <!-- Avatar Row - Ultra Compact -->
+    <div class="avatar-row">
       <div class="profile-avatar">
         <img v-if="avatarPreview" :src="avatarPreview" alt="Profile" class="avatar-img" />
         <span v-else class="avatar-initial">{{ userInitial }}</span>
@@ -28,141 +28,129 @@
       </div>
     </div>
 
-    <!-- ═══ Personal Details ═══ -->
-    <div class="form-card">
-      <div class="section-head">
-        <i class="fas fa-user sh-icon"></i>
-        <div>
-          <div class="sh-title">Profile Settings</div>
-          <div class="sh-sub">Update your personal details and profile photo.</div>
+    <!-- Combined Form - Compact -->
+    <div class="form-compact">
+      <!-- Personal Information Section - 2 Columns -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-user-circle"></i>
+          <span>Personal Information</span>
+        </div>
+        <div class="grid-2cols">
+          <div class="field-group">
+            <label>First Name</label>
+            <input v-model="form.firstName" type="text" required placeholder="Enter first name" />
+          </div>
+          <div class="field-group">
+            <label>Last Name</label>
+            <input v-model="form.lastName" type="text" required placeholder="Enter last name" />
+          </div>
+          <div class="field-group">
+            <label>Email Address</label>
+            <input v-model="form.email" type="email" disabled />
+          </div>
+          <div class="field-group">
+            <label>Phone Number</label>
+            <input v-model="form.phone" type="tel" placeholder="Enter phone number" />
+          </div>
+          <div class="field-group full-width">
+            <label>Street Address</label>
+            <input v-model="form.address" type="text" placeholder="Enter street address" />
+          </div>
+          <div class="field-group">
+            <label>City</label>
+            <input v-model="form.city" type="text" placeholder="Enter city" />
+          </div>
+          <div class="field-group">
+            <label>Country</label>
+            <input v-model="form.country" type="text" placeholder="Enter country" />
+          </div>
+          <div class="field-group">
+            <label>Postal Code</label>
+            <input v-model="form.postalCode" type="text" placeholder="Enter postal code" />
+          </div>
         </div>
       </div>
 
-      <form class="form-fields" @submit.prevent="saveProfile">
-        <div class="field-grid">
+      <!-- Change Password Section - 3 Columns -->
+      <div class="form-section">
+        <div class="section-title">
+          <i class="fas fa-lock"></i>
+          <span>Change Password</span>
+        </div>
+        <div class="grid-3cols">
           <div class="field-group">
-            <div class="field-label">First Name</div>
-            <input class="field-input" v-model="form.firstName" type="text" required />
+            <label>Current Password</label>
+            <div class="input-with-eye">
+              <input
+                v-model="passwordForm.currentPassword"
+                :type="showCurrentPassword ? 'text' : 'password'"
+                placeholder="Enter current password"
+              />
+              <span class="eye-icon" @click="showCurrentPassword = !showCurrentPassword">
+                <i :class="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </span>
+            </div>
           </div>
           <div class="field-group">
-            <div class="field-label">Last Name</div>
-            <input class="field-input" v-model="form.lastName" type="text" required />
-          </div>
-        </div>
-        <div class="field-group">
-          <div class="field-label">Email</div>
-          <input class="field-input" v-model="form.email" type="email" disabled />
-        </div>
-        <div class="field-group">
-          <div class="field-label">Phone</div>
-          <input class="field-input" v-model="form.phone" type="tel" />
-        </div>
-        <div class="field-group">
-          <div class="field-label">Address</div>
-          <input class="field-input" v-model="form.address" type="text" />
-        </div>
-        <div class="field-grid">
-          <div class="field-group">
-            <div class="field-label">City</div>
-            <input class="field-input" v-model="form.city" type="text" />
+            <label>New Password</label>
+            <div class="input-with-eye">
+              <input
+                v-model="passwordForm.newPassword"
+                :type="showNewPassword ? 'text' : 'password'"
+                placeholder="Enter new password"
+              />
+              <span class="eye-icon" @click="showNewPassword = !showNewPassword">
+                <i :class="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </span>
+            </div>
           </div>
           <div class="field-group">
-            <div class="field-label">Country</div>
-            <input class="field-input" v-model="form.country" type="text" />
+            <label>Confirm Password</label>
+            <div class="input-with-eye">
+              <input
+                v-model="passwordForm.confirmPassword"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                placeholder="Confirm new password"
+              />
+              <span class="eye-icon" @click="showConfirmPassword = !showConfirmPassword">
+                <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </span>
+            </div>
           </div>
         </div>
-        <div class="field-group">
-          <div class="field-label">Postal Code</div>
-          <input class="field-input postal-input" v-model="form.postalCode" type="text" />
-        </div>
-
-        <div class="form-actions">
-          <button class="btn-ghost" type="button" @click="resetForm" :disabled="isSaving">Reset</button>
-          <button class="btn-primary" type="submit" :disabled="isSaving || !form.email">
-            <i class="fas fa-check"></i> {{ isSaving ? 'Saving...' : 'Save Profile' }}
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- ═══ Security ═══ -->
-    <div class="form-card">
-      <div class="section-head">
-        <i class="fas fa-shield-alt sh-icon"></i>
-        <div>
-          <div class="sh-title">Security: Change Password</div>
-          <div class="sh-sub">Use your current password to set a new one.</div>
+        
+        <!-- Password Strength Indicator -->
+        <div class="strength-container">
+          <div class="strength-info">
+            <span class="strength-label">Password Strength:</span>
+            <span class="strength-badge" :class="strengthBadgeClass">{{ passwordStrengthLabel }}</span>
+          </div>
+          <div class="strength-bar">
+            <div class="strength-fill" :style="{ width: passwordStrengthPercent + '%' }" :class="strengthClass"></div>
+          </div>
+          <div class="password-requirements">
+            <span v-for="(rule, i) in passwordRules" :key="i" :class="{ met: rule.passed }">
+              <i class="fas" :class="rule.passed ? 'fa-check-circle' : 'fa-circle'"></i>
+              {{ rule.text }}
+            </span>
+          </div>
         </div>
       </div>
 
-      <form class="form-fields" @submit.prevent="changePassword">
-        <div class="field-group">
-          <div class="field-label">Current Password</div>
-          <div class="input-wrap">
-            <input
-              class="field-input has-icon"
-              v-model="passwordForm.currentPassword"
-              :type="showCurrentPassword ? 'text' : 'password'"
-              autocomplete="current-password"
-              required
-            />
-            <span class="input-eye" @click="showCurrentPassword = !showCurrentPassword">
-              <i :class="showCurrentPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-            </span>
-          </div>
-        </div>
-        <div class="field-group">
-          <div class="field-label">New Password</div>
-          <div class="input-wrap">
-            <input
-              class="field-input has-icon"
-              v-model="passwordForm.newPassword"
-              :type="showNewPassword ? 'text' : 'password'"
-              autocomplete="new-password"
-              required
-            />
-            <span class="input-eye" @click="showNewPassword = !showNewPassword">
-              <i :class="showNewPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-            </span>
-          </div>
-        </div>
-        <div class="field-group">
-          <div class="field-label">Confirm New Password</div>
-          <div class="input-wrap">
-            <input
-              class="field-input has-icon"
-              v-model="passwordForm.confirmPassword"
-              :type="showConfirmPassword ? 'text' : 'password'"
-              autocomplete="new-password"
-              required
-            />
-            <span class="input-eye" @click="showConfirmPassword = !showConfirmPassword">
-              <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-            </span>
-          </div>
-        </div>
-
-        <div class="strength-row">
-          <span class="strength-label">Password Strength</span>
-          <span class="strength-badge" :class="strengthBadgeClass">{{ passwordStrengthLabel }}</span>
-        </div>
-
-        <div class="rules-list">
-          <div class="rule-item" v-for="(rule, i) in passwordRules" :key="i">
-            <div class="rule-icon" :class="{ ok: rule.passed }"><i class="fas fa-check"></i></div>
-            {{ rule.text }}
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button class="btn-ghost" type="button" @click="resetPasswordForm" :disabled="isChangingPassword">Clear</button>
-          <button class="btn-primary gold" type="submit" :disabled="isChangingPassword || !form.email">
-            <i class="fas fa-lock"></i> {{ isChangingPassword ? 'Changing...' : 'Change Password' }}
-          </button>
-        </div>
-      </form>
+      <!-- Action Buttons - Row -->
+      <div class="action-buttons">
+        <button class="btn-secondary" type="button" @click="resetForm" :disabled="isSaving">
+          <i class="fas fa-undo-alt"></i> Reset
+        </button>
+        <button class="btn-primary" @click="saveProfile" :disabled="isSaving || !form.email">
+          <i class="fas fa-save"></i> {{ isSaving ? 'Saving...' : 'Save Profile' }}
+        </button>
+        <button class="btn-gold" @click="changePassword" :disabled="isChangingPassword || !form.email">
+          <i class="fas fa-key"></i> {{ isChangingPassword ? 'Changing...' : 'Update Password' }}
+        </button>
+      </div>
     </div>
-
   </section>
 </template>
 
@@ -257,11 +245,11 @@ const strengthBadgeClass = computed(() => {
 })
 
 const passwordRules = computed(() => [
-  { text: 'At least 8 characters', passed: passwordChecks.value.minLength },
-  { text: 'At least one uppercase letter', passed: passwordChecks.value.upper },
-  { text: 'At least one lowercase letter', passed: passwordChecks.value.lower },
-  { text: 'At least one number', passed: passwordChecks.value.number },
-  { text: 'At least one symbol', passed: passwordChecks.value.symbol }
+  { text: '8+ characters', passed: passwordChecks.value.minLength },
+  { text: 'Uppercase', passed: passwordChecks.value.upper },
+  { text: 'Lowercase', passed: passwordChecks.value.lower },
+  { text: 'Number', passed: passwordChecks.value.number },
+  { text: 'Symbol', passed: passwordChecks.value.symbol }
 ])
 
 const resolveImageUrl = (rawPath) => {
@@ -323,15 +311,6 @@ const onImagePicked = (event) => {
 
 const resetForm = () => {
   applyProfile(props.profile || {})
-}
-
-const resetPasswordForm = () => {
-  passwordForm.currentPassword = ''
-  passwordForm.newPassword = ''
-  passwordForm.confirmPassword = ''
-  showCurrentPassword.value = false
-  showNewPassword.value = false
-  showConfirmPassword.value = false
 }
 
 const saveProfile = async () => {
@@ -425,15 +404,12 @@ const changePassword = async () => {
       throw new Error(data?.error || 'Failed to change password')
     }
 
-    resetPasswordForm()
+    passwordForm.currentPassword = ''
+    passwordForm.newPassword = ''
+    passwordForm.confirmPassword = ''
     showMessage('Password changed successfully')
   } catch (error) {
-    const status = error?.response?.status
-    if (status === 404) {
-      showMessage('Password endpoint not found. Please restart backend server to load latest routes.', 'error')
-    } else {
-      showMessage(error?.response?.data?.error || error.message || 'Failed to change password', 'error')
-    }
+    showMessage(error?.response?.data?.error || error.message || 'Failed to change password', 'error')
   } finally {
     isChangingPassword.value = false
   }
@@ -441,264 +417,513 @@ const changePassword = async () => {
 </script>
 
 <style scoped>
-/* ── Design Tokens ── */
-:root {
-  --navy:        #0C3B5E;
-  --primary:     #0369a1;
-  --primary-mid: #1F8DBF;
-  --gold:        #F4C400;
-  --gold-dark:   #F2C200;
-  --bg:          #EEF5FB;
-  --surface:     #ffffff;
-  --border:      #dbeafe;
-  --border-soft: #e5e7eb;
-  --text:        #1f2937;
-  --text-mid:    #374151;
-  --text-sub:    #6b7280;
-  --text-light:  #9ca3af;
-  --input-bg:    #f0f7ff;
-  --shadow:      0 2px 12px rgba(3,105,161,0.09);
-  --radius:      12px;
-  --radius-sm:   8px;
-}
-
 .profile-page {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  max-width: 680px;
-  margin: 0 auto;
-  width: 100%;
+  max-width: 100%;
+  padding: 0;
 }
 
-/* ── Toast Message ── */
+/* Toast Message */
 .toast-msg {
-  border-radius: var(--radius-sm);
-  padding: 10px 14px;
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 1000;
+  padding: 10px 18px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 8px;
-  animation: fadeUp 0.3s ease both;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease;
 }
-.toast-success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-.toast-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 
-/* ── Avatar Card ── */
-.avatar-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border-soft);
-  padding: 16px;
+.toast-success {
+  background: #dcfce7;
+  color: #166534;
+  border-left: 4px solid #22c55e;
+}
+
+.toast-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border-left: 4px solid #ef4444;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Avatar Row */
+.avatar-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  box-shadow: var(--shadow);
-  animation: fadeUp 0.3s ease both;
+  gap: 20px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
 }
 
 .profile-avatar {
-  width: 64px; height: 64px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #3d7a5a, #2a6080);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28px; flex-shrink: 0;
-  border: 2px solid var(--gold);
-  overflow: hidden;
-}
-
-.avatar-img { width: 100%; height: 100%; object-fit: cover; }
-
-.avatar-initial {
-  color: #fff; font-size: 26px; font-weight: 800;
-}
-
-.avatar-info { display: flex; flex-direction: column; }
-.pa-name { font-size: 15px; font-weight: 700; color: var(--navy); }
-.pa-sub  { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
-
-.change-photo-btn {
-  margin-top: 8px;
-  background: transparent;
-  border: 1.5px solid var(--border-soft);
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-family: inherit;
-  font-size: 11px; font-weight: 600; color: var(--text-mid);
-  cursor: pointer;
-  display: inline-flex; align-items: center; gap: 5px;
-  transition: border-color 0.2s, color 0.2s;
-  width: fit-content;
-}
-.change-photo-btn:hover { border-color: var(--primary); color: var(--primary); }
-.change-photo-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* ── Form Card ── */
-.form-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  animation: fadeUp 0.35s ease both;
-}
-.form-card:nth-child(3) { animation-delay: 0.05s; }
-.form-card:nth-child(4) { animation-delay: 0.1s; }
-
-.section-head {
-  padding: 12px 16px 10px;
-  border-bottom: 2px solid var(--gold);
-  background: linear-gradient(90deg, #eff6ff, #f8fafc);
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0C3B5E, #0369a1);
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 3px solid #F4C400;
+  overflow: hidden;
 }
-.sh-icon { color: var(--primary); font-size: 13px; flex-shrink: 0; }
-.sh-title { font-size: 13px; font-weight: 700; color: var(--navy); }
-.sh-sub { font-size: 10px; color: var(--text-sub); margin-top: 1px; }
 
-/* ── Form Fields ── */
-.form-fields {
-  padding: 14px 16px;
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-initial {
+  color: white;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.avatar-info {
+  flex: 1;
+}
+
+.pa-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0C3B5E;
+  margin-bottom: 4px;
+}
+
+.pa-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.change-photo-btn {
+  background: transparent;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.change-photo-btn:hover {
+  border-color: #0369a1;
+  color: #0369a1;
+  background: rgba(3, 105, 161, 0.05);
+}
+
+/* Form Compact */
+.form-compact {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.form-section {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.form-section:last-of-type {
+  border-bottom: none;
+}
+
+.section-title {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #F4C400;
+}
+
+.section-title i {
+  color: #0369a1;
+  font-size: 16px;
+}
+
+.section-title span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0C3B5E;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Grid Layouts */
+.grid-2cols {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.grid-3cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+
+.field-group.full-width {
+  grid-column: span 2;
+}
+
+.field-group label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0C3B5E;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field-group input {
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #f8fafc;
+  transition: all 0.2s;
+}
+
+.field-group input:focus {
+  outline: none;
+  border-color: #0369a1;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1);
+}
+
+.field-group input:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.field-group input::placeholder {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Input with eye */
+.input-with-eye {
+  position: relative;
+}
+
+.input-with-eye input {
+  width: 100%;
+  padding-right: 38px;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #0369a1;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.eye-icon:hover {
+  color: #0C3B5E;
+}
+
+/* Password Strength Container */
+.strength-container {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.strength-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.strength-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.strength-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.strength-very-weak { background: #ef4444; color: white; }
+.strength-weak { background: #f97316; color: white; }
+.strength-ok { background: #eab308; color: white; }
+.strength-strong { background: #22c55e; color: white; }
+
+.strength-bar {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.strength-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.strength-fill.weak { background: #ef4444; }
+.strength-fill.fair { background: #f97316; }
+.strength-fill.good { background: #eab308; }
+.strength-fill.strong { background: #22c55e; }
+
+.password-requirements {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.password-requirements span {
+  font-size: 10px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
   gap: 4px;
 }
 
-.field-label {
-  font-size: 9px; font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--navy);
+.password-requirements span i {
+  font-size: 8px;
 }
 
-.field-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-family: inherit;
-  font-size: 13px; color: var(--text);
-  background: var(--input-bg);
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-}
-.field-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(3,105,161,0.1);
-  background: white;
-}
-.field-input:disabled {
-  background: #f3f4f6; color: var(--text-sub); cursor: not-allowed;
-}
-.field-input.has-icon { padding-right: 36px; }
-
-.postal-input { max-width: 140px; }
-
-.field-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+.password-requirements span.met {
+  color: #22c55e;
 }
 
-/* ── Password Eye Toggle ── */
-.input-wrap { position: relative; }
-.input-eye {
-  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-  color: var(--primary); font-size: 13px; cursor: pointer;
+.password-requirements span:not(.met) {
+  color: #94a3b8;
 }
 
-/* ── Password Strength ── */
-.strength-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px;
-  background: #f9fafb; border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-}
-.strength-label { font-size: 11px; color: var(--text-sub); font-weight: 500; }
-.strength-badge {
-  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
-}
-.strength-very-weak { background: #ef4444; color: white; }
-.strength-weak      { background: #f97316; color: white; }
-.strength-ok        { background: #eab308; color: white; }
-.strength-strong    { background: #22c55e; color: white; }
-
-.rules-list {
-  display: flex; flex-direction: column; gap: 5px;
-  padding: 10px 12px;
-  background: #f9fafb;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-}
-.rule-item {
-  display: flex; align-items: center; gap: 7px;
-  font-size: 11px; color: var(--text-sub);
-}
-.rule-icon {
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--border-soft);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 7px; color: var(--text-light); flex-shrink: 0;
-}
-.rule-icon.ok { background: #dcfce7; color: #16a34a; }
-
-/* ── Action Buttons ── */
-.form-actions {
+/* Action Buttons */
+.action-buttons {
   display: flex;
-  gap: 8px;
-  padding-top: 4px;
+  gap: 12px;
+  padding: 20px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
 }
 
-.btn-ghost {
-  flex: 1; padding: 11px;
-  background: transparent;
-  border: 1.5px solid var(--border-soft);
-  border-radius: var(--radius-sm);
-  font-family: inherit; font-size: 13px; font-weight: 600;
-  color: var(--text-sub); cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+.btn-secondary,
+.btn-primary,
+.btn-gold {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
 }
-.btn-ghost:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
-.btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+  background: white;
+  color: #475569;
+  border: 1.5px solid #cbd5e1;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: #0369a1;
+  color: #0369a1;
+  background: #f0f9ff;
+}
 
 .btn-primary {
-  flex: 2; padding: 11px;
-  background: var(--primary); color: white;
-  border: none; border-radius: var(--radius-sm);
-  font-family: inherit; font-size: 13px; font-weight: 700;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  transition: background 0.2s, transform 0.1s;
-}
-.btn-primary:hover:not(:disabled) { background: var(--navy); }
-.btn-primary:active:not(:disabled) { transform: scale(0.98); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.btn-primary.gold { background: var(--gold); color: var(--navy); }
-.btn-primary.gold:hover:not(:disabled) { background: var(--gold-dark); }
-
-/* ── Utilities ── */
-.hidden-input { display: none; }
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  background: #0369a1;
+  color: white;
 }
 
-/* ── Responsive ── */
-@media (max-width: 480px) {
-  .profile-page { padding: 12px; gap: 10px; }
-  .field-grid   { grid-template-columns: 1fr; }
-  .avatar-card  { flex-direction: column; align-items: flex-start; }
-  .postal-input { max-width: 100%; }
+.btn-primary:hover:not(:disabled) {
+  background: #0C3B5E;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+}
+
+.btn-gold {
+  background: #F4C400;
+  color: #0C3B5E;
+}
+
+.btn-gold:hover:not(:disabled) {
+  background: #e2b300;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(244, 196, 0, 0.3);
+}
+
+.btn-secondary:disabled,
+.btn-primary:disabled,
+.btn-gold:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.hidden-input {
+  display: none;
+}
+
+/* Responsive Design */
+@media (min-width: 1280px) {
+  .grid-2cols {
+    gap: 20px;
+  }
+  
+  .grid-3cols {
+    gap: 20px;
+  }
+  
+  .form-section {
+    padding: 24px 28px;
+  }
+  
+  .action-buttons {
+    padding: 20px 28px;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1279px) {
+  .grid-2cols {
+    gap: 16px;
+  }
+  
+  .grid-3cols {
+    gap: 16px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .grid-2cols {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  
+  .field-group.full-width {
+    grid-column: span 1;
+  }
+  
+  .grid-3cols {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  
+  .avatar-row {
+    padding: 16px 20px;
+  }
+  
+  .profile-avatar {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .pa-name {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-2cols {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .field-group.full-width {
+    grid-column: span 1;
+  }
+  
+  .grid-3cols {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .avatar-row {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .avatar-info {
+    text-align: center;
+  }
+  
+  .profile-avatar {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .pa-name {
+    font-size: 16px;
+  }
+  
+  .form-section {
+    padding: 16px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    padding: 16px;
+    gap: 10px;
+  }
+  
+  .btn-secondary,
+  .btn-primary,
+  .btn-gold {
+    padding: 10px 16px;
+  }
+  
+  .password-requirements {
+    gap: 8px;
+  }
+  
+  .password-requirements span {
+    font-size: 9px;
+  }
 }
 </style>

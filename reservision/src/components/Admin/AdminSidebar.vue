@@ -233,6 +233,7 @@ const navItems = [
   },
   { path: '/pos',            label: 'Point of Sale',   icon: 'fas fa-cash-register', roles: ['admin', 'restaurantstaff', 'receptionist'] },
   { path: '/admin/swimming', label: 'Swimming Pools',  icon: 'fas fa-swimming-pool', roles: ['admin', 'receptionist'] },
+  { path: '/admin/entrance-rates', label: 'Entrance Rates', icon: 'fas fa-door-open', roles: ['admin'] },
   // { path: '/admin/website/amenities', label: 'Website Amenities', icon: 'fas fa-globe', roles: ['admin'] },
   { path: '/profile',        label: 'Profile',          icon: 'fas fa-user-circle', roles: ['admin', 'restaurantstaff', 'receptionist', 'customer'] },
   { path: '/admin/users',    label: 'User Management', icon: 'fas fa-users',         roles: ['admin'] }

@@ -177,8 +177,9 @@ const googleReady = ref(false)
 const googleButtonContainer = ref(null)
 const signupSuccess = ref(false)  // Shown instead of alert() after successful signup
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
-// Use the same API base URL as the auth store (configured via VITE_API_URL in .env)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// API_URL should already include /api from VITE_API_URL in .env
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api$/, '')
+const API_URL = `${API_BASE}/api`
 const formData = reactive({
   fullName: '',
   email: '',
@@ -203,7 +204,7 @@ const handleSubmit = async () => {
     authStore.setLoading(true);
     authStore.clearError();
 
-    const response = await fetch(`${API_URL}/api/customers/signup`, {
+    const response = await fetch(`${API_URL}/customers/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

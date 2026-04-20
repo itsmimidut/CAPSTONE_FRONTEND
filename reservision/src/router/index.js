@@ -78,6 +78,7 @@ import WebsiteReservation from '../views/website/Reservation.vue'
 import SalesReport from '../views/admin/SalesReport.vue'
 import LandingPage from '../views/website/LandingPage.vue'
 import ProfilePage from '../views/shared/ProfilePage.vue'
+import EntranceRatesManagement from '../views/admin/EntranceRatesManagement.vue'
 // import CustomerDashboard from '../views/customer/CustomerDashboard.vue'
 
 // ============================================================
@@ -274,6 +275,14 @@ const routes = [
     path: '/admin/website/amenities',
     name: 'WebsiteAmenitiesConfig',
     component: WebsiteAmenitiesConfig,
+    meta: { requiresAuth: true, roles: ['admin'] }
+  },
+
+  // Entrance Rates Management
+  {
+    path: '/admin/entrance-rates',
+    name: 'EntranceRatesManagement',
+    component: EntranceRatesManagement,
     meta: { requiresAuth: true, roles: ['admin'] }
   }
 ]

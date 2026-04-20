@@ -233,15 +233,59 @@
                 </div>
               </div>
 
+              <!-- Entrance Fee Breakdown (if exists) -->
+              <div v-if="item.feeBreakdown" class="entrance-fee-breakdown">
+                <div class="breakdown-header">
+                  <i class="fas fa-gate"></i> Entrance Fee Breakdown
+                </div>
+                <div class="breakdown-items">
+                  <!-- Adults -->
+                  <div v-if="item.feeBreakdown.adults && item.guestCounts.adults > 0" class="breakdown-row">
+                    <span class="breakdown-label">
+                      <i class="fas fa-user"></i> Adults
+                      <span class="breakdown-qty">({{ item.guestCounts.adults }} × ₱{{ item.feeBreakdown.adults.price.toLocaleString() }})</span>
+                    </span>
+                    <span class="breakdown-value">₱{{ item.feeBreakdown.adults.subtotal.toLocaleString() }}</span>
+                  </div>
+
+                  <!-- Children -->
+                  <div v-if="item.feeBreakdown.children && item.guestCounts.children > 0" class="breakdown-row">
+                    <span class="breakdown-label">
+                      <i class="fas fa-child"></i> Children
+                      <span class="breakdown-qty">({{ item.guestCounts.children }} × ₱{{ item.feeBreakdown.children.price.toLocaleString() }})</span>
+                    </span>
+                    <span class="breakdown-value">₱{{ item.feeBreakdown.children.subtotal.toLocaleString() }}</span>
+                  </div>
+
+                  <!-- Seniors -->
+                  <div v-if="item.feeBreakdown.seniors && item.guestCounts.seniors > 0" class="breakdown-row">
+                    <span class="breakdown-label">
+                      <i class="fas fa-user-tie"></i> Seniors
+                      <span class="breakdown-qty">({{ item.guestCounts.seniors }} × ₱{{ item.feeBreakdown.seniors.price.toLocaleString() }})</span>
+                    </span>
+                    <span class="breakdown-value">₱{{ item.feeBreakdown.seniors.subtotal.toLocaleString() }}</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
           <!-- Totals -->
           <div class="totals-block">
             <div class="total-row">
-              <span class="total-label">Subtotal</span>
+              <span class="total-label">Room & Activities</span>
               <span class="total-val">₱{{ subtotal.toLocaleString() }}</span>
             </div>
+            
+            <!-- Entrance Fee Row (if applicable) -->
+            <div v-if="items.find(b => b.isEntranceFee)" class="total-row">
+              <span class="total-label">
+                <i class="fas fa-gate total-icon"></i> Entrance Fee
+              </span>
+              <span class="total-val">₱{{ (items.find(b => b.isEntranceFee)?.lineTotal || 0).toLocaleString() }}</span>
+            </div>
+            
             <div class="total-row">
               <span class="total-label">Taxes &amp; Fees</span>
               <span class="total-val muted">Included</span>
@@ -249,7 +293,7 @@
             <div class="total-divider"></div>
             <div class="total-row grand-total">
               <span>Total</span>
-              <span class="grand-val">₱{{ subtotal.toLocaleString() }}</span>
+              <span class="grand-val">₱{{ totalAmount.toLocaleString() }}</span>
             </div>
           </div>
         </div>
@@ -397,6 +441,20 @@ export default {
   computed: {
     hasSwimmingItems() { return this.items.some(i => i.swimmingDetails) },
     isSwimmingOnly()   { return this.items.length > 0 && this.items.every(i => i.swimmingDetails) },
+    totalAmount() {
+      // Calculate base subtotal from items
+      const baseSubtotal = this.items.reduce((sum, item) => {
+        // Skip entrance fee items as they're calculated separately
+        if (item.isEntranceFee) return sum
+        return sum + item.lineTotal
+      }, 0)
+      
+      // Add entrance fee if it exists
+      const entranceFeeItem = this.items.find(b => b.isEntranceFee)
+      const entranceFeeAmount = entranceFeeItem?.lineTotal || 0
+      
+      return baseSubtotal + entranceFeeAmount
+    }
   },
   methods: {
     increment(type) { this.guest[type]++ },
@@ -472,7 +530,8 @@ export default {
       this.$router.push({ name: 'PaymentReturn' })
       const bookingData = JSON.parse(localStorage.getItem('pendingBooking') || '{}')
       try {
-        const bookingRes = await fetch('http://localhost:8000/api/bookings/confirm', {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const bookingRes = await fetch(`${apiUrl}/api/bookings/confirm`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: this.auth.user?.id || null,
@@ -489,7 +548,7 @@ export default {
                 : {}),
               ...(item.swimmingDetails && { swimmingDetails: item.swimmingDetails })
             })),
-            paymentMethod: this.selectedPayment, total: this.subtotal
+            paymentMethod: this.selectedPayment, total: this.totalAmount
           })
         })
         const bookingResult = await bookingRes.json()
@@ -497,17 +556,17 @@ export default {
         const { bookingId, bookingReference, paymentReference } = bookingResult.data
 
         // ── Link-based branch (GCash / PayMaya / Bank) ───────────────
-        const payRes = await fetch('http://localhost:8000/api/paymongo/create-payment-link', {
+        const payRes = await fetch(`${apiUrl}/api/paymongo/create-payment-link`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: this.subtotal,
+            amount: this.totalAmount,
             description: `Eduardo's Resort Booking - ${bookingReference}`,
             bookingId, email: this.guest.email, paymentMethod: this.selectedPayment
           })
         })
         const payData = await payRes.json()
         if (!payRes.ok || !payData.success) throw new Error(payData.error || 'Failed to create payment link')
-        await fetch('http://localhost:8000/api/bookings/update-payment', {
+        await fetch(`${apiUrl}/api/bookings/update-payment`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             bookingId, paymentReference, status: 'pending',
@@ -531,7 +590,8 @@ export default {
     async loadCustomerProfile() {
       if (!this.auth.user?.email) return
       try {
-        const res = await fetch(`http://localhost:8000/api/customers/profile/${encodeURIComponent(this.auth.user.email)}`)
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const res = await fetch(`${apiUrl}/api/customers/profile/${encodeURIComponent(this.auth.user.email)}`)
         if (!res.ok) return
         const data = await res.json()
         if (data.success && data.customer) {
@@ -556,6 +616,44 @@ export default {
     }
   },
   mounted() {
+    // Load entrance fee data from sessionStorage if available
+    try {
+      const entranceFeeData = sessionStorage.getItem('entranceFeeData')
+      if (entranceFeeData) {
+        const feeData = JSON.parse(entranceFeeData)
+        // Find or create entrance fee item in booking
+        let entranceFeeItem = this.booking.find(b => b.item?.name === 'Entrance Fee' || b.isEntranceFee)
+        
+        if (!entranceFeeItem) {
+          // Create new entrance fee item if it doesn't exist
+          entranceFeeItem = {
+            item: { name: 'Entrance Fee', id: 'entrance-fee' },
+            qty: 1,
+            guests: feeData.guestCounts?.adults + feeData.guestCounts?.children + (feeData.guestCounts?.seniors || 0),
+            isEntranceFee: true,
+            feeBreakdown: feeData.breakdown,
+            guestCounts: feeData.guestCounts,
+            visitDate: feeData.visitDate,
+            lineTotal: feeData.total
+          }
+          this.booking.push(entranceFeeItem)
+        } else {
+          // Update existing entrance fee item
+          entranceFeeItem.feeBreakdown = feeData.breakdown
+          entranceFeeItem.guestCounts = feeData.guestCounts
+          entranceFeeItem.visitDate = feeData.visitDate
+          entranceFeeItem.lineTotal = feeData.total
+          entranceFeeItem.guests = feeData.guestCounts?.adults + feeData.guestCounts?.children + (feeData.guestCounts?.seniors || 0)
+        }
+        
+        // Clear from sessionStorage to avoid duplicate entries
+        sessionStorage.removeItem('entranceFeeData')
+        console.log('✅ Entrance fee data loaded and merged into booking')
+      }
+    } catch (error) {
+      console.error('Error loading entrance fee data:', error)
+    }
+
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target) }
@@ -931,6 +1029,67 @@ export default {
 
 .more-chip { background: #f3f4f6; color: #6b7280; }
 
+/* Entrance Fee Breakdown */
+.entrance-fee-breakdown {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #f0fdf4 0%, #f0fff4 100%);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+.breakdown-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #059669;
+  margin-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.breakdown-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 5px;
+}
+
+.breakdown-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.breakdown-label i {
+  color: #059669;
+  font-size: 0.7rem;
+}
+
+.breakdown-qty {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 0.7rem;
+  margin-left: 0.3rem;
+}
+
+.breakdown-value {
+  color: #059669;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
 /* ── Totals Block ───────────────────────────────────────────── */
 .totals-block {
   border-top: 1.5px solid #e5e7eb;
@@ -950,6 +1109,7 @@ export default {
 .total-label { color: #6b7280; }
 .total-val   { font-weight: 600; color: #1f2937; }
 .total-val.muted { color: #9ca3af; }
+.total-icon { margin-right: 0.4rem; color: #0C3B5E; font-size: 0.9rem; }
 
 .total-divider { height: 1px; background: #e5e7eb; margin: 0.2rem 0; }
 

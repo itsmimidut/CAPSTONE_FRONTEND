@@ -271,7 +271,9 @@ const showPassword = ref(false)
 const googleReady = ref(false)
 const googleButtonContainer = ref(null)
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// API_URL should already include /api from VITE_API_URL in .env
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api$/, '')
+const API_URL = `${API_BASE}/api`
 const formData = reactive({
   email: '',
   password: ''
@@ -333,7 +335,7 @@ const sendForgotOtp = async () => {
   forgotModal.loading = true
   try {
     // Check account exists first
-    const checkRes = await fetch(`${API_URL}/api/customers/check-email/${encodeURIComponent(email)}`)
+    const checkRes = await fetch(`${API_URL}/customers/check-email/${encodeURIComponent(email)}`)
     const checkData = await checkRes.json()
     if (!checkData.exists) {
       forgotModal.error = 'No account found with that email address'
@@ -342,7 +344,7 @@ const sendForgotOtp = async () => {
     }
 
     // Send OTP
-    const otpRes = await fetch(`${API_URL}/api/otp/send`, {
+    const otpRes = await fetch(`${API_URL}/otp/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -368,7 +370,7 @@ const verifyForgotOtp = async () => {
 
   forgotModal.loading = true
   try {
-    const res = await fetch(`${API_URL}/api/otp/verify`, {
+    const res = await fetch(`${API_URL}/otp/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: forgotModal.email, otp: forgotModal.otp })
@@ -396,7 +398,7 @@ const doResetPassword = async () => {
 
   forgotModal.loading = true
   try {
-    const res = await fetch(`${API_URL}/api/customers/reset-password`, {
+    const res = await fetch(`${API_URL}/customers/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: forgotModal.email, newPassword: forgotModal.newPassword })
@@ -538,7 +540,7 @@ const handleSubmit = async () => {
     authStore.setLoading(true);
     authStore.clearError();
 
-    const response = await fetch(`${API_URL}/api/customers/login`, {
+      const response = await fetch(`${API_URL}/customers/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 

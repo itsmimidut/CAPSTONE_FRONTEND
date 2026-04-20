@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const ENTRANCE_RATES_ENDPOINT = `${API_BASE_URL}/entrance-rates`;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// Ensure API_BASE_URL ends with /api and doesn't have double /api
+const ENTRANCE_RATES_ENDPOINT = API_BASE_URL.endsWith('/api/entrance-rates')
+    ? API_BASE_URL
+    : `${API_BASE_URL.replace(/\/api$/, '')}/api/entrance-rates`;
 
 /**
  * Entrance Rates API client

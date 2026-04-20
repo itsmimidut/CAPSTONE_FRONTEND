@@ -496,7 +496,8 @@ export default {
       
       // Check if email exists in database
       try {
-        const response = await fetch(`http://localhost:8000/api/customers/check-email/${encodeURIComponent(this.guest.email)}`);
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        const response = await fetch(`${apiUrl}/customers/check-email/${encodeURIComponent(this.guest.email)}`);
         const data = await response.json();
         
         if (data.success && data.exists) {

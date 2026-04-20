@@ -1140,6 +1140,7 @@ export default {
             items:t.items,
             type:t.type,
             payment:t.payment_method,
+            paymentUrl:t.payment_url || null,
             total:parseFloat(t.total_amount),
             paidAmount:parseFloat(t.cash_received ?? t.paid_amount ?? t.total_amount),
             changeAmount:parseFloat(t.change_amount ?? 0),
@@ -1344,12 +1345,14 @@ export default {
       const paidAmount = this.paymentMethod === 'Cash' ? this.cashReceivedNumber : this.total
       const changeAmount = this.paymentMethod === 'Cash' ? this.changeAmount : 0
 
-      // Generate GCash payment links for booking items that were added before payment
-      // method was selected (handleBookingConfirm runs before the payment panel)
+      // Generate GCash payment links for all items when GCash is selected
+      let transactionPaymentUrl = null
       if (this.paymentMethod === 'GCash') {
+        // First, create PayMongo links for booking items
         for (const cartItem of this.cart) {
           if (cartItem.isBooking && !cartItem.paymentUrl) {
             try {
+              console.log(`🔗 Generating PayMongo link for booking: ${cartItem.bookingReference}`)
               const payRes = await axios.post('http://localhost:8000/api/paymongo/create-payment-link', {
                 amount: cartItem.price,
                 description: `Eduardo's Resort - ${cartItem.bookingReference}`,
@@ -1359,12 +1362,42 @@ export default {
               })
               if (payRes.data.success) {
                 cartItem.paymentUrl = payRes.data.checkout_url
+                console.log(`✅ PayMongo checkout URL: ${cartItem.paymentUrl}`)
                 cartItem.paymentQR = await QRCode.toDataURL(cartItem.paymentUrl, {
                   errorCorrectionLevel: 'H', type: 'image/png', width: 200, margin: 1,
                   color: { dark: '#0C3B5E', light: '#FFFFFF' }
                 })
+                console.log(`✅ QR Code generated for: ${cartItem.bookingReference}`)
+                if (!transactionPaymentUrl) transactionPaymentUrl = cartItem.paymentUrl
+              } else {
+                console.error(`❌ PayMongo error: ${payRes.data.error || 'Unknown error'}`)
+                this.showToast(`Failed to create payment link: ${payRes.data.error}`, 'error')
               }
-            } catch {}
+            } catch (err) {
+              console.error(`❌ PayMongo API Error:`, err.response?.data || err.message)
+              this.showToast(`Payment link error: ${err.response?.data?.error || err.message}`, 'error')
+            }
+          }
+        }
+
+        // If there are non-booking items or no booking items, create a transaction-level payment URL
+        const hasNonBookingItems = this.cart.some(i => !i.isBooking)
+        if (hasNonBookingItems && !transactionPaymentUrl) {
+          try {
+            console.log(`🔗 Generating PayMongo link for POS transaction (total: PHP ${this.total})`)
+            const payRes = await axios.post('http://localhost:8000/api/paymongo/create-payment-link', {
+              amount: this.total,
+              description: `Eduardo's Resort - POS Receipt ${String(Math.floor(this.receiptNo)).padStart(3,'0')}`,
+              paymentMethod: 'gcash'
+            })
+            if (payRes.data.success) {
+              transactionPaymentUrl = payRes.data.checkout_url
+              console.log(`✅ Transaction PayMongo checkout URL: ${transactionPaymentUrl}`)
+            } else {
+              console.error(`❌ PayMongo error: ${payRes.data.error || 'Unknown error'}`)
+            }
+          } catch (err) {
+            console.error(`❌ PayMongo API Error for transaction:`, err.response?.data || err.message)
           }
         }
       }
@@ -1383,6 +1416,7 @@ export default {
         type:'Walk-in', payment:this.paymentMethod, total:this.total,
         paidAmount,
         changeAmount,
+        paymentUrl: transactionPaymentUrl,
         date: now.toISOString().split('T')[0],
         time: now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}),
         bookingDetails: this.cart.filter(i=>i.isBooking).map(i=>({ firstName:i.firstName, lastName:i.lastName, phone:i.phone, email:i.email, roomName:i.name, checkInDate:i.checkIn, checkOutDate:i.checkOut, nights:i.nights, adults:i.adults, children:i.children, bookingReference:i.bookingReference, paymentUrl:i.paymentUrl }))
@@ -1397,7 +1431,9 @@ export default {
           cash_received: trans.paidAmount,
           change_amount: trans.changeAmount,
           transaction_date:trans.date,
-          transaction_time:trans.time
+          transaction_time:trans.time,
+          paymentUrl: trans.paymentUrl,
+          userId: this.auth.user?.id
         })
         this.transactionHistory.unshift(trans); this.receiptNo++
         const printed = await this.printReceipt(trans.receiptNo, { fromCheckout: true })
@@ -1468,6 +1504,9 @@ export default {
             t.items.find(i => i.bookingReference === b.bookingReference)?.price || t.total || 0
           )
           try {
+            console.log(`🖨️ Printing booking receipt for: ${b.bookingReference}`)
+            console.log(`📋 Payment Method: ${t.payment}`)
+            console.log(`🔗 Payment URL: ${b.paymentUrl || 'NOT SET'}`)
             const r = await axios.post('http://localhost:8000/api/pos/print/booking', {
               receiptNo:`POS-${t.receiptNo}`,
               date:t.date,
@@ -1489,8 +1528,14 @@ export default {
               bookingReference:b.bookingReference,
               paymentUrl:b.paymentUrl
             })
-            if (r.data?.success) printedCount++
+            if (r.data?.success) {
+              console.log(`✅ Booking receipt printed successfully: ${b.bookingReference}`)
+              printedCount++
+            } else {
+              console.error(`❌ Print failed: ${r.data?.message || 'Unknown error'}`)
+            }
           } catch (e) {
+            console.error(`❌ Print error for ${b.bookingReference}:`, e.response?.data || e.message)
             if (!fromCheckout) this.showToast(`Print failed: ${e.response?.data?.message || e.message}`,'error')
           }
         }
@@ -1521,18 +1566,24 @@ export default {
           total:t.total,
           paidAmount: Number(t.paidAmount ?? t.total),
           changeAmount: Number(t.changeAmount ?? 0),
-          paymentMethod:t.payment
+          paymentMethod:t.payment,
+          paymentUrl:t.paymentUrl || null
         }
 
         try {
+          console.log(`🖨️ Printing POS receipt: ${receiptNo}`)
+          console.log(`📋 Payment Method: ${t.payment}`)
           const r = await axios.post('http://localhost:8000/api/pos/print/regular', payload)
           if (r.data?.success) {
+            console.log(`✅ POS receipt printed successfully`)
             if (!fromCheckout) this.showToast('Receipt sent to printer!','success')
             return true
           }
+          console.error(`❌ Print failed: ${r.data?.message || 'Unknown error'}`)
           if (!fromCheckout) this.showToast(r.data?.message || 'Printer service unavailable','error')
           return false
         } catch (e) {
+          console.error(`❌ Print error:`, e.response?.data || e.message)
           if (!fromCheckout) this.showToast(`Print failed: ${e.response?.data?.message || e.message}`,'error')
           return false
         }

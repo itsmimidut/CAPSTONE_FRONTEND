@@ -286,8 +286,10 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useAuthStore } from '../../stores/auth'
 
 const API_BASE = 'http://localhost:8000/api/pos'
+const auth = useAuthStore()
 
 const props = defineProps({
   showHeader: { type: Boolean, default: true }
@@ -364,7 +366,13 @@ const fetchOrders = async (silent = false) => {
   if (!silent) isLoading.value = true
   error.value = ''
   try {
-    const res = await fetch(`${API_BASE}/transactions`)
+    // Pass user ID to filter transactions for this user only
+    const userId = auth.user?.id;
+    const url = userId 
+      ? `${API_BASE}/transactions?userId=${userId}`
+      : `${API_BASE}/transactions`;
+    
+    const res = await fetch(url)
     if (!res.ok) throw new Error('Failed to fetch orders')
     const all = await res.json()
     const filtered = all

@@ -21,25 +21,17 @@
     />
 
     <main class="main-content" :class="{ shifted: sidebarCollapsed }">
-      <header v-if="isCustomer" class="customer-header">
+      <header class="compact-header">
         <div class="header-left">
           <button class="hamburger-btn" @click="sidebarOpen = !sidebarOpen">
             <i class="fas fa-bars"></i>
           </button>
-          <div>
-            <h1 class="header-title">Profile Settings</h1>
-            <p class="header-subtitle">Manage your account information</p>
+          <div class="header-text">
+            <h1>Profile Settings</h1>
+            <p>Manage your account information</p>
           </div>
         </div>
       </header>
-
-      <div v-else class="admin-header-wrap">
-        <AdminHeader
-          title="Profile Settings"
-          subtitle="Manage your account information"
-          @toggle-sidebar="sidebarOpen = !sidebarOpen"
-        />
-      </div>
 
       <div class="content-wrap">
         <CustomerProfileSection
@@ -57,7 +49,6 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import CustomerSidebar from '../../components/Customer/CustomerSidebar.vue'
 import AdminSidebar from '../../components/Admin/AdminSidebar.vue'
-import AdminHeader from '../../components/Admin/AdminHeader.vue'
 import CustomerProfileSection from '../../components/Customer/CustomerProfileSection.vue'
 
 const apiBase = 'http://localhost:8000/api'
@@ -137,7 +128,6 @@ const fetchProfile = async () => {
   try {
     const res = await fetch(`${apiBase}/customers/profile/${encodeURIComponent(email)}`)
     if (!res.ok) {
-      // For non-customer roles or missing customer record, fallback to auth user info.
       profile.value = {
         ...profile.value,
         firstName: user.firstName || '',
@@ -185,94 +175,144 @@ onMounted(() => {
 .profile-layout {
   min-height: 100vh;
   display: flex;
-  background: #eef5fb;
+  background: #f0f9ff;
 }
 
+/* Main Content */
 .main-content {
   flex: 1;
   min-width: 0;
-  min-height: 100vh;
-  margin-left: 262px;
+  margin-left: 260px;
   transition: margin-left 0.3s ease;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .main-content.shifted {
-  margin-left: 72px;
+  margin-left: 70px;
 }
 
-@media (max-width: 767px) {
-  .main-content {
-    margin-left: 0 !important;
-  }
-}
-
-.customer-header {
+/* Compact Header */
+.compact-header {
+  background: linear-gradient(135deg, #0C3B5E 0%, #0369a1 100%);
+  border-bottom: 3px solid #F4C400;
+  padding: 0 24px;
+  height: 60px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0 1.5rem;
-  height: 64px;
-  background: linear-gradient(135deg, #0c3b5e 0%, #0369a1 60%, #1f8dbf 100%);
-  border-bottom: 3px solid #f4c400;
-  box-shadow: 0 2px 14px rgba(12, 59, 94, 0.3);
-  position: sticky;
-  top: 0;
-  z-index: 40;
+  flex-shrink: 0;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 16px;
 }
 
 .hamburger-btn {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-size: 0.95rem;
+  color: white;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-@media (min-width: 768px) {
-  .hamburger-btn {
-    display: none;
-  }
+.hamburger-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.header-title {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #fff;
+.header-text h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 2px 0;
+}
+
+.header-text p {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
   margin: 0;
 }
 
-.header-subtitle {
-  font-size: 0.72rem;
-  color: rgba(255, 255, 255, 0.75);
-  margin: 0.2rem 0 0;
-}
-
-.admin-header-wrap {
-  min-height: 60px;
-}
-
+/* Content Wrap - No Scroll */
 .content-wrap {
-  padding: 1.25rem 1.5rem;
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
 }
 
-@media (max-width: 640px) {
+/* Hide scrollbar for cleaner look */
+.content-wrap::-webkit-scrollbar {
+  width: 6px;
+}
+
+.content-wrap::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.content-wrap::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.content-wrap::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsive */
+@media (max-width: 767px) {
+  .main-content {
+    margin-left: 0 !important;
+  }
+  
+  .compact-header {
+    padding: 0 16px;
+    height: 56px;
+  }
+  
+  .hamburger-btn {
+    display: flex;
+  }
+  
+  .header-text h1 {
+    font-size: 16px;
+  }
+  
+  .header-text p {
+    font-size: 10px;
+  }
+  
   .content-wrap {
-    padding: 0.85rem;
+    padding: 16px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .main-content {
+    margin-left: 240px;
+  }
+  
+  .main-content.shifted {
+    margin-left: 65px;
+  }
+  
+  .content-wrap {
+    padding: 20px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .content-wrap {
+    padding: 24px 32px;
   }
 }
 </style>

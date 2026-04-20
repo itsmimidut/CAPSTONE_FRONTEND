@@ -8,48 +8,60 @@
         <button class="close-btn" @click="closeScanner">✕</button>
       </div>
 
-      <!-- Scanner/Input Tabs -->
-      <div class="scanner-tabs">
-        <button 
-          class="tab-btn" 
-          :class="{ active: scanMode === 'camera' }"
-          @click="scanMode = 'camera'"
-        >
-          <i class="fas fa-camera mr-2"></i>Scan QR
-        </button>
-        <button 
-          class="tab-btn" 
-          :class="{ active: scanMode === 'manual' }"
-          @click="scanMode = 'manual'"
-        >
-          <i class="fas fa-keyboard mr-2"></i>Manual Entry
-        </button>
-      </div>
+      <!-- Scanner Input - Compact Layout -->
+      <div class="scanner-content">
+        <div class="compact-scan-area">
+          <div class="barcode-icon">
+            <i class="fas fa-barcode"></i>
+          </div>
+          <div class="scan-input-wrapper">
+            <label>
+              <i class="fas fa-qrcode"></i> Scan QR Code
+            </label>
+            <input 
+              ref="scannerInput"
+              v-model="scannedReference"
+              type="text"
+              placeholder="Scan booking QR code..."
+              @keyup.enter="validateReference"
+              class="scanner-input"
+              autocomplete="off"
+            >
+            <p class="hint">Auto-submits when scanned</p>
+          </div>
+        </div>
 
-      <!-- Camera Scanner -->
-      <div v-if="scanMode === 'camera'" class="scanner-content">
-        <div id="qr-scanner" class="qr-scanner-box"></div>
-        <p class="scanner-hint">Point your device camera at the QR code</p>
+        <!-- Divider -->
+        <div class="or-divider">
+          <span>OR</span>
+        </div>
+
+        <!-- Manual Entry - Compact -->
+        <div class="compact-manual-area">
+          <div class="manual-input-wrapper">
+            <label>
+              <i class="fas fa-keyboard"></i> Manual Reference
+            </label>
+            <div class="manual-input-group">
+              <input 
+                v-model="manualReference"
+                type="text"
+                placeholder="BK-2024-00001"
+                @keyup.enter="validateManualReference"
+                class="reference-input"
+              >
+              <button @click="validateManualReference" class="btn-validate">
+                <i class="fas fa-search"></i> Validate
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Message -->
         <div v-if="scanError" class="error-message">
-          <i class="fas fa-exclamation-circle mr-2"></i>{{ scanError }}
+          <i class="fas fa-exclamation-circle"></i>
+          <span>{{ scanError }}</span>
         </div>
-      </div>
-
-      <!-- Manual Entry -->
-      <div v-if="scanMode === 'manual'" class="scanner-content">
-        <div class="input-group">
-          <label>Booking Reference</label>
-          <input 
-            v-model="manualReference"
-            type="text"
-            placeholder="Enter booking reference (e.g., BK-2024-00001)"
-            @keyup.enter="validateReference"
-            class="reference-input"
-          >
-        </div>
-        <button @click="validateReference" class="btn-validate">
-          <i class="fas fa-check mr-2"></i>Validate
-        </button>
       </div>
 
       <!-- Loading -->
@@ -59,95 +71,92 @@
       </div>
     </div>
 
-    <!-- Booking Details Modal (after successful scan) -->
+    <!-- Booking Details Modal - Compact & Scroll-free -->
     <div v-if="scannedBooking" class="booking-details-modal">
       <div class="details-overlay" @click="closeScanResult"></div>
-      <div class="details-container">
+      <div class="details-container compact-details">
         <!-- Header -->
         <div class="details-header">
-          <h2>Confirm Check-In</h2>
+          <h2><i class="fas fa-check-circle"></i> Confirm Check-In</h2>
           <button class="close-btn" @click="closeScanResult">✕</button>
         </div>
 
-        <!-- Booking Info -->
-        <div class="booking-info">
-          <!-- Guest Info -->
-          <div class="info-section">
-            <h3><i class="fas fa-user mr-2"></i>Guest Information</h3>
-            <div class="info-grid">
-              <div class="info-item">
-                <label>Name</label>
-                <p>{{ scannedBooking.first_name }} {{ scannedBooking.last_name }}</p>
-              </div>
-              <div class="info-item">
-                <label>Email</label>
-                <p>{{ scannedBooking.email }}</p>
-              </div>
-              <div class="info-item">
-                <label>Phone</label>
-                <p>{{ scannedBooking.phone || 'N/A' }}</p>
+        <!-- Compact Booking Info -->
+        <div class="booking-info-compact">
+          <!-- Row 1: Guest Info -->
+          <div class="info-row">
+            <div class="info-icon"><i class="fas fa-user"></i></div>
+            <div class="info-content">
+              <span class="info-label">Guest</span>
+              <strong>{{ scannedBooking.first_name }} {{ scannedBooking.last_name }}</strong>
+            </div>
+            <div class="info-divider"></div>
+            <div class="info-content">
+              <span class="info-label">Reference</span>
+              <code class="ref-code">{{ scannedBooking.booking_reference }}</code>
+            </div>
+          </div>
+
+          <!-- Row 2: Contact Info -->
+          <div class="info-row">
+            <div class="info-icon"><i class="fas fa-envelope"></i></div>
+            <div class="info-content">
+              <span class="info-label">Email</span>
+              <span>{{ scannedBooking.email }}</span>
+            </div>
+            <div class="info-divider"></div>
+            <div class="info-content">
+              <span class="info-label">Phone</span>
+              <span>{{ scannedBooking.phone || 'N/A' }}</span>
+            </div>
+          </div>
+
+          <!-- Row 3: Dates -->
+          <div class="info-row">
+            <div class="info-icon"><i class="fas fa-calendar"></i></div>
+            <div class="info-content">
+              <span class="info-label">Check-In</span>
+              <strong>{{ formatDate(scannedBooking.check_in_date) }}</strong>
+            </div>
+            <div class="info-divider"></div>
+            <div class="info-content">
+              <span class="info-label">Check-Out</span>
+              <strong>{{ formatDate(scannedBooking.check_out_date) }}</strong>
+            </div>
+          </div>
+
+          <!-- Row 4: Items Booked -->
+          <div class="info-row items-row">
+            <div class="info-icon"><i class="fas fa-home"></i></div>
+            <div class="items-scroll">
+              <span class="info-label">Items</span>
+              <div class="items-tags">
+                <span v-for="item in scannedBooking.items_list" :key="item.item_id" class="item-tag">
+                  {{ item.item_name }} <span class="qty-badge">×{{ item.qty }}</span>
+                </span>
               </div>
             </div>
           </div>
 
-          <!-- Stay Details -->
-          <div class="info-section">
-            <h3><i class="fas fa-calendar mr-2"></i>Stay Details</h3>
-            <div class="info-grid">
-              <div class="info-item">
-                <label>Check-In Date</label>
-                <p>{{ formatDate(scannedBooking.check_in_date) }}</p>
-              </div>
-              <div class="info-item">
-                <label>Check-Out Date</label>
-                <p>{{ formatDate(scannedBooking.check_out_date) }}</p>
-              </div>
-              <div class="info-item">
-                <label>Booking Reference</label>
-                <p class="reference-badge">{{ scannedBooking.booking_reference }}</p>
-              </div>
+          <!-- Row 5: Status & Actions -->
+          <div class="action-row">
+            <div class="status-chip" :class="getStatusClass(scannedBooking.booking_status)">
+              <i class="fas" :class="getStatusIcon(scannedBooking.booking_status)"></i>
+              {{ scannedBooking.booking_status }}
             </div>
-          </div>
 
-          <!-- Items Booked -->
-          <div class="info-section">
-            <h3><i class="fas fa-home mr-2"></i>Items Booked</h3>
-            <div class="items-list">
-              <div v-for="item in scannedBooking.items_list" :key="item.item_id" class="item-row">
-                <span>{{ item.item_name }}</span>
-                <span class="qty">×{{ item.qty }}</span>
-              </div>
+            <div v-if="checkInError" class="error-compact">
+              <i class="fas fa-exclamation-triangle"></i> {{ checkInError }}
             </div>
-          </div>
 
-          <!-- Status -->
-          <div class="info-section">
-            <div class="status-display">
-              <label>Current Status</label>
-              <span :class="getStatusClass(scannedBooking.booking_status)">
-                {{ scannedBooking.booking_status }}
-              </span>
+            <div v-if="checkInSuccess" class="success-compact">
+              <i class="fas fa-check-circle"></i> Checked in successfully!
             </div>
-          </div>
-
-          <!-- Error Message -->
-          <div v-if="checkInError" class="error-message">
-            <i class="fas fa-exclamation-circle mr-2"></i>{{ checkInError }}
-          </div>
-
-          <!-- Success Message -->
-          <div v-if="checkInSuccess" class="success-message-large">
-            <div class="success-icon">
-              <i class="fas fa-check-circle"></i>
-            </div>
-            <h3>✅ Check-In Successful!</h3>
-            <p>Guest {{ scannedBooking.first_name }} {{ scannedBooking.last_name }} has been checked in.</p>
-            <small>Redirecting in 3 seconds...</small>
           </div>
         </div>
 
-        <!-- Actions -->
-        <div class="details-actions">
+        <!-- Action Buttons - Fixed at bottom -->
+        <div class="details-actions-compact">
           <button @click="closeScanResult" class="btn btn-outline">
             Cancel
           </button>
@@ -158,10 +167,10 @@
             :disabled="isCheckingIn"
           >
             <span v-if="isCheckingIn">
-              <i class="fas fa-spinner fa-spin mr-2"></i>Processing...
+              <i class="fas fa-spinner fa-spin"></i> Processing...
             </span>
             <span v-else>
-              <i class="fas fa-check-circle mr-2"></i>Confirm Check-In
+              <i class="fas fa-check-circle"></i> Confirm Check-In
             </span>
           </button>
           <button 
@@ -169,7 +178,7 @@
             @click="resetScanner" 
             class="btn btn-primary"
           >
-            <i class="fas fa-plus mr-2"></i>Scan Another
+            <i class="fas fa-plus"></i> Scan Another
           </button>
         </div>
       </div>
@@ -178,8 +187,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onUnmounted, nextTick } from 'vue'
-import { Html5Qrcode } from 'html5-qrcode'
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 
 const props = defineProps({
   isOpen: {
@@ -191,7 +199,8 @@ const props = defineProps({
 const emit = defineEmits(['close', 'check-in-success'])
 
 // State
-const scanMode = ref('camera')
+const scannerInput = ref(null)
+const scannedReference = ref('')
 const manualReference = ref('')
 const scannedBooking = ref(null)
 const isValidating = ref(false)
@@ -200,73 +209,29 @@ const scanError = ref('')
 const checkInError = ref('')
 const checkInSuccess = ref(false)
 
-let html5QrCode = null
-
-// Initialize scanner
-const initScanner = async () => {
-  try {
-    // Destroy previous instance if it exists
-    if (html5QrCode) {
-      if (html5QrCode.isScanning) {
-        await html5QrCode.stop()
-      }
-      html5QrCode.clear()
-      html5QrCode = null
-    }
-
-    html5QrCode = new Html5Qrcode('qr-scanner')
-    const cameras = await Html5Qrcode.getCameras()
-
-    if (cameras && cameras.length) {
-      await html5QrCode.start(
-        cameras[0].id,
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 }
-        },
-        onScanSuccess,
-        onScanError
-      )
+// Focus scanner input when modal opens
+watch(
+  () => props.isOpen,
+  (newVal) => {
+    if (newVal) {
+      nextTick(() => {
+        if (scannerInput.value) {
+          scannerInput.value.focus()
+        }
+      })
       scanError.value = ''
-    } else {
-      scanError.value = 'No camera found on this device'
+      manualReference.value = ''
+      scannedReference.value = ''
     }
-  } catch (err) {
-    console.error('Scanner initialization error:', err)
-    scanError.value = 'Unable to access camera. Please enable camera permissions.'
   }
-}
+)
 
-const stopScanner = async () => {
-  if (html5QrCode) {
-    try {
-      if (html5QrCode.isScanning) {
-        await html5QrCode.stop()
-      }
-      html5QrCode.clear()
-    } catch (err) {
-      console.error('Error stopping scanner:', err)
-    }
-    html5QrCode = null
-  }
-}
+// Validate reference from 2D scanner
+const validateReference = async () => {
+  const refToValidate = scannedReference.value.trim()
 
-const onScanSuccess = async (decodedText) => {
-  if (!isValidating.value) {
-    const bookingRef = decodedText.trim()
-    await validateReference(bookingRef)
-  }
-}
-
-const onScanError = (error) => {
-  // Ignore constant scan errors, they fire every frame when no QR is detected
-}
-
-const validateReference = async (reference = null) => {
-  const refToValidate = reference || manualReference.value
-
-  if (!refToValidate.trim()) {
-    scanError.value = 'Please enter a booking reference'
+  if (!refToValidate) {
+    scanError.value = 'Please scan a booking QR code'
     return
   }
 
@@ -275,8 +240,6 @@ const validateReference = async (reference = null) => {
   checkInError.value = ''
 
   try {
-    await stopScanner()
-
     const response = await fetch(
       `http://localhost:8000/api/bookings/validate/${encodeURIComponent(refToValidate)}`
     )
@@ -289,10 +252,57 @@ const validateReference = async (reference = null) => {
 
     if (!data.success) {
       checkInError.value = data.error || 'Booking not found'
-      if (scanMode.value === 'camera') {
-        await nextTick()
-        await initScanner()
+      scannedReference.value = ''
+      nextTick(() => {
+        if (scannerInput.value) {
+          scannerInput.value.focus()
+        }
+      })
+      return
+    }
+
+    scannedBooking.value = data.data
+    scannedReference.value = ''
+  } catch (error) {
+    console.error('Validation error:', error)
+    checkInError.value = error.message || 'Failed to validate booking'
+    scannedReference.value = ''
+    nextTick(() => {
+      if (scannerInput.value) {
+        scannerInput.value.focus()
       }
+    })
+  } finally {
+    isValidating.value = false
+  }
+}
+
+// Validate manually entered reference
+const validateManualReference = async () => {
+  const refToValidate = manualReference.value.trim()
+
+  if (!refToValidate) {
+    scanError.value = 'Please enter a booking reference'
+    return
+  }
+
+  isValidating.value = true
+  scanError.value = ''
+  checkInError.value = ''
+
+  try {
+    const response = await fetch(
+      `http://localhost:8000/api/bookings/validate/${encodeURIComponent(refToValidate)}`
+    )
+
+    if (!response.ok) {
+      throw new Error(await response.text())
+    }
+
+    const data = await response.json()
+
+    if (!data.success) {
+      checkInError.value = data.error || 'Booking not found'
       return
     }
 
@@ -301,10 +311,6 @@ const validateReference = async (reference = null) => {
   } catch (error) {
     console.error('Validation error:', error)
     checkInError.value = error.message || 'Failed to validate booking'
-    if (scanMode.value === 'camera') {
-      await nextTick()
-      await initScanner()
-    }
   } finally {
     isValidating.value = false
   }
@@ -360,27 +366,29 @@ const closeScanResult = async () => {
   scannedBooking.value = null
   checkInError.value = ''
   checkInSuccess.value = false
-
-  if (scanMode.value === 'camera') {
-    await nextTick()
-    await initScanner()
-  }
+  nextTick(() => {
+    if (scannerInput.value) {
+      scannerInput.value.focus()
+    }
+  })
 }
 
 const resetScanner = async () => {
   manualReference.value = ''
+  scannedReference.value = ''
   scannedBooking.value = null
   checkInError.value = ''
   checkInSuccess.value = false
   scanError.value = ''
-  scanMode.value = 'camera'
 
-  await nextTick()
-  await initScanner()
+  nextTick(() => {
+    if (scannerInput.value) {
+      scannerInput.value.focus()
+    }
+  })
 }
 
-const closeScanner = async () => {
-  await stopScanner()
+const closeScanner = () => {
   emit('close')
 }
 
@@ -389,8 +397,7 @@ const formatDate = (dateStr) => {
   const date = new Date(dateStr)
   return date.toLocaleDateString('en-US', {
     month: 'short',
-    day: 'numeric',
-    year: 'numeric'
+    day: 'numeric'
   })
 }
 
@@ -405,29 +412,16 @@ const getStatusClass = (status) => {
   return classes[status] || 'status-pending'
 }
 
-// Watch for modal open/close
-watch(() => props.isOpen, async (newVal) => {
-  if (newVal) {
-    await nextTick() // ← wait for DOM to render #qr-scanner
-    await initScanner()
-  } else {
-    await stopScanner()
+const getStatusIcon = (status) => {
+  const icons = {
+    'Pending': 'fa-clock',
+    'Confirmed': 'fa-check-circle',
+    'Checked-in': 'fa-check-double',
+    'Completed': 'fa-flag-checkered',
+    'Cancelled': 'fa-ban'
   }
-})
-
-// Watch for tab switching
-watch(scanMode, async (newVal) => {
-  if (newVal === 'camera') {
-    await nextTick() // ← wait for DOM to render #qr-scanner
-    await initScanner()
-  } else {
-    await stopScanner()
-  }
-})
-
-onUnmounted(async () => {
-  await stopScanner()
-})
+  return icons[status] || 'fa-info-circle'
+}
 </script>
 
 <style scoped>
@@ -445,6 +439,7 @@ onUnmounted(async () => {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
   animation: fadeIn 0.2s ease;
 }
 
@@ -453,22 +448,22 @@ onUnmounted(async () => {
   to { opacity: 1; }
 }
 
+/* Scanner Container - Compact */
 .scanner-container {
   position: relative;
   background: white;
-  border-radius: 1rem;
+  border-radius: 1.5rem;
   width: 100%;
-  max-width: 500px;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 480px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
   animation: slideUp 0.3s ease;
+  overflow: hidden;
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(50px);
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
@@ -480,157 +475,210 @@ onUnmounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 2px solid #f0f0f0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white;
 }
 
 .scanner-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
 .close-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
-}
-
-.scanner-tabs {
-  display: flex;
-  gap: 0.5rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  background: white;
-  border: 2px solid transparent;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-  color: #666;
-}
-
-.tab-btn.active {
-  background: white;
-  border-color: #667eea;
-  color: #667eea;
-}
-
-.tab-btn:hover {
-  border-color: #667eea;
-  color: #667eea;
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
 }
 
 .scanner-content {
-  padding: 2rem 1rem;
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.qr-scanner-box {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  background: #000;
-}
-
-.scanner-hint {
-  text-align: center;
-  color: #666;
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.error-message {
-  padding: 1rem;
-  background: #fee;
-  border: 1px solid #fcc;
-  border-radius: 0.5rem;
-  color: #c00;
-  font-size: 0.9rem;
-}
-
-.input-group {
+.compact-scan-area {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #f0f3f7 100%);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e3e8ef;
+}
+
+.barcode-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.scan-input-wrapper {
+  flex: 1;
+}
+
+.scan-input-wrapper label {
+  font-weight: 700;
+  color: #1e3c72;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.scanner-input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #e3e8ef;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  font-family: 'Courier New', monospace;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.scanner-input:focus {
+  outline: none;
+  border-color: #2a5298;
+  box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+}
+
+.hint {
+  font-size: 0.7rem;
+  color: #999;
+  margin: 0.25rem 0 0;
+}
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.25rem 0;
+}
+
+.or-divider::before,
+.or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e3e8ef;
+}
+
+.or-divider span {
+  color: #999;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.compact-manual-area {
+  background: #f8f9fb;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e3e8ef;
+}
+
+.manual-input-wrapper label {
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.manual-input-group {
+  display: flex;
   gap: 0.5rem;
 }
 
-.input-group label {
-  font-weight: 600;
-  color: #333;
-  font-size: 0.9rem;
-}
-
 .reference-input {
-  padding: 0.75rem 1rem;
-  border: 2px solid #e9ecef;
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #e3e8ef;
   border-radius: 0.5rem;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-family: 'Courier New', monospace;
-  transition: all 0.2s;
+  background: white;
 }
 
 .reference-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #2a5298;
 }
 
 .btn-validate {
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white;
   border: none;
   border-radius: 0.5rem;
   font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .btn-validate:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(30, 60, 114, 0.2);
+}
+
+.error-message {
+  padding: 0.6rem 0.75rem;
+  background: #fee;
+  border: 1px solid #f8a5a5;
+  border-radius: 0.5rem;
+  color: #c33;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .loading-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  border-radius: 1rem;
+  gap: 0.75rem;
   z-index: 10;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f0f0f0;
-  border-top-color: #667eea;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e3e8ef;
+  border-top-color: #2a5298;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -639,7 +687,7 @@ onUnmounted(async () => {
   to { transform: rotate(360deg); }
 }
 
-/* Booking Details Modal */
+/* Booking Details - Compact & Scroll-free */
 .booking-details-modal {
   position: fixed;
   inset: 0;
@@ -656,131 +704,160 @@ onUnmounted(async () => {
   background: rgba(0, 0, 0, 0.7);
 }
 
-.details-container {
+.details-container.compact-details {
   position: relative;
   background: white;
   border-radius: 1rem;
   width: 100%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-width: 560px;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease;
+  overflow: hidden;
 }
 
 .details-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 2px solid #f0f0f0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white;
-  position: sticky;
-  top: 0;
 }
 
 .details-header h2 {
   margin: 0;
-  font-size: 1.5rem;
-}
-
-.booking-info {
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.info-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.info-section h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: #333;
+  font-size: 1.2rem;
+  font-weight: 600;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
 }
 
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.info-item label {
-  font-size: 0.85rem;
-  color: #666;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.info-item p {
-  margin: 0;
-  font-size: 1rem;
-  color: #333;
-  font-weight: 500;
-}
-
-.reference-badge {
-  display: inline-block;
-  background: #f0f0f0;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
-}
-
-.items-list {
+.booking-info-compact {
+  padding: 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.item-row {
+.info-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1rem;
-  background: #f8f9fa;
-  border-radius: 0.5rem;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.qty {
-  color: #666;
+.info-row:last-of-type {
+  border-bottom: none;
+}
+
+.info-icon {
+  width: 32px;
+  height: 32px;
+  background: #f0f3f7;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2a5298;
   font-size: 0.9rem;
-  font-weight: 600;
+  flex-shrink: 0;
 }
 
-.status-display {
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 0.5rem;
+.info-content {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
 }
 
-.status-display label {
-  font-weight: 600;
+.info-label {
+  font-size: 0.65rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-content strong {
+  font-size: 0.9rem;
+  color: #1e3c72;
+}
+
+.info-content span {
+  font-size: 0.85rem;
   color: #333;
 }
 
-.status-display span {
-  padding: 0.35rem 0.85rem;
-  border-radius: 0.5rem;
+.ref-code {
+  font-family: 'Courier New', monospace;
+  background: #f0f3f7;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 600;
-  font-size: 0.85rem;
+  color: #2a5298;
+}
+
+.info-divider {
+  width: 1px;
+  height: 30px;
+  background: #e3e8ef;
+}
+
+.items-row {
+  align-items: flex-start;
+}
+
+.items-scroll {
+  flex: 1;
+}
+
+.items-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.item-tag {
+  background: #f0f3f7;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #2c3e50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.qty-badge {
+  background: #2a5298;
+  color: white;
+  padding: 0.1rem 0.3rem;
+  border-radius: 12px;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.action-row {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .status-pending {
@@ -808,116 +885,69 @@ onUnmounted(async () => {
   color: #d63031;
 }
 
-.success-message {
-  padding: 1rem;
-  background: #d4edda;
-  border: 1px solid #c3e6cb;
-  border-radius: 0.5rem;
-  color: #155724;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.success-message-large {
-  padding: 2rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border: none;
-  border-radius: 0.75rem;
-  color: white;
-  text-align: center;
+.error-compact {
+  background: #fee;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  color: #c33;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-  animation: successPulse 0.6s ease;
+  gap: 0.3rem;
 }
 
-.success-message-large h3 {
-  margin: 0.5rem 0 0 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.success-message-large p {
-  margin: 0.5rem 0;
-  font-size: 1rem;
-  opacity: 0.95;
-}
-
-.success-message-large small {
-  font-size: 0.85rem;
-  opacity: 0.8;
-  margin-top: 0.5rem;
-}
-
-.success-icon {
-  font-size: 3rem;
-  animation: iconBounce 0.6s ease;
-}
-
-@keyframes successPulse {
-  0% {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes iconBounce {
-  0% {
-    transform: scale(0);
-  }
-  50% {
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.details-actions {
+.success-compact {
+  background: #d4edda;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  color: #155724;
   display: flex;
-  gap: 1rem;
-  padding: 1.5rem 2rem;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.details-actions-compact {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
   border-top: 1px solid #e9ecef;
   background: #f8f9fa;
-  position: sticky;
-  bottom: 0;
 }
 
-.btn {
+.details-actions-compact .btn {
   flex: 1;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   border-radius: 0.5rem;
   border: none;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .btn-outline {
   background: white;
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: #2a5298;
+  border: 1px solid #2a5298;
 }
 
 .btn-outline:hover:not(:disabled) {
-  background: #f8f9fa;
-  transform: translateY(-2px);
+  background: #f0f3f7;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(30, 60, 114, 0.3);
 }
 
 .btn-primary:disabled {
@@ -925,18 +955,33 @@ onUnmounted(async () => {
   cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .scanner-container {
-    max-width: 100%;
-    border-radius: 1rem 1rem 0 0;
+@media (max-width: 640px) {
+  .scanner-container,
+  .details-container.compact-details {
+    max-width: calc(100% - 1rem);
+    margin: 0 0.5rem;
   }
-
-  .details-container {
-    max-width: 100%;
+  
+  .compact-scan-area {
+    flex-direction: column;
+    text-align: center;
   }
-
-  .info-grid {
-    grid-template-columns: 1fr;
+  
+  .info-row {
+    flex-wrap: wrap;
+  }
+  
+  .info-divider {
+    display: none;
+  }
+  
+  .action-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .status-chip {
+    justify-content: center;
   }
 }
 </style>

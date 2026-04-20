@@ -51,7 +51,8 @@ import { ref, computed } from 'vue'
 // Single source of truth for the backend API base URL.
 // Set VITE_API_URL in your .env file to change it (e.g. for production).
 // Falls back to localhost for local development.
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api$/, '')
+const API_URL = `${API_BASE}/api`
 
 // export const useAuthStore = defineStore('auth', () => {
 //  * ============================================================

@@ -64,10 +64,6 @@
                 <i class="fas fa-print"></i>
                 <span>Print List</span>
               </button>
-              <button @click="createNew" class="btn-primary">
-                <i class="fas fa-plus"></i>
-                <span>New Booking</span>
-              </button>
             </div>
           </div>
 
