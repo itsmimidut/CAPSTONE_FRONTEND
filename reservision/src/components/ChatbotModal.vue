@@ -1,38 +1,60 @@
 <template>
   <!-- Toggle Button -->
   <div 
-    @click="isOpen = true"
+    @click="toggleChat"
     class="chatbot-toggle"
+    :class="{ 'is-open': isOpen }"
   >
     <div class="pulse-ring"></div>
-    <i class="fas fa-robot text-2xl"></i>
+    <i class="fas fa-robot text-xl md:text-2xl"></i>
     <div v-if="unreadCount > 0" class="unread-badge">{{ unreadCount }}</div>
   </div>
+
+  <!-- Modal Backdrop -->
+  <Transition name="backdrop">
+    <div 
+      v-if="isOpen"
+      @click="closeChat"
+      class="chatbot-backdrop"
+    ></div>
+  </Transition>
 
   <!-- Modal -->
   <Transition name="modal">
     <div 
       v-if="isOpen"
       class="chatbot-modal"
+      :class="{ 'is-fullscreen': isMobile && isFullscreen }"
+      @click.stop
     >
       <!-- Header -->
       <div class="chatbot-header">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 md:gap-3">
           <div class="bot-avatar">
             <i class="fas fa-robot"></i>
             <span class="status-dot"></span>
           </div>
           <div>
-            <div class="font-semibold text-base">Eduardo's Assistant</div>
+            <div class="font-semibold text-sm md:text-base">Eduardo's Assistant</div>
             <div class="text-xs text-white/80 flex items-center gap-1">
               <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
               Online
             </div>
           </div>
         </div>
-        <button @click="closeChat" class="close-btn">
-          <i class="fas fa-times"></i>
-        </button>
+        <div class="flex items-center gap-2">
+          <button 
+            v-if="isMobile" 
+            @click="toggleFullscreen" 
+            class="header-btn"
+            :title="isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'"
+          >
+            <i :class="isFullscreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
+          </button>
+          <button @click="closeChat" class="header-btn">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Messages -->
@@ -42,14 +64,37 @@
           :key="index"
           class="message-wrapper"
           :class="msg.sender === 'bot' ? 'bot-message' : 'user-message'"
+          @mouseenter="hoveredMessage = index"
+          @mouseleave="hoveredMessage = null"
         >
           <div v-if="msg.sender === 'bot'" class="bot-avatar-small">
             <i class="fas fa-robot text-xs"></i>
           </div>
           
-          <div class="message-bubble" :class="msg.sender">
-            <div class="message-text" v-html="formatMessage(msg.text)"></div>
-            <div class="message-time">{{ msg.time }}</div>
+          <div class="message-content-wrapper">
+            <div class="message-bubble" :class="msg.sender">
+              <div class="message-text" v-html="formatMessage(msg.text)"></div>
+              <div class="message-time">{{ msg.time }}</div>
+            </div>
+            
+            <!-- Message Actions -->
+            <div v-if="hoveredMessage === index" class="message-actions" :class="msg.sender">
+              <button 
+                @click="copyMessage(msg.text)" 
+                class="action-btn"
+                title="Copy"
+              >
+                <i :class="copiedIndex === index ? 'fas fa-check' : 'far fa-copy'"></i>
+              </button>
+              <button 
+                v-if="msg.sender === 'bot'"
+                @click="replyToMessage(msg.text)" 
+                class="action-btn"
+                title="Reply"
+              >
+                <i class="fas fa-reply"></i>
+              </button>
+            </div>
           </div>
 
           <div v-if="msg.sender === 'user'" class="user-avatar-small">
@@ -58,7 +103,7 @@
         </div>
 
         <!-- Typing Indicator -->
-        <div v-if="isTyping" class="message-wrapper bot-message typing-indicator">
+        <div v-if="isTyping" class="message-wrapper bot-message">
           <div class="bot-avatar-small">
             <i class="fas fa-robot text-xs"></i>
           </div>
@@ -70,19 +115,58 @@
             </div>
           </div>
         </div>
+
+        <!-- Scroll to bottom button -->
+        <button 
+          v-if="showScrollButton"
+          @click="scrollToBottom"
+          class="scroll-bottom-btn"
+        >
+          <i class="fas fa-arrow-down"></i>
+        </button>
+      </div>
+
+      <!-- Reply Preview -->
+      <div v-if="replyPreview" class="reply-preview">
+        <div class="reply-preview-content">
+          <i class="fas fa-reply text-xs text-gray-400"></i>
+          <span class="text-xs text-gray-600 truncate">{{ replyPreview }}</span>
+        </div>
+        <button @click="cancelReply" class="cancel-reply-btn">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
 
       <!-- Input -->
       <div class="input-container">
+        <!-- Paste suggestion -->
+        <div v-if="showPasteSuggestion" class="paste-suggestion">
+          <i class="fas fa-paste"></i>
+          <span>Tap to paste from clipboard</span>
+          <button @click="pasteFromClipboard" class="paste-btn">Paste</button>
+        </div>
+
         <div class="input-wrapper">
+          <button 
+            @click="handlePaste"
+            class="paste-icon-btn"
+            title="Paste from clipboard"
+          >
+            <i class="fas fa-paste"></i>
+          </button>
+          
           <input 
+            ref="messageInput"
             v-model="userInput"
             @keypress.enter="sendMessage"
+            @paste="onPaste"
+            @focus="onInputFocus"
             type="text" 
-            placeholder="Magtanong tungkol sa resort..."
+            :placeholder="isMobile ? 'Type message...' : 'Magtanong tungkol sa resort...'"
             class="message-input"
             :disabled="isTyping"
           />
+          
           <button 
             @click="sendMessage"
             class="send-btn"
@@ -97,7 +181,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 
 const API_BASE_URL = 'http://localhost:8000'
@@ -106,7 +190,15 @@ const isOpen = ref(false)
 const userInput = ref('')
 const isTyping = ref(false)
 const messagesContainer = ref(null)
+const messageInput = ref(null)
 const unreadCount = ref(0)
+const isMobile = ref(false)
+const isFullscreen = ref(false)
+const hoveredMessage = ref(null)
+const copiedIndex = ref(null)
+const replyPreview = ref('')
+const showPasteSuggestion = ref(false)
+const showScrollButton = ref(false)
 
 const messages = ref([
   { 
@@ -124,9 +216,19 @@ function getCurrentTime() {
 const scrollToBottom = () => {
   nextTick(() => {
     if (messagesContainer.value) {
-      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      messagesContainer.value.scrollTo({
+        top: messagesContainer.value.scrollHeight,
+        behavior: 'smooth'
+      })
     }
   })
+}
+
+const handleScroll = () => {
+  if (messagesContainer.value) {
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainer.value
+    showScrollButton.value = scrollHeight - scrollTop - clientHeight > 100
+  }
 }
 
 const formatMessage = (text) => {
@@ -143,23 +245,108 @@ const formatMessage = (text) => {
 const closeChat = () => {
   isOpen.value = false
   unreadCount.value = 0
+  isFullscreen.value = false
+  replyPreview.value = ''
+  showPasteSuggestion.value = false
 }
 
-const sendQuickMessage = (message) => {
-  userInput.value = message
-  sendMessage()
+const toggleChat = () => {
+  isOpen.value = !isOpen.value
+  if (isOpen.value) {
+    unreadCount.value = 0
+    nextTick(() => {
+      messageInput.value?.focus()
+      scrollToBottom()
+    })
+  }
+}
+
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+}
+
+// Copy message to clipboard
+const copyMessage = async (text) => {
+  try {
+    await navigator.clipboard.writeText(text)
+    const index = messages.value.findIndex(msg => msg.text === text)
+    copiedIndex.value = index
+    
+    // Show copy success feedback
+    setTimeout(() => {
+      copiedIndex.value = null
+    }, 2000)
+  } catch (err) {
+    console.error('Failed to copy:', err)
+  }
+}
+
+// Reply to message
+const replyToMessage = (text) => {
+  replyPreview.value = text.length > 50 ? text.substring(0, 50) + '...' : text
+  messageInput.value?.focus()
+}
+
+const cancelReply = () => {
+  replyPreview.value = ''
+}
+
+// Paste from clipboard
+const pasteFromClipboard = async () => {
+  try {
+    const text = await navigator.clipboard.readText()
+    userInput.value = text
+    showPasteSuggestion.value = false
+    messageInput.value?.focus()
+  } catch (err) {
+    console.error('Failed to paste:', err)
+  }
+}
+
+const handlePaste = () => {
+  pasteFromClipboard()
+}
+
+const onPaste = (event) => {
+  // Handle paste event naturally
+  setTimeout(() => {
+    showPasteSuggestion.value = false
+  }, 100)
+}
+
+const onInputFocus = async () => {
+  try {
+    // Check if clipboard has content
+    const text = await navigator.clipboard.readText()
+    if (text && text.length > 0 && !userInput.value) {
+      showPasteSuggestion.value = true
+      setTimeout(() => {
+        showPasteSuggestion.value = false
+      }, 5000)
+    }
+  } catch (err) {
+    // Clipboard access denied or empty
+  }
 }
 
 const sendMessage = async () => {
   const txt = userInput.value.trim()
   if (!txt || isTyping.value) return
 
+  // Add reply context if exists
+  const messageWithContext = replyPreview.value 
+    ? `Replying to: "${replyPreview.value}"\n\n${txt}`
+    : txt
+
   messages.value.push({ 
-    text: txt, 
+    text: messageWithContext, 
     sender: 'user',
     time: getCurrentTime()
   })
+  
   userInput.value = ''
+  replyPreview.value = ''
+  showPasteSuggestion.value = false
   scrollToBottom()
 
   isTyping.value = true
@@ -191,24 +378,62 @@ const sendMessage = async () => {
   }
 }
 
+// Check if mobile
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 640
+}
+
+// Handle escape key
+const handleEscape = (e) => {
+  if (e.key === 'Escape') {
+    if (replyPreview.value) {
+      cancelReply()
+    } else if (isOpen.value) {
+      closeChat()
+    }
+  }
+}
+
 watch(isOpen, (newVal) => {
   if (newVal) {
     unreadCount.value = 0
+    if (isMobile.value) {
+      document.body.style.overflow = 'hidden'
+    }
+    nextTick(() => {
+      scrollToBottom()
+    })
+  } else {
+    document.body.style.overflow = ''
+    replyPreview.value = ''
+    showPasteSuggestion.value = false
+  }
+})
+
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+  window.addEventListener('keydown', handleEscape)
+  
+  if (messagesContainer.value) {
+    messagesContainer.value.addEventListener('scroll', handleScroll)
+  }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+  window.removeEventListener('keydown', handleEscape)
+  document.body.style.overflow = ''
+  
+  if (messagesContainer.value) {
+    messagesContainer.value.removeEventListener('scroll', handleScroll)
   }
 })
 </script>
 
 <style scoped>
 /* ===== Eduardo's Resort Color Palette ===== */
-.chatbot-toggle,
-.chatbot-modal,
-.chatbot-header,
-.quick-actions,
-.messages-container,
-.message-bubble,
-.input-container,
-.message-input,
-.send-btn {
+:root {
   --color-primary: #0369a1;
   --color-primary-light: #1F8DBF;
   --color-primary-dark: #1E88B6;
@@ -216,21 +441,20 @@ watch(isOpen, (newVal) => {
   --color-gold-dark: #F2C200;
   --color-navy: #0C3B5E;
   --color-white: #FFFFFF;
-  --color-white-soft: rgba(255, 255, 255, 0.1);
   --color-gray-bg: #f9fafb;
   --color-gray-border: #e5e7eb;
   --color-text-dark: #1f2937;
   --color-text-light: #6b7280;
 }
 
-/* Toggle Button */
+/* ===== Toggle Button ===== */
 .chatbot-toggle {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: clamp(16px, 4vw, 24px);
+  right: clamp(16px, 4vw, 24px);
   z-index: 1000;
-  width: 64px;
-  height: 64px;
+  width: clamp(56px, 15vw, 64px);
+  height: clamp(56px, 15vw, 64px);
   background: linear-gradient(135deg, #0369a1 0%, #1E88B6 100%);
   color: #FFFFFF;
   border-radius: 50%;
@@ -240,11 +464,17 @@ watch(isOpen, (newVal) => {
   box-shadow: 0 8px 24px rgba(3, 105, 161, 0.4);
   cursor: pointer;
   transition: all 0.3s ease;
+  border: 2px solid transparent;
 }
 
 .chatbot-toggle:hover {
   transform: translateY(-4px) scale(1.05);
   box-shadow: 0 12px 32px rgba(244, 196, 0, 0.3);
+}
+
+.chatbot-toggle.is-open {
+  transform: scale(0.9);
+  opacity: 0.8;
 }
 
 .pulse-ring {
@@ -268,9 +498,10 @@ watch(isOpen, (newVal) => {
   right: -4px;
   background: #F4C400;
   color: #0C3B5E;
-  width: 24px;
+  min-width: 24px;
   height: 24px;
-  border-radius: 50%;
+  padding: 0 6px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -285,21 +516,36 @@ watch(isOpen, (newVal) => {
   50% { transform: translateY(-4px); }
 }
 
-/* Modal — fixed position with top offset so header is never clipped */
+/* ===== Modal ===== */
 .chatbot-modal {
   position: fixed;
-  bottom: 100px;
-  right: 24px;
-  width: 400px;
+  bottom: clamp(80px, 20vw, 100px);
+  right: clamp(12px, 4vw, 24px);
+  width: min(400px, calc(100vw - 24px));
   height: min(600px, calc(100vh - 130px));
+  max-height: 700px;
   background: #FFFFFF;
-  border-radius: 24px;
+  border-radius: clamp(16px, 5vw, 24px);
   box-shadow: 0 20px 60px rgba(3, 105, 161, 0.2);
   overflow: hidden;
   z-index: 999;
   display: flex;
   flex-direction: column;
   border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.chatbot-modal.is-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  border-radius: 0;
+  z-index: 1001;
 }
 
 /* Modal Transitions */
@@ -318,11 +564,32 @@ watch(isOpen, (newVal) => {
   transform: translateY(20px) scale(0.95);
 }
 
-/* Header */
+.chatbot-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 998;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.backdrop-enter-active,
+.backdrop-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.backdrop-enter-from,
+.backdrop-leave-to {
+  opacity: 0;
+}
+
+/* ===== Header ===== */
 .chatbot-header {
   background: linear-gradient(135deg, #0369a1 0%, #1E88B6 100%);
   color: #FFFFFF;
-  padding: 16px 20px;
+  padding: clamp(12px, 3vw, 16px) clamp(16px, 4vw, 20px);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -332,15 +599,15 @@ watch(isOpen, (newVal) => {
 
 .bot-avatar {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: clamp(40px, 10vw, 44px);
+  height: clamp(40px, 10vw, 44px);
   background: #FFFFFF;
   color: #0369a1;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: clamp(16px, 4vw, 18px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
 }
@@ -349,8 +616,8 @@ watch(isOpen, (newVal) => {
   position: absolute;
   bottom: 2px;
   right: 2px;
-  width: 12px;
-  height: 12px;
+  width: clamp(10px, 3vw, 12px);
+  height: clamp(10px, 3vw, 12px);
   background: #10b981;
   border: 2px solid #FFFFFF;
   border-radius: 50%;
@@ -362,9 +629,9 @@ watch(isOpen, (newVal) => {
   50% { opacity: 0.6; }
 }
 
-.close-btn {
-  width: 36px;
-  height: 36px;
+.header-btn {
+  width: clamp(32px, 8vw, 36px);
+  height: clamp(32px, 8vw, 36px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -375,58 +642,23 @@ watch(isOpen, (newVal) => {
   border: none;
   cursor: pointer;
   flex-shrink: 0;
+  font-size: clamp(14px, 4vw, 16px);
 }
 
-.close-btn:hover {
+.header-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  transform: rotate(90deg);
 }
 
-/* Quick Actions */
-.quick-actions {
-  display: flex;
-  gap: 8px;
-  padding: 10px 16px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  overflow-x: auto;
-  flex-shrink: 0;
-  scrollbar-width: none;
-}
-
-.quick-actions::-webkit-scrollbar {
-  display: none;
-}
-
-.quick-btn {
-  padding: 7px 13px;
-  background: #FFFFFF;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-  color: #1f2937;
-}
-
-.quick-btn:hover {
-  background: #F4C400;
-  color: #0C3B5E;
-  border-color: #F4C400;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(244, 196, 0, 0.3);
-}
-
-/* Messages Container */
+/* ===== Messages Container ===== */
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: clamp(12px, 3vw, 16px);
   background: #f9fafb;
   scroll-behavior: smooth;
   min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
 }
 
 .messages-container::-webkit-scrollbar {
@@ -446,12 +678,45 @@ watch(isOpen, (newVal) => {
   background: #1F8DBF;
 }
 
+/* Scroll to bottom button */
+.scroll-bottom-btn {
+  position: sticky;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  background: #0369a1;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.3);
+  transition: all 0.2s;
+  z-index: 10;
+  animation: fade-in 0.3s ease;
+}
+
+.scroll-bottom-btn:hover {
+  transform: translateX(-50%) scale(1.1);
+  background: #1E88B6;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateX(-50%) scale(0.8); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
 /* Message Wrapper */
 .message-wrapper {
   display: flex;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: clamp(6px, 2vw, 8px);
+  margin-bottom: clamp(12px, 3vw, 14px);
   animation: slide-in 0.3s ease;
+  position: relative;
 }
 
 @keyframes slide-in {
@@ -469,16 +734,22 @@ watch(isOpen, (newVal) => {
   align-items: flex-end;
 }
 
+.message-content-wrapper {
+  position: relative;
+  max-width: min(75%, 300px);
+}
+
 /* Avatars */
 .bot-avatar-small,
 .user-avatar-small {
-  width: 30px;
-  height: 30px;
+  width: clamp(26px, 7vw, 30px);
+  height: clamp(26px, 7vw, 30px);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  font-size: clamp(10px, 3vw, 12px);
 }
 
 .bot-avatar-small {
@@ -493,13 +764,12 @@ watch(isOpen, (newVal) => {
 
 /* Message Bubbles */
 .message-bubble {
-  max-width: 72%;
-  min-width: 0;
-  padding: 10px 14px;
+  padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 14px);
   border-radius: 18px;
   position: relative;
   word-break: break-word;
   overflow-wrap: break-word;
+  transition: all 0.2s;
 }
 
 .message-bubble.bot {
@@ -518,7 +788,7 @@ watch(isOpen, (newVal) => {
 }
 
 .message-text {
-  font-size: 13.5px;
+  font-size: clamp(12px, 3.5vw, 13.5px);
   line-height: 1.6;
   word-wrap: break-word;
   word-break: break-word;
@@ -527,14 +797,59 @@ watch(isOpen, (newVal) => {
 }
 
 .message-time {
-  font-size: 10px;
+  font-size: clamp(9px, 2.5vw, 10px);
   opacity: 0.6;
   text-align: right;
   margin-top: 2px;
   white-space: nowrap;
 }
 
-/* Inline formatted spans */
+/* Message Actions */
+.message-actions {
+  position: absolute;
+  top: -30px;
+  right: 0;
+  display: flex;
+  gap: 4px;
+  background: white;
+  padding: 4px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: slide-down 0.2s ease;
+  z-index: 5;
+}
+
+.message-actions.bot {
+  right: auto;
+  left: 0;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+}
+
+.action-btn:hover {
+  background: #f3f4f6;
+  color: #0369a1;
+}
+
+/* Formatted spans */
 :deep(.price) {
   font-weight: 700;
   color: #0369a1;
@@ -554,7 +869,7 @@ watch(isOpen, (newVal) => {
   background: rgba(3, 105, 161, 0.1);
   padding: 1px 5px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: clamp(11px, 3vw, 12px);
 }
 
 :deep(.bullet-point) {
@@ -570,7 +885,7 @@ watch(isOpen, (newVal) => {
 /* Typing Indicator */
 .typing-bubble {
   background: #FFFFFF;
-  padding: 12px 16px;
+  padding: clamp(10px, 2.5vw, 12px) clamp(14px, 3.5vw, 16px);
   border-radius: 18px;
   border-bottom-left-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -584,8 +899,8 @@ watch(isOpen, (newVal) => {
 }
 
 .typing-dots span {
-  width: 8px;
-  height: 8px;
+  width: clamp(7px, 2vw, 8px);
+  height: clamp(7px, 2vw, 8px);
   background: #0369a1;
   border-radius: 50%;
   animation: typing 1.4s infinite ease-in-out;
@@ -600,27 +915,125 @@ watch(isOpen, (newVal) => {
   30% { transform: translateY(-8px); opacity: 1; }
 }
 
-/* Input Container */
+/* Reply Preview */
+.reply-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.reply-preview-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cancel-reply-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.cancel-reply-btn:hover {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+/* ===== Input Container ===== */
 .input-container {
-  padding: 12px 16px;
+  padding: clamp(10px, 2.5vw, 12px) clamp(12px, 3vw, 16px);
   background: #FFFFFF;
   border-top: 1px solid #e5e7eb;
   flex-shrink: 0;
 }
 
+/* Paste Suggestion */
+.paste-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  color: #1e40af;
+  font-size: 12px;
+  animation: slide-down 0.3s ease;
+}
+
+.paste-suggestion i {
+  color: #3b82f6;
+}
+
+.paste-suggestion span {
+  flex: 1;
+}
+
+.paste-btn {
+  padding: 4px 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.paste-btn:hover {
+  background: #2563eb;
+}
+
 .input-wrapper {
   display: flex;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: clamp(6px, 2vw, 8px);
   align-items: center;
+}
+
+.paste-icon-btn {
+  width: clamp(38px, 10vw, 42px);
+  height: clamp(38px, 10vw, 42px);
+  min-width: clamp(38px, 10vw, 42px);
+  background: #f3f4f6;
+  color: #6b7280;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  flex-shrink: 0;
+}
+
+.paste-icon-btn:hover {
+  background: #e5e7eb;
+  color: #0369a1;
 }
 
 .message-input {
   flex: 1;
-  padding: 10px 16px;
+  padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 16px);
   border: 2px solid #e5e7eb;
   border-radius: 24px;
-  font-size: 13.5px;
+  font-size: clamp(13px, 3.5vw, 13.5px);
   outline: none;
   transition: all 0.2s;
   background: #f9fafb;
@@ -639,10 +1052,14 @@ watch(isOpen, (newVal) => {
   cursor: not-allowed;
 }
 
+.message-input::placeholder {
+  color: #9ca3af;
+}
+
 .send-btn {
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
+  width: clamp(38px, 10vw, 42px);
+  height: clamp(38px, 10vw, 42px);
+  min-width: clamp(38px, 10vw, 42px);
   background: linear-gradient(135deg, #F4C400 0%, #F2C200 100%);
   color: #0C3B5E;
   border-radius: 50%;
@@ -653,6 +1070,7 @@ watch(isOpen, (newVal) => {
   transition: all 0.2s;
   border: none;
   flex-shrink: 0;
+  font-size: clamp(14px, 4vw, 16px);
 }
 
 .send-btn:hover:not(:disabled) {
@@ -660,31 +1078,108 @@ watch(isOpen, (newVal) => {
   box-shadow: 0 4px 12px rgba(244, 196, 0, 0.4);
 }
 
+.send-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 .send-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.powered-by {
-  text-align: center;
-  font-size: 11px;
-  color: #1F8DBF;
+/* ===== Responsive Breakpoints ===== */
+@media (min-width: 768px) {
+  .chatbot-modal {
+    width: 420px;
+    height: 650px;
+  }
 }
 
-/* Mobile Responsive */
-@media (max-width: 480px) {
+@media (min-width: 1024px) {
   .chatbot-modal {
-    width: calc(100vw - 24px);
-    height: min(580px, calc(100vh - 110px));
-    right: 12px;
-    bottom: 88px;
+    width: 450px;
+    height: 700px;
   }
 
   .chatbot-toggle {
-    bottom: 16px;
-    right: 16px;
-    width: 56px;
-    height: 56px;
+    width: 68px;
+    height: 68px;
+  }
+
+  .message-text {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .chatbot-modal {
+    width: 480px;
+    height: 750px;
+  }
+
+  .chatbot-toggle {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+/* Mobile Landscape */
+@media (max-width: 640px) and (orientation: landscape) {
+  .chatbot-modal {
+    height: 100vh;
+    max-height: 100vh;
+    bottom: 0;
+    right: 0;
+    border-radius: 0;
+  }
+
+  .messages-container {
+    max-height: calc(100vh - 200px);
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 360px) {
+  .chatbot-modal {
+    width: 100vw;
+    right: 0;
+    bottom: 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .paste-icon-btn {
+    display: none;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .action-btn:hover {
+    background: transparent;
+  }
+
+  .action-btn:active {
+    background: #f3f4f6;
+  }
+
+  .send-btn:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .send-btn:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+}
+
+/* High Contrast / Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 </style>

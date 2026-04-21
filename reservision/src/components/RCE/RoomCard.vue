@@ -46,7 +46,7 @@
         </div>
       </div>
 
-      <!-- Key stats: guests + photos only (status removed from here) -->
+      <!-- Key stats: guests + photos + available -->
       <div class="room-stats">
         <div class="stat-item">
           <i class="fas fa-user-friends stat-icon"></i>
@@ -67,8 +67,8 @@
         </div>
       </div>
 
-      <!-- Description -->
-      <p class="room-desc">{{ room.description || 'No description provided.' }}</p>
+      <!-- Description — renders HTML but clamps to 2 lines -->
+      <div class="room-desc" v-html="room.description || 'No description provided.'"></div>
 
       <!-- Action buttons -->
       <div class="room-actions">
@@ -164,12 +164,6 @@ const displayPrice = computed(() =>
   Math.round(props.room.price || 0).toLocaleString()
 )
 
-const statusClass = computed(() => {
-  if (props.room.status === 'Available') return 'status-available'
-  if (props.room.status === 'Occupied')  return 'status-occupied'
-  return 'status-maintenance'
-})
-
 const hasSeasonalPricing = computed(() => false)
 
 // ── Lightbox ──────────────────────────────────
@@ -226,7 +220,7 @@ const nextImg = () => {
   border-radius: 16px;
   border: none !important;
   box-shadow: 0 2px 12px rgba(3,105,161,0.09);
-  overflow: visible; /* needed for Teleport — lightbox mounts on body */
+  overflow: visible;
   display: flex;
   flex-direction: column;
   transition: transform 0.22s ease, box-shadow 0.22s ease;
@@ -238,8 +232,6 @@ const nextImg = () => {
 
 /* ────────────────────────────────────────────
    IMAGE WRAP
-   Fixed 210px height, full image visible via
-   object-fit: contain on #dbeafe bg.
 ──────────────────────────────────────────── */
 .room-image-wrap {
   position: relative;
@@ -260,7 +252,6 @@ const nextImg = () => {
   display: block;
 }
 
-/* Gradient for price / badge legibility */
 .room-image-wrap::after {
   content: '';
   position: absolute; inset: 0;
@@ -346,7 +337,6 @@ const nextImg = () => {
   font-weight: 700;
   cursor: pointer;
 }
-
 .btn-promo:hover {
   background: rgba(244, 196, 0, 0.24);
 }
@@ -372,7 +362,7 @@ const nextImg = () => {
   color: rgb(58, 58, 58); line-height: 1.25;
   margin: 0;
   display: -webkit-box;
-    line-clamp: 2;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -394,7 +384,7 @@ const nextImg = () => {
   color: var(--color-text-light);
 }
 
-/* ── Stats row: #dbeafe chips, no status ── */
+/* ── Stats row ── */
 .room-stats {
   display: flex;
   align-items: center;
@@ -440,17 +430,39 @@ const nextImg = () => {
   letter-spacing: 0.35px;
 }
 
-/* ── Description ── */
+/* ── Description — renders HTML, clamps to 2 lines ── */
 .room-desc {
   font-size: 0.78rem;
   color: var(--color-text-light);
   line-height: 1.55;
   margin: 0;
   display: -webkit-box;
-    line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Flatten injected HTML so line-clamp works correctly */
+.room-desc :deep(*) {
+  font-size: 0.78rem !important;
+  font-weight: normal !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline !important;
+}
+.room-desc :deep(ul),
+.room-desc :deep(ol) {
+  list-style: none !important;
+}
+.room-desc :deep(li::after) {
+  content: ' · ';
+  color: var(--color-text-light);
+}
+.room-desc :deep(li:last-child::after) {
+  content: '';
+}
+.room-desc :deep(br) {
+  display: none !important;
 }
 
 /* ── Action buttons ── */
@@ -506,7 +518,7 @@ const nextImg = () => {
   background: rgba(12,59,94,0.88);
   backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center;
-  padding: 1rem;   /* 1rem gives breathing room on all sides */
+  padding: 1rem;
   box-sizing: border-box;
   animation: fadeIn 0.18s ease;
 }
@@ -516,7 +528,6 @@ const nextImg = () => {
   background: var(--color-white);
   border-radius: 18px;
   width: 100%; max-width: 900px;
-  /* Fixed to exactly fit viewport — header ~57px + thumbs ~70px + padding = ~130px reserved */
   height: calc(100vh - 2rem);
   max-height: calc(100vh - 2rem);
   overflow: hidden;
@@ -529,7 +540,6 @@ const nextImg = () => {
   to   { transform: translateY(0);    opacity: 1; }
 }
 
-/* Lightbox header */
 .lightbox-head {
   display: flex; justify-content: space-between; align-items: center;
   padding: 0.9rem 1.25rem;
@@ -559,11 +569,10 @@ const nextImg = () => {
 }
 .lightbox-close:hover { background: rgba(255,255,255,0.28); }
 
-/* Main image — fills all space between header and thumbs */
 .lightbox-img-wrap {
   position: relative;
   flex: 1;
-  min-height: 0; /* critical for flex child to shrink */
+  min-height: 0;
   background: #0a1628;
   display: flex;
   align-items: center;
@@ -571,7 +580,6 @@ const nextImg = () => {
   overflow: hidden;
 }
 .lightbox-img {
-  /* fill the available box entirely, whole image visible */
   max-width: 100%;
   max-height: 100%;
   width: auto;
@@ -580,7 +588,6 @@ const nextImg = () => {
   display: block;
 }
 
-/* Prev / Next nav arrows */
 .lightbox-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 38px; height: 38px; border-radius: 50%;
@@ -596,15 +603,14 @@ const nextImg = () => {
 .lightbox-nav--prev { left: 0.75rem; }
 .lightbox-nav--next { right: 0.75rem; }
 
-/* Thumbnail strip */
 .lightbox-thumbs {
   display: flex;
   gap: 0.4rem;
   padding: 0.55rem 1rem;
   background: #f0f6fb;
   overflow-x: auto;
-  flex-shrink: 0;   /* never grows — image takes the rest */
-  height: 62px;     /* fixed so image area is predictable */
+  flex-shrink: 0;
+  height: 62px;
   align-items: center;
   scrollbar-width: thin;
   scrollbar-color: var(--color-gray-border) transparent;

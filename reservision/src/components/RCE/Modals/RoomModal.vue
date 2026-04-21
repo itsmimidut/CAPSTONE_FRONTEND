@@ -86,21 +86,20 @@
             <div>
               <h4 class="section-heading">{{ entityLabel }} Images</h4>
               <p class="section-sub">Upload high-quality photos of the {{ entityLabel.toLowerCase() }}</p>
-
-
-            </div> 
-                         <!-- Extract Text Button -->
-              <div v-if="imagePreviews.length" class="extract-text-button-group">
-                <button
-                  class="btn-extract-text"
-                  @click="extractTextFromImages()"
-                  :disabled="isExtractingText"
-                  :title="isExtractingText ? 'Extraction in progress...' : 'Re-extract text'"
-                >
-                  <i class="fas fa-wand-magic-sparkles"></i>
-                  {{ isExtractingText ? 'Extracting...' : 'Extract Text' }}
-                </button>
-              </div>
+            </div>
+          </div>
+          
+          <!-- Extract Text Button -->
+          <div v-if="imagePreviews.length" class="extract-text-button-group">
+            <button
+              class="btn-extract-text"
+              @click="extractTextFromImages()"
+              :disabled="isExtractingText"
+              :title="isExtractingText ? 'Extraction in progress...' : 'Re-extract text'"
+            >
+              <i class="fas fa-wand-magic-sparkles"></i>
+              {{ isExtractingText ? 'Extracting...' : 'Extract Text' }}
+            </button>
           </div>
 
           <div
@@ -209,13 +208,24 @@
           </div>
 
           <div class="textarea-group">
-            <textarea
+
+            <!-- Toolbar -->
+            <div class="editor-toolbar">
+              <button @click="format('bold')"><b>B</b></button>
+              <button @click="format('italic')"><i>I</i></button>
+              <button @click="format('insertUnorderedList')">• List</button>
+              <button @click="format('insertOrderedList')">1. List</button>
+            </div>
+
+            <!-- Rich Editor -->
+            <div
               id="roomDescription"
-              v-model="form.description"
-              rows="4"
-              class="form-control"
-              placeholder="Luxurious suite with panoramic ocean views, king-sized bed, and private balcony…"
-            ></textarea>
+              class="form-control rich-editor"
+              contenteditable="true"
+              v-html="form.description"
+              @input="onDescriptionInput"
+            ></div>
+
           </div>
         </div>
 
@@ -345,6 +355,14 @@ const entityLabel = computed(() => {
   return 'Room'
 })
 
+const onDescriptionInput = (e) => {
+  form.value.description = e.target.innerHTML
+}
+
+const format = (command) => {
+  document.execCommand(command, false, null)
+}
+
 /**
  * existingImages: paths already stored on the server (e.g. /uploads/rooms/xxx.jpg)
  * newFileItems: newly selected File objects + their blob preview URLs
@@ -397,18 +415,29 @@ const loadRoomData = (room) => {
   editing.value = true
   form.value = {
     item_id: room.item_id, room_number: room.room_number || '',
-    name: room.name || '', category: room.category || 'Standard Room',
-    category_type: room.category_type || 'room', max_guests: room.max_guests || 2,
-    price: room.price || null, description: room.description || '',
-    status: room.status || 'Available', date: room.date || '',
-    time: room.time || '', promo: !!room.promo,
-    images: room.images ? [...room.images] : []
+    name: room.name || '', category_type: room.category_type || 'room',
+    max_guests: room.max_guests || 2, price: room.price || null,
+    quantity: room.quantity || 1, description: convertToHTML(room.description || ''),
+    status: room.status || 'Available', promo: !!room.promo,
+    category: '', date: '', time: '', images: []
   }
 
   // Load existing image paths from DB for display; no new files yet
   existingImages.value = room.images ? [...room.images] : []
   newFileItems.value = []
   primaryImageIndex.value = room.primaryImageIndex || 0
+}
+
+const convertToHTML = (text) => {
+  if (!text) return ''
+
+  // If already HTML, return as-is
+  if (text.includes('<')) return text
+
+  // Convert lines to list
+  const lines = text.split('\n').filter(l => l.trim())
+
+  return `<ul>${lines.map(l => `<li>${l.replace('* ', '')}</li>`).join('')}</ul>`
 }
 
 const resetOrLoadForm = () => {
@@ -652,7 +681,11 @@ const smartAutoFill = () => {
       .map(l => l.replace(/^[-•·*\u2022\s]+/, '').trim())
       .filter(l => l.length > 2)
     if (lines.length) {
-      form.value.description = lines.join('\n')
+      form.value.description = `
+      <ul>
+        ${lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+      `
       filled.push('Description')
     }
   }
@@ -834,6 +867,34 @@ onMounted(() => {
   box-shadow: 0 0 0 3px rgba(31,141,191,0.1);
 }
 textarea.form-control { resize: vertical; min-height: 90px; }
+
+.rich-editor {
+  min-height: 120px;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid var(--color-gray-border);
+  border-radius: 9px;
+  background: var(--color-white);
+  overflow-y: auto;
+}
+
+.rich-editor:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(31,141,191,0.1);
+}
+
+.editor-toolbar {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.editor-toolbar button {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  background: white;
+  cursor: pointer;
+}
 
 /* Select wrapper */
 .select-wrapper { position: relative; width: 100%; }
@@ -1139,8 +1200,8 @@ input:checked + .slider:before { transform: translateX(22px); }
 .extract-text-button-group {
   display: flex;
   justify-content: flex-end;
-  margin-left: auto;
-  margin-top: 0;
+  margin-top: 0.85rem;
+  margin-bottom: 0;
 }
 
 .btn-extract-text {

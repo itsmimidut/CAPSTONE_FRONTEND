@@ -4,59 +4,78 @@
     <!-- ══════════════════════════════════════════ -->
     <!-- SEARCH BAR                                 -->
     <!-- ══════════════════════════════════════════ -->
-    <section v-if="!showBookingConfirmation" class="search-section">
-      <div class="search-bar">
+    <section v-if="!showBookingConfirmation" class="search-section-wrapper">
+      <!-- Search Toggle Button (Collapsed) -->
+      <button
+        v-if="!showSearchBar"
+        class="search-toggle-btn"
+        @click="showSearchBar = true"
+      >
+        <i class="fas fa-search"></i>
+        <span>Search Reservations</span>
+      </button>
 
-        <!-- Single-row search — always visible, no Modify Search toggle -->
-        <div class="search-row">
-          <div class="search-field">
-            <label class="search-label"><i class="fas fa-calendar-alt sl-icon"></i> Check-in – Check-out</label>
-            <button class="search-btn" @click="showCalendar = true">
-              <span class="search-btn-text">{{ dateStr }}</span>
-              <i class="fas fa-calendar-alt search-btn-icon"></i>
-            </button>
-          </div>
+      <!-- Search Bar (Expanded) -->
+      <Transition name="search-expand">
+        <div v-if="showSearchBar" class="search-section">
+          <div class="search-bar">
 
-          <div class="search-divider"></div>
+            <!-- Single-row search — always visible, no Modify Search toggle -->
+            <div class="search-row">
+              <div class="search-field">
+                <label class="search-label"><i class="fas fa-calendar-alt sl-icon"></i> Check-in – Check-out</label>
+                <button class="search-btn" @click="showCalendar = true">
+                  <span class="search-btn-text">{{ dateStr }}</span>
+                  <i class="fas fa-calendar-alt search-btn-icon"></i>
+                </button>
+              </div>
 
-          <div class="search-field">
-            <label class="search-label"><i class="fas fa-users sl-icon"></i> Guests</label>
-            <button class="search-btn" @click="showGuests = true">
-              <span class="search-btn-text">{{ guestStr }}</span>
-              <i class="fas fa-user search-btn-icon"></i>
-            </button>
-          </div>
+              <div class="search-divider"></div>
 
-          <div class="search-divider"></div>
+              <div class="search-field">
+                <label class="search-label"><i class="fas fa-users sl-icon"></i> Guests</label>
+                <button class="search-btn" @click="showGuests = true">
+                  <span class="search-btn-text">{{ guestStr }}</span>
+                  <i class="fas fa-user search-btn-icon"></i>
+                </button>
+              </div>
 
-          <div class="search-field">
-            <label class="search-label"><i class="fas fa-tag sl-icon"></i> Promo Code</label>
-            <div class="search-input-wrap">
-              <i class="fas fa-tag search-input-icon"></i>
-              <input
-                v-model.trim="promoCode"
-                placeholder="Optional"
-                class="search-input"
-                @keyup.enter="handleSearch"
-              />
+              <div class="search-divider"></div>
+
+              <div class="search-field">
+                <label class="search-label"><i class="fas fa-tag sl-icon"></i> Promo Code</label>
+                <div class="search-input-wrap">
+                  <i class="fas fa-tag search-input-icon"></i>
+                  <input
+                    v-model.trim="promoCode"
+                    placeholder="Optional"
+                    class="search-input"
+                    @keyup.enter="handleSearch"
+                  />
+                </div>
+
+                <p v-if="promoError" class="promo-message promo-error">{{ promoError }}</p>
+                <p v-else-if="appliedPromo" class="promo-message promo-success">
+                  Promo applied:
+                  <strong>{{ appliedPromo.code }}</strong>
+                  <span v-if="appliedPromo.type === 'percent'"> — {{ appliedPromo.value }}% off</span>
+                  <span v-else-if="appliedPromo.type === 'fixed'"> — ₱{{ Number(appliedPromo.value || 0).toLocaleString() }} off</span>
+                </p>
+              </div>
+
+              <button class="search-go-btn" @click="handleSearch">
+                <i class="fas fa-search"></i>
+                <span class="search-go-text">Apply</span>
+              </button>
+
+              <button class="search-close-btn" @click="showSearchBar = false" title="Collapse search">
+                <i class="fas fa-chevron-up"></i>
+              </button>
             </div>
 
-            <p v-if="promoError" class="promo-message promo-error">{{ promoError }}</p>
-            <p v-else-if="appliedPromo" class="promo-message promo-success">
-              Promo applied:
-              <strong>{{ appliedPromo.code }}</strong>
-              <span v-if="appliedPromo.type === 'percent'"> — {{ appliedPromo.value }}% off</span>
-              <span v-else-if="appliedPromo.type === 'fixed'"> — ₱{{ Number(appliedPromo.value || 0).toLocaleString() }} off</span>
-            </p>
           </div>
-
-          <button class="search-go-btn" @click="handleSearch">
-            <i class="fas fa-search"></i>
-            <span class="search-go-text">Apply</span>
-          </button>
         </div>
-
-      </div>
+      </Transition>
     </section>
 
     <!-- ══════════════════════════════════════════ -->
@@ -488,7 +507,8 @@ export default {
       promoCode: '',
       appliedPromo: null,
       promoError: '',
-      isPromoChecking: false
+      isPromoChecking: false,
+      showSearchBar: false
     }
   },
     computed: {
@@ -1124,10 +1144,16 @@ export default {
 ::-webkit-scrollbar-thumb:hover { background: #0C3B5E; }
 
 /* ── Search Section ─────────────────────────────────────────── */
-.search-section {
+.search-section-wrapper {
   padding: 0.65rem 1.25rem;
   position: sticky; top: 0; z-index: 10;
   background: #EEF5FB;
+}
+
+.search-section {
+  padding: 0;
+  position: relative;
+  background: transparent;
 }
 
 .search-bar {
@@ -1141,6 +1167,52 @@ export default {
 }
 
 .search-bar:hover { box-shadow: 0 4px 18px rgba(3,105,161,0.14); }
+
+/* Toggle Button */
+.search-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0369a1;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(3,105,161,0.08);
+}
+
+.search-toggle-btn:hover {
+  background: #f0f9ff;
+  border-color: #F4C400;
+  box-shadow: 0 4px 12px rgba(3,105,161,0.15);
+  transform: translateY(-1px);
+}
+
+.search-toggle-btn i {
+  font-size: 1rem;
+  color: #F4C400;
+}
+
+/* Search Expand Transition */
+.search-expand-enter-active,
+.search-expand-leave-active {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.search-expand-enter-from {
+  opacity: 0;
+  transform: translateY(-10px) scaleY(0.95);
+}
+
+.search-expand-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scaleY(0.95);
+}
 
 /* ── Single-row layout — always visible ─────────────────────── */
 .search-row {
@@ -1219,6 +1291,27 @@ export default {
 .search-go-btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 5px 14px rgba(3,105,161,0.3); }
 
 .search-go-text { display: inline; }
+
+/* Search close button */
+.search-close-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: transparent;
+  color: #0369a1;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.search-close-btn:hover {
+  background: #f0f9ff;
+  border-color: #0369a1;
+  transform: translateY(-1px);
+}
 
 /* ── Promo messages ─────────────────────────────────────────── */
 .promo-message {

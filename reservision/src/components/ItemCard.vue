@@ -63,7 +63,7 @@
         </div>
 
         <!-- Description -->
-        <p class="text-sm text-gray-600 line-clamp-2 mb-2">{{ item.desc }}</p>
+        <p class="text-sm text-gray-600 line-clamp-2 mb-2">{{ cleanedDescription }}</p>
 
         <!-- View More -->
         <button
@@ -131,6 +131,25 @@ export default {
         ? Math.max(1, Number(this.item.availableQuantity || 1))
         : 5
       return Array.from({ length: maxQty }, (_, index) => index + 1)
+    },
+    cleanedDescription() {
+      if (!this.item.desc) return ''
+      
+      // Strip HTML tags
+      let text = String(this.item.desc)
+        .replace(/<[^>]*>/g, '') // Remove all HTML tags
+        .replace(/&nbsp;/g, ' ') // Replace &nbsp; with space
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .trim()
+      
+      // Split by sentence-ending punctuation and get first 2 sentences
+      const sentences = text.split(/(?<=[.!?])\s+/)
+      const twoSentences = sentences.slice(0, 2).join(' ').trim()
+      
+      // Limit to ~150 characters if it's still too long
+      return twoSentences.length > 150 ? twoSentences.substring(0, 150) + '...' : twoSentences
     }
   },
   methods: {
