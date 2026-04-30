@@ -1302,7 +1302,7 @@ const printReservationReportPreview = () => {
 let pollInterval = null; let visHandler = null
 onMounted(() => {
   fetchBookings()
-  pollInterval = setInterval(() => fetchBookings(), 30000)
+  pollInterval = setInterval(() => fetchBookings(), 5000)
   visHandler = () => { if (document.visibilityState === 'visible') fetchBookings() }
   document.addEventListener('visibilitychange', visHandler)
 })

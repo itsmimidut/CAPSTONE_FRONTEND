@@ -980,7 +980,7 @@ export default {
   },
   async mounted() {
     await this.fetchItems(); await this.fetchPromos(); await this.fetchTransactions(); this.updateReceiptNumber()
-    this._pollInterval = setInterval(()=>this.fetchTransactions(), 30000)
+    this._pollInterval = setInterval(async ()=>{ await this.fetchItems(); await this.fetchPromos(); await this.fetchTransactions() }, 5000)
     this._visibilityHandler = ()=>{ if(document.visibilityState==='visible') this.fetchTransactions() }
     document.addEventListener('visibilitychange', this._visibilityHandler)
     this._fsKeyHandler   = e=>{ if(e.ctrlKey&&e.key==='F12'){e.preventDefault();this.toggleFullscreen()} }

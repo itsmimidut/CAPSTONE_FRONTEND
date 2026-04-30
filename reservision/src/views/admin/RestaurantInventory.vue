@@ -85,7 +85,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRestaurantStore } from '../../stores/restaurant.js'
 import AdminHeader from '../../components/Admin/AdminHeader.vue'
 import AdminSidebar from '../../components/Admin/AdminSidebar.vue' 
@@ -94,6 +94,7 @@ import InventorySection from '../../components/Restaurant/InventorySection.vue'
 const restaurant = useRestaurantStore()
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
+let pollInterval = null
 
 const inventory = computed(() =>
   restaurant.inventory.map(i => ({
@@ -138,6 +139,16 @@ onMounted(() => {
   restaurant.fetchTables()
   restaurant.fetchMenuItems()
   restaurant.fetchInventory()
+  // Real-time data refresh: Poll backend every 5 seconds
+  pollInterval = setInterval(async () => {
+    restaurant.fetchTables()
+    restaurant.fetchMenuItems()
+    restaurant.fetchInventory()
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval)
 })
 </script>
 

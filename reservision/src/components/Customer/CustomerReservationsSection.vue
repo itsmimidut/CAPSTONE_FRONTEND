@@ -487,7 +487,7 @@ export default {
 
   mounted() {
     this.fetchBookingHistory()
-    this._pollInterval = setInterval(() => { if (!document.hidden) this.fetchBookingHistory() }, 60000)
+    this._pollInterval = setInterval(() => { if (!document.hidden) this.fetchBookingHistory() }, 5000)
   },
   beforeUnmount() { clearInterval(this._pollInterval); this._pollInterval = null }
 }

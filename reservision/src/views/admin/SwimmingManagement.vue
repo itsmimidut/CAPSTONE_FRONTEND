@@ -1850,10 +1850,12 @@ onMounted(async () => {
   await autoMarkCompleted()
   await fetchSchedules()
 
-  // Keep statuses in sync when dates become past while the page is open.
-  autoCompleteIntervalId = setInterval(() => {
-    autoMarkCompleted()
-  }, 60000)
+  // Real-time data refresh: Poll backend every 5 seconds for fresh data
+  autoCompleteIntervalId = setInterval(async () => {
+    await fetchStudents()
+    await fetchCalendarLessons()
+    await autoMarkCompleted()
+  }, 5000)
 })
 
 onUnmounted(() => {

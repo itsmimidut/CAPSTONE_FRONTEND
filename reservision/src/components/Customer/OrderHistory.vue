@@ -404,7 +404,7 @@ const stopPolling = () => {
 const startPolling = () => {
   stopPolling()
   isPolling.value = true
-  pollingInterval = setInterval(() => fetchOrders(true), 10000)
+  pollingInterval = setInterval(() => fetchOrders(true), 5000)
 }
 
 const toggleOrder = (id) => {
