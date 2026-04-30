@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-[#1F8DBF]/5 via-white/95 to-[#F4C400]/10 flex items-center justify-center p-0.5">
-    <!-- Single Form Wrapper - Takes most of the screen with minimal spacing -->
-    <div class="w-full max-w-md bg-white/98 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-[#1F8DBF]/10 animate-fade-in">
-      <h2 class="text-2xl font-extrabold text-[#1F8DBF] mb-1 tracking-tight">Welcome Back</h2>
-      <p class="text-[#1F8DBF]/70 mb-6 text-xs font-medium">Log in to continue your journey.</p>
+  <div class="min-h-screen bg-gradient-to-br from-[#1F8DBF]/5 via-white/95 to-[#F4C400]/10 flex items-center justify-center p-4 sm:p-6">
+    <!-- Form Wrapper -->
+    <div class="w-full max-w-md bg-white/98 backdrop-blur-sm rounded-2xl p-5 sm:p-6 shadow-xl border border-[#1F8DBF]/10 animate-fade-in">
+      <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F8DBF] mb-1 tracking-tight">Welcome Back</h2>
+      <p class="text-[#1F8DBF]/70 mb-5 sm:mb-6 text-xs font-medium">Log in to continue your journey.</p>
       
       <form @submit.prevent="handleSubmit" autocomplete="off" class="space-y-4">
         <!-- Email -->
@@ -15,7 +15,7 @@
               type="email" 
               id="email" 
               v-model="formData.email"
-              class="w-full py-3 pl-10 pr-3 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
+              class="w-full py-2.5 sm:py-3 pl-10 pr-3 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
               placeholder="Enter your email" 
               required
             >
@@ -31,7 +31,7 @@
               :type="showPassword ? 'text' : 'password'" 
               id="password" 
               v-model="formData.password"
-              class="w-full py-3 pl-10 pr-10 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
+              class="w-full py-2.5 sm:py-3 pl-10 pr-10 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
               placeholder="Enter your password" 
               required
             >
@@ -46,7 +46,7 @@
         </div>
 
         <!-- Error Message -->
-        <div v-if="authStore.error" class="p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs font-semibold">
+        <div v-if="authStore.error" class="p-2.5 sm:p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs font-semibold">
           <i class="fas fa-exclamation-circle mr-1"></i> {{ authStore.error }}
         </div>
 
@@ -59,7 +59,7 @@
           type="submit" 
           :disabled="authStore.isLoading"
           @click="createRipple"
-          class="relative overflow-hidden w-full py-3 rounded-lg text-sm font-bold cursor-pointer
+          class="relative overflow-hidden w-full py-2.5 sm:py-3 rounded-lg text-sm font-bold cursor-pointer
                  bg-gradient-to-r from-[#1F8DBF] to-[#1E88B6] text-white shadow-md hover:shadow-lg
                  hover:from-[#1F8DBF] hover:to-[#1E88B6] hover:scale-[1.02]
                  active:scale-[0.98]
@@ -72,7 +72,6 @@
             <i class="fas fa-sign-in-alt"></i> Login
           </span>
           
-          <!-- Ripple effect element -->
           <span class="ripple-container absolute inset-0 pointer-events-none"></span>
         </button>
         
@@ -86,33 +85,20 @@
           </div>
         </div>
         
-        <!-- ─────────────────────────────────────────────────────────────── -->
-        <!-- Google Sign-In Button (injected by Google Identity Services)      -->
-        <!--                                                                    -->
-        <!-- How it works:                                                      -->
-        <!--  • onMounted calls initGoogleSignIn()                              -->
-        <!--  • google.accounts.id.renderButton() inserts an <iframe> here     -->
-        <!--  • Clicking the iframe opens a centred popup account selector      -->
-        <!--  • No more prompt() → no more One-Tap corner overlay               -->
-        <!-- ─────────────────────────────────────────────────────────────── -->
-        <div class="w-full flex justify-center min-h-[44px]">
-          <!-- Skeleton pulse shown while the GIS script loads.
-               Kept as a sibling of googleButtonContainer so Vue's v-if
-               comment anchors never compete with Google's injected iframe. -->
+        <!-- Google Sign-In Button -->
+        <div class="w-full flex justify-center min-h-[40px] sm:min-h-[44px]">
           <div
             v-if="!googleReady"
-            class="w-full h-[44px] rounded-lg border border-[#1F8DBF]/20 bg-gray-50 animate-pulse
+            class="w-full h-[40px] sm:h-[44px] rounded-lg border border-[#1F8DBF]/20 bg-gray-50 animate-pulse
                    flex items-center justify-center gap-2 text-xs text-gray-400"
           >
             <i class="fas fa-circle-notch fa-spin text-[#1F8DBF]/40"></i>
             <span>Loading Google Sign-In…</span>
           </div>
-          <!-- Google renderButton() injects its iframe here.
-               Vue intentionally has no children in this div. -->
           <div ref="googleButtonContainer" class="w-full flex justify-center"></div>
         </div>
         
-        <div class="text-center text-xs text-[#1F8DBF]/70 font-semibold">
+        <div class="text-center text-xs text-[#1F8DBF]/70 font-semibold pt-2">
           <p>
             Don't have an account?
             <router-link
@@ -123,21 +109,20 @@
             </router-link>
           </p>
         </div>
-
       </form>
     </div>
   </div>
 
-  <!-- ─── Forgot Password Modal ─── -->
+  <!-- Forgot Password Modal - Mobile Optimized -->
   <Teleport to="body">
     <Transition name="modal-fade">
       <div v-if="forgotModal.open" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 animate-fade-in">
-
+        <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-5 sm:p-6 animate-fade-in max-h-[90vh] overflow-y-auto">
+          
           <!-- Step 1: Enter Email -->
           <template v-if="forgotModal.step === 1">
-            <h3 class="text-xl font-extrabold text-[#1F8DBF] mb-1">Forgot Password</h3>
-            <p class="text-xs text-[#1F8DBF]/60 mb-5">Enter your registered email and we'll send a verification code.</p>
+            <h3 class="text-lg sm:text-xl font-extrabold text-[#1F8DBF] mb-1">Forgot Password</h3>
+            <p class="text-xs text-[#1F8DBF]/60 mb-4 sm:mb-5">Enter your registered email and we'll send a verification code.</p>
             <div class="mb-4">
               <label class="block mb-1.5 font-semibold text-[#1F8DBF] text-xs">Email Address</label>
               <div class="relative">
@@ -146,7 +131,7 @@
                   v-model="forgotModal.email"
                   type="email"
                   placeholder="Enter your email"
-                  class="w-full py-3 pl-10 pr-3 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
+                  class="w-full py-2.5 sm:py-3 pl-10 pr-3 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -164,9 +149,9 @@
 
           <!-- Step 2: Enter OTP -->
           <template v-if="forgotModal.step === 2">
-            <h3 class="text-xl font-extrabold text-[#1F8DBF] mb-1">Enter Verification Code</h3>
+            <h3 class="text-lg sm:text-xl font-extrabold text-[#1F8DBF] mb-1">Enter Verification Code</h3>
             <p class="text-xs text-[#1F8DBF]/60 mb-1">We sent a 6-digit code to</p>
-            <p class="text-xs font-bold text-[#1F8DBF] mb-5 truncate">{{ forgotModal.email }}</p>
+            <p class="text-xs font-bold text-[#1F8DBF] mb-4 sm:mb-5 truncate">{{ forgotModal.email }}</p>
             <div class="mb-4">
               <label class="block mb-1.5 font-semibold text-[#1F8DBF] text-xs">Verification Code</label>
               <input
@@ -174,7 +159,7 @@
                 type="text"
                 maxlength="6"
                 placeholder="123456"
-                class="w-full py-3 px-4 rounded-lg text-center text-2xl font-bold tracking-[0.4em] bg-white border border-[#1F8DBF]/20 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-300"
+                class="w-full py-2.5 sm:py-3 px-4 rounded-lg text-center text-xl sm:text-2xl font-bold tracking-[0.3em] sm:tracking-[0.4em] bg-white border border-[#1F8DBF]/20 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-300"
               />
             </div>
             <div v-if="forgotModal.error" class="mb-3 p-2.5 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs font-semibold">
@@ -197,8 +182,8 @@
 
           <!-- Step 3: Set New Password -->
           <template v-if="forgotModal.step === 3">
-            <h3 class="text-xl font-extrabold text-[#1F8DBF] mb-1">Set New Password</h3>
-            <p class="text-xs text-[#1F8DBF]/60 mb-5">Choose a strong password for your account.</p>
+            <h3 class="text-lg sm:text-xl font-extrabold text-[#1F8DBF] mb-1">Set New Password</h3>
+            <p class="text-xs text-[#1F8DBF]/60 mb-4 sm:mb-5">Choose a strong password for your account.</p>
             <div class="mb-3">
               <label class="block mb-1.5 font-semibold text-[#1F8DBF] text-xs">New Password</label>
               <div class="relative">
@@ -207,7 +192,7 @@
                   :type="forgotModal.showPw ? 'text' : 'password'"
                   v-model="forgotModal.newPassword"
                   placeholder="Min. 6 characters"
-                  class="w-full py-3 pl-10 pr-10 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
+                  class="w-full py-2.5 sm:py-3 pl-10 pr-10 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
                 />
                 <span @click="forgotModal.showPw = !forgotModal.showPw" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-[#1F8DBF] text-sm">
                   <i :class="forgotModal.showPw ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
@@ -222,7 +207,7 @@
                   :type="forgotModal.showConfirmPw ? 'text' : 'password'"
                   v-model="forgotModal.confirmPassword"
                   placeholder="Repeat your password"
-                  class="w-full py-3 pl-10 pr-10 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
+                  class="w-full py-2.5 sm:py-3 pl-10 pr-10 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
                 />
                 <span @click="forgotModal.showConfirmPw = !forgotModal.showConfirmPw" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-[#1F8DBF] text-sm">
                   <i :class="forgotModal.showConfirmPw ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
@@ -232,7 +217,7 @@
             <div v-if="forgotModal.error" class="mb-3 p-2.5 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs font-semibold">
               <i class="fas fa-exclamation-circle mr-1"></i>{{ forgotModal.error }}
             </div>
-            <button type="button" @click="doResetPassword" :disabled="forgotModal.loading" class="w-full py-3 rounded-lg bg-gradient-to-r from-[#1F8DBF] to-[#1E88B6] text-white text-sm font-bold hover:shadow-md transition disabled:opacity-60">
+            <button type="button" @click="doResetPassword" :disabled="forgotModal.loading" class="w-full py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#1F8DBF] to-[#1E88B6] text-white text-sm font-bold hover:shadow-md transition disabled:opacity-60">
               <span v-if="forgotModal.loading"><i class="fas fa-spinner fa-spin mr-1"></i>Updating…</span>
               <span v-else><i class="fas fa-check-circle mr-1"></i>Reset Password</span>
             </button>
@@ -241,12 +226,12 @@
           <!-- Step 4: Success -->
           <template v-if="forgotModal.step === 4">
             <div class="text-center py-4">
-              <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-check-circle text-green-500 text-3xl"></i>
+              <div class="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-check-circle text-green-500 text-2xl sm:text-3xl"></i>
               </div>
-              <h3 class="text-xl font-extrabold text-[#1F8DBF] mb-2">Password Updated!</h3>
-              <p class="text-xs text-[#1F8DBF]/60 mb-6">Your password has been reset successfully. You can now log in with your new password.</p>
-              <button type="button" @click="closeForgotModal" class="w-full py-3 rounded-lg bg-gradient-to-r from-[#1F8DBF] to-[#1E88B6] text-white text-sm font-bold hover:shadow-md transition">
+              <h3 class="text-lg sm:text-xl font-extrabold text-[#1F8DBF] mb-2">Password Updated!</h3>
+              <p class="text-xs text-[#1F8DBF]/60 mb-5 sm:mb-6">Your password has been reset successfully. You can now log in with your new password.</p>
+              <button type="button" @click="closeForgotModal" class="w-full py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#1F8DBF] to-[#1E88B6] text-white text-sm font-bold hover:shadow-md transition">
                 Back to Login
               </button>
             </div>
@@ -256,7 +241,6 @@
       </div>
     </Transition>
   </Teleport>
-
 </template>
 
 <script setup>
@@ -271,7 +255,6 @@ const showPassword = ref(false)
 const googleReady = ref(false)
 const googleButtonContainer = ref(null)
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
-// API_URL should already include /api from VITE_API_URL in .env
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api$/, '')
 const API_URL = `${API_BASE}/api`
 const formData = reactive({
@@ -279,10 +262,10 @@ const formData = reactive({
   password: ''
 })
 
-// ─── Forgot Password State ───
+// Forgot Password State
 const forgotModal = reactive({
   open: false,
-  step: 1,       // 1=email, 2=otp, 3=new password, 4=success
+  step: 1,
   email: '',
   otp: '',
   newPassword: '',
@@ -298,7 +281,7 @@ const forgotModal = reactive({
 const openForgotModal = () => {
   forgotModal.open = true
   forgotModal.step = 1
-  forgotModal.email = formData.email  // prefill if user already typed email
+  forgotModal.email = formData.email
   forgotModal.otp = ''
   forgotModal.newPassword = ''
   forgotModal.confirmPassword = ''
@@ -334,7 +317,6 @@ const sendForgotOtp = async () => {
 
   forgotModal.loading = true
   try {
-    // Check account exists first
     const checkRes = await fetch(`${API_URL}/customers/check-email/${encodeURIComponent(email)}`)
     const checkData = await checkRes.json()
     if (!checkData.exists) {
@@ -343,7 +325,6 @@ const sendForgotOtp = async () => {
       return
     }
 
-    // Send OTP
     const otpRes = await fetch(`${API_URL}/otp/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -415,7 +396,6 @@ const doResetPassword = async () => {
     forgotModal.loading = false
   }
 }
-// ─── End Forgot Password ───
 
 const loadGoogleScript = () => {
   return new Promise((resolve, reject) => {
@@ -450,13 +430,6 @@ const initGoogleSignIn = async () => {
   try {
     await loadGoogleScript()
 
-    // Step 1 — Initialize the Google Identity Services library.
-    //
-    // ux_mode: 'popup'
-    //   Opens the account chooser as a standard centred popup window.
-    //   This is the key change: previously the absence of this option
-    //   (combined with prompt()) caused the One-Tap overlay to appear in
-    //   the top-right corner of the screen, which looks unprofessional.
     window.google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
       ux_mode: 'popup',
@@ -465,11 +438,8 @@ const initGoogleSignIn = async () => {
           authStore.setError('Google login failed. No credential returned.')
           return
         }
-        // The credential (ID token) is forwarded unchanged to the existing
-        // backend endpoint. No server-side modifications required.
         const result = await authStore.loginWithGoogle(response.credential)
         if (result.success) {
-          // redirectByRole is async and handles NavigationFailure fallback
           await redirectByRole(result.role)
         } else {
           authStore.setError(result.message || 'Google login failed. Please try again.')
@@ -477,22 +447,14 @@ const initGoogleSignIn = async () => {
       }
     })
 
-    // Step 2 — Render Google's official button inside the mount-point div.
-    //
-    // This completely replaces our custom <button> + prompt() approach:
-    //   • Clicking the rendered button triggers the popup selector (no prompt())
-    //   • The button uses Google's own branding — compliant with their UX policy
-    //   • width is capped at 400px (Google's internal maximum) while still filling
-    //     the form column on narrower screens
     if (googleButtonContainer.value) {
       window.google.accounts.id.renderButton(googleButtonContainer.value, {
-        type: 'standard',        // icon + label (vs 'icon' for logo-only)
-        theme: 'outline',        // white background with subtle border
-        size: 'large',           // tallest option — visually matches form buttons
-        text: 'continue_with',   // label reads "Continue with Google"
-        shape: 'rectangular',    // consistent with the form's rounded-lg buttons
-        logo_alignment: 'left',  // Google G on the left, text centred
-        // Fill the container width; Google caps this at 400 px internally
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
         width: Math.min(googleButtonContainer.value.offsetWidth || 320, 400)
       })
     }
@@ -505,7 +467,6 @@ const initGoogleSignIn = async () => {
 }
 
 const redirectByRole = async (role) => {
-  // Choose the destination based on role, honouring any ?redirect= query param
   const savedRedirect = route.query.redirect
   let destination
   if (role === 'customer') {
@@ -519,18 +480,11 @@ const redirectByRole = async (role) => {
   }
 
   try {
-    // router.push() returns a NavigationFailure (truthy) when the navigation
-    // is rejected by a guard, or undefined when it succeeds.
-    // If it is rejected for any reason (timing / guard edge-case), fall back to
-    // a full-page replace which re-runs main.js and initFromStorage() so the
-    // next guard always sees the correct auth state.
     const failure = await router.push(destination)
     if (failure) {
-      // NavigationFailure — guard blocked the SPA navigation, hard-reload instead
       window.location.replace(destination)
     }
   } catch {
-    // Unexpected router error — hard-reload as a safe fallback
     window.location.replace(destination)
   }
 }
@@ -540,7 +494,7 @@ const handleSubmit = async () => {
     authStore.setLoading(true);
     authStore.clearError();
 
-      const response = await fetch(`${API_URL}/customers/login`, {
+    const response = await fetch(`${API_URL}/customers/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -552,20 +506,15 @@ const handleSubmit = async () => {
     const data = await response.json();
     
     if (response.ok && data.success) {
-      // Store the token
       if (data.token) {
         localStorage.setItem('authToken', data.token);
       }
       
-      // Store user data
       if (data.customer) {
         localStorage.setItem('user', JSON.stringify(data.customer));
-        
-        // Update auth store with user info
         authStore.setUser(data.customer);
       }
 
-      // Redirect by role
       const role = data.customer?.role || 'customer';
       await redirectByRole(role);
     } else {
@@ -596,7 +545,7 @@ const createRipple = (e) => {
   ripple.style.left = `${x}px`
   ripple.style.top = `${y}px`
   
-  container.innerHTML = '' // Clear previous ripples
+  container.innerHTML = ''
   container.appendChild(ripple)
   
   setTimeout(() => {
@@ -647,16 +596,15 @@ onMounted(async () => {
   opacity: 0;
 }
 
-/* Ensure the form takes most of the space */
 .min-h-screen {
   min-height: 100vh;
 }
 
-/* Responsive adjustments */
+/* Mobile-specific adjustments */
 @media (max-width: 640px) {
   .max-w-md {
     max-width: 100%;
-    margin: 0 0.25rem;
+    margin: 0;
   }
 }
 </style>

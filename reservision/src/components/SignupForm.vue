@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-[#1F8DBF]/5 via-white/95 to-[#F4C400]/10 flex items-center justify-center p-4">
-    <!-- Single Form Wrapper - With 0.5 inch gap from outline -->
-    <div class="w-full max-w-md bg-white/98 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-[#1F8DBF]/10 animate-fade-in">
-      <h2 class="text-2xl font-extrabold text-[#1F8DBF] mb-1 tracking-tight">Create Account</h2>
-      <p class="text-[#1F8DBF]/70 mb-6 text-xs font-medium">Join us today and start your journey.</p>
+  <div class="min-h-screen bg-gradient-to-br from-[#1F8DBF]/5 via-white/95 to-[#F4C400]/10 flex items-center justify-center p-4 sm:p-6">
+    <!-- Form Wrapper -->
+    <div class="w-full max-w-md bg-white/98 backdrop-blur-sm rounded-2xl p-5 sm:p-6 shadow-xl border border-[#1F8DBF]/10 animate-fade-in">
+      <h2 class="text-xl sm:text-2xl font-extrabold text-[#1F8DBF] mb-1 tracking-tight">Create Account</h2>
+      <p class="text-[#1F8DBF]/70 mb-5 sm:mb-6 text-xs font-medium">Join us today and start your journey.</p>
       
       <form @submit.prevent="handleSubmit" autocomplete="off" class="space-y-4">
         <!-- Full Name -->
@@ -15,7 +15,7 @@
               type="text" 
               id="fullName" 
               v-model="formData.fullName"
-              class="w-full py-3 pl-10 pr-3 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
+              class="w-full py-2.5 sm:py-3 pl-10 pr-3 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
               placeholder="Enter your full name" 
               required
             >
@@ -31,7 +31,7 @@
               type="tel" 
               id="contactNumber" 
               v-model="formData.contactNumber"
-              class="w-full py-3 pl-10 pr-3 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
+              class="w-full py-2.5 sm:py-3 pl-10 pr-3 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
               placeholder="09XXXXXXXXX" 
               required
             >
@@ -47,7 +47,7 @@
               type="email" 
               id="email" 
               v-model="formData.email"
-              class="w-full py-3 pl-10 pr-3 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
+              class="w-full py-2.5 sm:py-3 pl-10 pr-3 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
               placeholder="Enter your email" 
               required
             >
@@ -63,7 +63,7 @@
               :type="showPassword ? 'text' : 'password'" 
               id="password" 
               v-model="formData.password"
-              class="w-full py-3 pl-10 pr-10 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
+              class="w-full py-2.5 sm:py-3 pl-10 pr-10 rounded-lg text-sm bg-white border border-[#1F8DBF]/20 shadow-sm transition focus:outline-none focus:ring-1 focus:ring-[#F4C400] focus:border-[#F4C400] placeholder:text-gray-400"
               placeholder="Enter your password" 
               required
             >
@@ -78,12 +78,12 @@
         </div>
 
         <!-- Error Message -->
-        <div v-if="authStore.error" class="p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs font-semibold">
+        <div v-if="authStore.error" class="p-2.5 sm:p-3 bg-red-50 border border-red-100 rounded-lg text-red-600 text-xs font-semibold">
           <i class="fas fa-exclamation-circle mr-1"></i> {{ authStore.error }}
         </div>
 
         <!-- Success Message -->
-        <div v-if="signupSuccess" class="p-3 bg-green-50 border border-green-100 rounded-lg text-green-700 text-xs font-semibold">
+        <div v-if="signupSuccess" class="p-2.5 sm:p-3 bg-green-50 border border-green-100 rounded-lg text-green-700 text-xs font-semibold">
           <i class="fas fa-check-circle mr-1"></i> Account created! Redirecting…
         </div>
         
@@ -92,7 +92,7 @@
           type="submit" 
           :disabled="authStore.isLoading"
           @click="createRipple"
-          class="relative overflow-hidden w-full py-3 rounded-lg text-sm font-bold cursor-pointer
+          class="relative overflow-hidden w-full py-2.5 sm:py-3 rounded-lg text-sm font-bold cursor-pointer
                  bg-gradient-to-r from-[#1F8DBF] to-[#1E88B6] text-white shadow-md hover:shadow-lg
                  hover:from-[#1F8DBF] hover:to-[#1E88B6] hover:scale-[1.02]
                  active:scale-[0.98]
@@ -105,7 +105,6 @@
             <i class="fas fa-user-plus"></i> Create Account
           </span>
           
-          <!-- Ripple effect element -->
           <span class="ripple-container absolute inset-0 pointer-events-none"></span>
         </button>
         
@@ -119,33 +118,20 @@
           </div>
         </div>
         
-        <!-- ─────────────────────────────────────────────────────────────── -->
-        <!-- Google Sign-In Button (injected by Google Identity Services)      -->
-        <!--                                                                    -->
-        <!-- How it works:                                                      -->
-        <!--  • onMounted calls initGoogleSignIn()                              -->
-        <!--  • google.accounts.id.renderButton() inserts an <iframe> here     -->
-        <!--  • Clicking the iframe opens a centred popup account selector      -->
-        <!--  • No more prompt() → no more One-Tap corner overlay               -->
-        <!-- ─────────────────────────────────────────────────────────────── -->
-        <div class="w-full flex justify-center min-h-[44px]">
-          <!-- Skeleton pulse shown while the GIS script loads.
-               Kept as a sibling of googleButtonContainer so Vue's v-if
-               comment anchors never compete with Google's injected iframe. -->
+        <!-- Google Sign-In Button -->
+        <div class="w-full flex justify-center min-h-[40px] sm:min-h-[44px]">
           <div
             v-if="!googleReady"
-            class="w-full h-[44px] rounded-lg border border-[#1F8DBF]/20 bg-gray-50 animate-pulse
+            class="w-full h-[40px] sm:h-[44px] rounded-lg border border-[#1F8DBF]/20 bg-gray-50 animate-pulse
                    flex items-center justify-center gap-2 text-xs text-gray-400"
           >
             <i class="fas fa-circle-notch fa-spin text-[#1F8DBF]/40"></i>
             <span>Loading Google Sign-In…</span>
           </div>
-          <!-- Google renderButton() injects its iframe here.
-               Vue intentionally has no children in this div. -->
           <div ref="googleButtonContainer" class="w-full flex justify-center"></div>
         </div>
         
-        <div class="text-center text-xs text-[#1F8DBF]/70 font-semibold">
+        <div class="text-center text-xs text-[#1F8DBF]/70 font-semibold pt-2">
           <p>
             Already have an account?
             <router-link
@@ -156,7 +142,6 @@
             </router-link>
           </p>
         </div>
-
       </form>
     </div>
   </div>
@@ -172,12 +157,9 @@ const route = useRoute()
 const authStore = useAuthStore()
 const showPassword = ref(false)
 const googleReady = ref(false)
-// Template ref that points to the <div ref="googleButtonContainer"> element.
-// renderButton() injects Google's iframe into this div after the GIS script loads.
 const googleButtonContainer = ref(null)
-const signupSuccess = ref(false)  // Shown instead of alert() after successful signup
+const signupSuccess = ref(false)
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
-// API_URL should already include /api from VITE_API_URL in .env
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api$/, '')
 const API_URL = `${API_BASE}/api`
 const formData = reactive({
@@ -188,7 +170,6 @@ const formData = reactive({
 })
 
 const handleSubmit = async () => {
-  // Split fullName into first and last name
   const [firstName, ...rest] = formData.fullName.trim().split(' ');
   const lastName = rest.join(' ') || '';
 
@@ -213,21 +194,16 @@ const handleSubmit = async () => {
     const data = await response.json();
     
     if (response.ok && data.success) {
-      // Store the token
       if (data.token) {
         localStorage.setItem('authToken', data.token);
       }
       
-      // Store user data and update Pinia state
       if (data.customer) {
         localStorage.setItem('user', JSON.stringify(data.customer));
         authStore.setUser(data.customer);
       }
 
-      // Show inline success banner, then redirect with Vue Router
-      // (No alert() — that blocks the thread and is inconsistent UX)
       signupSuccess.value = true;
-      // redirectByRole is async and handles NavigationFailure fallback
       await redirectByRole(data.customer?.role || 'customer');
     } else {
       authStore.setError(data.error || 'Signup failed. Please try again.');
@@ -266,7 +242,6 @@ const loadGoogleScript = () => {
 }
 
 const redirectByRole = async (role) => {
-  // Choose the destination based on role, honouring any ?redirect= query param
   const savedRedirect = route.query.redirect
   let destination
   if (role === 'customer') {
@@ -280,11 +255,6 @@ const redirectByRole = async (role) => {
   }
 
   try {
-    // router.push() returns a NavigationFailure (truthy) when the navigation
-    // is rejected by a guard, or undefined when it succeeds.
-    // If it is rejected for any reason (timing / guard edge-case), fall back to
-    // a full-page replace which re-runs main.js and initFromStorage() so the
-    // next guard always sees the correct auth state.
     const failure = await router.push(destination)
     if (failure) {
       window.location.replace(destination)
@@ -302,13 +272,6 @@ const initGoogleSignIn = async () => {
   try {
     await loadGoogleScript()
 
-    // Step 1 — Initialize the Google Identity Services library.
-    //
-    // ux_mode: 'popup'
-    //   Opens the account chooser as a standard centred popup window.
-    //   This is the key change: previously the absence of this option
-    //   (combined with prompt()) caused the One-Tap overlay to appear in
-    //   the top-right corner of the screen, which looks unprofessional.
     window.google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
       ux_mode: 'popup',
@@ -317,11 +280,8 @@ const initGoogleSignIn = async () => {
           authStore.setError('Google signup failed. No credential returned.')
           return
         }
-        // The credential (ID token) is forwarded unchanged to the existing
-        // backend endpoint. No server-side modifications required.
         const result = await authStore.loginWithGoogle(response.credential)
         if (result.success) {
-          // redirectByRole is async and handles NavigationFailure fallback
           await redirectByRole(result.role)
         } else {
           authStore.setError(result.message || 'Google sign-up failed. Please try again.')
@@ -329,22 +289,14 @@ const initGoogleSignIn = async () => {
       }
     })
 
-    // Step 2 — Render Google's official button inside the mount-point div.
-    //
-    // This completely replaces our custom <button> + prompt() approach:
-    //   • Clicking the rendered button triggers the popup selector (no prompt())
-    //   • The button uses Google's own branding — compliant with their UX policy
-    //   • width is capped at 400px (Google's internal maximum) while still filling
-    //     the form column on narrower screens
     if (googleButtonContainer.value) {
       window.google.accounts.id.renderButton(googleButtonContainer.value, {
-        type: 'standard',        // icon + label (vs 'icon' for logo-only)
-        theme: 'outline',        // white background with subtle border
-        size: 'large',           // tallest option — visually matches form buttons
-        text: 'continue_with',   // label reads "Continue with Google"
-        shape: 'rectangular',    // consistent with the form's rounded-lg buttons
-        logo_alignment: 'left',  // Google G on the left, text centred
-        // Fill the container width; Google caps this at 400 px internally
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
         width: Math.min(googleButtonContainer.value.offsetWidth || 320, 400)
       })
     }
@@ -373,7 +325,7 @@ const createRipple = (e) => {
   ripple.style.left = `${x}px`
   ripple.style.top = `${y}px`
   
-  container.innerHTML = '' // Clear previous ripples
+  container.innerHTML = ''
   container.appendChild(ripple)
   
   setTimeout(() => {
@@ -415,16 +367,15 @@ onMounted(async () => {
   animation: ripple 0.6s linear;
 }
 
-/* Ensure the form takes most of the space */
 .min-h-screen {
   min-height: 100vh;
 }
 
-/* Responsive adjustments */
+/* Mobile-specific adjustments */
 @media (max-width: 640px) {
   .max-w-md {
     max-width: 100%;
-    margin: 0 0.5rem;
+    margin: 0;
   }
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen lg:h-screen bg-gradient-to-br from-[#0C3B5E]/5 via-white/95 to-[#F4C400]/10 overflow-x-hidden pt-20 relative">
+  <div class="min-h-screen lg:h-screen bg-gradient-to-br from-[#0C3B5E]/5 via-white/95 to-[#F4C400]/10 overflow-x-hidden pt-16 lg:pt-20 relative">
     <!-- Header -->
     <AppHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
     
@@ -8,39 +8,43 @@
 
     <!-- Interactive Background Elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-br from-[#1F8DBF]/10 to-[#F4C400]/5 rounded-full blur-3xl animate-float-1"></div>
-      <div class="absolute bottom-1/3 right-1/4 w-96 h-96 bg-gradient-to-tr from-[#1F8DBF]/5 to-[#F4C400]/10 rounded-full blur-3xl animate-float-2"></div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-[#1F8DBF]/5 to-[#F4C400]/5 rounded-full blur-3xl animate-pulse-slow"></div>
+      <div class="absolute top-1/4 left-1/4 w-48 lg:w-64 h-48 lg:h-64 bg-gradient-to-br from-[#1F8DBF]/10 to-[#F4C400]/5 rounded-full blur-3xl animate-float-1"></div>
+      <div class="absolute bottom-1/3 right-1/4 w-64 lg:w-96 h-64 lg:h-96 bg-gradient-to-tr from-[#1F8DBF]/5 to-[#F4C400]/10 rounded-full blur-3xl animate-float-2"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-60 lg:w-80 h-60 lg:h-80 bg-gradient-to-r from-[#1F8DBF]/5 to-[#F4C400]/5 rounded-full blur-3xl animate-pulse-slow"></div>
       
-      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#1F8DBF]/20 to-transparent animate-scan"></div>
-      <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#F4C400]/20 to-transparent animate-scan-delayed"></div>
+      <div class="absolute top-0 left-0 right-0 h-0.5 lg:h-1 bg-gradient-to-r from-transparent via-[#1F8DBF]/20 to-transparent animate-scan"></div>
+      <div class="absolute bottom-0 left-0 right-0 h-0.5 lg:h-1 bg-gradient-to-r from-transparent via-[#F4C400]/20 to-transparent animate-scan-delayed"></div>
     </div>
 
-    <!-- Main Content - Flex row with no overflow -->
-    <div class="flex h-[calc(100vh-80px)]">
-      <!-- Form Section - 30% with 0.5 spacing -->
-      <section class="w-[30%] min-w-[380px] p-0.5 bg-gradient-to-br from-white/95 to-white/98 flex items-center justify-center" ref="formSection">
-        <!-- Single Form Wrapper - No nesting after this -->
-        <div class="w-full h-full bg-white rounded-2xl p-6 shadow-[0_30px_60px_-20px_#1F8DBF4D,0_20px_40px_-15px_#F4C40033] border border-[#1F8DBF]/10 relative flex flex-col justify-center transform transition-all duration-1000"
-             :class="{'translate-x-0 opacity-100': formVisible, 'translate-x-20 opacity-0': !formVisible}">
+    <!-- Main Content - Stack on mobile, row on desktop -->
+    <div class="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-80px)]">
+      <!-- Form Section - Top on mobile, Left on desktop -->
+      <section 
+        class="w-full lg:w-[30%] min-w-full lg:min-w-[380px] p-4 lg:p-0.5 bg-gradient-to-br from-white/95 to-white/98 flex items-center justify-center order-1"
+        ref="formSection"
+      >
+        <!-- Form Card -->
+        <div 
+          class="w-full max-w-md lg:max-w-none lg:w-full lg:h-full bg-white rounded-xl lg:rounded-2xl p-5 lg:p-6 shadow-[0_30px_60px_-20px_#1F8DBF4D,0_20px_40px_-15px_#F4C40033] border border-[#1F8DBF]/10 relative flex flex-col justify-center transform transition-all duration-1000 my-4 lg:my-0"
+          :class="{ 'translate-y-0 opacity-100': formVisible, 'translate-y-10 opacity-0': !formVisible }"
+        >
+          <!-- Corner Accents -->
+          <div class="absolute top-0 left-0 w-5 lg:w-6 h-5 lg:h-6 border-t-2 border-l-2 border-[#F4C400] rounded-tl-lg lg:rounded-tl-xl z-5"></div>
+          <div class="absolute top-0 right-0 w-5 lg:w-6 h-5 lg:h-6 border-t-2 border-r-2 border-[#1F8DBF] rounded-tr-lg lg:rounded-tr-xl z-5"></div>
+          <div class="absolute bottom-0 left-0 w-5 lg:w-6 h-5 lg:h-6 border-b-2 border-l-2 border-[#1F8DBF] rounded-bl-lg lg:rounded-bl-xl z-5"></div>
+          <div class="absolute bottom-0 right-0 w-5 lg:w-6 h-5 lg:h-6 border-b-2 border-r-2 border-[#F4C400] rounded-br-lg lg:rounded-br-xl z-5"></div>
           
-          <!-- Corner Accents - Direct children of wrapper -->
-          <div class="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-[#F4C400] rounded-tl-xl z-5"></div>
-          <div class="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-[#1F8DBF] rounded-tr-xl z-5"></div>
-          <div class="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-[#1F8DBF] rounded-bl-xl z-5"></div>
-          <div class="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-[#F4C400] rounded-br-xl z-5"></div>
-          
-          <!-- SignupForm Component - Fully Functional -->
+          <!-- Signup Form Component -->
           <SignupForm />
-          
         </div>
       </section>
 
-      <!-- Visual Section - 70% -->
-      <section class="w-[70%] relative overflow-hidden cursor-none group"
-               @mousemove="handleMouseMove"
-               :style="visualBgStyle">
-        
+      <!-- Visual Section - Bottom on mobile, Right on desktop -->
+      <section 
+        class="w-full lg:w-[70%] h-[250px] sm:h-[300px] lg:h-full relative overflow-hidden cursor-none group order-2"
+        @mousemove="handleMouseMove"
+        :style="visualBgStyle"
+      >
         <!-- Gradient Overlay -->
         <div class="absolute inset-0 bg-gradient-to-br from-[#0C3B5E]/70 via-[#1F8DBF]/50 to-[#F4C400]/40" 
              :style="gradientStyle"></div>
@@ -49,26 +53,30 @@
         <div class="absolute inset-0" ref="particlesContainer"></div>
         
         <!-- Parallax Content -->
-        <div class="absolute inset-0 flex items-center justify-center" :style="contentTransform">
-          <div class="text-center text-white max-w-3xl px-8">
-            <div class="flex justify-center mb-6">
-              <div class="h-1 w-24 bg-gradient-to-r from-[#1F8DBF] to-transparent rounded-full transform group-hover:w-32 transition-all duration-500"></div>
-              <div class="h-5 w-5 bg-gradient-to-br from-[#F4C400] to-[#1F8DBF] rounded-full mx-4 transform group-hover:scale-125 group-hover:rotate-180 transition-all duration-500 shadow-lg shadow-[#F4C400]/30"></div>
-              <div class="h-1 w-24 bg-gradient-to-l from-[#1F8DBF] to-transparent rounded-full transform group-hover:w-32 transition-all duration-500"></div>
+        <div class="absolute inset-0 flex items-center justify-center px-4 lg:px-8" :style="contentTransform">
+          <div class="text-center text-white max-w-3xl">
+            <div class="flex justify-center mb-4 lg:mb-6">
+              <div class="h-0.5 lg:h-1 w-16 lg:w-24 bg-gradient-to-r from-[#1F8DBF] to-transparent rounded-full transform group-hover:w-20 lg:group-hover:w-32 transition-all duration-500"></div>
+              <div class="h-4 w-4 lg:h-5 lg:w-5 bg-gradient-to-br from-[#F4C400] to-[#1F8DBF] rounded-full mx-3 lg:mx-4 transform group-hover:scale-125 group-hover:rotate-180 transition-all duration-500 shadow-lg shadow-[#F4C400]/30"></div>
+              <div class="h-0.5 lg:h-1 w-16 lg:w-24 bg-gradient-to-l from-[#1F8DBF] to-transparent rounded-full transform group-hover:w-20 lg:group-hover:w-32 transition-all duration-500"></div>
             </div>
             
-            <h2 class="text-5xl font-black leading-tight mb-4">
+            <h2 class="text-2xl sm:text-3xl lg:text-5xl font-black leading-tight mb-2 lg:mb-4">
               <span class="block relative">
                 <span class="relative z-10">WELCOME TO YOUR</span>
-                <span class="absolute inset-0 text-transparent bg-clip-text bg-gradient-to-r from-[#1F8DBF] to-[#F4C400] blur opacity-0 group-hover:opacity-100 transition-opacity duration-500">WELCOME TO YOUR</span>
+                <span class="absolute inset-0 text-transparent bg-clip-text bg-gradient-to-r from-[#1F8DBF] to-[#F4C400] blur opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden lg:block">
+                  WELCOME TO YOUR
+                </span>
               </span>
-              <span class="block text-5xl mt-2 relative">
+              <span class="block text-2xl sm:text-3xl lg:text-5xl mt-1 lg:mt-2 relative">
                 <span class="relative z-10">NEXT GREAT EXPERIENCE</span>
-                <span class="absolute inset-0 text-transparent bg-clip-text bg-gradient-to-r from-[#F4C400] via-white to-[#1F8DBF] blur opacity-0 group-hover:opacity-70 transition-opacity duration-700 animate-gradient-flow">NEXT GREAT EXPERIENCE</span>
+                <span class="absolute inset-0 text-transparent bg-clip-text bg-gradient-to-r from-[#F4C400] via-white to-[#1F8DBF] blur opacity-0 group-hover:opacity-70 transition-opacity duration-700 animate-gradient-flow hidden lg:block">
+                  NEXT GREAT EXPERIENCE
+                </span>
               </span>
             </h2>
             
-            <p class="text-xl font-medium leading-relaxed max-w-2xl mx-auto opacity-95">
+            <p class="text-sm sm:text-base lg:text-xl font-medium leading-relaxed max-w-2xl mx-auto opacity-95 px-4">
               Join our community and discover a world of possibilities tailored just for you.
             </p>
           </div>
@@ -99,7 +107,7 @@ const gradientStyle = computed(() => ({
 }))
 
 const contentTransform = computed(() => ({
-  transform: `translate(${(mousePosition.x - 0.5) * 30}px, ${(mousePosition.y - 0.5) * 30}px)`
+  transform: `translate(${(mousePosition.x - 0.5) * 20}px, ${(mousePosition.y - 0.5) * 20}px)`
 }))
 
 const visualBgStyle = computed(() => ({
@@ -119,11 +127,13 @@ const handleMouseMove = (e) => {
   mousePosition.x = (e.clientX - rect.left) / rect.width
   mousePosition.y = (e.clientY - rect.top) / rect.height
   
-  const x = e.clientX - rect.left
-  const y = e.clientY - rect.top
-
-  createParticle(x, y)
-  createRipple(x, y)
+  // Only create effects on desktop
+  if (window.innerWidth >= 1024) {
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    createParticle(x, y)
+    createRipple(x, y)
+  }
 }
 
 const createParticle = (x, y) => {
@@ -175,22 +185,26 @@ const createRipple = (x, y) => {
 }
 
 onMounted(() => {
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        formVisible.value = true
-      }
-    })
-  }, { threshold: 0.3 })
-  
-  if (formSection.value) {
-    observer.observe(formSection.value)
-  }
-  
-  // Pre-warm animation
-  setTimeout(() => {
+  // Show form immediately on mobile
+  if (window.innerWidth < 1024) {
     formVisible.value = true
-  }, 300)
+  } else {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          formVisible.value = true
+        }
+      })
+    }, { threshold: 0.3 })
+    
+    if (formSection.value) {
+      observer.observe(formSection.value)
+    }
+    
+    setTimeout(() => {
+      formVisible.value = true
+    }, 300)
+  }
 })
 
 onUnmounted(() => {
@@ -204,8 +218,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* No custom styles needed - all handled by Tailwind utilities */
-
 /* Animations */
 @keyframes float-1 {
   0%, 100% { transform: translateY(0) translateX(0); }
@@ -234,76 +246,14 @@ onUnmounted(() => {
   50% { opacity: 1; }
 }
 
-.animate-float-1 {
-  animation: float-1 15s ease-in-out infinite;
-}
+.animate-float-1 { animation: float-1 15s ease-in-out infinite; }
+.animate-float-2 { animation: float-2 18s ease-in-out infinite; animation-delay: 2s; }
+.animate-scan { animation: scan 3s linear infinite; }
+.animate-scan-delayed { animation: scan 3s linear infinite; animation-delay: 1.5s; }
+.animate-gradient-flow { background-size: 300% auto; animation: gradient-flow 8s ease-in-out infinite; }
+.animate-pulse-slow { animation: pulse 4s ease-in-out infinite; }
 
-.animate-float-2 {
-  animation: float-2 18s ease-in-out infinite;
-  animation-delay: 2s;
-}
-
-.animate-scan {
-  animation: scan 3s linear infinite;
-}
-
-.animate-scan-delayed {
-  animation: scan 3s linear infinite;
-  animation-delay: 1.5s;
-}
-
-.animate-gradient-flow {
-  background-size: 300% auto;
-  animation: gradient-flow 8s ease-in-out infinite;
-}
-
-.animate-pulse-slow {
-  animation: pulse 4s ease-in-out infinite;
-}
-
-/* Ensure no scrollbars */
-* {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-*::-webkit-scrollbar {
-  display: none;
-}
-
-/* Responsive Design - Mobile stacking */
-@media (max-width: 1200px) {
-  .flex.h-\[calc\(100vh-80px\)\] {
-    flex-direction: column;
-    height: auto;
-    min-height: calc(100vh - 80px);
-  }
-
-  .w-\[70\%\] {
-    width: 100%;
-    height: 300px;
-  }
-
-  .w-\[30\%\] {
-    width: 100%;
-    min-height: 500px;
-  }
-
-  .min-w-\[380px\] {
-    min-width: 100%;
-  }
-}
-
-@media (max-width: 768px) {
-  .w-\[70\%\] { height: 250px; }
-  .w-\[30\%\] { min-height: 460px; }
-  .text-5xl { font-size: 2.2rem; }
-  .text-xl { font-size: 1rem; }
-}
-
-@media (max-width: 480px) {
-  .w-\[70\%\] { height: 220px; }
-  .w-\[30\%\] { min-height: 430px; }
-  .text-5xl { font-size: 1.8rem; }
-}
+/* Hide scrollbars */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; }
 </style>

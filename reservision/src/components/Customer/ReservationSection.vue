@@ -451,7 +451,6 @@ export default {
       apiBaseUrl: 'http://localhost:8000/api',
       apiRoot: (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api\/?$/, ''),
       fallbackRoomImage: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500',
-      fallbackFoodImage: 'https://images.unsplash.com/photo-1541542684-3b05a8f9c4c8?w=500',
       loading: false,
       mobileSearchOpen: false,
       showCalendar: false,
@@ -474,7 +473,7 @@ export default {
       booking: [],
       occupiedDates: [],
       calendarValidationError: '',
-      itemData: { rooms: [], cottages: [], food: [], events: [], swimming: [] },
+      itemData: { rooms: [], cottages: [], events: [], swimming: [] },
       showSwimmingForm: false,
       selectedSwimmingProgram: null,
       swimmingFormData: { participants: 1, dates: [], time: '', newDate: '' },
@@ -624,7 +623,7 @@ export default {
         return resolved
       },
       getCatIcon(cat) {
-        const icons = { rooms: 'fas fa-bed', cottages: 'fas fa-home', food: 'fas fa-utensils', events: 'fas fa-calendar-alt', swimming: 'fas fa-swimmer' }
+        const icons = { rooms: 'fas fa-bed', cottages: 'fas fa-home', events: 'fas fa-calendar-alt', swimming: 'fas fa-swimmer' }
         return icons[cat] || 'fas fa-th'
       },
       getItemGroupKey(item) {
@@ -644,7 +643,7 @@ export default {
       },
       groupItemsByAvailability(items) {
         if (!Array.isArray(items) || !items.length) return []
-        if (['food', 'swimming'].includes(this.currentCategory)) return items
+        if (['swimming'].includes(this.currentCategory)) return items
 
         const groups = new Map()
 
@@ -752,7 +751,7 @@ export default {
           const res = await fetch(`${this.apiBaseUrl}/rooms`)
           const data = await res.json()
           let items = Array.isArray(data) ? data : (data.success && data.data ? data.data : [])
-          this.itemData.rooms = []; this.itemData.cottages = []; this.itemData.events = []; this.itemData.food = []
+          this.itemData.rooms = []; this.itemData.cottages = []; this.itemData.events = []
           items.forEach(item => {
             const images = this.normalizeImages(item.images, this.fallbackRoomImage, item.primaryImageIndex)
             const ct = (item.category_type || '').toLowerCase()
@@ -781,21 +780,7 @@ export default {
             else if (category === 'cottage' || ct === 'cottage' || ct.includes('cottage')) this.itemData.cottages.push(fi)
             else if (category === 'event' || ct === 'event' || ct.includes('event')) this.itemData.events.push(fi)
           })
-          await this.fetchMenuItems()
         } catch (e) { console.error(e) } finally { this.loading = false }
-      },
-
-      async fetchMenuItems() {
-        try {
-          const res = await fetch(`${this.apiBaseUrl}/restaurant/menu`)
-          const data = await res.json()
-          if (data.success && data.data) {
-            data.data.slice(0,5).forEach(item => {
-              const images = this.normalizeImages(item.image, this.fallbackFoodImage, item.primaryImageIndex)
-              this.itemData.food.push({ id: 'm'+item.item_id, item_id: item.item_id, name: item.name, price: parseFloat(item.price), desc: item.description, description: item.description, amenities: [], imgs: images, perNight: false, maxGuests: 1, category: 'Food' })
-            })
-          }
-        } catch {}
       },
 
       // ── Booking logic ──────────────────────────────
@@ -1264,7 +1249,7 @@ export default {
 }
 
 @media (min-width : 1025px) {
-  .summary-col { position: sticky; top: 11.5rem; align-self: start; }  
+  .summary-col { position: sticky; top: 11.5rem; align-self: start; height: 1000px; }  
   .search-section { position: sticky; top: 4rem; }
   .category-bar { position: sticky; top: 6.5rem; }
 }
